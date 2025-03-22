@@ -1,22 +1,13 @@
-/**
- * 8x8 monochrome bitmap fonts for rendering
- * Author: Daniel Hepper <daniel@hepper.net>
- *
- * License: Public Domain
- *
- * Based on:
- * // Summary: font8x8.h
- * // 8x8 monochrome bitmap fonts for rendering
- * //
- * // Author:
- * //     Marcel Sondaar
- * //     International Business Machines (public domain VGA fonts)
- * //
- * // License:
- * //     Public Domain
- *
- * Fetched from: http://dimensionalrift.homelinux.net/combuster/mos3/?p=viewsource&file=/modules/gfx/font8_8.asm
- **/
+//! 8x8 monochrome bitmap fonts for rendering: Basic Latin
+//!
+//! # Authors
+//! Daniel Hepper <daniel@hepper.net>, Marcel Sondaar
+//!
+//! # License
+//! Public Domain
+//!
+//! # Source
+//! <https://github.com/dhepper/font8x8>
 
 /// Constant: font8x8_basic
 /// Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
@@ -55,6 +46,7 @@ const _FONT8X8_BASIC: [[u8; 8]; 128] = [
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+001E
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+001F
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+0020 (space)
+    // TODO: Remove the above
     [0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00], // U+0021 (!)
     [0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+0022 (")
     [0x36, 0x36, 0x7F, 0x36, 0x7F, 0x36, 0x36, 0x00], // U+0023 (#)
@@ -149,7 +141,7 @@ const _FONT8X8_BASIC: [[u8; 8]; 128] = [
     [0x18, 0x18, 0x18, 0x00, 0x18, 0x18, 0x18, 0x00], // U+007C (|)
     [0x07, 0x0C, 0x0C, 0x38, 0x0C, 0x0C, 0x07, 0x00], // U+007D (])
     [0x6E, 0x3B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+007E (~)
-    [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+007F
+    [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+007F (DELETE) // TODO: remove
 ];
 
 reverse_font!(FONT8X8_BASIC, _FONT8X8_BASIC);
