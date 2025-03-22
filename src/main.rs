@@ -1,23 +1,13 @@
+mod colors;
 mod font8x8;
 
+use crate::colors::COLORS;
 use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
 use minifb::{Key, Window, WindowOptions};
 use std::time::Instant;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
-
-// Simple fake 256-color palette: RGB 3-3-2 bit (like mode 13h)
-fn generate_palette() -> Vec<u32> {
-    (0..=255)
-        .map(|i| {
-            let r = ((i >> 5) & 0b111) * 36; // 3 bits
-            let g = ((i >> 2) & 0b111) * 36;
-            let b = (i & 0b11) * 85; // 2 bits
-            (r << 16) | (g << 8) | b
-        })
-        .collect()
-}
 
 const LUT_SIZE: usize = 256;
 
@@ -105,7 +95,6 @@ fn main() {
     )
     .unwrap();
 
-    let palette = generate_palette();
     let sin_lut = make_sin_lut();
     let mut buffer = vec![0u32; WIDTH * HEIGHT];
     let start = Instant::now();
@@ -125,7 +114,7 @@ fn main() {
                 let v = ((a + b + c + d) >> 2) & 0xFF;
                 let shifted_index = (v + palette_shift) & 0xFF;
 
-                buffer[y * WIDTH + x] = palette[shifted_index];
+                buffer[y * WIDTH + x] = COLORS[shifted_index];
             }
         }
 
