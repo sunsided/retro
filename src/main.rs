@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod colors;
 mod font8x8;
 mod lut;
@@ -40,9 +42,7 @@ fn start_render_thread(
         };
 
         loop {
-            let buffer = free_rx.recv().unwrap();
-            let mut_buffer = Box::into_raw(buffer);
-            let buffer = unsafe { &mut *mut_buffer };
+            let mut buffer = free_rx.recv().unwrap();
 
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
@@ -66,14 +66,13 @@ fn start_render_thread(
                 }
             }
 
-            draw_text(buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+            draw_text(buffer.as_mut(), 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
 
             if state.x < WIDTH && state.y < HEIGHT {
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            let boxed = unsafe { Box::from_raw(buffer) };
-            ready_tx.send(boxed).unwrap();
+            ready_tx.send(buffer).unwrap();
             thread::sleep(FRAME_DURATION);
         }
     });
