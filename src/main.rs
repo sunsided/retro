@@ -19,6 +19,17 @@ fn generate_palette() -> Vec<u32> {
         .collect()
 }
 
+const LUT_SIZE: usize = 256;
+
+fn make_sin_lut() -> [u8; LUT_SIZE] {
+    let mut lut = [0u8; LUT_SIZE];
+    for i in 0..LUT_SIZE {
+        let angle = i as f32 * std::f32::consts::TAU / LUT_SIZE as f32;
+        lut[i] = ((f32::sin(angle) * 127.5) + 127.5) as u8;
+    }
+    lut
+}
+
 fn draw_char(buffer: &mut [u32], x: usize, y: usize, ch: u8, color: u32) {
     if let Some(rows) = FONT8X8_BASIC.get(ch as usize) {
         for (dy, byte) in rows.iter().enumerate() {
@@ -95,21 +106,26 @@ fn main() {
     .unwrap();
 
     let palette = generate_palette();
+    let sin_lut = make_sin_lut();
     let mut buffer = vec![0u32; WIDTH * HEIGHT];
     let start = Instant::now();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        let t = start.elapsed().as_secs_f32() * 2.0;
+        let time = (start.elapsed().as_secs_f32() * 60.0) as usize;
+        let palette_shift = time % 256;
 
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
-                let v = ((128.0 + 128.0 * f32::sin(x as f32 / 16.0 + t))
-                    + (128.0 + 128.0 * f32::sin(y as f32 / 8.0 + t))
-                    + (128.0 + 128.0 * f32::sin((x as f32 + y as f32) / 16.0 + t))
-                    + (128.0 + 128.0 * f32::sin(((x as f32).hypot(y as f32)) / 8.0 - t)))
-                    / 4.0;
+                let a = sin_lut[((x << 3).wrapping_add(time)) & 0xFF] as usize;
+                let b = sin_lut[((y << 2).wrapping_add(time * 2)) & 0xFF] as usize;
+                let c = sin_lut[(((x + y) << 2).wrapping_add(time * 3)) & 0xFF] as usize;
+                let dist = (((x * x + y * y) as f32).sqrt() as usize).wrapping_add(time * 4);
+                let d = sin_lut[(dist << 1) & 0xFF] as usize;
 
-                buffer[y * WIDTH + x] = palette[v as usize % 256];
+                let v = ((a + b + c + d) >> 2) & 0xFF;
+                let shifted_index = (v + palette_shift) & 0xFF;
+
+                buffer[y * WIDTH + x] = palette[shifted_index];
             }
         }
 
