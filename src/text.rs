@@ -1,7 +1,7 @@
 use crate::font8x8::FONT8X8_BASIC;
-use crate::{HEIGHT, WIDTH};
+use crate::{FrameBuffer, HEIGHT, WIDTH};
 
-pub fn draw_char(buffer: &mut [u32], x: usize, y: usize, ch: u8, color: u32) {
+pub fn draw_char(buffer: &mut FrameBuffer, x: usize, y: usize, ch: u8, color: u32) {
     if let Some(rows) = FONT8X8_BASIC.get(ch as usize) {
         for (dy, byte) in rows.iter().enumerate() {
             for dx in 0..8 {
@@ -17,7 +17,7 @@ pub fn draw_char(buffer: &mut [u32], x: usize, y: usize, ch: u8, color: u32) {
     }
 }
 
-pub fn draw_text(buffer: &mut [u32], x: usize, y: usize, text: &str, color: u32) {
+pub fn draw_text(buffer: &mut FrameBuffer, x: usize, y: usize, text: &str, color: u32) {
     for (i, ch) in text.bytes().enumerate() {
         draw_char(buffer, x + i * 8, y, ch, color);
     }

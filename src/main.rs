@@ -20,6 +20,8 @@ const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
 const LUT_SIZE: usize = 256;
 const NUM_BUFFERS: usize = 3;
 
+type FrameBuffer = [u32; WIDTH * HEIGHT];
+
 #[derive(Clone, Copy)]
 struct GameState {
     tick: u64,
@@ -30,8 +32,8 @@ struct GameState {
 fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
-    ready_tx: channel::Sender<Box<[u32; WIDTH * HEIGHT]>>,
-    free_rx: channel::Receiver<Box<[u32; WIDTH * HEIGHT]>>,
+    ready_tx: channel::Sender<Box<FrameBuffer>>,
+    free_rx: channel::Receiver<Box<FrameBuffer>>,
 ) {
     thread::spawn(move || {
         let start = Instant::now();
@@ -66,7 +68,7 @@ fn start_render_thread(
                 }
             }
 
-            draw_text(buffer.as_mut(), 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
 
             if state.x < WIDTH && state.y < HEIGHT {
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
