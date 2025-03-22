@@ -1,8 +1,11 @@
 mod colors;
 mod font8x8;
+mod lut;
+mod text;
 
 use crate::colors::COLORS;
-use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
+use crate::lut::make_sin_lut;
+use crate::text::draw_text;
 use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
 use std::sync::Arc;
@@ -26,42 +29,12 @@ struct GameState {
     y: usize,
 }
 
-fn make_sin_lut() -> [u8; LUT_SIZE] {
-    let mut lut = [0u8; LUT_SIZE];
-    for i in 0..LUT_SIZE {
-        let angle = i as f32 * std::f32::consts::TAU / LUT_SIZE as f32;
-        lut[i] = ((f32::sin(angle) * 127.5) + 127.5) as u8;
-    }
-    lut
-}
-
-fn draw_char(buffer: &mut [u32], x: usize, y: usize, ch: u8, color: u32) {
-    if let Some(rows) = FONT8X8_BASIC.get(ch as usize) {
-        for (dy, byte) in rows.iter().enumerate() {
-            for dx in 0..8 {
-                if (byte >> (7 - dx)) & 1 != 0 {
-                    let px = x + dx;
-                    let py = y + dy;
-                    if px < WIDTH && py < HEIGHT {
-                        buffer[py * WIDTH + px] = color;
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn draw_text(buffer: &mut [u32], x: usize, y: usize, text: &str, color: u32) {
-    for (i, ch) in text.bytes().enumerate() {
-        draw_char(buffer, x + i * 8, y, ch, color);
-    }
-}
-
 fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
     read_index: Arc<AtomicUsize>,
     write_index: Arc<AtomicUsize>,
+    displayed_index: Arc<AtomicUsize>,
 ) {
     thread::spawn(move || {
         let start = Instant::now();
@@ -80,8 +53,8 @@ fn start_render_thread(
             let palette_shift = state.tick as usize % 256;
 
             let ri = read_index.load(Ordering::Acquire);
-            let wi = write_index.load(Ordering::Acquire);
-            let bi = (0..NUM_BUFFERS).find(|&i| i != ri && i != wi).unwrap();
+            let di = displayed_index.load(Ordering::Acquire);
+            let bi = (0..NUM_BUFFERS).find(|&i| i != ri && i != di).unwrap();
             let buffer = unsafe { &mut BUFFERS[bi] };
 
             for y in 0..HEIGHT {
@@ -118,12 +91,14 @@ fn main() {
 
     let read_index = Arc::new(AtomicUsize::new(0));
     let write_index = Arc::new(AtomicUsize::new(1));
+    let displayed_index = Arc::new(AtomicUsize::new(0));
 
     start_render_thread(
         make_sin_lut(),
         rx_state,
         read_index.clone(),
         write_index.clone(),
+        displayed_index.clone(),
     );
 
     // Game logic thread
@@ -167,6 +142,7 @@ fn main() {
             last_frame = idx;
             let buffer = unsafe { &BUFFERS[idx] };
             window.update_with_buffer(buffer, WIDTH, HEIGHT).unwrap();
+            displayed_index.store(idx, Ordering::Release);
         }
         thread::sleep(Duration::from_millis(1));
     }
