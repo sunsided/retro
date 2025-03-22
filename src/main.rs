@@ -5,6 +5,7 @@ use crate::colors::COLORS;
 use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
 use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -95,10 +96,10 @@ fn draw_sprite(buffer: &mut [u32], sprite: &Sprite, x: usize, y: usize, palette:
 fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
-    tx_frame: channel::Sender<Vec<u32>>,
+    buffers: [Arc<Mutex<Vec<u32>>>; 2],
+    current: Arc<Mutex<usize>>,
 ) {
     thread::spawn(move || {
-        let mut buffer = vec![0u32; WIDTH * HEIGHT];
         let start = Instant::now();
         let mut state = GameState {
             tick: 0,
@@ -113,6 +114,9 @@ fn start_render_thread(
 
             let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
             let palette_shift = state.tick as usize % 256;
+
+            let back_idx = 1 - *current.lock().unwrap();
+            let mut buffer = buffers[back_idx].lock().unwrap();
 
             for y in 0..HEIGHT {
                 for x in 0..WIDTH {
@@ -135,7 +139,7 @@ fn start_render_thread(
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            let _ = tx_frame.try_send(buffer.clone());
+            *current.lock().unwrap() = back_idx;
             thread::sleep(FRAME_DURATION);
         }
     });
@@ -143,7 +147,17 @@ fn start_render_thread(
 
 fn main() {
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
-    let (tx_frame, rx_frame) = channel::bounded::<Vec<u32>>(1);
+
+    let buffer0 = Arc::new(Mutex::new(vec![0u32; WIDTH * HEIGHT]));
+    let buffer1 = Arc::new(Mutex::new(vec![0u32; WIDTH * HEIGHT]));
+    let current = Arc::new(Mutex::new(0));
+
+    start_render_thread(
+        make_sin_lut(),
+        rx_state,
+        [buffer0.clone(), buffer1.clone()],
+        current.clone(),
+    );
 
     // Game logic thread
     thread::spawn(move || {
@@ -166,9 +180,6 @@ fn main() {
         }
     });
 
-    let sin_lut = make_sin_lut();
-    start_render_thread(sin_lut, rx_state, tx_frame);
-
     let mut window = Window::new(
         "Plasma Animation - ESC to exit",
         WIDTH,
@@ -181,13 +192,13 @@ fn main() {
     )
     .unwrap();
 
-    let mut buffer = vec![0u32; WIDTH * HEIGHT];
-
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        if let Ok(new_frame) = rx_frame.try_recv() {
-            buffer.copy_from_slice(&new_frame);
-        }
-
+        let idx = *current.lock().unwrap();
+        let buffer = if idx == 0 {
+            buffer0.lock().unwrap()
+        } else {
+            buffer1.lock().unwrap()
+        };
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
         thread::sleep(Duration::from_millis(1));
     }
