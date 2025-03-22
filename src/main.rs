@@ -41,6 +41,46 @@ fn draw_char(buffer: &mut [u32], x: usize, y: usize, char_index: usize, color: u
     }
 }
 
+struct Sprite {
+    width: usize,
+    height: usize,
+    pixels: Vec<u8>, // Index into a palette or 0x00 = transparent
+}
+
+fn make_sprite() -> Sprite {
+    Sprite {
+        width: 8,
+        height: 8,
+        #[rustfmt::skip]
+        pixels: vec![
+            1, 1, 1, 1, 1, 1, 1, 1,
+            1, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 1,
+            1, 0, 0, 0, 0, 0, 0, 1,
+            1, 1, 1, 1, 1, 1, 1, 1,
+        ],
+    }
+}
+
+fn draw_sprite(buffer: &mut [u32], sprite: &Sprite, x: usize, y: usize, palette: &[u32]) {
+    for sy in 0..sprite.height {
+        for sx in 0..sprite.width {
+            let color_index = sprite.pixels[sy * sprite.width + sx];
+            if color_index == 0 {
+                continue;
+            } // 0 = transparent
+            let px = x + sx;
+            let py = y + sy;
+            if px < WIDTH && py < HEIGHT {
+                buffer[py * WIDTH + px] = palette[color_index as usize];
+            }
+        }
+    }
+}
+
 fn main() {
     let mut window = Window::new(
         "256-Color Mode Simulation",
@@ -54,6 +94,8 @@ fn main() {
     )
     .unwrap();
 
+    let sprite = make_sprite();
+
     let palette = generate_palette();
     let mut framebuffer = vec![0u32; WIDTH * HEIGHT];
 
@@ -64,6 +106,8 @@ fn main() {
                 framebuffer[y * WIDTH + x] = palette[color_index];
             }
         }
+
+        draw_sprite(&mut framebuffer, &sprite, 100, 100, &palette);
 
         draw_char(&mut framebuffer, 50, 50, 0, 0xFFFFFF); // Draw 'A'
         draw_char(&mut framebuffer, 60, 50, 1, 0xFF0000); // Draw 'B'
