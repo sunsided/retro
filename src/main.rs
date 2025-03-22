@@ -8,7 +8,6 @@ use crate::lut::make_sin_lut;
 use crate::text::draw_text;
 use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
-use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -29,8 +28,8 @@ struct GameState {
 fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
-    ready_tx: channel::Sender<Arc<Box<[u32; WIDTH * HEIGHT]>>>,
-    free_rx: channel::Receiver<Arc<Box<[u32; WIDTH * HEIGHT]>>>,
+    ready_tx: channel::Sender<Box<[u32; WIDTH * HEIGHT]>>,
+    free_rx: channel::Receiver<Box<[u32; WIDTH * HEIGHT]>>,
 ) {
     thread::spawn(move || {
         let start = Instant::now();
@@ -42,8 +41,7 @@ fn start_render_thread(
 
         loop {
             let buffer = free_rx.recv().unwrap();
-            let mut_buffer = Arc::try_unwrap(buffer).ok().unwrap();
-            let mut_buffer = Box::into_raw(mut_buffer);
+            let mut_buffer = Box::into_raw(buffer);
             let buffer = unsafe { &mut *mut_buffer };
 
             while let Ok(new_state) = rx_state.try_recv() {
@@ -75,7 +73,7 @@ fn start_render_thread(
             }
 
             let boxed = unsafe { Box::from_raw(buffer) };
-            ready_tx.send(Arc::new(boxed)).unwrap();
+            ready_tx.send(boxed).unwrap();
             thread::sleep(FRAME_DURATION);
         }
     });
@@ -83,12 +81,12 @@ fn start_render_thread(
 
 fn main() {
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
-    let (ready_tx, ready_rx) = channel::bounded::<Arc<Box<[u32; WIDTH * HEIGHT]>>>(NUM_BUFFERS);
-    let (free_tx, free_rx) = channel::bounded::<Arc<Box<[u32; WIDTH * HEIGHT]>>>(NUM_BUFFERS);
+    let (ready_tx, ready_rx) = channel::bounded::<Box<[u32; WIDTH * HEIGHT]>>(NUM_BUFFERS);
+    let (free_tx, free_rx) = channel::bounded::<Box<[u32; WIDTH * HEIGHT]>>(NUM_BUFFERS);
 
     for _ in 0..NUM_BUFFERS {
         let buffer = Box::new([0u32; WIDTH * HEIGHT]);
-        free_tx.send(Arc::new(buffer)).unwrap();
+        free_tx.send(buffer).unwrap();
     }
 
     start_render_thread(make_sin_lut(), rx_state, ready_tx, free_rx);
