@@ -92,56 +92,25 @@ fn draw_sprite(buffer: &mut [u32], sprite: &Sprite, x: usize, y: usize, palette:
     }
 }
 
-fn main() {
-    let (tx, rx) = channel::bounded::<GameState>(1);
-
-    // Game logic thread
+fn start_render_thread(
+    sin_lut: [u8; LUT_SIZE],
+    rx_state: channel::Receiver<GameState>,
+    tx_frame: channel::Sender<Vec<u32>>,
+) {
     thread::spawn(move || {
+        let mut buffer = vec![0u32; WIDTH * HEIGHT];
+        let start = Instant::now();
         let mut state = GameState {
             tick: 0,
             x: 0,
             y: 0,
         };
-        let mut last_logic = Instant::now();
 
         loop {
-            if last_logic.elapsed() >= LOGIC_DURATION {
-                state.tick += 1;
-                state.x = (state.x + 1) % WIDTH;
-                state.y = (state.y + 1) % HEIGHT;
-                let _ = tx.send(state);
-                last_logic += LOGIC_DURATION;
+            while let Ok(new_state) = rx_state.try_recv() {
+                state = new_state;
             }
-            thread::sleep(Duration::from_millis(1));
-        }
-    });
 
-    let mut window = Window::new(
-        "Plasma Animation - ESC to exit",
-        WIDTH,
-        HEIGHT,
-        WindowOptions {
-            resize: false,
-            scale: minifb::Scale::X2,
-            ..WindowOptions::default()
-        },
-    )
-    .unwrap();
-
-    let sin_lut = make_sin_lut();
-    let mut buffer = vec![0u32; WIDTH * HEIGHT];
-    let start = Instant::now();
-    let mut last_render = Instant::now();
-    let mut state = GameState {
-        tick: 0,
-        x: 0,
-        y: 0,
-    };
-
-    while window.is_open() && !window.is_key_down(Key::Escape) {
-        let now = Instant::now();
-
-        if now.duration_since(last_render) >= FRAME_DURATION {
             let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
             let palette_shift = state.tick as usize % 256;
 
@@ -162,20 +131,64 @@ fn main() {
 
             draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
 
-            // receive latest logic state if available
-            while let Ok(new_state) = rx.try_recv() {
-                state = new_state;
-            }
-
-            // draw the dot from game state
             if state.x < WIDTH && state.y < HEIGHT {
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
-            last_render += FRAME_DURATION;
+            let _ = tx_frame.try_send(buffer.clone());
+            thread::sleep(FRAME_DURATION);
+        }
+    });
+}
+
+fn main() {
+    let (tx_state, rx_state) = channel::bounded::<GameState>(1);
+    let (tx_frame, rx_frame) = channel::bounded::<Vec<u32>>(1);
+
+    // Game logic thread
+    thread::spawn(move || {
+        let mut state = GameState {
+            tick: 0,
+            x: 0,
+            y: 0,
+        };
+        let mut last_logic = Instant::now();
+
+        loop {
+            if last_logic.elapsed() >= LOGIC_DURATION {
+                state.tick += 1;
+                state.x = (state.x + 1) % WIDTH;
+                state.y = (state.y + 1) % HEIGHT;
+                let _ = tx_state.send(state);
+                last_logic += LOGIC_DURATION;
+            }
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+
+    let sin_lut = make_sin_lut();
+    start_render_thread(sin_lut, rx_state, tx_frame);
+
+    let mut window = Window::new(
+        "Plasma Animation - ESC to exit",
+        WIDTH,
+        HEIGHT,
+        WindowOptions {
+            resize: false,
+            scale: minifb::Scale::X2,
+            ..WindowOptions::default()
+        },
+    )
+    .unwrap();
+
+    let mut buffer = vec![0u32; WIDTH * HEIGHT];
+
+    while window.is_open() && !window.is_key_down(Key::Escape) {
+        if let Ok(new_frame) = rx_frame.try_recv() {
+            buffer.copy_from_slice(&new_frame);
         }
 
+        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
         thread::sleep(Duration::from_millis(1));
     }
 }
