@@ -10,6 +10,7 @@ use std::time::{Duration, Instant};
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
 const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
+const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
 const LUT_SIZE: usize = 256;
 
 fn make_sin_lut() -> [u8; LUT_SIZE] {
@@ -99,35 +100,47 @@ fn main() {
     let sin_lut = make_sin_lut();
     let mut buffer = vec![0u32; WIDTH * HEIGHT];
     let start = Instant::now();
+    let mut last_render = Instant::now();
+    let mut last_logic = Instant::now();
+    let mut logic_ticks = 0;
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        let frame_start = Instant::now();
+        let now = Instant::now();
 
-        let time = (start.elapsed().as_secs_f32() * 60.0) as usize;
-        let palette_shift = time % 256;
+        // --- Logic Tick ---
+        if now.duration_since(last_logic) >= LOGIC_DURATION {
+            logic_ticks += 1;
+            last_logic += LOGIC_DURATION;
 
-        for y in 0..HEIGHT {
-            for x in 0..WIDTH {
-                let a = sin_lut[((x << 3).wrapping_add(time)) & 0xFF] as usize;
-                let b = sin_lut[((y << 2).wrapping_add(time * 2)) & 0xFF] as usize;
-                let c = sin_lut[(((x + y) << 2).wrapping_add(time * 3)) & 0xFF] as usize;
-                let dist = (((x * x + y * y) as f32).sqrt() as usize).wrapping_add(time * 4);
-                let d = sin_lut[(dist << 1) & 0xFF] as usize;
+            // TODO: update sprites, game state here
+        }
 
-                let v = ((a + b + c + d) >> 2) & 0xFF;
-                let shifted_index = (v + palette_shift) & 0xFF;
+        // --- Render Frame ---
+        if now.duration_since(last_render) >= FRAME_DURATION {
+            let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
+            let palette_shift = logic_ticks % 256;
 
-                buffer[y * WIDTH + x] = COLORS[shifted_index];
+            for y in 0..HEIGHT {
+                for x in 0..WIDTH {
+                    let a = sin_lut[((x << 3).wrapping_add(t)) & 0xFF] as usize;
+                    let b = sin_lut[((y << 2).wrapping_add(t * 2)) & 0xFF] as usize;
+                    let c = sin_lut[(((x + y) << 2).wrapping_add(t * 3)) & 0xFF] as usize;
+                    let dist = (((x * x + y * y) as f32).sqrt() as usize).wrapping_add(t * 4);
+                    let d = sin_lut[(dist << 1) & 0xFF] as usize;
+
+                    let v = ((a + b + c + d) >> 2) & 0xFF;
+                    let shifted_index = (v + palette_shift) & 0xFF;
+
+                    buffer[y * WIDTH + x] = COLORS[shifted_index];
+                }
             }
+
+            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+            window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+            last_render += FRAME_DURATION;
         }
 
-        draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
-        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
-
-        // Frame limiter
-        let frame_elapsed = frame_start.elapsed();
-        if frame_elapsed < FRAME_DURATION {
-            sleep(FRAME_DURATION - frame_elapsed);
-        }
+        // --- Sleep a bit to prevent CPU spin ---
+        sleep(Duration::from_millis(1));
     }
 }
