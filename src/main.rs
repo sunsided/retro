@@ -2,6 +2,7 @@ mod font8x8;
 
 use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
 use minifb::{Key, Window, WindowOptions};
+use std::time::Instant;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
@@ -82,39 +83,37 @@ fn draw_sprite(buffer: &mut [u32], sprite: &Sprite, x: usize, y: usize, palette:
 
 fn main() {
     let mut window = Window::new(
-        "256-Color Mode Simulation",
+        "Plasma Animation - ESC to exit",
         WIDTH,
         HEIGHT,
         WindowOptions {
             resize: false,
             scale: minifb::Scale::X2,
-            ..Default::default()
+            ..WindowOptions::default()
         },
     )
     .unwrap();
 
-    let sprite = make_sprite();
-
     let palette = generate_palette();
-    let mut framebuffer = vec![0u32; WIDTH * HEIGHT];
+    let mut buffer = vec![0u32; WIDTH * HEIGHT];
+    let start = Instant::now();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        let t = start.elapsed().as_secs_f32() * 2.0;
+
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
-                let color_index = ((x / 4 + y / 4) % 256) as usize;
-                framebuffer[y * WIDTH + x] = palette[color_index];
+                let v = ((128.0 + 128.0 * f32::sin(x as f32 / 16.0 + t))
+                    + (128.0 + 128.0 * f32::sin(y as f32 / 8.0 + t))
+                    + (128.0 + 128.0 * f32::sin((x as f32 + y as f32) / 16.0 + t))
+                    + (128.0 + 128.0 * f32::sin(((x as f32).hypot(y as f32)) / 8.0 - t)))
+                    / 4.0;
+
+                buffer[y * WIDTH + x] = palette[v as usize % 256];
             }
         }
 
-        draw_sprite(&mut framebuffer, &sprite, 100, 100, &palette);
-
-        draw_char(&mut framebuffer, 50, 50, 33, 0xFFFFFF); // Draw '!'
-        draw_char(&mut framebuffer, 60, 50, 35, 0xFF0000); // Draw '#'
-        draw_text(&mut framebuffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
-        draw_text(&mut framebuffer, 20, 40, "RUST + MINIFB", 0x00FF00);
-
-        window
-            .update_with_buffer(&framebuffer, WIDTH, HEIGHT)
-            .unwrap();
+        draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
     }
 }
