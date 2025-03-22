@@ -1,3 +1,6 @@
+mod font8x8;
+
+use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
 use minifb::{Key, Window, WindowOptions};
 
 const WIDTH: usize = 320;
@@ -15,29 +18,25 @@ fn generate_palette() -> Vec<u32> {
         .collect()
 }
 
-const FONT: [[u8; 8]; 2] = [
-    // Only 2 characters for demo: 'A' and 'B'
-    [
-        0b00111100, 0b01000010, 0b10000001, 0b11111111, 0b10000001, 0b10000001, 0b10000001,
-        0b00000000,
-    ],
-    [
-        0b11111110, 0b10000001, 0b10000001, 0b11111110, 0b10000001, 0b10000001, 0b11111110,
-        0b00000000,
-    ],
-];
-
-fn draw_char(buffer: &mut [u32], x: usize, y: usize, char_index: usize, color: u32) {
-    for (row, bits) in FONT[char_index].iter().enumerate() {
-        for col in 0..8 {
-            if bits & (1 << (7 - col)) != 0 {
-                let px = x + col;
-                let py = y + row;
-                if px < WIDTH && py < HEIGHT {
-                    buffer[py * WIDTH + px] = color;
+fn draw_char(buffer: &mut [u32], x: usize, y: usize, ch: u8, color: u32) {
+    if let Some(rows) = FONT8X8_BASIC.get(ch as usize) {
+        for (dy, byte) in rows.iter().enumerate() {
+            for dx in 0..8 {
+                if (byte >> (7 - dx)) & 1 != 0 {
+                    let px = x + dx;
+                    let py = y + dy;
+                    if px < WIDTH && py < HEIGHT {
+                        buffer[py * WIDTH + px] = color;
+                    }
                 }
             }
         }
+    }
+}
+
+fn draw_text(buffer: &mut [u32], x: usize, y: usize, text: &str, color: u32) {
+    for (i, ch) in text.bytes().enumerate() {
+        draw_char(buffer, x + i * 8, y, ch, color);
     }
 }
 
@@ -109,8 +108,10 @@ fn main() {
 
         draw_sprite(&mut framebuffer, &sprite, 100, 100, &palette);
 
-        draw_char(&mut framebuffer, 50, 50, 0, 0xFFFFFF); // Draw 'A'
-        draw_char(&mut framebuffer, 60, 50, 1, 0xFF0000); // Draw 'B'
+        draw_char(&mut framebuffer, 50, 50, 33, 0xFFFFFF); // Draw '!'
+        draw_char(&mut framebuffer, 60, 50, 35, 0xFF0000); // Draw '#'
+        draw_text(&mut framebuffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+        draw_text(&mut framebuffer, 20, 40, "RUST + MINIFB", 0x00FF00);
 
         window
             .update_with_buffer(&framebuffer, WIDTH, HEIGHT)
