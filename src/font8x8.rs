@@ -58,6 +58,7 @@ const fn reverse_all<const N: usize>(src: [[u8; 8]; N]) -> [[u8; 8]; N] {
 /// The constant is initialized by reversing the bits of each byte in the provided 2D array using the `reverse_all` function.
 macro_rules! reverse_font {
     ($name:ident, $src:expr) => {
+        #[allow(dead_code)]
         pub const $name: [[u8; 8]; $src.len()] = $crate::font8x8::reverse_all($src);
     };
 }
@@ -68,10 +69,19 @@ mod r#box;
 mod ext_latin;
 mod standard_galactic;
 
-pub use basic::*;
-pub use block::*;
-pub use block::*;
-pub use r#box::*;
+#[allow(unused_imports)]
+pub use basic::FONT8X8_BASIC;
+
+#[allow(unused_imports)]
+pub use block::FONT8X8_BLOCK;
+
+#[allow(unused_imports)]
+pub use ext_latin::FONT8X8_EXT_LATIN;
+
+#[allow(unused_imports)]
+pub use r#box::FONT8X8_BOX;
+
+#[allow(unused_imports)]
 pub use standard_galactic::*;
 
 #[cfg(test)]

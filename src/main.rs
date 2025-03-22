@@ -9,7 +9,6 @@ use crate::text::draw_text;
 use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
 use std::sync::Arc;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -19,8 +18,6 @@ const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
 const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
 const LUT_SIZE: usize = 256;
 const NUM_BUFFERS: usize = 3;
-
-static mut BUFFERS: [[u32; WIDTH * HEIGHT]; NUM_BUFFERS] = [[0; WIDTH * HEIGHT]; NUM_BUFFERS];
 
 #[derive(Clone, Copy)]
 struct GameState {
@@ -32,8 +29,8 @@ struct GameState {
 fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
-    read_index: Arc<AtomicUsize>,
-    displayed_index: Arc<AtomicUsize>,
+    ready_tx: channel::Sender<Arc<Box<[u32; WIDTH * HEIGHT]>>>,
+    free_rx: channel::Receiver<Arc<Box<[u32; WIDTH * HEIGHT]>>>,
 ) {
     thread::spawn(move || {
         let start = Instant::now();
@@ -44,17 +41,17 @@ fn start_render_thread(
         };
 
         loop {
+            let buffer = free_rx.recv().unwrap();
+            let mut_buffer = Arc::try_unwrap(buffer).ok().unwrap();
+            let mut_buffer = Box::into_raw(mut_buffer);
+            let buffer = unsafe { &mut *mut_buffer };
+
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
             }
 
             let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
             let palette_shift = state.tick as usize % 256;
-
-            let ri = read_index.load(Ordering::Acquire);
-            let di = displayed_index.load(Ordering::Acquire);
-            let bi = (0..NUM_BUFFERS).find(|&i| i != ri && i != di).unwrap();
-            let buffer = unsafe { &mut BUFFERS[bi] };
 
             for y in 0..HEIGHT {
                 for x in 0..WIDTH {
@@ -77,7 +74,8 @@ fn start_render_thread(
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            read_index.store(bi, Ordering::Release);
+            let boxed = unsafe { Box::from_raw(buffer) };
+            ready_tx.send(Arc::new(boxed)).unwrap();
             thread::sleep(FRAME_DURATION);
         }
     });
@@ -85,16 +83,15 @@ fn start_render_thread(
 
 fn main() {
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
+    let (ready_tx, ready_rx) = channel::bounded::<Arc<Box<[u32; WIDTH * HEIGHT]>>>(NUM_BUFFERS);
+    let (free_tx, free_rx) = channel::bounded::<Arc<Box<[u32; WIDTH * HEIGHT]>>>(NUM_BUFFERS);
 
-    let read_index = Arc::new(AtomicUsize::new(0));
-    let displayed_index = Arc::new(AtomicUsize::new(0));
+    for _ in 0..NUM_BUFFERS {
+        let buffer = Box::new([0u32; WIDTH * HEIGHT]);
+        free_tx.send(Arc::new(buffer)).unwrap();
+    }
 
-    start_render_thread(
-        make_sin_lut(),
-        rx_state,
-        read_index.clone(),
-        displayed_index.clone(),
-    );
+    start_render_thread(make_sin_lut(), rx_state, ready_tx, free_rx);
 
     // Game logic thread
     thread::spawn(move || {
@@ -129,15 +126,12 @@ fn main() {
     )
     .unwrap();
 
-    let mut last_frame = read_index.load(Ordering::Acquire);
-
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        let idx = read_index.load(Ordering::Acquire);
-        if idx != last_frame {
-            last_frame = idx;
-            let buffer = unsafe { &BUFFERS[idx] };
-            window.update_with_buffer(buffer, WIDTH, HEIGHT).unwrap();
-            displayed_index.store(idx, Ordering::Release);
+        if let Ok(buffer_arc) = ready_rx.recv() {
+            window
+                .update_with_buffer(buffer_arc.as_slice(), WIDTH, HEIGHT)
+                .unwrap();
+            free_tx.send(buffer_arc).unwrap();
         }
         thread::sleep(Duration::from_millis(1));
     }
