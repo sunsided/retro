@@ -33,7 +33,6 @@ fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
     read_index: Arc<AtomicUsize>,
-    write_index: Arc<AtomicUsize>,
     displayed_index: Arc<AtomicUsize>,
 ) {
     thread::spawn(move || {
@@ -78,9 +77,7 @@ fn start_render_thread(
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            write_index.store(bi, Ordering::Release);
             read_index.store(bi, Ordering::Release);
-
             thread::sleep(FRAME_DURATION);
         }
     });
@@ -90,14 +87,12 @@ fn main() {
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
 
     let read_index = Arc::new(AtomicUsize::new(0));
-    let write_index = Arc::new(AtomicUsize::new(1));
     let displayed_index = Arc::new(AtomicUsize::new(0));
 
     start_render_thread(
         make_sin_lut(),
         rx_state,
         read_index.clone(),
-        write_index.clone(),
         displayed_index.clone(),
     );
 
