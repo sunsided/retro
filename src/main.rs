@@ -4,11 +4,12 @@ mod font8x8;
 use crate::colors::COLORS;
 use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
 use minifb::{Key, Window, WindowOptions};
-use std::time::Instant;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
-
+const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
 const LUT_SIZE: usize = 256;
 
 fn make_sin_lut() -> [u8; LUT_SIZE] {
@@ -100,6 +101,8 @@ fn main() {
     let start = Instant::now();
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
+        let frame_start = Instant::now();
+
         let time = (start.elapsed().as_secs_f32() * 60.0) as usize;
         let palette_shift = time % 256;
 
@@ -120,5 +123,11 @@ fn main() {
 
         draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
         window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+
+        // Frame limiter
+        let frame_elapsed = frame_start.elapsed();
+        if frame_elapsed < FRAME_DURATION {
+            sleep(FRAME_DURATION - frame_elapsed);
+        }
     }
 }
