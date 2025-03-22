@@ -5,7 +5,8 @@ use crate::colors::COLORS;
 use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
 use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -14,6 +15,9 @@ const HEIGHT: usize = 200;
 const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
 const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
 const LUT_SIZE: usize = 256;
+const NUM_BUFFERS: usize = 3;
+
+static mut BUFFERS: [[u32; WIDTH * HEIGHT]; NUM_BUFFERS] = [[0; WIDTH * HEIGHT]; NUM_BUFFERS];
 
 #[derive(Clone, Copy)]
 struct GameState {
@@ -53,51 +57,11 @@ fn draw_text(buffer: &mut [u32], x: usize, y: usize, text: &str, color: u32) {
     }
 }
 
-struct Sprite {
-    width: usize,
-    height: usize,
-    pixels: Vec<u8>, // Index into a palette or 0x00 = transparent
-}
-
-fn make_sprite() -> Sprite {
-    Sprite {
-        width: 8,
-        height: 8,
-        #[rustfmt::skip]
-        pixels: vec![
-            1, 1, 1, 1, 1, 1, 1, 1,
-            1, 0, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 0, 0, 0, 0, 1,
-            1, 0, 0, 0, 0, 0, 0, 1,
-            1, 1, 1, 1, 1, 1, 1, 1,
-        ],
-    }
-}
-
-fn draw_sprite(buffer: &mut [u32], sprite: &Sprite, x: usize, y: usize, palette: &[u32]) {
-    for sy in 0..sprite.height {
-        for sx in 0..sprite.width {
-            let color_index = sprite.pixels[sy * sprite.width + sx];
-            if color_index == 0 {
-                continue;
-            } // 0 = transparent
-            let px = x + sx;
-            let py = y + sy;
-            if px < WIDTH && py < HEIGHT {
-                buffer[py * WIDTH + px] = palette[color_index as usize];
-            }
-        }
-    }
-}
-
 fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
-    buffers: [Arc<Mutex<Vec<u32>>>; 2],
-    current: Arc<Mutex<usize>>,
+    read_index: Arc<AtomicUsize>,
+    write_index: Arc<AtomicUsize>,
 ) {
     thread::spawn(move || {
         let start = Instant::now();
@@ -115,8 +79,10 @@ fn start_render_thread(
             let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
             let palette_shift = state.tick as usize % 256;
 
-            let back_idx = 1 - *current.lock().unwrap();
-            let mut buffer = buffers[back_idx].lock().unwrap();
+            let ri = read_index.load(Ordering::Acquire);
+            let wi = write_index.load(Ordering::Acquire);
+            let bi = (0..NUM_BUFFERS).find(|&i| i != ri && i != wi).unwrap();
+            let buffer = unsafe { &mut BUFFERS[bi] };
 
             for y in 0..HEIGHT {
                 for x in 0..WIDTH {
@@ -133,13 +99,15 @@ fn start_render_thread(
                 }
             }
 
-            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+            draw_text(buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
 
             if state.x < WIDTH && state.y < HEIGHT {
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            *current.lock().unwrap() = back_idx;
+            write_index.store(bi, Ordering::Release);
+            read_index.store(bi, Ordering::Release);
+
             thread::sleep(FRAME_DURATION);
         }
     });
@@ -148,15 +116,14 @@ fn start_render_thread(
 fn main() {
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
 
-    let buffer0 = Arc::new(Mutex::new(vec![0u32; WIDTH * HEIGHT]));
-    let buffer1 = Arc::new(Mutex::new(vec![0u32; WIDTH * HEIGHT]));
-    let current = Arc::new(Mutex::new(0));
+    let read_index = Arc::new(AtomicUsize::new(0));
+    let write_index = Arc::new(AtomicUsize::new(1));
 
     start_render_thread(
         make_sin_lut(),
         rx_state,
-        [buffer0.clone(), buffer1.clone()],
-        current.clone(),
+        read_index.clone(),
+        write_index.clone(),
     );
 
     // Game logic thread
@@ -192,14 +159,15 @@ fn main() {
     )
     .unwrap();
 
+    let mut last_frame = read_index.load(Ordering::Acquire);
+
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        let idx = *current.lock().unwrap();
-        let buffer = if idx == 0 {
-            buffer0.lock().unwrap()
-        } else {
-            buffer1.lock().unwrap()
-        };
-        window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
+        let idx = read_index.load(Ordering::Acquire);
+        if idx != last_frame {
+            last_frame = idx;
+            let buffer = unsafe { &BUFFERS[idx] };
+            window.update_with_buffer(buffer, WIDTH, HEIGHT).unwrap();
+        }
         thread::sleep(Duration::from_millis(1));
     }
 }
