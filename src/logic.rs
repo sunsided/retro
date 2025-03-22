@@ -18,6 +18,9 @@ pub fn start_logic_thread(tx_state: Sender<GameState>) {
                 state.tick += 1;
                 state.x = (state.x + 1) % WIDTH;
                 state.y = (state.y + 1) % HEIGHT;
+
+                // TODO: Some state is only necessary for simulation and does not need to be passed to the renderer
+                //       e.g. bounding boxes are relevant for sim, but only pose (and mesh and texture data) is needed by the renderer
                 let _ = tx_state.send(state);
                 last_logic += LOGIC_DURATION;
             }
