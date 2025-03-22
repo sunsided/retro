@@ -3,8 +3,9 @@ mod font8x8;
 
 use crate::colors::COLORS;
 use crate::font8x8::{FONT8X8_BASIC, FONT8X8_STANDARD_GALACTIC};
+use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
-use std::thread::sleep;
+use std::thread;
 use std::time::{Duration, Instant};
 
 const WIDTH: usize = 320;
@@ -12,6 +13,13 @@ const HEIGHT: usize = 200;
 const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
 const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
 const LUT_SIZE: usize = 256;
+
+#[derive(Clone, Copy)]
+struct GameState {
+    tick: u64,
+    x: usize,
+    y: usize,
+}
 
 fn make_sin_lut() -> [u8; LUT_SIZE] {
     let mut lut = [0u8; LUT_SIZE];
@@ -85,6 +93,29 @@ fn draw_sprite(buffer: &mut [u32], sprite: &Sprite, x: usize, y: usize, palette:
 }
 
 fn main() {
+    let (tx, rx) = channel::bounded::<GameState>(1);
+
+    // Game logic thread
+    thread::spawn(move || {
+        let mut state = GameState {
+            tick: 0,
+            x: 0,
+            y: 0,
+        };
+        let mut last_logic = Instant::now();
+
+        loop {
+            if last_logic.elapsed() >= LOGIC_DURATION {
+                state.tick += 1;
+                state.x = (state.x + 1) % WIDTH;
+                state.y = (state.y + 1) % HEIGHT;
+                let _ = tx.send(state);
+                last_logic += LOGIC_DURATION;
+            }
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
+
     let mut window = Window::new(
         "Plasma Animation - ESC to exit",
         WIDTH,
@@ -101,24 +132,18 @@ fn main() {
     let mut buffer = vec![0u32; WIDTH * HEIGHT];
     let start = Instant::now();
     let mut last_render = Instant::now();
-    let mut last_logic = Instant::now();
-    let mut logic_ticks = 0;
+    let mut state = GameState {
+        tick: 0,
+        x: 0,
+        y: 0,
+    };
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         let now = Instant::now();
 
-        // --- Logic Tick ---
-        if now.duration_since(last_logic) >= LOGIC_DURATION {
-            logic_ticks += 1;
-            last_logic += LOGIC_DURATION;
-
-            // TODO: update sprites, game state here
-        }
-
-        // --- Render Frame ---
         if now.duration_since(last_render) >= FRAME_DURATION {
             let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
-            let palette_shift = logic_ticks % 256;
+            let palette_shift = state.tick as usize % 256;
 
             for y in 0..HEIGHT {
                 for x in 0..WIDTH {
@@ -136,11 +161,21 @@ fn main() {
             }
 
             draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+
+            // receive latest logic state if available
+            while let Ok(new_state) = rx.try_recv() {
+                state = new_state;
+            }
+
+            // draw the dot from game state
+            if state.x < WIDTH && state.y < HEIGHT {
+                buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
+            }
+
             window.update_with_buffer(&buffer, WIDTH, HEIGHT).unwrap();
             last_render += FRAME_DURATION;
         }
 
-        // --- Sleep a bit to prevent CPU spin ---
-        sleep(Duration::from_millis(1));
+        thread::sleep(Duration::from_millis(1));
     }
 }
