@@ -11,8 +11,12 @@ use crate::input::{InputEvent, KeyBindings, KeyHandling};
 use crate::logic::{GameState, start_logic_thread};
 use crate::render::start_render_thread;
 use crossbeam::{channel, select};
+use dotenvy::dotenv;
 use minifb::{Window, WindowOptions};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
+use tracing_appender::non_blocking;
+use tracing_appender::non_blocking::WorkerGuard;
+use tracing_subscriber::{EnvFilter, fmt};
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
@@ -30,6 +34,9 @@ enum MainEvent {
 }
 
 fn main() {
+    dotenv().ok();
+    let _guard = setup_logging();
+
     let (input_event_tx, input_event_rx) = channel::unbounded::<InputEvent>();
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
     let (tx_main, rx_main) = channel::unbounded::<MainEvent>();
@@ -93,4 +100,19 @@ fn main() {
             }
         }
     }
+}
+
+fn setup_logging() -> WorkerGuard {
+    // Write logs to stdout with a non-blocking writer.
+    let (non_blocking_writer, guard) = non_blocking(std::io::stdout());
+
+    // Use an environment filter for dynamic log levels.
+    // e.g., set RUST_LOG=debug before running.
+    let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
+
+    fmt()
+        .with_writer(non_blocking_writer)
+        .with_env_filter(env_filter)
+        .init();
+    guard
 }

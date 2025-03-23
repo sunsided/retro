@@ -16,6 +16,7 @@ use crossbeam::channel;
 use rand::Rng;
 use std::thread;
 use std::time::{Duration, Instant};
+use tracing::warn;
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -50,7 +51,7 @@ pub fn start_render_thread(
             let mut buffer = match free_rx.try_recv() {
                 Ok(buffer) => buffer,
                 Err(_) => {
-                    eprintln!("Stalling: waiting for a free frame buffer...");
+                    warn!("Stalling: waiting for a free frame buffer...");
                     free_rx.recv().unwrap()
                 }
             };
@@ -114,7 +115,7 @@ pub fn start_render_thread(
                 let sleep_until_next_frame = FRAME_DURATION - elapsed_since_last_frame;
                 thread::sleep(sleep_until_next_frame);
             } else {
-                eprintln!(
+                warn!(
                     "Warning: frame took longer than expected: {elapsed_since_last_frame:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
                 );
             }
