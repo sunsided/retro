@@ -20,22 +20,46 @@ pub const fn dim_color(color: u32, factor: f32) -> u32 {
 
 fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
     use rand::Rng;
-    let mut rng = rand::thread_rng();
-    let wobble_offset = ((frame as f32 * 0.3).sin() * 2.0) as isize; // horizontal wobble
-    let roll_line = frame % HEIGHT; // rolling distortion line
+    let mut rng = rand::rng();
+    let wobble_offset = ((frame as f32 * 0.3).sin() * rng.random_range(1.5..3.0)) as usize; // horizontal wobble
+    let roll_line = (frame * 2 + rng.random_range(0..10)) % HEIGHT; // rolling distortion line
+    let analog_glitch = rng.random_bool(0.02);
 
     for y in 0..HEIGHT {
-        let brightness = if y % 2 == 0 { 255 } else { 220 }; // scanlines
+        let brightness = if y % 2 == 0 { 255 } else { 220 };
         for x in 0..WIDTH {
             let idx = y * WIDTH + x;
-            let mut px = pixels[idx];
-            let noise = rng.gen_range(0..=10);
+            let px = pixels[idx];
+            let noise = if analog_glitch && rng.gen_bool(0.2) {
+                rng.gen_range(30..100)
+            } else {
+                rng.gen_range(0..=10)
+            };
 
             let r = (((px >> 16) & 0xFF).saturating_add(noise)) * brightness / 255;
             let g = (((px >> 8) & 0xFF).saturating_add(noise)) * brightness / 255;
             let b = ((px & 0xFF).saturating_add(noise)) * brightness / 255;
 
             pixels[idx] = (r << 16) | (g << 8) | b;
+        }
+    }
+
+    // RGB shadow mask simulation
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let idx = y * WIDTH + x;
+            let px = pixels[idx];
+            let r = (px >> 16) & 0xFF;
+            let g = (px >> 8) & 0xFF;
+            let b = px & 0xFF;
+
+            let modulated = match x % 3 {
+                0 => ((r / 2) as u32) << 16,
+                1 => ((g / 2) as u32) << 8,
+                _ => b / 2,
+            };
+
+            pixels[idx] = px & 0xFF_FF_FF - 0x7F_7F_7F + modulated;
         }
     }
 
@@ -54,7 +78,7 @@ fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
         }
     }
 
-    // Curvature/vignette
+    // Vignette
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let idx = y * WIDTH + x;
@@ -72,12 +96,16 @@ fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
         }
     }
 
-    // Horizontal wobble and rolling distortion
+    // Horizontal wobble + rolling distortion
     let mut temp = pixels.to_vec();
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
-            let wobble = if y == roll_line { 4 } else { wobble_offset }; // stronger wobble on roll line
-            let src_x = (x as isize + wobble).clamp(0, (WIDTH - 1) as isize) as usize;
+            let wobble = if y == roll_line {
+                rng.gen_range(2..6)
+            } else {
+                wobble_offset
+            };
+            let src_x = (x + wobble).clamp(0, (WIDTH - 1));
             let src_idx = y * WIDTH + src_x;
             let dst_idx = y * WIDTH + x;
             pixels[dst_idx] = temp[src_idx];
@@ -167,7 +195,7 @@ pub fn start_render_thread(
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            apply_crt_effect(&mut buffer, frame);
+            apply_crt_effect(&mut buffer, frame / 10);
 
             ready_tx.send(buffer).unwrap();
             thread::sleep(FRAME_DURATION);
