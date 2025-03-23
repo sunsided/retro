@@ -30,3 +30,11 @@ harness = false
 [[bench]]
 name = "fire"
 harness = false
+
+[[bench]]
+name = "crt"
+harness = false
+
+[profile.dev]
+opt-level = 1
+debug = true

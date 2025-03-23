@@ -16,7 +16,7 @@ use crossbeam::channel;
 use rand::Rng;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, info, warn};
+use tracing::{debug, info, trace, warn};
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -48,6 +48,7 @@ pub fn start_render_thread(
         let mut last_frame_at = Instant::now();
 
         loop {
+            let t0 = Instant::now();
             let mut buffer = match free_rx.try_recv() {
                 Ok(buffer) => buffer,
                 Err(_) => {
@@ -60,6 +61,7 @@ pub fn start_render_thread(
                 state = new_state;
             }
 
+            let t1 = Instant::now();
             match state.background {
                 SceneBackground::None => {
                     for pixel in buffer.iter_mut() {
@@ -76,10 +78,12 @@ pub fn start_render_thread(
                 }
             }
 
+            let t2 = Instant::now();
             if state.x < WIDTH && state.y < HEIGHT {
                 draw_sprite(&mut buffer, &UFO_SPRITE, 8, state.x, state.y, 4);
             }
 
+            let t3 = Instant::now();
             draw_text(
                 &mut buffer,
                 20,
@@ -103,20 +107,47 @@ pub fn start_render_thread(
                 false,
             );
 
+            let t4 = Instant::now();
             if state.crt {
                 apply_crt_effect(&mut buffer, frame / 10);
             }
 
-            ready_tx.send(buffer).unwrap();
+            let t5 = Instant::now();
+            if let Err(err) = ready_tx.try_send(buffer) {
+                warn!(
+                    "Contention detected: unable to send frame buffer to the channel. Error: {}",
+                    err
+                );
+            }
 
             let now = Instant::now();
             let elapsed_since_last_frame = now.duration_since(last_frame_at);
             if elapsed_since_last_frame <= FRAME_DURATION {
+                trace!(
+                    "fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    (t1 - t0).as_secs_f64() * 1000.0,
+                    (t2 - t1).as_secs_f64() * 1000.0,
+                    (t3 - t2).as_secs_f64() * 1000.0,
+                    (t4 - t3).as_secs_f64() * 1000.0,
+                    (t5 - t4).as_secs_f64() * 1000.0,
+                    (now - t5).as_secs_f64() * 1000.0,
+                );
+
                 let sleep_until_next_frame = FRAME_DURATION - elapsed_since_last_frame;
                 thread::sleep(sleep_until_next_frame);
             } else {
                 warn!(
                     "Warning: frame took longer than expected: {elapsed_since_last_frame:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
+                );
+
+                warn!(
+                    "fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    (t1 - t0).as_secs_f64() * 1000.0,
+                    (t2 - t1).as_secs_f64() * 1000.0,
+                    (t3 - t2).as_secs_f64() * 1000.0,
+                    (t4 - t3).as_secs_f64() * 1000.0,
+                    (t5 - t4).as_secs_f64() * 1000.0,
+                    (now - t5).as_secs_f64() * 1000.0,
                 );
             }
             last_frame_at = now;
