@@ -105,7 +105,7 @@ impl Deref for Glyphs<'_> {
     type Target = [GlyphIndex];
 
     fn deref(&self) -> &Self::Target {
-        &self.1
+        self.1
     }
 }
 

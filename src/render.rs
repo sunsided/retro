@@ -54,12 +54,12 @@ fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
             let b = px & 0xFF;
 
             let modulated = match x % 3 {
-                0 => ((r / 2) as u32) << 16,
-                1 => ((g / 2) as u32) << 8,
+                0 => (r / 2) << 16,
+                1 => (g / 2) << 8,
                 _ => b / 2,
             };
 
-            pixels[idx] = px & 0xFF_FF_FF - 0x7F_7F_7F + modulated;
+            pixels[idx] = px & (0xFF_FF_FF - 0x7F_7F_7F + modulated);
         }
     }
 
