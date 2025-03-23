@@ -13,10 +13,10 @@
 /// The constant is initialized by reversing the bits of each byte in the provided 2D array using the `reverse_all` function.
 macro_rules! impl_font_8x8 {
     ($wrapper:ident, $name:ident, $src:expr) => {
-        pub struct $wrapper($crate::text::alphabet::Alphabet<8, { $src.len() }>);
+        pub struct $wrapper($crate::text::alphabet::StaticAlphabet<8, { $src.len() }>);
 
         #[allow(dead_code)]
-        pub const $name: $wrapper = $wrapper($crate::text::Alphabet::new(
+        pub const $name: $wrapper = $wrapper($crate::text::StaticAlphabet::new(
             $crate::text::font8x8::reverse_all($src),
         ));
 

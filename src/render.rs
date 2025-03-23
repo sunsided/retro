@@ -1,5 +1,5 @@
 use crate::colors::{COLORS, make_fire_palette};
-use crate::text::{Alphabets, draw_text, font8x8_sentence};
+use crate::text::{Alphabet, draw_text, font8x8_sentence};
 use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};
 use crossbeam::channel;
 use rand::{Rng, rng};
@@ -248,7 +248,7 @@ pub fn start_render_thread(
                 &mut buffer,
                 20,
                 40,
-                font8x8_sentence!(Alphabets::StandardGalactic, "beep boop robot."),
+                font8x8_sentence!(Alphabet::StandardGalactic, "beep boop robot."),
                 0xFFFFFF,
                 1,
                 false,

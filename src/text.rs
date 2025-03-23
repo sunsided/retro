@@ -6,7 +6,7 @@ mod glyphs;
 mod sentence;
 
 use crate::{FrameBuffer, HEIGHT, WIDTH};
-pub use alphabet::{Alphabet, Alphabets};
+pub use alphabet::{Alphabet, StaticAlphabet};
 pub use glyphs::GlyphIndex;
 pub use sentence::Sentence;
 pub(crate) use sentence::font8x8_sentence;
@@ -16,7 +16,7 @@ pub fn draw_char(
     buffer: &mut FrameBuffer,
     x: usize,
     y: usize,
-    alphabet: Alphabets,
+    alphabet: Alphabet,
     glyph_index: GlyphIndex,
     color: u32,
     scale: usize,

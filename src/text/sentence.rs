@@ -2,8 +2,8 @@ use std::ops::Deref;
 
 macro_rules! font8x8_sentence {
     ($text:literal) => {{
-        use $crate::text::Alphabets;
-        $crate::text::font8x8_sentence!(Alphabets::Basic, $text)
+        use $crate::text::Alphabet;
+        $crate::text::font8x8_sentence!(Alphabet::Basic, $text)
     }};
     ($alphabet:path, $text:literal) => {{
         const GLYPHS: [$crate::text::GlyphIndex; $text.len()] = {
@@ -21,18 +21,18 @@ macro_rules! font8x8_sentence {
 }
 
 use crate::text::GlyphIndex;
-use crate::text::alphabet::Alphabets;
+use crate::text::alphabet::Alphabet;
 pub(crate) use font8x8_sentence;
 
 #[derive(Debug, Clone)]
-pub struct Sentence<'a>(Alphabets, &'a [GlyphIndex]);
+pub struct Sentence<'a>(Alphabet, &'a [GlyphIndex]);
 
 impl<'a> Sentence<'a> {
-    pub const fn new(alphabet: Alphabets, glyphs: &'a [GlyphIndex]) -> Self {
+    pub const fn new(alphabet: Alphabet, glyphs: &'a [GlyphIndex]) -> Self {
         Self(alphabet, glyphs)
     }
 
-    pub const fn alphabet(&self) -> Alphabets {
+    pub const fn alphabet(&self) -> Alphabet {
         self.0
     }
 
