@@ -13,6 +13,7 @@
 //! especially in graphics or text-intensive applications where control over
 //! individual glyphs and alphabets is necessary.
 
+use std::borrow::Cow;
 use std::ops::Deref;
 
 macro_rules! font8x8_sentence {
@@ -38,7 +39,7 @@ macro_rules! font8x8_sentence {
                         }
                         out
                     };
-                    $crate::text::sentence::Glyphs::new(ALPHABET, &GLYPHS)
+                    $crate::text::sentence::Glyphs::new(ALPHABET, std::borrow::Cow::Borrowed(&GLYPHS))
                 }
             ),+
         ];
@@ -53,9 +54,45 @@ macro_rules! font8x8_sentence {
     };
 }
 
+macro_rules! font8x8_sentence_runtime {
+    (
+        $( $alphabet:path : $text:expr ),+ $(,)?
+    ) => {{
+        let mut glyphs_vec = Vec::new();
+        $(
+            {
+                let glyphs: Vec<$crate::text::GlyphIndex> = $text
+                    .chars()
+                    .map(|ch| $alphabet.map_char_index_or_panic(ch))
+                    .collect();
+                glyphs_vec.push($crate::text::sentence::Glyphs::new($alphabet, std::borrow::Cow::Owned(glyphs)));
+            }
+        )+
+        $crate::text::Sentence::new(Box::leak(glyphs_vec.into_boxed_slice()))
+    }};
+
+    (
+        $( $text:expr ),+ $(,)?
+    ) => {{
+        let mut glyphs_vec = Vec::new();
+        $(
+            {
+                let alphabet = $crate::text::Alphabet::Basic;
+                let glyphs: Vec<$crate::text::GlyphIndex> = $text
+                    .chars()
+                    .map(|ch| alphabet.map_char_index_or_panic(ch))
+                    .collect();
+                glyphs_vec.push($crate::text::sentence::Glyphs::new(alphabet, std::borrow::Cow::Owned(glyphs)));
+            }
+        )+
+        $crate::text::Sentence::new(Box::leak(glyphs_vec.into_boxed_slice()))
+    }};
+}
+
 use crate::text::GlyphIndex;
 use crate::text::alphabet::Alphabet;
 pub(crate) use font8x8_sentence;
+pub(crate) use font8x8_sentence_runtime;
 
 /// Multiple [`Glyphs`] glued together.
 #[derive(Debug, Clone)]
@@ -73,10 +110,10 @@ impl<'a> Sentence<'a> {
 
 /// A slice of glyph references from the same alphabet.
 #[derive(Debug, Clone)]
-pub struct Glyphs<'a>(Alphabet, &'a [GlyphIndex]);
+pub struct Glyphs<'a>(Alphabet, Cow<'a, [GlyphIndex]>);
 
 impl<'a> Glyphs<'a> {
-    pub const fn new(alphabet: Alphabet, glyphs: &'a [GlyphIndex]) -> Self {
+    pub const fn new(alphabet: Alphabet, glyphs: Cow<'a, [GlyphIndex]>) -> Self {
         Self(alphabet, glyphs)
     }
 
@@ -91,13 +128,13 @@ impl<'a> Glyphs<'a> {
 
 impl PartialEq<&[u8]> for Glyphs<'_> {
     fn eq(&self, other: &&[u8]) -> bool {
-        self.1.eq(*other)
+        self.1.as_ref().eq(*other)
     }
 }
 
 impl<const N: usize> PartialEq<[u8; N]> for Glyphs<'_> {
     fn eq(&self, other: &[u8; N]) -> bool {
-        self.1.eq(other)
+        self.1.as_ref().eq(other)
     }
 }
 
@@ -105,7 +142,7 @@ impl Deref for Glyphs<'_> {
     type Target = [GlyphIndex];
 
     fn deref(&self) -> &Self::Target {
-        self.1
+        self.1.as_ref()
     }
 }
 

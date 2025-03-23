@@ -17,7 +17,7 @@ use crate::{Color, FrameBuffer, HEIGHT, WIDTH};
 pub use alphabet::Alphabet;
 pub use glyphs::GlyphIndex;
 pub use sentence::Sentence;
-pub(crate) use sentence::font8x8_sentence;
+pub(crate) use sentence::{font8x8_sentence, font8x8_sentence_runtime};
 use std::borrow::Borrow;
 
 /// Renders a single character on the frame buffer.
