@@ -9,7 +9,7 @@ use crossbeam::channel::{Receiver, Sender};
 pub use game_state::GameState;
 use std::thread;
 use std::time::Instant;
-use tracing::warn;
+use tracing::{debug, warn};
 
 pub fn start_logic_thread(
     tx_state: Sender<GameState>,
@@ -33,12 +33,14 @@ pub fn start_logic_thread(
                     }
                     InputEvent::IncreasePressed => {
                         if let SceneBackground::Plasma(plasma) = &mut state.background {
-                            plasma.intensity = (plasma.intensity - 0.1).clamp(0.0, 1.0);
+                            plasma.intensity = (plasma.intensity + 0.1).clamp(0.0, 1.0);
+                            debug!("Plasma intensity: {:.2}", plasma.intensity);
                         }
                     }
                     InputEvent::DecreasePressed => {
                         if let SceneBackground::Plasma(plasma) = &mut state.background {
-                            plasma.intensity = (plasma.intensity + 0.1).clamp(0.0, 1.0);
+                            plasma.intensity = (plasma.intensity - 0.1).clamp(0.0, 1.0);
+                            debug!("Plasma intensity: {:.2}", plasma.intensity);
                         }
                     }
                     InputEvent::NumberSelected(num) => match num {
