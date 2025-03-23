@@ -16,13 +16,29 @@ macro_rules! font8x8_sentence {
             }
             out
         };
-        $crate::text::Glyphs::new($alphabet, &GLYPHS)
+        const GLYPHS_ARR: [$crate::text::Glyphs; 1] =
+            [$crate::text::Glyphs::new($alphabet, &GLYPHS)];
+        $crate::text::Sentence::new(&GLYPHS_ARR)
     }};
 }
 
 use crate::text::GlyphIndex;
 use crate::text::alphabet::Alphabet;
 pub(crate) use font8x8_sentence;
+
+/// Multiple [`Glyphs`] glued together.
+#[derive(Debug, Clone)]
+pub struct Sentence<'a>(&'a [Glyphs<'a>]);
+
+impl<'a> Sentence<'a> {
+    pub const fn new(glyphs: &'a [Glyphs<'a>]) -> Self {
+        Self(glyphs)
+    }
+
+    pub fn iter(&self) -> std::slice::Iter<Glyphs<'a>> {
+        self.0.iter()
+    }
+}
 
 /// A slice of glyph references from the same alphabet.
 #[derive(Debug, Clone)]

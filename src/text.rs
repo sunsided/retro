@@ -6,10 +6,10 @@ mod glyphs;
 mod sentence;
 
 use crate::{FrameBuffer, HEIGHT, WIDTH};
-pub use alphabet::{Alphabet, StaticAlphabet};
+pub use alphabet::Alphabet;
 pub use glyphs::GlyphIndex;
-pub use sentence::Glyphs;
 pub(crate) use sentence::font8x8_sentence;
+pub use sentence::{Glyphs, Sentence};
 use std::borrow::Borrow;
 
 pub fn draw_char(
@@ -51,20 +51,22 @@ pub fn draw_text<'a, S>(
     scale: usize,
     italic: bool,
 ) where
-    S: Borrow<Glyphs<'a>>,
+    S: Borrow<Sentence<'a>>,
 {
     let text = text.borrow();
-    let alphabet = text.alphabet();
-    for (i, ch) in text.bytes().enumerate() {
-        draw_char(
-            buffer,
-            x + i * 8 * scale,
-            y,
-            alphabet,
-            *ch,
-            color,
-            scale,
-            italic,
-        );
+    for sentence in text.iter() {
+        let alphabet = sentence.alphabet();
+        for (i, ch) in sentence.bytes().enumerate() {
+            draw_char(
+                buffer,
+                x + i * 8 * scale,
+                y,
+                alphabet,
+                *ch,
+                color,
+                scale,
+                italic,
+            );
+        }
     }
 }

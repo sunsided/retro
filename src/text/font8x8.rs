@@ -19,7 +19,9 @@ macro_rules! impl_font_8x8 {
         impl $wrapper {
             const LEN: usize = { $src.len() };
             const GLYPHS: $crate::text::alphabet::StaticAlphabet<8, { $src.len() }> =
-                $crate::text::StaticAlphabet::new($crate::text::font8x8::reverse_all($src));
+                $crate::text::alphabet::StaticAlphabet::new($crate::text::font8x8::reverse_all(
+                    $src,
+                ));
 
             /// Look up a glyph or panic.
             pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
