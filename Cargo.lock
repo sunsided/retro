@@ -813,6 +813,7 @@ dependencies = [
  "dotenvy",
  "minifb",
  "rand",
+ "rayon",
  "spin_sleep",
  "tracing",
  "tracing-appender",

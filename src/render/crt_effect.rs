@@ -1,4 +1,5 @@
 use crate::{FrameBuffer, HEIGHT, WIDTH};
+use rayon::prelude::*;
 
 pub fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
     use rand::Rng;
@@ -7,90 +8,85 @@ pub fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
     let roll_line = (frame * 2 + rng.random_range(0..10)) % HEIGHT; // rolling distortion line
     let analog_glitch = rng.random_bool(0.02);
 
-    for y in 0..HEIGHT {
+    pixels.par_iter_mut().enumerate().for_each(|(i, px)| {
+        let y = i / WIDTH;
         let brightness = if y % 2 == 0 { 255 } else { 220 };
-        for x in 0..WIDTH {
-            let idx = y * WIDTH + x;
-            let px = pixels[idx];
-            let noise = if analog_glitch && rng.random_bool(0.2) {
-                rng.random_range(30..100)
-            } else {
-                rng.random_range(0..=10)
-            };
 
-            let r = (((px >> 16) & 0xFF).saturating_add(noise)) * brightness / 255;
-            let g = (((px >> 8) & 0xFF).saturating_add(noise)) * brightness / 255;
-            let b = ((px & 0xFF).saturating_add(noise)) * brightness / 255;
+        let noise = if analog_glitch && rand::random::<f32>() < 0.2 {
+            rand::random::<u8>() % 70 + 30
+        } else {
+            rand::random::<u8>() % 11
+        };
 
-            pixels[idx] = (r << 16) | (g << 8) | b;
-        }
-    }
+        let r = (((*px >> 16) & 0xFF).saturating_add(noise as _)) * brightness / 255;
+        let g = (((*px >> 8) & 0xFF).saturating_add(noise as _)) * brightness / 255;
+        let b = ((*px) & 0xFF).saturating_add(noise as _) * brightness / 255;
+
+        *px = (r << 16) | (g << 8) | b;
+    });
 
     // RGB shadow mask simulation
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let idx = y * WIDTH + x;
-            let px = pixels[idx];
-            let r = (px >> 16) & 0xFF;
-            let g = (px >> 8) & 0xFF;
-            let b = px & 0xFF;
+    pixels.par_iter_mut().enumerate().for_each(|(i, px)| {
+        let x = i % WIDTH;
 
-            let modulated = match x % 3 {
-                0 => (r / 2) << 16,
-                1 => (g / 2) << 8,
-                _ => b / 2,
-            };
+        let r = (*px >> 16) & 0xFF;
+        let g = (*px >> 8) & 0xFF;
+        let b = *px & 0xFF;
 
-            pixels[idx] = px & (0xFF_FF_FF - 0x7F_7F_7F + modulated);
-        }
-    }
+        let modulated = match x % 3 {
+            0 => (r / 2) << 16,
+            1 => (g / 2) << 8,
+            _ => b / 2,
+        };
+
+        *px = (*px & 0xFF_FF_FF) & !0x7F_7F_7F | modulated;
+    });
 
     // Chromatic aberration
-    for y in 0..HEIGHT {
+    pixels.par_chunks_mut(WIDTH).for_each(|row| {
         for x in 1..(WIDTH - 1) {
-            let idx = y * WIDTH + x;
-            let prev = pixels[idx - 1];
-            let next = pixels[idx + 1];
+            let prev = row[x - 1];
+            let next = row[x + 1];
 
             let r = (next >> 16) & 0xFF;
-            let g = (pixels[idx] >> 8) & 0xFF;
+            let g = (row[x] >> 8) & 0xFF;
             let b = prev & 0xFF;
 
-            pixels[idx] = (r << 16) | (g << 8) | b;
+            row[x] = (r << 16) | (g << 8) | b;
         }
-    }
+    });
 
     // Vignette
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let idx = y * WIDTH + x;
-            let xf = (x as f32 - WIDTH as f32 / 2.0) / (WIDTH as f32 / 2.0);
-            let yf = (y as f32 - HEIGHT as f32 / 2.0) / (HEIGHT as f32 / 2.0);
-            let vignette = 1.0 - (xf * xf + yf * yf) * 0.2;
-            let vignette = vignette.clamp(0.0, 1.0);
+    pixels.par_iter_mut().enumerate().for_each(|(i, px)| {
+        let x = i % WIDTH;
+        let y = i / WIDTH;
 
-            let px = pixels[idx];
-            let r = (((px >> 16) & 0xFF) as f32 * vignette) as u8;
-            let g = (((px >> 8) & 0xFF) as f32 * vignette) as u8;
-            let b = ((px & 0xFF) as f32 * vignette) as u8;
+        let xf = (x as f32 - WIDTH as f32 / 2.0) / (WIDTH as f32 / 2.0);
+        let yf = (y as f32 - HEIGHT as f32 / 2.0) / (HEIGHT as f32 / 2.0);
+        let vignette = (1.0 - (xf * xf + yf * yf) * 0.2).clamp(0.0, 1.0);
 
-            pixels[idx] = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
-        }
-    }
+        let r = (((*px >> 16) & 0xFF) as f32 * vignette) as u8;
+        let g = (((*px >> 8) & 0xFF) as f32 * vignette) as u8;
+        let b = ((*px & 0xFF) as f32 * vignette) as u8;
+
+        *px = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+    });
 
     // Horizontal wobble + rolling distortion
-    let temp = pixels.to_vec();
-    for y in 0..HEIGHT {
-        for x in 0..WIDTH {
-            let wobble = if y == roll_line {
-                rng.random_range(2..6)
-            } else {
-                wobble_offset
-            };
-            let src_x = (x + wobble).clamp(0, WIDTH - 1);
-            let src_idx = y * WIDTH + src_x;
-            let dst_idx = y * WIDTH + x;
-            pixels[dst_idx] = temp[src_idx];
-        }
-    }
+    let temp = pixels.clone(); // Safe copy
+    pixels.par_iter_mut().enumerate().for_each(|(i, dst)| {
+        let x = i % WIDTH;
+        let y = i / WIDTH;
+
+        let wobble = if y == roll_line {
+            rand::random::<u32>() % 4 + 2
+        } else {
+            wobble_offset as u32
+        };
+
+        let src_x = (x + wobble as usize).min(WIDTH - 1);
+        let src_idx = y * WIDTH + src_x;
+
+        *dst = temp[src_idx];
+    });
 }
