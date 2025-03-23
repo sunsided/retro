@@ -1,29 +1,27 @@
 use crate::colors::palettes;
-use crate::{FrameBuffer, HEIGHT, WIDTH};
+use crate::{Color, FrameBuffer, HEIGHT, WIDTH};
 use rand::{Rng, rng};
 use rayon::prelude::*;
 
 pub struct Fire {
-    heat: Vec<u8>,
+    heat: FrameBuffer,
 }
 
 impl Fire {
     pub fn new() -> Self {
         Self {
-            heat: vec![0u8; WIDTH * HEIGHT],
+            heat: [Color::default(); WIDTH * HEIGHT],
         }
     }
 
     pub fn update(&mut self) {
-        self.heat[(HEIGHT - 1) * WIDTH..]
-            .par_iter_mut()
-            .for_each(|h| {
-                *h = if rng().random_range(0..10) > 1 {
-                    255
-                } else {
-                    0
-                };
-            });
+        for x in 0..WIDTH {
+            self.heat[(HEIGHT - 1) * WIDTH + x] = if rng().random_range(0..10) > 1 {
+                255
+            } else {
+                0
+            };
+        }
 
         for y in 1..HEIGHT {
             for x in 0..WIDTH {
