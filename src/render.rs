@@ -18,37 +18,43 @@ pub const fn dim_color(color: u32, factor: f32) -> u32 {
     (color & 0xFF000000) | (r << 16) | (g << 8) | b
 }
 
-fn apply_crt_effect(pixels: &mut FrameBuffer) {
+fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let wobble_offset = ((frame as f32 * 0.3).sin() * 2.0) as isize; // horizontal wobble
+    let roll_line = frame % HEIGHT; // rolling distortion line
+
     for y in 0..HEIGHT {
-        let brightness = if y % 2 == 0 { 255 } else { 220 }; // simulate scanlines
+        let brightness = if y % 2 == 0 { 255 } else { 220 }; // scanlines
         for x in 0..WIDTH {
             let idx = y * WIDTH + x;
             let mut px = pixels[idx];
+            let noise = rng.gen_range(0..=10);
 
-            let r = ((px >> 16) & 0xFF) * brightness / 255;
-            let g = ((px >> 8) & 0xFF) * brightness / 255;
-            let b = (px & 0xFF) * brightness / 255;
+            let r = (((px >> 16) & 0xFF).saturating_add(noise)) * brightness / 255;
+            let g = (((px >> 8) & 0xFF).saturating_add(noise)) * brightness / 255;
+            let b = ((px & 0xFF).saturating_add(noise)) * brightness / 255;
 
             pixels[idx] = (r << 16) | (g << 8) | b;
         }
     }
 
-    // Simulate subtle chromatic aberration + distortion
+    // Chromatic aberration
     for y in 0..HEIGHT {
         for x in 1..(WIDTH - 1) {
             let idx = y * WIDTH + x;
             let prev = pixels[idx - 1];
             let next = pixels[idx + 1];
 
-            let r = (next >> 16) & 0xFF;
-            let g = (pixels[idx] >> 8) & 0xFF;
-            let b = (prev) & 0xFF;
+            let r = ((next >> 16) & 0xFF);
+            let g = ((pixels[idx] >> 8) & 0xFF);
+            let b = ((prev) & 0xFF);
 
             pixels[idx] = (r << 16) | (g << 8) | b;
         }
     }
 
-    // Curvature simulation (simple vignette darkening near edges)
+    // Curvature/vignette
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let idx = y * WIDTH + x;
@@ -63,6 +69,18 @@ fn apply_crt_effect(pixels: &mut FrameBuffer) {
             let b = ((px & 0xFF) as f32 * vignette) as u8;
 
             pixels[idx] = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+        }
+    }
+
+    // Horizontal wobble and rolling distortion
+    let mut temp = pixels.to_vec();
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let wobble = if y == roll_line { 4 } else { wobble_offset }; // stronger wobble on roll line
+            let src_x = (x as isize + wobble).clamp(0, (WIDTH - 1) as isize) as usize;
+            let src_idx = y * WIDTH + src_x;
+            let dst_idx = y * WIDTH + x;
+            pixels[dst_idx] = temp[src_idx];
         }
     }
 }
@@ -85,6 +103,7 @@ pub fn start_render_thread(
         let mut fire = vec![0u8; WIDTH * HEIGHT];
         let fire_palette = make_fire_palette();
 
+        let mut frame = 0;
         loop {
             let mut buffer = free_rx.recv().unwrap();
 
@@ -148,10 +167,11 @@ pub fn start_render_thread(
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            apply_crt_effect(&mut buffer);
+            apply_crt_effect(&mut buffer, frame);
 
             ready_tx.send(buffer).unwrap();
             thread::sleep(FRAME_DURATION);
+            frame += 1;
         }
     });
 }
