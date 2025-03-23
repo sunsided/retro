@@ -13,7 +13,7 @@ use crate::render::cube::draw_wireframe_cube;
 pub use crate::render::fire::Fire;
 pub use crate::render::plasma::Plasma;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
-use crate::text::{Alphabet, draw_text, font8x8_sentence};
+use crate::text::{Alphabet, draw_text, font8x8_sentence, font8x8_sentence_runtime};
 use crate::{FRAME_DURATION, FrameBuffer, HEIGHT, WIDTH};
 use crossbeam::channel;
 use std::thread;
@@ -118,6 +118,16 @@ pub fn start_render_thread(
                 Alphabet::StandardGalactic: "beep boop robot"
                 " y'all"
                 ),
+                0xFFFFFF,
+                1,
+                false,
+            );
+
+            draw_text(
+                &mut buffer,
+                20,
+                60,
+                font8x8_sentence_runtime!(format!("FPS: {}", fps_display)),
                 0xFFFFFF,
                 1,
                 false,
