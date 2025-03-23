@@ -12,6 +12,6 @@ pub struct PlasmaBackground {
 
 impl Default for PlasmaBackground {
     fn default() -> Self {
-        Self { intensity: 1.0 }
+        Self { intensity: 0.2 }
     }
 }

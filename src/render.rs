@@ -1,11 +1,15 @@
 mod crt_effect;
+pub mod cube;
 mod fire;
+pub mod line;
 mod plasma;
 mod sprite;
 
+use crate::colors::palettes::STANDARD;
 use crate::logic::GameState;
 use crate::logic::scene_background::SceneBackground;
 pub use crate::render::crt_effect::CrtEffect;
+use crate::render::cube::draw_wireframe_cube;
 pub use crate::render::fire::Fire;
 pub use crate::render::plasma::Plasma;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
@@ -87,6 +91,8 @@ pub fn start_render_thread(
                     fire.render(&mut buffer);
                 }
             }
+
+            draw_wireframe_cube(&mut buffer, frame, STANDARD[255]);
 
             let t2 = Instant::now();
             if state.x < WIDTH && state.y < HEIGHT {
