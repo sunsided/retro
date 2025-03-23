@@ -1,6 +1,6 @@
 use crate::colors::{COLORS, make_fire_palette};
 use crate::text::draw_text;
-use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};
+use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, INPUT_DURATION, LUT_SIZE, WIDTH};
 use crossbeam::channel;
 use rand::{Rng, rng};
 use std::thread;
@@ -126,6 +126,7 @@ pub fn start_render_thread(
             x: 0,
             y: 0,
             plasma: 1.0,
+            crt: true,
         };
 
         let mut fire = vec![0u8; WIDTH * HEIGHT];
@@ -189,16 +190,19 @@ pub fn start_render_thread(
             }
             */
 
-            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
+            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF, 2);
+            draw_text(&mut buffer, 20, 40, "beep boop robot", 0xFFFFFF, 1);
 
             if state.x < WIDTH && state.y < HEIGHT {
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
 
-            apply_crt_effect(&mut buffer, frame / 10);
+            if state.crt {
+                apply_crt_effect(&mut buffer, frame / 10);
+            }
 
             ready_tx.send(buffer).unwrap();
-            thread::sleep(FRAME_DURATION);
+            thread::sleep(INPUT_DURATION);
             frame += 1;
         }
     });

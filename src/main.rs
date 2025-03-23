@@ -32,6 +32,7 @@ struct GameState {
     x: usize,
     y: usize,
     plasma: f32,
+    crt: bool,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -40,6 +41,7 @@ struct InputState {
     // later: movement keys, mouse, etc.
     plus_pressed: bool,
     minus_pressed: bool,
+    toogle_crt: bool,
 }
 
 enum MainEvent {
@@ -68,7 +70,7 @@ fn main() {
         HEIGHT,
         WindowOptions {
             resize: false,
-            scale: minifb::Scale::X2,
+            scale: minifb::Scale::X4,
             ..WindowOptions::default()
         },
     )
@@ -110,7 +112,10 @@ fn main() {
             escape_pressed: window.is_key_down(Key::Escape),
             plus_pressed: window.is_key_pressed(Key::Up, KeyRepeat::Yes),
             minus_pressed: window.is_key_pressed(Key::Down, KeyRepeat::Yes),
+            toogle_crt: window.is_key_pressed(Key::Space, KeyRepeat::No),
         };
+
+        // TODO: We may lose input events here if we're not reading them fast enough
         input_state.store(Arc::new(input));
     }
 }

@@ -15,6 +15,7 @@ pub fn start_logic_thread(
             x: 0,
             y: 0,
             plasma: 1.0,
+            crt: true,
         };
 
         loop {
@@ -28,6 +29,10 @@ pub fn start_logic_thread(
                 state.plasma = (state.plasma - 0.1).clamp(0.0, 1.0);
             } else if input.plus_pressed {
                 state.plasma = (state.plasma + 0.1).clamp(0.0, 1.0);
+            }
+
+            if input.toogle_crt {
+                state.crt = !state.crt;
             }
 
             state.tick += 1;
