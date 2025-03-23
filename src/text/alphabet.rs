@@ -1,4 +1,5 @@
-//! Provides the [`StaticAlphabet`] type and various fonts.
+//! This module defines the [`StaticAlphabet`] type, which represents a statically-known and sized set of glyphs,
+//! and provides utilities for working with alphabets and fonts, including the [`Alphabet`] enum.
 
 use crate::text::font8x8::{BasicAlphabet, StandardGalacticAlphabet};
 use crate::text::glyphs::GlyphIndex;

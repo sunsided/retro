@@ -23,7 +23,8 @@ const INPUT_DURATION: Duration = Duration::from_millis(20); // 50 Hz
 const LUT_SIZE: usize = 256;
 const NUM_BUFFERS: usize = 3;
 
-type FrameBuffer = [u32; WIDTH * HEIGHT];
+type Color = u32;
+type FrameBuffer = [Color; WIDTH * HEIGHT];
 
 #[derive(Clone, Copy)]
 struct GameState {

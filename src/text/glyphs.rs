@@ -1,3 +1,9 @@
+//! This module defines the [`GlyphIndex`] struct, which represents the index
+//! of a glyph within an alphabet. The struct provides utility methods for
+//! constructing and accessing the internal index, while maintaining type
+//! safety. Additionally, the module implements `PartialEq` to allow direct
+//! comparison between a `GlyphIndex` and a `u8` value.
+
 /// The index of a glyph within an alphabet.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd)]
 pub struct GlyphIndex(u8);

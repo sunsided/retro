@@ -1,3 +1,18 @@
+//! This module provides structures and utilities for working with font glyphs
+//! and sentences composed of these glyphs. It includes:
+//!
+//! - The `Sentence` struct: Represents multiple [`Glyphs`] glued together,
+//!   allowing efficient manipulation and iteration of text data.
+//! - The `Glyphs` struct: Represents a slice of glyph references from the
+//!   same alphabet, providing convenient access to the underlying data.
+//! - The `font8x8_sentence` macro: Facilitates the creation of `Sentence`
+//!   objects from literals, enabling a concise and readable syntax for
+//!   embedding text data with specified alphabets.
+//!
+//! The main use case of this module is to manage and render text efficiently,
+//! especially in graphics or text-intensive applications where control over
+//! individual glyphs and alphabets is necessary.
+
 use std::ops::Deref;
 
 macro_rules! font8x8_sentence {
@@ -7,7 +22,7 @@ macro_rules! font8x8_sentence {
         )+
         $(,)?
     ) => {{
-        const GLYPHS_ARR: &[$crate::text::Glyphs] = &[
+        const GLYPHS_ARR: &[$crate::text::sentence::Glyphs] = &[
             $(
                 {
                     const ALPHABET: $crate::text::Alphabet = font8x8_sentence!(@resolve_alphabet $( $alphabet )?);
@@ -23,7 +38,7 @@ macro_rules! font8x8_sentence {
                         }
                         out
                     };
-                    $crate::text::Glyphs::new(ALPHABET, &GLYPHS)
+                    $crate::text::sentence::Glyphs::new(ALPHABET, &GLYPHS)
                 }
             ),+
         ];
@@ -91,5 +106,35 @@ impl Deref for Glyphs<'_> {
 
     fn deref(&self) -> &Self::Target {
         &self.1
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::text::{Alphabet, GlyphIndex, font8x8_sentence};
+
+    #[test]
+    fn test_font8x8_sentence() {
+        let sentence = font8x8_sentence!(
+            "Hello"
+            Alphabet::Basic: "World",
+        );
+
+        let mut iter = sentence.iter();
+
+        // Test first Glyphs: "Hello"
+        let first_glyphs = iter.next().expect("Expected first glyphs");
+        assert_eq!(first_glyphs.alphabet(), Alphabet::Basic);
+        let hello_indices: Vec<GlyphIndex> = first_glyphs.bytes().cloned().collect();
+        assert_eq!(hello_indices.len(), 5); // "Hello" has 5 characters
+
+        // Test second Glyphs: "World"
+        let second_glyphs = iter.next().expect("Expected second glyphs");
+        assert_eq!(second_glyphs.alphabet(), Alphabet::Basic);
+        let world_indices: Vec<GlyphIndex> = second_glyphs.bytes().cloned().collect();
+        assert_eq!(world_indices.len(), 5); // "World" has 5 characters
+
+        // Ensure there are no more Glyphs
+        assert!(iter.next().is_none());
     }
 }
