@@ -1,7 +1,8 @@
-use crate::colors::COLORS;
+use crate::colors::{COLORS, make_fire_palette};
 use crate::text::draw_text;
 use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};
 use crossbeam::channel;
+use rand::{Rng, rng};
 use std::thread;
 use std::time::Instant;
 
@@ -32,6 +33,9 @@ pub fn start_render_thread(
             plasma: 1.0,
         };
 
+        let mut fire = vec![0u8; WIDTH * HEIGHT];
+        let fire_palette = make_fire_palette();
+
         loop {
             let mut buffer = free_rx.recv().unwrap();
 
@@ -42,6 +46,37 @@ pub fn start_render_thread(
             let t = (start.elapsed().as_secs_f32() * 60.0) as usize;
             let palette_shift = state.tick as usize % 256;
 
+            // Add random heat at the bottom row
+            for x in 0..WIDTH {
+                fire[(HEIGHT - 1) * WIDTH + x] = if rng().random_range(0..10) > 1 {
+                    255
+                } else {
+                    0
+                };
+            }
+
+            // Propagate fire upward
+            for y in 1..HEIGHT {
+                for x in 0..WIDTH {
+                    let src = y * WIDTH + x;
+                    let below = src + WIDTH;
+                    let decay = rng().random_range(1..20);
+                    let new_val = fire.get(below).copied().unwrap_or(0).saturating_sub(decay);
+
+                    let dx = rng().random_range(0..3); // 0 = left, 1 = center, 2 = right
+                    let dst_x = x.wrapping_add(dx).wrapping_sub(1).min(WIDTH - 1);
+                    let dst_y = y - 1;
+                    let dst = dst_y * WIDTH + dst_x;
+                    fire[dst] = new_val;
+                }
+            }
+
+            // Convert indices to colors
+            for (i, &val) in fire.iter().enumerate() {
+                buffer[i] = fire_palette[val as usize];
+            }
+
+            /*
             for y in 0..HEIGHT {
                 for x in 0..WIDTH {
                     let a = sin_lut[((x << 3).wrapping_add(t * 1)) & 0xFF] as usize;
@@ -56,6 +91,7 @@ pub fn start_render_thread(
                     buffer[y * WIDTH + x] = dim_color(COLORS[shifted_index], state.plasma);
                 }
             }
+            */
 
             draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF);
 

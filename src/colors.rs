@@ -48,3 +48,18 @@ pub const COLORS: [u32; 256] = apply_hex_to_u32!([
     "767676", "808080", "8a8a8a", "949494", "9e9e9e", "a8a8a8", "b2b2b2", "bcbcbc", "c6c6c6",
     "d0d0d0", "dadada", "e4e4e4", "eeeeee"
 ]);
+
+pub fn make_fire_palette() -> [u32; 256] {
+    let mut palette = [0u32; 256];
+    for i in 0..256 {
+        let (r, g, b) = match i {
+            0..=63 => (i * 4, 0, 0),                // Black → Red
+            64..=127 => (255, (i - 64) * 4, 0),     // Red → Orange
+            128..=191 => (255, 255, (i - 128) * 4), // Orange → Yellow
+            192..=255 => (255, 255, 255),           // Yellow → White
+            _ => (0, 0, 0),
+        };
+        palette[i] = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+    }
+    palette
+}
