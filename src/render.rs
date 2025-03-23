@@ -41,6 +41,7 @@ pub fn start_render_thread(
 
         let mut frame = 0;
         let mut fps_counter = 0;
+        #[allow(dead_code, unused_assignments)]
         let mut fps_display = 0;
         let mut last_fps_at = Instant::now();
         let mut next_frame_due = Instant::now();
