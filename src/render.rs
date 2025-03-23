@@ -16,7 +16,7 @@ use crossbeam::channel;
 use rand::Rng;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::warn;
+use tracing::{debug, info, warn};
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -128,7 +128,7 @@ pub fn start_render_thread(
                 fps_counter = 0;
                 last_fps_at = Instant::now();
 
-                println!("FPS: {}", fps_display);
+                debug!("FPS: {}", fps_display);
             }
         }
     });
