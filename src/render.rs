@@ -50,15 +50,22 @@ pub fn start_render_thread(
         let sleeper = spin_sleep::SpinSleeper::new(0)
             .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
+        let mut current_buffer: Option<Box<FrameBuffer>> = None;
+
         loop {
             let t0 = Instant::now();
-            let mut buffer = match free_rx.try_recv() {
-                Ok(buffer) => buffer,
-                Err(_) => {
-                    error!("Stalling: waiting for a free frame buffer...");
-                    free_rx.recv().unwrap()
-                }
-            };
+
+            if current_buffer.is_none() {
+                current_buffer = match free_rx.try_recv() {
+                    Ok(buffer) => Some(buffer),
+                    Err(_) => {
+                        error!("Stalling: waiting for a free frame buffer...");
+                        Some(free_rx.recv().unwrap())
+                    }
+                };
+            }
+
+            let mut buffer = current_buffer.as_mut().unwrap();
 
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
@@ -116,11 +123,10 @@ pub fn start_render_thread(
             }
 
             let t5 = Instant::now();
-            if let Err(err) = ready_tx.try_send(buffer) {
-                error!(
-                    "Contention detected: unable to send frame buffer to the channel. Error: {}",
-                    err
-                );
+
+            if ready_tx.try_send(current_buffer.take().unwrap()).is_err() {
+                // Couldn't send this frame — keep the buffer and try again next loop
+                error!("Contention detected: unable to send frame buffer to the channel");
             }
 
             let now = Instant::now();
