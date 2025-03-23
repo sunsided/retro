@@ -12,7 +12,7 @@ use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
 use arc_swap::ArcSwap;
 use crossbeam::{channel, select};
-use minifb::{Key, Window, WindowOptions};
+use minifb::{Key, KeyRepeat, Window, WindowOptions};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -31,12 +31,15 @@ struct GameState {
     tick: u64,
     x: usize,
     y: usize,
+    plasma: f32,
 }
 
 #[derive(Clone, Copy, Default)]
 struct InputState {
     escape_pressed: bool,
     // later: movement keys, mouse, etc.
+    plus_pressed: bool,
+    minus_pressed: bool,
 }
 
 enum MainEvent {
@@ -105,6 +108,8 @@ fn main() {
 
         let input = InputState {
             escape_pressed: window.is_key_down(Key::Escape),
+            plus_pressed: window.is_key_pressed(Key::Up, KeyRepeat::Yes),
+            minus_pressed: window.is_key_pressed(Key::Down, KeyRepeat::Yes),
         };
         input_state.store(Arc::new(input));
     }

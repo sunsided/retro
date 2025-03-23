@@ -14,6 +14,7 @@ pub fn start_logic_thread(
             tick: 0,
             x: 0,
             y: 0,
+            plasma: 1.0,
         };
 
         loop {
@@ -21,6 +22,12 @@ pub fn start_logic_thread(
             let input = *input.load().clone();
             if input.escape_pressed {
                 tx_main.send(MainEvent::Shutdown).ok();
+            }
+
+            if input.minus_pressed {
+                state.plasma = (state.plasma - 0.1).clamp(0.0, 1.0);
+            } else if input.plus_pressed {
+                state.plasma = (state.plasma + 0.1).clamp(0.0, 1.0);
             }
 
             state.tick += 1;
