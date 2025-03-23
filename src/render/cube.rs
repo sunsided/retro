@@ -3,7 +3,7 @@ use crate::{Color, FrameBuffer, HEIGHT, WIDTH};
 use std::f32::consts::PI;
 
 #[derive(Copy, Clone)]
-pub struct Vec3(f32, f32, f32);
+pub struct Vec3(pub f32, pub f32, pub f32);
 
 pub fn rotate_y(v: Vec3, angle: f32) -> Vec3 {
     let (sin, cos) = angle.sin_cos();
