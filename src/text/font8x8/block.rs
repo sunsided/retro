@@ -9,6 +9,8 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
+use crate::text::Alphabet;
+
 /// Constant: font8x8_2580
 /// Contains an 8x8 font map for unicode points U+2580 - U+259F (block elements)
 #[rustfmt::skip]
@@ -47,4 +49,4 @@ const _FONT8X8_BLOCK: [[u8; 8]; 32] = [
     [0xF0, 0xF0, 0xF0, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF], // U+259F (boxes right and bottom)
 ];
 
-reverse_font_8x8!(FONT8X8_BLOCK, _FONT8X8_BLOCK);
+reverse_font_8x8!(BlockAlphabet, FONT8X8_BLOCK, _FONT8X8_BLOCK);

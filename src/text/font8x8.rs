@@ -14,10 +14,26 @@ use std::ops::Index;
 /// This macro generates a public constant with the specified name.
 /// The constant is initialized by reversing the bits of each byte in the provided 2D array using the `reverse_all` function.
 macro_rules! reverse_font_8x8 {
-    ($name:ident, $src:expr) => {
+    ($wrapper:ident, $name:ident, $src:expr) => {
+        pub struct $wrapper(Alphabet<8, { $src.len() }>);
+
         #[allow(dead_code)]
-        pub const $name: $crate::text::Alphabet<8, { $src.len() }> =
-            $crate::text::Alphabet::new($crate::text::font8x8::reverse_all($src));
+        pub const $name: $wrapper = $wrapper($crate::text::Alphabet::new(
+            $crate::text::font8x8::reverse_all($src),
+        ));
+
+        impl $wrapper {
+            const LEN: usize = { $src.len() };
+
+            /// Look up a glyph.
+            pub const fn get(&self, index: usize) -> Option<&[u8; 8]> {
+                if index >= Self::LEN {
+                    None
+                } else {
+                    self.0.get(index)
+                }
+            }
+        }
     };
 }
 
@@ -91,10 +107,15 @@ const fn reverse_all<const N: usize>(src: [[u8; 8]; N]) -> [[u8; 8]; N] {
 
 #[cfg(test)]
 mod tests {
+    use crate::text::Alphabet;
+
     #[test]
     fn test_reverse_font_macro() {
         const SAMPLE_SOURCE: [[u8; 8]; 2] = [[0b00000001; 8], [0b10000000; 8]];
-        reverse_font_8x8!(REVERSED_FONT, SAMPLE_SOURCE);
-        assert_eq!(REVERSED_FONT, [[0b10000000; 8], [0b00000001; 8]]);
+        reverse_font_8x8!(ReversedFont, REVERSED_FONT, SAMPLE_SOURCE);
+        assert_eq!(
+            *REVERSED_FONT.0.as_ref(),
+            [[0b10000000; 8], [0b00000001; 8]]
+        );
     }
 }

@@ -9,6 +9,8 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
+use crate::text::Alphabet;
+
 /// Constant: font8x8_basic
 /// Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
 #[rustfmt::skip]
@@ -144,4 +146,4 @@ const _FONT8X8_BASIC: [[u8; 8]; 128] = [
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+007F (DELETE) // TODO: remove
 ];
 
-reverse_font_8x8!(FONT8X8_BASIC, _FONT8X8_BASIC);
+reverse_font_8x8!(BasicAlphabet, FONT8X8_BASIC, _FONT8X8_BASIC);

@@ -27,4 +27,9 @@ impl<const B: usize, const N: usize> Alphabet<B, N> {
             Some(&self.0[index])
         }
     }
+
+    #[cfg(test)]
+    pub const fn as_ref(&self) -> &[[u8; B]; N] {
+        &self.0
+    }
 }
