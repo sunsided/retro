@@ -1,6 +1,5 @@
 use crate::colors::palettes;
 use crate::{Color, FrameBuffer, HEIGHT, WIDTH};
-use rayon::prelude::*;
 
 pub struct Fire {
     heat: FrameBuffer,
