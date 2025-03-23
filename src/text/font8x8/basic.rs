@@ -144,4 +144,4 @@ const _FONT8X8_BASIC: [[u8; 8]; 128] = [
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+007F (DELETE) // TODO: remove
 ];
 
-reverse_font!(FONT8X8_BASIC, _FONT8X8_BASIC);
+reverse_font_8x8!(FONT8X8_BASIC, _FONT8X8_BASIC);

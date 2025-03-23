@@ -1,5 +1,11 @@
-use crate::font8x8::FONT8X8_BASIC;
+//! Provides text rendering functionality.
+
+mod alphabet;
+pub mod font8x8;
+
 use crate::{FrameBuffer, HEIGHT, WIDTH};
+pub use alphabet::Alphabet;
+use font8x8::FONT8X8_BASIC;
 
 pub fn draw_char(
     buffer: &mut FrameBuffer,

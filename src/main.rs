@@ -1,7 +1,6 @@
 #![forbid(unsafe_code)]
 
 mod colors;
-mod font8x8;
 mod logic;
 mod lut;
 mod render;

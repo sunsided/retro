@@ -111,4 +111,4 @@ const _FONT8X8_EXT_LATIN: [[u8; 8]; 96] = [
     [0x00, 0x33, 0x00, 0x33, 0x33, 0x3E, 0x30, 0x1F], // U+00FF (y umlaut)
 ];
 
-reverse_font!(FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);
+reverse_font_8x8!(FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);

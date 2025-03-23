@@ -143,4 +143,4 @@ const _FONT8X8_BOX: [[u8; 8]; 128] = [
     [0x18, 0x18, 0x18, 0x18, 0x08, 0x08, 0x08, 0x08], // U+257F (up H, down L)
 ];
 
-reverse_font!(FONT8X8_BOX, _FONT8X8_BOX);
+reverse_font_8x8!(FONT8X8_BOX, _FONT8X8_BOX);
