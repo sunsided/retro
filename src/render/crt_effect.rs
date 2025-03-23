@@ -84,18 +84,23 @@ impl CrtEffect {
         });
 
         // Horizontal wobble + rolling distortion
+        let wobble_per_row: Vec<usize> = (0..HEIGHT)
+            .map(|y| {
+                if y == roll_line {
+                    rng.random_range(2..6)
+                } else {
+                    wobble_offset
+                }
+            })
+            .collect();
+
         self.scratch.copy_from_slice(pixels);
         let scratch = &self.scratch;
         pixels.par_iter_mut().enumerate().for_each(|(i, dst)| {
             let x = i % WIDTH;
             let y = i / WIDTH;
 
-            let wobble = if y == roll_line {
-                rand::rng().random_range(2..6) // OR precomputed wobble
-            } else {
-                wobble_offset
-            };
-
+            let wobble = wobble_per_row[y];
             let src_x = (x + wobble).min(WIDTH - 1);
             let src_idx = y * WIDTH + src_x;
 
