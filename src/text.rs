@@ -8,7 +8,7 @@ mod sentence;
 use crate::{FrameBuffer, HEIGHT, WIDTH};
 pub use alphabet::{Alphabet, StaticAlphabet};
 pub use glyphs::GlyphIndex;
-pub use sentence::Sentence;
+pub use sentence::Glyphs;
 pub(crate) use sentence::font8x8_sentence;
 use std::borrow::Borrow;
 
@@ -51,7 +51,7 @@ pub fn draw_text<'a, S>(
     scale: usize,
     italic: bool,
 ) where
-    S: Borrow<Sentence<'a>>,
+    S: Borrow<Glyphs<'a>>,
 {
     let text = text.borrow();
     let alphabet = text.alphabet();

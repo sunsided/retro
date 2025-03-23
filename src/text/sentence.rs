@@ -16,7 +16,7 @@ macro_rules! font8x8_sentence {
             }
             out
         };
-        $crate::text::Sentence::new($alphabet, &GLYPHS)
+        $crate::text::Glyphs::new($alphabet, &GLYPHS)
     }};
 }
 
@@ -24,10 +24,11 @@ use crate::text::GlyphIndex;
 use crate::text::alphabet::Alphabet;
 pub(crate) use font8x8_sentence;
 
+/// A slice of glyph references from the same alphabet.
 #[derive(Debug, Clone)]
-pub struct Sentence<'a>(Alphabet, &'a [GlyphIndex]);
+pub struct Glyphs<'a>(Alphabet, &'a [GlyphIndex]);
 
-impl<'a> Sentence<'a> {
+impl<'a> Glyphs<'a> {
     pub const fn new(alphabet: Alphabet, glyphs: &'a [GlyphIndex]) -> Self {
         Self(alphabet, glyphs)
     }
@@ -41,19 +42,19 @@ impl<'a> Sentence<'a> {
     }
 }
 
-impl PartialEq<&[u8]> for Sentence<'_> {
+impl PartialEq<&[u8]> for Glyphs<'_> {
     fn eq(&self, other: &&[u8]) -> bool {
         self.1.eq(*other)
     }
 }
 
-impl<const N: usize> PartialEq<[u8; N]> for Sentence<'_> {
+impl<const N: usize> PartialEq<[u8; N]> for Glyphs<'_> {
     fn eq(&self, other: &[u8; N]) -> bool {
         self.1.eq(other)
     }
 }
 
-impl Deref for Sentence<'_> {
+impl Deref for Glyphs<'_> {
     type Target = [GlyphIndex];
 
     fn deref(&self) -> &Self::Target {
