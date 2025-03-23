@@ -17,7 +17,7 @@ build:
 
 # Test all targets.
 test *ARGS:
-    cargo test --features=test-support --workspace {{ARGS}}
+    cargo test --workspace {{ARGS}}
 
 # Just build the documentation.
 build-docs:

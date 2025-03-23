@@ -1,26 +1,22 @@
-//! This module provides functionality to define and manage key bindings and intents for input handling.
+//! # Key Bindings Module
 //!
-//! The primary feature of this module is the `define_key_bindings!` macro, which facilitates mapping
-//! between high-level input intents (represented as an enum) and specific key bindings (represented as a struct).
+//! This module provides a macro, `define_key_bindings`, to define mappings between high-level input
+//! intents and specific key bindings in a structured and efficient manner. It generates a struct
+//! for key bindings and an enum for intents, ensuring readability and maintainability in handling
+//! key-related actions in applications.
 //!
-//! # Features
+//! ## Overview
 //!
-//! - **Macro for Key Bindings**: The `define_key_bindings!` macro allows for concise definition of key
-//!   intents and their corresponding key bindings in a structured manner. It generates:
-//!   - A `KeyBindings` struct to hold the key-to-intent mapping.
-//!   - An `InputIntent` enum to represent high-level input actions.
-//!   - Implementations for the `Default` trait to provide default key mappings.
-//!   - A method on the `InputIntent` enum to retrieve the key associated with each intent.
+//! - **`KeyBindings` struct**: Stores key mappings for each input intent.
+//! - **`InputIntent` enum**: Represents high-level input intents or actions.
+//! - Implements the `Default` trait to provide default key mappings.
+//! - Provides a method to retrieve the key for a specific intent.
 //!
-//! # Generated Structure
+//! ## Usage Design
 //!
-//! ## `KeyBindings` Struct
-//! Holds the key mappings for each defined intent.
-//!
-//! ## `InputIntent` Enum
-//! Represents high-level abstractions for user input intents.
-
-use minifb::Key;
+//! The macro `define_key_bindings!` allows developers to define key mappings and associated
+//! high-level intents in one concise place. This minimizes boilerplate and keeps intent-to-key
+//! management centralized and consistent across the codebase.
 
 /// Macro to define key bindings and intents.
 ///
@@ -86,14 +82,53 @@ macro_rules! define_key_bindings {
     };
 }
 
-// Defines specific key bindings and their corresponding high-level intents.
-define_key_bindings! {
-    /// Toggle the CRT effect.
-    ToggleCrt, toggle_crt => Key::Space,
-    /// Increase a specific setting.
-    Increase, increase => Key::Up,
-    /// Decrease a specific setting.
-    Decrease, decrease => Key::Down,
-    /// Exit or escape the current context.
-    Escape, escape => Key::Escape,
+pub(crate) use define_key_bindings;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    define_key_bindings! {
+        /// Intent for moving up in the game.
+        Up, up_key => Key::UpArrow,
+        /// Intent for moving down in the game.
+        Down, down_key => Key::DownArrow,
+        /// Intent for moving left in the game.
+        Left, left_key => Key::LeftArrow,
+        /// Intent for moving right in the game.
+        Right, right_key => Key::RightArrow,
+    }
+
+    #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+    pub enum Key {
+        UpArrow,
+        DownArrow,
+        LeftArrow,
+        RightArrow,
+    }
+
+    #[test]
+    fn test_key_bindings_default() {
+        let bindings = KeyBindings::default();
+
+        assert_eq!(bindings.up_key, Key::UpArrow);
+        assert_eq!(bindings.down_key, Key::DownArrow);
+        assert_eq!(bindings.left_key, Key::LeftArrow);
+        assert_eq!(bindings.right_key, Key::RightArrow);
+    }
+
+    #[test]
+    fn test_get_key_for_intent() {
+        let bindings = KeyBindings::default();
+
+        let up_intent = InputIntent::Up;
+        let down_intent = InputIntent::Down;
+        let left_intent = InputIntent::Left;
+        let right_intent = InputIntent::Right;
+
+        assert_eq!(up_intent.get_key(&bindings), Key::UpArrow);
+        assert_eq!(down_intent.get_key(&bindings), Key::DownArrow);
+        assert_eq!(left_intent.get_key(&bindings), Key::LeftArrow);
+        assert_eq!(right_intent.get_key(&bindings), Key::RightArrow);
+    }
 }
