@@ -105,14 +105,6 @@ const fn reverse_bits(mut b: u8) -> u8 {
 /// # Returns
 ///
 /// A new 2D array of `u8` values with each byte's bits reversed.
-///
-/// # Examples
-///
-/// ```
-/// const INPUT: [[u8; 8]; 2] = [[0b00000001; 8], [0b10000000; 8]];
-/// const OUTPUT: [[u8; 8]; 2] = reverse_all(INPUT);
-/// assert_eq!(OUTPUT, [[0b10000000; 8], [0b00000001; 8]]);
-/// ```
 const fn reverse_all<const N: usize>(src: [[u8; 8]; N]) -> [[u8; 8]; N] {
     let mut out = [[0u8; 8]; N];
     let mut i = 0;
