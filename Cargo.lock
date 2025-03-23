@@ -811,6 +811,7 @@ dependencies = [
  "criterion",
  "crossbeam",
  "dotenvy",
+ "fastrand",
  "minifb",
  "rand",
  "rayon",

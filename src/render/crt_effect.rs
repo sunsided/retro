@@ -14,10 +14,10 @@ impl CrtEffect {
     }
 
     pub fn render(&mut self, pixels: &mut FrameBuffer, frame: usize) {
-        let mut rng = rand::rng();
-        let wobble_offset = ((frame as f32 * 0.3).sin() * rng.random_range(1.5..3.0)) as usize; // horizontal wobble
-        let roll_line = (frame * 2 + rng.random_range(0..10)) % HEIGHT; // rolling distortion line
-        let analog_glitch = rng.random_bool(0.02);
+        let wobble_offset =
+            ((frame as f32 * 0.3).sin() * rand::rng().random_range(1.5..3.0)) as usize; // horizontal wobble
+        let roll_line = (frame * 2 + fastrand::usize(0..10)) % HEIGHT; // rolling distortion line
+        let analog_glitch = fastrand::f32() < 0.02;
 
         pixels.par_iter_mut().enumerate().for_each(|(i, px)| {
             let y = i / WIDTH;
@@ -87,7 +87,7 @@ impl CrtEffect {
         let wobble_per_row: Vec<usize> = (0..HEIGHT)
             .map(|y| {
                 if y == roll_line {
-                    rng.random_range(2..6)
+                    fastrand::usize(2..6)
                 } else {
                     wobble_offset
                 }
