@@ -20,7 +20,7 @@ impl MatrixEffect {
     pub fn render(&mut self, buffer: &mut FrameBuffer, frame: usize) {
         use rand::Rng;
         const ROWS: usize = HEIGHT / 8;
-        const SPEED: usize = 2;
+        const SPEED: usize = 3;
 
         for col in 0..self.columns.len() {
             if frame % SPEED == 0 {
@@ -37,7 +37,7 @@ impl MatrixEffect {
                 if brightness > 0 {
                     let x = col * 8;
                     let y = row * 8;
-                    let color = ((brightness as u32) << 8);
+                    let color = (brightness as u32) << 8;
                     let ch = GlyphIndex::new(rng().random_range(0..self.alphabet.len()) as u8);
                     draw_char(buffer, x, y, self.alphabet, ch, color, 1, false);
                 }
