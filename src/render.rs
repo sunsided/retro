@@ -32,6 +32,21 @@ fn apply_crt_effect(pixels: &mut FrameBuffer) {
             pixels[idx] = (r << 16) | (g << 8) | b;
         }
     }
+
+    // Simulate subtle chromatic aberration + distortion
+    for y in 0..HEIGHT {
+        for x in 1..(WIDTH - 1) {
+            let idx = y * WIDTH + x;
+            let prev = pixels[idx - 1];
+            let next = pixels[idx + 1];
+
+            let r = (next >> 16) & 0xFF;
+            let g = (pixels[idx] >> 8) & 0xFF;
+            let b = (prev) & 0xFF;
+
+            pixels[idx] = (r << 16) | (g << 8) | b;
+        }
+    }
 }
 
 pub fn start_render_thread(
