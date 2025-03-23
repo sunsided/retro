@@ -129,11 +129,11 @@ impl BasicAlphabet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::text::{Sentence, font8x8_sentence};
+    use crate::text::{Alphabets, Sentence, font8x8_sentence};
 
     #[test]
     fn test_font8x8_glyphs_macro() {
-        const GLYPHS: Sentence = font8x8_sentence!(FONT8X8_BASIC, "abcd");
+        const GLYPHS: Sentence = font8x8_sentence!(Alphabets::Basic, "abcd");
 
         assert_eq!(
             GLYPHS,
@@ -145,9 +145,9 @@ mod tests {
             ]
         );
 
-        assert_eq!(FONT8X8_BASIC.map_char_index('a'), Some(64));
-        assert_eq!(FONT8X8_BASIC.map_char_index('!'), Some(0));
-        assert_eq!(FONT8X8_BASIC.map_char_index('"'), Some(1));
+        assert_eq!(FONT8X8_BASIC.map_char_index('a'), Some(GlyphIndex::new(64)));
+        assert_eq!(FONT8X8_BASIC.map_char_index('!'), Some(GlyphIndex::new(0)));
+        assert_eq!(FONT8X8_BASIC.map_char_index('"'), Some(GlyphIndex::new(1)));
 
         assert_eq!(
             FONT8X8_BASIC.0.as_ref()[0],

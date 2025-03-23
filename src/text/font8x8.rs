@@ -1,8 +1,5 @@
 //! Provides various `8x8` byte fonts.
 
-use std::io::Read;
-use std::ops::{Deref, Index};
-
 /// A macro to reverse the bits of each byte in a 2D array and create a public constant.
 ///
 /// # Arguments
@@ -23,6 +20,7 @@ macro_rules! impl_font_8x8 {
             $crate::text::font8x8::reverse_all($src),
         ));
 
+        #[allow(dead_code)]
         impl $wrapper {
             const LEN: usize = { $src.len() };
 
@@ -132,11 +130,13 @@ const fn reverse_all<const N: usize>(src: [[u8; 8]; N]) -> [[u8; 8]; N] {
 
 #[cfg(test)]
 mod tests {
+    use crate::text::GlyphIndex;
+
     const SAMPLE_SOURCE: [[u8; 8]; 2] = [[0b00000001; 8], [0b10000000; 8]];
     impl_font_8x8!(ReversedFont, REVERSED_FONT, SAMPLE_SOURCE);
 
     impl ReversedFont {
-        pub const fn map_char_index(&self, ch: char) -> Option<u8> {
+        pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {
             unimplemented!()
         }
     }

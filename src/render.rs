@@ -1,6 +1,6 @@
 use crate::colors::{COLORS, make_fire_palette};
 use crate::text::{Alphabets, draw_text, font8x8_sentence};
-use crate::{FrameBuffer, GameState, HEIGHT, INPUT_DURATION, LUT_SIZE, WIDTH};
+use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};
 use crossbeam::channel;
 use rand::{Rng, rng};
 use std::thread;
@@ -70,9 +70,9 @@ fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
             let prev = pixels[idx - 1];
             let next = pixels[idx + 1];
 
-            let r = ((next >> 16) & 0xFF);
-            let g = ((pixels[idx] >> 8) & 0xFF);
-            let b = ((prev) & 0xFF);
+            let r = (next >> 16) & 0xFF;
+            let g = (pixels[idx] >> 8) & 0xFF;
+            let b = prev & 0xFF;
 
             pixels[idx] = (r << 16) | (g << 8) | b;
         }
@@ -97,15 +97,15 @@ fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
     }
 
     // Horizontal wobble + rolling distortion
-    let mut temp = pixels.to_vec();
+    let temp = pixels.to_vec();
     for y in 0..HEIGHT {
         for x in 0..WIDTH {
             let wobble = if y == roll_line {
-                rng.gen_range(2..6)
+                rng.random_range(2..6)
             } else {
                 wobble_offset
             };
-            let src_x = (x + wobble).clamp(0, (WIDTH - 1));
+            let src_x = (x + wobble).clamp(0, WIDTH - 1);
             let src_idx = y * WIDTH + src_x;
             let dst_idx = y * WIDTH + x;
             pixels[dst_idx] = temp[src_idx];
@@ -259,7 +259,7 @@ pub fn start_render_thread(
             }
 
             ready_tx.send(buffer).unwrap();
-            thread::sleep(INPUT_DURATION);
+            thread::sleep(FRAME_DURATION);
             frame += 1;
         }
     });

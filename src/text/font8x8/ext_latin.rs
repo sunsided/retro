@@ -9,7 +9,6 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
-use crate::text::font8x8::r#box::BoxAlphabet;
 use crate::text::glyphs::GlyphIndex;
 
 // Constant: font8x8_00A0
@@ -117,7 +116,7 @@ const _FONT8X8_EXT_LATIN: [[u8; 8]; 96] = [
 impl_font_8x8!(ExtLatinAlphabet, FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);
 
 impl ExtLatinAlphabet {
-    pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
+    pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {
         todo!()
     }
 }

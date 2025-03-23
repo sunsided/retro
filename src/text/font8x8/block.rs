@@ -9,7 +9,6 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
-use crate::text::Alphabet;
 use crate::text::glyphs::GlyphIndex;
 
 /// Constant: font8x8_2580
@@ -53,7 +52,7 @@ const _FONT8X8_BLOCK: [[u8; 8]; 32] = [
 impl_font_8x8!(BlockAlphabet, FONT8X8_BLOCK, _FONT8X8_BLOCK);
 
 impl BlockAlphabet {
-    pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
+    pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {
         todo!()
     }
 }

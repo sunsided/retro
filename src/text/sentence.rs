@@ -36,10 +36,6 @@ impl<'a> Sentence<'a> {
         self.0
     }
 
-    pub const fn as_slice(&'a self) -> &'a [GlyphIndex] {
-        self.1
-    }
-
     pub fn bytes(&'a self) -> std::slice::Iter<'a, GlyphIndex> {
         self.1.iter()
     }
