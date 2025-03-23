@@ -7,6 +7,7 @@ pub struct GameState {
     pub y: usize,
     pub background: SceneBackground,
     pub crt: bool,
+    pub italic: bool,
 }
 
 impl Default for GameState {
@@ -17,6 +18,7 @@ impl Default for GameState {
             y: 0,
             background: SceneBackground::Plasma(PlasmaBackground::default()),
             crt: true,
+            italic: true,
         }
     }
 }

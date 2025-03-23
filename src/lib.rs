@@ -17,7 +17,7 @@ use std::time::Duration;
 pub const WIDTH: usize = 320;
 pub const HEIGHT: usize = 200;
 pub const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 Hz
-pub const LOGIC_DURATION: Duration = Duration::from_millis(10); // 100 Hz
+pub const LOGIC_DURATION: Duration = Duration::from_millis(20); // 50 Hz
 pub const INPUT_DURATION: Duration = Duration::from_millis(10); // 100 Hz
 const LUT_SIZE: usize = 256;
 pub const NUM_BUFFERS: usize = 3;

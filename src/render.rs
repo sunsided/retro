@@ -3,7 +3,6 @@ mod fire;
 mod plasma;
 mod sprite;
 
-use crate::colors::palettes;
 use crate::logic::GameState;
 use crate::logic::scene_background::SceneBackground;
 pub use crate::render::crt_effect::apply_crt_effect;
@@ -13,10 +12,9 @@ use crate::render::sprite::{UFO_SPRITE, draw_sprite};
 use crate::text::{Alphabet, draw_text, font8x8_sentence};
 use crate::{FRAME_DURATION, FrameBuffer, HEIGHT, WIDTH};
 use crossbeam::channel;
-use rand::Rng;
 use std::thread;
-use std::time::{Duration, Instant};
-use tracing::{debug, error, info, trace, warn};
+use std::time::Instant;
+use tracing::{debug, error, trace, warn};
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -45,7 +43,6 @@ pub fn start_render_thread(
         let mut fps_counter = 0;
         let mut fps_display = 0;
         let mut last_fps_at = Instant::now();
-        let mut last_frame_at = Instant::now();
         let mut next_frame_due = Instant::now();
 
         let sleeper = spin_sleep::SpinSleeper::new(0)
@@ -55,9 +52,6 @@ pub fn start_render_thread(
 
         loop {
             let t0 = Instant::now();
-
-            // Your rendering logic starts here
-            last_frame_at = t0;
 
             if current_buffer.is_none() {
                 current_buffer = match free_rx.try_recv() {
@@ -105,7 +99,7 @@ pub fn start_render_thread(
                 font8x8_sentence!("HELLO VGA WORLD"),
                 0xFFFFFF,
                 2,
-                true,
+                state.italic,
             );
             draw_text(
                 &mut buffer,
@@ -136,7 +130,7 @@ pub fn start_render_thread(
             let t6 = Instant::now();
             let elapsed_since_frame_start = t6.duration_since(t0);
             if elapsed_since_frame_start <= FRAME_DURATION {
-                debug!(
+                trace!(
                     "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
                     elapsed_since_frame_start.as_secs_f32() * 1000.0,
                     (t1 - t0).as_secs_f32() * 1000.0,
@@ -148,11 +142,8 @@ pub fn start_render_thread(
                 );
             } else {
                 warn!(
-                    "Warning: frame took longer than expected: {elapsed_since_frame_start:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
-                );
-
-                warn!(
-                    "fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    elapsed_since_frame_start.as_secs_f32() * 1000.0,
                     (t1 - t0).as_secs_f64() * 1000.0,
                     (t2 - t1).as_secs_f64() * 1000.0,
                     (t3 - t2).as_secs_f64() * 1000.0,
@@ -170,7 +161,7 @@ pub fn start_render_thread(
                 sleeper.sleep_until(next_frame_due);
             } else {
                 warn!(
-                    "Frame missed deadline by {:?}",
+                    "Render frame missed deadline by {:?}",
                     now.duration_since(next_frame_due)
                 );
                 next_frame_due = now;
