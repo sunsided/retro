@@ -1,0 +1,24 @@
+---
+github:
+  - .github/**
+
+dependencies:
+  - Cargo.lock
+
+documentation:
+  - README.md
+
+fonts:
+  - src/text.rs
+  - src/text/**
+
+lut:
+  - src/lut.rs
+
+logic:
+  - src/logic.rs
+  - src/logic/**
+
+render:
+  - src/render.rs
+  - src/render/**
