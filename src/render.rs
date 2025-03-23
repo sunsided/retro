@@ -16,7 +16,7 @@ use crossbeam::channel;
 use rand::Rng;
 use std::thread;
 use std::time::{Duration, Instant};
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -47,12 +47,15 @@ pub fn start_render_thread(
         let mut last_fps_at = Instant::now();
         let mut last_frame_at = Instant::now();
 
+        let sleeper = spin_sleep::SpinSleeper::new(0)
+            .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
+
         loop {
             let t0 = Instant::now();
             let mut buffer = match free_rx.try_recv() {
                 Ok(buffer) => buffer,
                 Err(_) => {
-                    warn!("Stalling: waiting for a free frame buffer...");
+                    error!("Stalling: waiting for a free frame buffer...");
                     free_rx.recv().unwrap()
                 }
             };
@@ -114,7 +117,7 @@ pub fn start_render_thread(
 
             let t5 = Instant::now();
             if let Err(err) = ready_tx.try_send(buffer) {
-                warn!(
+                error!(
                     "Contention detected: unable to send frame buffer to the channel. Error: {}",
                     err
                 );
@@ -134,7 +137,7 @@ pub fn start_render_thread(
                 );
 
                 let sleep_until_next_frame = FRAME_DURATION - elapsed_since_last_frame;
-                thread::sleep(sleep_until_next_frame);
+                sleeper.sleep(sleep_until_next_frame);
             } else {
                 warn!(
                     "Warning: frame took longer than expected: {elapsed_since_last_frame:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
@@ -150,7 +153,6 @@ pub fn start_render_thread(
                     (now - t5).as_secs_f64() * 1000.0,
                 );
             }
-            last_frame_at = now;
 
             frame += 1;
             fps_counter += 1;
@@ -161,6 +163,8 @@ pub fn start_render_thread(
 
                 debug!("FPS: {}", fps_display);
             }
+
+            last_frame_at = now;
         }
     });
 }

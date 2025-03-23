@@ -2,7 +2,7 @@ mod game_state;
 pub mod scene_background;
 
 use crate::input::InputEvent;
-use crate::logic::scene_background::{PlasmaBackground, SceneBackground};
+use crate::logic::scene_background::SceneBackground;
 use crate::lut::SIN_LUT;
 use crate::{HEIGHT, LOGIC_DURATION, MainEvent, WIDTH};
 use crossbeam::channel::{Receiver, Sender};
@@ -19,6 +19,8 @@ pub fn start_logic_thread(
         let mut state = GameState::default();
 
         let mut last_logic = Instant::now();
+        let sleeper = spin_sleep::SpinSleeper::new(0)
+            .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
 
         loop {
             while let Ok(event) = input_event_rx.try_recv() {
@@ -58,7 +60,7 @@ pub fn start_logic_thread(
                 last_logic = Instant::now();
             }
 
-            thread::sleep(Duration::from_millis(1));
+            sleeper.sleep(Duration::from_millis(1));
         }
     });
 }
