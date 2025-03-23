@@ -1,4 +1,5 @@
-use crate::colors::{COLORS, make_fire_palette};
+use crate::colors;
+use crate::colors::palettes;
 use crate::text::{Alphabet, draw_text, font8x8_sentence};
 use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};
 use crossbeam::channel;
@@ -133,7 +134,7 @@ pub fn draw_sprite(
                     let px = x.wrapping_add(sx * scale + dx);
                     let py = y.wrapping_add(sy * scale + dy);
                     if px < WIDTH && py < HEIGHT {
-                        buffer[py * WIDTH + px] = COLORS[color_index as usize];
+                        buffer[py * WIDTH + px] = palettes::STANDARD[color_index as usize];
                     }
                 }
             }
@@ -170,7 +171,6 @@ pub fn start_render_thread(
         ];
 
         let mut fire = vec![0u8; WIDTH * HEIGHT];
-        let fire_palette = make_fire_palette();
 
         let mut frame = 0;
         loop {
@@ -210,7 +210,7 @@ pub fn start_render_thread(
 
             // Convert indices to colors
             for (i, &val) in fire.iter().enumerate() {
-                buffer[i] = fire_palette[val as usize];
+                buffer[i] = palettes::FIRE[val as usize];
             }
 
             /*
