@@ -9,7 +9,7 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
-use crate::text::Alphabet;
+use crate::text::font8x8::r#box::BoxAlphabet;
 
 // Constant: font8x8_00A0
 // Contains an 8x8 font map for unicode points U+00A0 - U+00FF (extended latin)
@@ -113,4 +113,10 @@ const _FONT8X8_EXT_LATIN: [[u8; 8]; 96] = [
     [0x00, 0x33, 0x00, 0x33, 0x33, 0x3E, 0x30, 0x1F], // U+00FF (y umlaut)
 ];
 
-reverse_font_8x8!(ExtLatinAlphabet, FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);
+impl_font_8x8!(ExtLatinAlphabet, FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);
+
+impl ExtLatinAlphabet {
+    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+        todo!()
+    }
+}

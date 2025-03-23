@@ -9,8 +9,6 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
-use crate::text::Alphabet;
-
 #[rustfmt::skip]
 const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 26] = [
     [0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00], // U+E541 (SGA A)
@@ -41,8 +39,61 @@ const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 26] = [
     [0x00, 0x00, 0x18, 0x3C, 0x66, 0x66, 0x66, 0x00], // U+E55A (SGA Z)
 ];
 
-reverse_font_8x8!(
+impl_font_8x8!(
     StandardGalacticAlphabet,
     FONT8X8_STANDARD_GALACTIC,
     _FONT8X8_STANDARD_GALACTIC
 );
+
+impl StandardGalacticAlphabet {
+    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+        if !ch.is_ascii() {
+            None
+        } else {
+            let byte = ch as u8;
+            if byte >= b'A' && byte <= b'Z' {
+                Some(_FONT8X8_STANDARD_GALACTIC[(byte - b'A') as usize])
+            } else if byte >= b'a' && byte <= b'z' {
+                Some(_FONT8X8_STANDARD_GALACTIC[(byte - b'a') as usize])
+            } else {
+                None
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_standard_galactic_map_char() {
+        let font = FONT8X8_STANDARD_GALACTIC;
+
+        // Test lowercase letters
+        assert_eq!(
+            font.map_char('a'),
+            Some([0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00])
+        );
+        assert_eq!(
+            font.map_char('z'),
+            Some([0x00, 0x00, 0x18, 0x3C, 0x66, 0x66, 0x66, 0x00])
+        );
+
+        // Test uppercase letters
+        assert_eq!(
+            font.map_char('A'),
+            Some([0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00])
+        );
+        assert_eq!(
+            font.map_char('Z'),
+            Some([0x00, 0x00, 0x18, 0x3C, 0x66, 0x66, 0x66, 0x00])
+        );
+
+        // Test non-alphabetic characters
+        assert_eq!(font.map_char('1'), None);
+        assert_eq!(font.map_char('!'), None);
+        assert_eq!(font.map_char(' '), None);
+        assert_eq!(font.map_char('@'), None);
+    }
+}

@@ -9,7 +9,7 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
-use crate::text::Alphabet;
+use crate::text::font8x8::block::BlockAlphabet;
 
 /// Constant: font8x8_2500
 /// Contains an 8x8 font map for unicode points U+2500 - U+257F (box drawing)
@@ -145,4 +145,10 @@ const _FONT8X8_BOX: [[u8; 8]; 128] = [
     [0x18, 0x18, 0x18, 0x18, 0x08, 0x08, 0x08, 0x08], // U+257F (up H, down L)
 ];
 
-reverse_font_8x8!(BoxAlphabet, FONT8X8_BOX, _FONT8X8_BOX);
+impl_font_8x8!(BoxAlphabet, FONT8X8_BOX, _FONT8X8_BOX);
+
+impl BoxAlphabet {
+    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+        todo!()
+    }
+}
