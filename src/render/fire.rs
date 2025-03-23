@@ -1,6 +1,5 @@
 use crate::colors::palettes;
 use crate::{Color, FrameBuffer, HEIGHT, WIDTH};
-use rand::{Rng, rng};
 use rayon::prelude::*;
 
 pub struct Fire {
@@ -16,25 +15,21 @@ impl Fire {
 
     pub fn update(&mut self) {
         for x in 0..WIDTH {
-            self.heat[(HEIGHT - 1) * WIDTH + x] = if rng().random_range(0..10) > 1 {
-                255
-            } else {
-                0
-            };
+            self.heat[(HEIGHT - 1) * WIDTH + x] = if fastrand::u8(0..10) > 1 { 255 } else { 0 };
         }
 
         for y in 1..HEIGHT {
             for x in 0..WIDTH {
                 let src = y * WIDTH + x;
                 let below = src + WIDTH;
-                let decay = rng().random_range(1..20);
+                let decay = fastrand::u32(1..20);
                 let new_val = self
                     .heat
                     .get(below)
                     .copied()
                     .unwrap_or(0)
                     .saturating_sub(decay);
-                let dx = rng().random_range(0..3);
+                let dx = fastrand::usize(0..3);
                 let dst_x = x.wrapping_add(dx).wrapping_sub(1).min(WIDTH - 1);
                 let dst_y = y - 1;
                 let dst = dst_y * WIDTH + dst_x;
