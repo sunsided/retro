@@ -7,7 +7,7 @@ mod lut;
 mod render;
 mod text;
 
-use crate::input::{KeyBindings, KeyDebounce};
+use crate::input::{KeyBindings, KeyHandling};
 use crate::logic::start_logic_thread;
 use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
@@ -55,7 +55,7 @@ fn main() {
     let (free_tx, free_rx) = channel::bounded::<Box<FrameBuffer>>(NUM_BUFFERS);
 
     for _ in 0..NUM_BUFFERS {
-        let buffer = Box::new([0u32; WIDTH * HEIGHT]);
+        let buffer = Box::new([Color::default(); WIDTH * HEIGHT]);
         free_tx.send(buffer).unwrap();
     }
 
@@ -74,11 +74,11 @@ fn main() {
     )
     .unwrap();
 
-    let mut debouncer = KeyDebounce::new();
     let bindings = KeyBindings::default();
+    let mut input_handling = KeyHandling::new(bindings, input_event_tx.clone());
 
     while window.is_open() {
-        bindings.process_input(&window, &mut debouncer, &input_event_tx);
+        input_handling.process_input(&window).ok();
 
         select! {
             recv(ready_rx) -> msg => match msg {
