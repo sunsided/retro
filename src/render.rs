@@ -30,10 +30,10 @@ fn apply_crt_effect(pixels: &mut FrameBuffer, frame: usize) {
         for x in 0..WIDTH {
             let idx = y * WIDTH + x;
             let px = pixels[idx];
-            let noise = if analog_glitch && rng.gen_bool(0.2) {
-                rng.gen_range(30..100)
+            let noise = if analog_glitch && rng.random_bool(0.2) {
+                rng.random_range(30..100)
             } else {
-                rng.gen_range(0..=10)
+                rng.random_range(0..=10)
             };
 
             let r = (((px >> 16) & 0xFF).saturating_add(noise)) * brightness / 255;
@@ -230,8 +230,8 @@ pub fn start_render_thread(
             }
             */
 
-            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF, 2);
-            draw_text(&mut buffer, 20, 40, "beep boop robot", 0xFFFFFF, 1);
+            draw_text(&mut buffer, 20, 20, "HELLO VGA WORLD", 0xFFFFFF, 2, false);
+            draw_text(&mut buffer, 20, 40, "beep boop robot", 0xFFFFFF, 1, true);
 
             if state.x < WIDTH && state.y < HEIGHT {
                 // buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
