@@ -3,65 +3,6 @@
 use std::io::Read;
 use std::ops::{Deref, Index};
 
-#[derive(Debug, Clone)]
-pub struct Sentence<'a>(&'a [u8]);
-
-impl<'a> Sentence<'a> {
-    pub const fn new(glyphs: &'a [u8]) -> Self {
-        Self(glyphs)
-    }
-
-    pub const fn as_slice(&'a self) -> &'a [u8] {
-        self.0
-    }
-
-    pub fn bytes(&'a self) -> std::slice::Iter<'a, u8> {
-        self.0.iter()
-    }
-}
-
-impl PartialEq<&[u8]> for Sentence<'_> {
-    fn eq(&self, other: &&[u8]) -> bool {
-        self.0.eq(*other)
-    }
-}
-
-impl<const N: usize> PartialEq<[u8; N]> for Sentence<'_> {
-    fn eq(&self, other: &[u8; N]) -> bool {
-        self.0.eq(other)
-    }
-}
-
-impl Deref for Sentence<'_> {
-    type Target = [u8];
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-macro_rules! font8x8_sentence {
-    ($text:literal) => {{
-        use crate::text::font8x8::FONT8X8_BASIC;
-        $crate::text::font8x8_sentence!(FONT8X8_BASIC, $text)
-    }};
-    ($alphabet:tt, $text:literal) => {{
-        const GLYPHS: [u8; $text.len()] = {
-            let mut out = [0_u8; $text.len()];
-            let bytes = $text.as_bytes();
-            let mut i = 0;
-            while i < $text.len() {
-                out[i] = $alphabet.map_char_index_or_panic(bytes[i] as char);
-                i += 1;
-            }
-            out
-        };
-        $crate::text::Sentence::new(&GLYPHS)
-    }};
-}
-
-pub(crate) use font8x8_sentence;
-
 /// A macro to reverse the bits of each byte in a 2D array and create a public constant.
 ///
 /// # Arguments
@@ -97,7 +38,7 @@ macro_rules! impl_font_8x8 {
             }
 
             /// Look up a glyph index or panic.
-            pub const fn map_char_index_or_panic(&self, ch: char) -> u8 {
+            pub const fn map_char_index_or_panic(&self, ch: char) -> $crate::text::GlyphIndex {
                 match self.map_char_index(ch) {
                     None => panic!("A character could not be looked up"),
                     Some(glyph) => glyph,
@@ -105,8 +46,8 @@ macro_rules! impl_font_8x8 {
             }
 
             /// Look up a glyph.
-            pub const fn get(&self, index: u8) -> Option<&[u8; 8]> {
-                if index as usize >= Self::LEN {
+            pub const fn get(&self, index: $crate::text::GlyphIndex) -> Option<&[u8; 8]> {
+                if index.into_inner() as usize >= Self::LEN {
                     None
                 } else {
                     self.0.get(index)

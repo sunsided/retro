@@ -2,19 +2,22 @@
 
 mod alphabet;
 pub mod font8x8;
+mod glyphs;
+mod sentence;
 
 use crate::{FrameBuffer, HEIGHT, WIDTH};
 pub use alphabet::Alphabet;
 use font8x8::FONT8X8_BASIC;
-pub use font8x8::Sentence;
-pub(crate) use font8x8::font8x8_sentence;
+pub use glyphs::GlyphIndex;
+pub use sentence::Sentence;
+pub(crate) use sentence::font8x8_sentence;
 use std::borrow::Borrow;
 
 pub fn draw_char(
     buffer: &mut FrameBuffer,
     x: usize,
     y: usize,
-    glyph_index: u8,
+    glyph_index: GlyphIndex,
     color: u32,
     scale: usize,
     italic: bool,

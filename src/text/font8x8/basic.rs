@@ -9,6 +9,8 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
+use crate::text::glyphs::GlyphIndex;
+
 /// Constant: font8x8_basic
 /// Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
 #[rustfmt::skip]
@@ -112,9 +114,9 @@ const _FONT8X8_BASIC: [[u8; 8]; 94] = [
 impl_font_8x8!(BasicAlphabet, FONT8X8_BASIC, _FONT8X8_BASIC);
 
 impl BasicAlphabet {
-    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
+    pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
         if ch >= '\u{0021}' && ch <= '\u{007E}' {
-            Some(ch as u8 - b'!')
+            Some(GlyphIndex::new(ch as u8 - b'!'))
         } else {
             None
         }
@@ -124,7 +126,7 @@ impl BasicAlphabet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::text::font8x8::Sentence;
+    use crate::text::{Sentence, font8x8_sentence};
 
     #[test]
     fn test_font8x8_glyphs_macro() {

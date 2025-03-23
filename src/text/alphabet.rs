@@ -1,5 +1,6 @@
 //! Provides the [`Alphabet`] type and various fonts.
 
+use crate::text::glyphs::GlyphIndex;
 use std::ops::Index;
 
 /// An alphabet.
@@ -14,12 +15,12 @@ impl<const B: usize, const N: usize> Index<usize> for Alphabet<B, N> {
     }
 }
 
-impl<const B: usize, const N: usize> Index<u8> for Alphabet<B, N> {
+impl<const B: usize, const N: usize> Index<GlyphIndex> for Alphabet<B, N> {
     type Output = [u8; B];
 
     #[inline(always)]
-    fn index(&self, index: u8) -> &Self::Output {
-        self.0.index(index as usize)
+    fn index(&self, index: GlyphIndex) -> &Self::Output {
+        self.0.index(index.into_inner() as usize)
     }
 }
 
@@ -29,11 +30,12 @@ impl<const B: usize, const N: usize> Alphabet<B, N> {
     }
 
     /// Look up a glyph.
-    pub const fn get(&self, index: u8) -> Option<&[u8; B]> {
-        if index as usize >= N {
+    pub const fn get(&self, index: GlyphIndex) -> Option<&[u8; B]> {
+        let index = index.into_inner() as usize;
+        if index >= N {
             None
         } else {
-            Some(&self.0[index as usize])
+            Some(&self.0[index])
         }
     }
 

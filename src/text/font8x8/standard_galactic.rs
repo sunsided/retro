@@ -9,6 +9,8 @@
 //! # Source
 //! <https://github.com/dhepper/font8x8>
 
+use crate::text::glyphs::GlyphIndex;
+
 #[rustfmt::skip]
 const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 26] = [
     [0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00], // U+E541 (SGA A)
@@ -46,15 +48,15 @@ impl_font_8x8!(
 );
 
 impl StandardGalacticAlphabet {
-    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
+    pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
         if !ch.is_ascii() {
             None
         } else {
             let byte = ch as u8;
             if byte >= b'A' && byte <= b'Z' {
-                Some(byte - b'A')
+                Some(GlyphIndex::new(byte - b'A'))
             } else if byte >= b'a' && byte <= b'z' {
-                Some(byte - b'a')
+                Some(GlyphIndex::new(byte - b'a'))
             } else {
                 None
             }
