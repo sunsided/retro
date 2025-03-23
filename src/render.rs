@@ -47,6 +47,24 @@ fn apply_crt_effect(pixels: &mut FrameBuffer) {
             pixels[idx] = (r << 16) | (g << 8) | b;
         }
     }
+
+    // Curvature simulation (simple vignette darkening near edges)
+    for y in 0..HEIGHT {
+        for x in 0..WIDTH {
+            let idx = y * WIDTH + x;
+            let xf = (x as f32 - WIDTH as f32 / 2.0) / (WIDTH as f32 / 2.0);
+            let yf = (y as f32 - HEIGHT as f32 / 2.0) / (HEIGHT as f32 / 2.0);
+            let vignette = 1.0 - (xf * xf + yf * yf) * 0.2;
+            let vignette = vignette.clamp(0.0, 1.0);
+
+            let px = pixels[idx];
+            let r = (((px >> 16) & 0xFF) as f32 * vignette) as u8;
+            let g = (((px >> 8) & 0xFF) as f32 * vignette) as u8;
+            let b = ((px & 0xFF) as f32 * vignette) as u8;
+
+            pixels[idx] = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+        }
+    }
 }
 
 pub fn start_render_thread(
