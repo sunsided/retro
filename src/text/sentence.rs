@@ -3,7 +3,7 @@ use std::ops::Deref;
 macro_rules! font8x8_sentence {
     (
         $(
-            $( $alphabet:path , )? $text:literal
+            $( $alphabet:path : )? $text:literal
         )+
         $(,)?
     ) => {{

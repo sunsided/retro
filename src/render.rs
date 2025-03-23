@@ -250,7 +250,7 @@ pub fn start_render_thread(
                 40,
                 font8x8_sentence!(
                     "Happy "
-                    Alphabet::StandardGalactic, "beep boop robot"
+                    Alphabet::StandardGalactic: "beep boop robot"
                     " y'all"
                 ),
                 0xFFFFFF,
