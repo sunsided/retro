@@ -1,11 +1,13 @@
 #![forbid(unsafe_code)]
 
 mod colors;
+mod input;
 mod logic;
 mod lut;
 mod render;
 mod text;
 
+use crate::input::KeyDebounce;
 use crate::logic::start_logic_thread;
 use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
@@ -17,9 +19,9 @@ use std::time::Duration;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
-const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
-const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
-const INPUT_DURATION: Duration = Duration::from_millis(20); // 50 Hz
+const FRAME_DURATION: Duration = Duration::from_millis(25); // 40 FPS
+const LOGIC_DURATION: Duration = Duration::from_millis(10); // 100 Hz
+const INPUT_DURATION: Duration = Duration::from_millis(10); // 100 Hz
 const LUT_SIZE: usize = 256;
 const NUM_BUFFERS: usize = 3;
 
@@ -81,14 +83,10 @@ fn main() {
     )
     .unwrap();
 
+    let mut debouncer = KeyDebounce::new();
     while window.is_open() {
-        for key in window.get_keys_pressed(KeyRepeat::No) {
-            match key {
-                Key::Space => {
-                    let _ = input_event_tx.send(InputEvent::ToggleCRT);
-                }
-                _ => {}
-            }
+        if debouncer.is_fresh_press(Key::Space, window.is_key_down(Key::Space)) {
+            let _ = input_event_tx.send(InputEvent::ToggleCRT);
         }
 
         let input = InputState {

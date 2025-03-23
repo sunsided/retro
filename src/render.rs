@@ -1,4 +1,3 @@
-use crate::colors;
 use crate::colors::palettes;
 use crate::text::{Alphabet, draw_text, font8x8_sentence};
 use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};

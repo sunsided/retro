@@ -1,8 +1,9 @@
 use crate::{GameState, HEIGHT, InputEvent, InputState, LOGIC_DURATION, MainEvent, WIDTH};
 use arc_swap::ArcSwapAny;
-use crossbeam::channel::{Receiver, Sender};
+use crossbeam::channel::{Receiver, Sender, TryRecvError};
 use std::sync::Arc;
 use std::thread;
+use std::time::{Duration, Instant};
 
 pub fn start_logic_thread(
     tx_state: Sender<GameState>,
@@ -19,8 +20,9 @@ pub fn start_logic_thread(
             crt: true,
         };
 
+        let mut last_logic = Instant::now();
+
         loop {
-            // TODO: Validate input state
             let input = *input.load().clone();
             if input.escape_pressed {
                 tx_main.send(MainEvent::Shutdown).ok();
@@ -32,24 +34,24 @@ pub fn start_logic_thread(
                 state.plasma = (state.plasma + 0.1).clamp(0.0, 1.0);
             }
 
-            // handle one-shot events
             while let Ok(event) = input_event_rx.try_recv() {
                 match event {
                     InputEvent::ToggleCRT => {
                         state.crt = !state.crt;
+                        println!("Toggled CRT state {}", if state.crt { "on" } else { "off" });
                     }
                 }
             }
 
-            state.tick += 1;
-            state.x = (state.x + 1) % WIDTH;
-            state.y = (state.y + 1) % HEIGHT;
+            if last_logic.elapsed() >= LOGIC_DURATION {
+                state.tick += 1;
+                state.x = (state.x + 1) % WIDTH;
+                state.y = (state.y + 1) % HEIGHT;
+                let _ = tx_state.send(state);
+                last_logic = Instant::now();
+            }
 
-            // TODO: Some state is only necessary for simulation and does not need to be passed to the renderer
-            //       e.g. bounding boxes are relevant for sim, but only pose (and mesh and texture data) is needed by the renderer
-            let _ = tx_state.send(state);
-
-            thread::sleep(LOGIC_DURATION);
+            thread::sleep(Duration::from_millis(1));
         }
     });
 }

@@ -44,6 +44,7 @@ use std::borrow::Borrow;
 ///   based on their vertical position within the glyph.
 /// - The function ensures that rendered pixels do not go out of bounds of
 ///   the `buffer`.
+#[allow(clippy::too_many_arguments)]
 pub fn draw_char(
     buffer: &mut FrameBuffer,
     x: usize,

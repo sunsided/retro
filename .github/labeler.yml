@@ -19,6 +19,10 @@ logic:
   - src/logic.rs
   - src/logic/**
 
+input:
+  - src/input.rs
+  - src/input/**
+
 render:
   - src/render.rs
   - src/render/**
