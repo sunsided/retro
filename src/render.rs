@@ -2,6 +2,7 @@ mod crt_effect;
 pub mod cube;
 mod fire;
 pub mod line;
+mod matrix;
 mod plasma;
 mod sphere;
 mod sprite;
@@ -12,6 +13,7 @@ use crate::logic::scene_background::SceneBackground;
 pub use crate::render::crt_effect::CrtEffect;
 use crate::render::cube::draw_wireframe_cube;
 pub use crate::render::fire::Fire;
+use crate::render::matrix::MatrixEffect;
 pub use crate::render::plasma::Plasma;
 use crate::render::sphere::draw_wireframe_sphere;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
@@ -44,6 +46,7 @@ pub fn start_render_thread(
 
         let mut plasma = Plasma::new();
         let mut fire = Fire::new();
+        let mut matrix = MatrixEffect::new();
         let mut crt = CrtEffect::new();
 
         let mut frame = 0;
@@ -73,6 +76,10 @@ pub fn start_render_thread(
 
             let mut buffer = current_buffer.as_mut().unwrap();
 
+            for pixel in buffer.iter_mut() {
+                *pixel = 0x000000;
+            }
+
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
             }
@@ -80,17 +87,16 @@ pub fn start_render_thread(
             let t1 = Instant::now();
             match state.background {
                 SceneBackground::None => {
-                    for pixel in buffer.iter_mut() {
-                        *pixel = 0x000000;
-                    }
+                    // done.
                 }
                 SceneBackground::Plasma(ref config) => {
                     plasma.update(config.intensity);
                     plasma.render(&mut buffer);
                 }
                 SceneBackground::Fire => {
-                    fire.update();
-                    fire.render(&mut buffer);
+                    // fire.update();
+                    // fire.render(&mut buffer);
+                    matrix.render(&mut buffer, frame);
                 }
             }
 
