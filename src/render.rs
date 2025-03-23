@@ -3,6 +3,7 @@ pub mod cube;
 mod fire;
 pub mod line;
 mod plasma;
+mod sphere;
 mod sprite;
 
 use crate::colors::palettes::STANDARD;
@@ -12,6 +13,7 @@ pub use crate::render::crt_effect::CrtEffect;
 use crate::render::cube::draw_wireframe_cube;
 pub use crate::render::fire::Fire;
 pub use crate::render::plasma::Plasma;
+use crate::render::sphere::draw_wireframe_sphere;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
 use crate::text::{Alphabet, draw_text, font8x8_sentence, font8x8_sentence_runtime};
 use crate::{FRAME_DURATION, FrameBuffer, HEIGHT, WIDTH};
@@ -93,6 +95,7 @@ pub fn start_render_thread(
             }
 
             draw_wireframe_cube(&mut buffer, frame, STANDARD[255]);
+            draw_wireframe_sphere(&mut buffer, frame, STANDARD[255]);
 
             let t2 = Instant::now();
             if state.x < WIDTH && state.y < HEIGHT {
