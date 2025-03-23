@@ -12,7 +12,7 @@
 use crate::text::glyphs::GlyphIndex;
 
 #[rustfmt::skip]
-const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 26] = [
+const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 28] = [
     [0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00], // U+E541 (SGA A)
     [0x00, 0x00, 0x0C, 0x0C, 0x18, 0x30, 0x7F, 0x00], // U+E542 (SGA B)
     [0x00, 0x00, 0x0C, 0x00, 0x0C, 0x30, 0x30, 0x00], // U+E543 (SGA C)
@@ -39,6 +39,8 @@ const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 26] = [
     [0x00, 0x00, 0x66, 0x30, 0x18, 0x0C, 0x06, 0x00], // U+E558 (SGA X)
     [0x00, 0x00, 0x36, 0x36, 0x36, 0x36, 0x36, 0x00], // U+E559 (SGA Y)
     [0x00, 0x00, 0x18, 0x3C, 0x66, 0x66, 0x66, 0x00], // U+E55A (SGA Z)
+    [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+0020 (space)
+    [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9D], // U+002E (.)
 ];
 
 impl_font_8x8!(
@@ -53,7 +55,11 @@ impl StandardGalacticAlphabet {
             None
         } else {
             let byte = ch as u8;
-            if byte >= b'A' && byte <= b'Z' {
+            if ch.is_ascii_whitespace() {
+                Some(GlyphIndex::new(26))
+            } else if ch == '.' || ch == '!' {
+                Some(GlyphIndex::new(27))
+            } else if byte >= b'A' && byte <= b'Z' {
                 Some(GlyphIndex::new(byte - b'A'))
             } else if byte >= b'a' && byte <= b'z' {
                 Some(GlyphIndex::new(byte - b'a'))

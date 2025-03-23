@@ -14,7 +14,8 @@ use crate::text::glyphs::GlyphIndex;
 /// Constant: font8x8_basic
 /// Contains an 8x8 font map for unicode points U+0000 - U+007F (basic latin)
 #[rustfmt::skip]
-const _FONT8X8_BASIC: [[u8; 8]; 94] = [
+const _FONT8X8_BASIC: [[u8; 8]; 95] = [
+    [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+0020 (space)
     [0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00], // U+0021 (!)
     [0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+0022 (")
     [0x36, 0x36, 0x7F, 0x36, 0x7F, 0x36, 0x36, 0x00], // U+0023 (#)
@@ -115,8 +116,10 @@ impl_font_8x8!(BasicAlphabet, FONT8X8_BASIC, _FONT8X8_BASIC);
 
 impl BasicAlphabet {
     pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
-        if ch >= '\u{0021}' && ch <= '\u{007E}' {
-            Some(GlyphIndex::new(ch as u8 - b'!'))
+        if ch.is_ascii_whitespace() {
+            Some(GlyphIndex::new(0))
+        } else if ch >= '\u{0021}' && ch <= '\u{007E}' {
+            Some(GlyphIndex::new(ch as u8 - b' '))
         } else {
             None
         }

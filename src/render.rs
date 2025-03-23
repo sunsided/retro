@@ -230,29 +230,29 @@ pub fn start_render_thread(
             }
             */
 
+            if state.x < WIDTH && state.y < HEIGHT {
+                // buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
+                draw_sprite(&mut buffer, &ufo_sprite, 8, state.x, state.y, 4);
+            }
+
             draw_text(
                 &mut buffer,
                 20,
                 20,
-                font8x8_sentence!("HELLO~VGA~WORLD"),
+                font8x8_sentence!("HELLO VGA WORLD"),
                 0xFFFFFF,
                 2,
-                false,
+                true,
             );
             draw_text(
                 &mut buffer,
                 20,
                 40,
-                font8x8_sentence!(Alphabets::StandardGalactic, "beepbooprobot"),
+                font8x8_sentence!(Alphabets::StandardGalactic, "beep boop robot."),
                 0xFFFFFF,
                 1,
-                true,
+                false,
             );
-
-            if state.x < WIDTH && state.y < HEIGHT {
-                // buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
-                draw_sprite(&mut buffer, &ufo_sprite, 8, state.x, state.y, 4);
-            }
 
             if state.crt {
                 apply_crt_effect(&mut buffer, frame / 10);
