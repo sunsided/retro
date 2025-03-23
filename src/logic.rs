@@ -1,6 +1,6 @@
 use crate::{GameState, HEIGHT, InputEvent, InputState, LOGIC_DURATION, MainEvent, WIDTH};
 use arc_swap::ArcSwapAny;
-use crossbeam::channel::{Receiver, Sender, TryRecvError};
+use crossbeam::channel::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -36,10 +36,7 @@ pub fn start_logic_thread(
 
             while let Ok(event) = input_event_rx.try_recv() {
                 match event {
-                    InputEvent::ToggleCRT => {
-                        state.crt = !state.crt;
-                        println!("Toggled CRT state {}", if state.crt { "on" } else { "off" });
-                    }
+                    InputEvent::ToggleCRT => state.crt = !state.crt,
                 }
             }
 

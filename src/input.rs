@@ -1,3 +1,6 @@
+mod bindings;
+
+pub use bindings::KeyBindings;
 use minifb::Key;
 
 // Struct to debounce keypresses

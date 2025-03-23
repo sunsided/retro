@@ -7,13 +7,13 @@ mod lut;
 mod render;
 mod text;
 
-use crate::input::KeyDebounce;
+use crate::input::{KeyBindings, KeyDebounce};
 use crate::logic::start_logic_thread;
 use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
 use arc_swap::ArcSwap;
 use crossbeam::{channel, select};
-use minifb::{Key, KeyRepeat, Window, WindowOptions};
+use minifb::{Window, WindowOptions};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -84,18 +84,10 @@ fn main() {
     .unwrap();
 
     let mut debouncer = KeyDebounce::new();
+    let bindings = KeyBindings::default();
+
     while window.is_open() {
-        if debouncer.is_fresh_press(Key::Space, window.is_key_down(Key::Space)) {
-            let _ = input_event_tx.send(InputEvent::ToggleCRT);
-        }
-
-        let input = InputState {
-            escape_pressed: window.is_key_down(Key::Escape),
-            plus_pressed: window.is_key_pressed(Key::Up, KeyRepeat::Yes),
-            minus_pressed: window.is_key_pressed(Key::Down, KeyRepeat::Yes),
-        };
-
-        // TODO: We may lose input events here if we're not reading them fast enough
+        let input = bindings.process_input(&window, &mut debouncer, &input_event_tx);
         input_state.store(Arc::new(input));
 
         select! {
