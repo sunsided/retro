@@ -54,6 +54,7 @@ pub fn start_render_thread(
 
         loop {
             let t0 = Instant::now();
+            let elapsed_since_last_frame = t0.duration_since(last_frame_at);
 
             if current_buffer.is_none() {
                 current_buffer = match free_rx.try_recv() {
@@ -129,8 +130,7 @@ pub fn start_render_thread(
                 error!("Contention detected: unable to send frame buffer to the channel");
             }
 
-            let now = Instant::now();
-            let elapsed_since_last_frame = now.duration_since(last_frame_at);
+            let t6 = Instant::now();
             if elapsed_since_last_frame <= FRAME_DURATION {
                 trace!(
                     "fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
@@ -139,7 +139,7 @@ pub fn start_render_thread(
                     (t3 - t2).as_secs_f64() * 1000.0,
                     (t4 - t3).as_secs_f64() * 1000.0,
                     (t5 - t4).as_secs_f64() * 1000.0,
-                    (now - t5).as_secs_f64() * 1000.0,
+                    (t6 - t5).as_secs_f64() * 1000.0,
                 );
 
                 let sleep_until_next_frame = FRAME_DURATION - elapsed_since_last_frame;
@@ -156,7 +156,7 @@ pub fn start_render_thread(
                     (t3 - t2).as_secs_f64() * 1000.0,
                     (t4 - t3).as_secs_f64() * 1000.0,
                     (t5 - t4).as_secs_f64() * 1000.0,
-                    (now - t5).as_secs_f64() * 1000.0,
+                    (t6 - t5).as_secs_f64() * 1000.0,
                 );
             }
 
@@ -170,7 +170,7 @@ pub fn start_render_thread(
                 debug!("FPS: {}", fps_display);
             }
 
-            last_frame_at = now;
+            last_frame_at = t0;
         }
     });
 }
