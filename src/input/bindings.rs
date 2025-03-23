@@ -1,6 +1,6 @@
+use crate::InputEvent;
 use crate::input::KeyDebounce;
-use crate::{InputEvent, InputState};
-use minifb::{Key, KeyRepeat, Window};
+use minifb::{Key, Window};
 
 // Struct for configurable key bindings
 pub struct KeyBindings {
@@ -28,17 +28,21 @@ impl KeyBindings {
         window: &Window,
         debouncer: &mut KeyDebounce,
         input_event_tx: &crossbeam::channel::Sender<InputEvent>,
-    ) -> InputState {
-        let state = InputState {
-            escape_pressed: window.is_key_down(self.escape),
-            plus_pressed: window.is_key_pressed(self.plus, KeyRepeat::Yes),
-            minus_pressed: window.is_key_pressed(self.minus, KeyRepeat::Yes),
-        };
-
+    ) {
         if debouncer.is_fresh_press(self.toggle_crt, window.is_key_down(self.toggle_crt)) {
             let _ = input_event_tx.send(InputEvent::ToggleCRT);
         }
 
-        state
+        if debouncer.is_fresh_press(self.escape, window.is_key_down(self.escape)) {
+            let _ = input_event_tx.send(InputEvent::EscapePressed);
+        }
+
+        if debouncer.is_fresh_press(self.plus, window.is_key_down(self.plus)) {
+            let _ = input_event_tx.send(InputEvent::IncreasePressed);
+        }
+
+        if debouncer.is_fresh_press(self.minus, window.is_key_down(self.minus)) {
+            let _ = input_event_tx.send(InputEvent::DecreasePressed);
+        }
     }
 }

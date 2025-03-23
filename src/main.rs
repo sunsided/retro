@@ -11,10 +11,8 @@ use crate::input::{KeyBindings, KeyDebounce};
 use crate::logic::start_logic_thread;
 use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
-use arc_swap::ArcSwap;
 use crossbeam::{channel, select};
 use minifb::{Window, WindowOptions};
-use std::sync::Arc;
 use std::time::Duration;
 
 const WIDTH: usize = 320;
@@ -37,17 +35,12 @@ struct GameState {
     crt: bool,
 }
 
-#[derive(Clone, Copy, Default)]
-struct InputState {
-    escape_pressed: bool,
-    // later: movement keys, mouse, etc.
-    plus_pressed: bool,
-    minus_pressed: bool,
-}
-
 #[derive(Debug, Clone, Copy)]
 enum InputEvent {
     ToggleCRT,
+    EscapePressed,
+    IncreasePressed,
+    DecreasePressed,
 }
 
 enum MainEvent {
@@ -56,8 +49,6 @@ enum MainEvent {
 
 fn main() {
     let (input_event_tx, input_event_rx) = channel::unbounded::<InputEvent>();
-    let input_state = Arc::new(ArcSwap::from_pointee(InputState::default()));
-
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
     let (tx_main, rx_main) = channel::unbounded::<MainEvent>();
     let (ready_tx, ready_rx) = channel::bounded::<Box<FrameBuffer>>(NUM_BUFFERS);
@@ -69,7 +60,7 @@ fn main() {
     }
 
     start_render_thread(make_sin_lut(), rx_state, ready_tx, free_rx);
-    start_logic_thread(tx_state, input_state.clone(), tx_main, input_event_rx);
+    start_logic_thread(tx_state, tx_main, input_event_rx);
 
     let mut window = Window::new(
         "Plasma Animation - ESC to exit",
@@ -87,8 +78,7 @@ fn main() {
     let bindings = KeyBindings::default();
 
     while window.is_open() {
-        let input = bindings.process_input(&window, &mut debouncer, &input_event_tx);
-        input_state.store(Arc::new(input));
+        bindings.process_input(&window, &mut debouncer, &input_event_tx);
 
         select! {
             recv(ready_rx) -> msg => match msg {

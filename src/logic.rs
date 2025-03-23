@@ -1,13 +1,10 @@
-use crate::{GameState, HEIGHT, InputEvent, InputState, LOGIC_DURATION, MainEvent, WIDTH};
-use arc_swap::ArcSwapAny;
+use crate::{GameState, HEIGHT, InputEvent, LOGIC_DURATION, MainEvent, WIDTH};
 use crossbeam::channel::{Receiver, Sender};
-use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
 
 pub fn start_logic_thread(
     tx_state: Sender<GameState>,
-    input: Arc<ArcSwapAny<Arc<InputState>>>,
     tx_main: Sender<MainEvent>,
     input_event_rx: Receiver<InputEvent>,
 ) {
@@ -23,20 +20,18 @@ pub fn start_logic_thread(
         let mut last_logic = Instant::now();
 
         loop {
-            let input = *input.load().clone();
-            if input.escape_pressed {
-                tx_main.send(MainEvent::Shutdown).ok();
-            }
-
-            if input.minus_pressed {
-                state.plasma = (state.plasma - 0.1).clamp(0.0, 1.0);
-            } else if input.plus_pressed {
-                state.plasma = (state.plasma + 0.1).clamp(0.0, 1.0);
-            }
-
             while let Ok(event) = input_event_rx.try_recv() {
                 match event {
                     InputEvent::ToggleCRT => state.crt = !state.crt,
+                    InputEvent::EscapePressed => {
+                        tx_main.send(MainEvent::Shutdown).ok();
+                    }
+                    InputEvent::IncreasePressed => {
+                        state.plasma = (state.plasma - 0.1).clamp(0.0, 1.0);
+                    }
+                    InputEvent::DecreasePressed => {
+                        state.plasma = (state.plasma + 0.1).clamp(0.0, 1.0);
+                    }
                 }
             }
 
