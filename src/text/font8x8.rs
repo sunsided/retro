@@ -12,23 +12,20 @@
 /// This macro generates a public constant with the specified name.
 /// The constant is initialized by reversing the bits of each byte in the provided 2D array using the `reverse_all` function.
 macro_rules! impl_font_8x8 {
-    ($wrapper:ident, $name:ident, $src:expr) => {
-        pub struct $wrapper($crate::text::alphabet::StaticAlphabet<8, { $src.len() }>);
-
-        #[allow(dead_code)]
-        pub const $name: $wrapper = $wrapper($crate::text::StaticAlphabet::new(
-            $crate::text::font8x8::reverse_all($src),
-        ));
+    ($wrapper:ident, $src:expr) => {
+        pub struct $wrapper;
 
         #[allow(dead_code)]
         impl $wrapper {
             const LEN: usize = { $src.len() };
+            const GLYPHS: $crate::text::alphabet::StaticAlphabet<8, { $src.len() }> =
+                $crate::text::StaticAlphabet::new($crate::text::font8x8::reverse_all($src));
 
             /// Look up a glyph or panic.
             pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
                 match self.map_char_index(ch) {
                     None => None,
-                    Some(index) => match self.0.get(index) {
+                    Some(index) => match Self::GLYPHS.get(index) {
                         None => None,
                         Some(glyph) => Some(*glyph),
                     },
@@ -48,7 +45,7 @@ macro_rules! impl_font_8x8 {
                 if index.into_inner() as usize >= Self::LEN {
                     None
                 } else {
-                    self.0.get(index)
+                    Self::GLYPHS.get(index)
                 }
             }
 
@@ -67,19 +64,19 @@ mod ext_latin;
 mod standard_galactic;
 
 #[allow(unused_imports)]
-pub use basic::FONT8X8_BASIC;
+pub use basic::BasicAlphabet;
 
 #[allow(unused_imports)]
-pub use block::FONT8X8_BLOCK;
+pub use block::BlockAlphabet;
 
 #[allow(unused_imports)]
-pub use ext_latin::FONT8X8_EXT_LATIN;
+pub use ext_latin::ExtLatinAlphabet;
 
 #[allow(unused_imports)]
-pub use r#box::FONT8X8_BOX;
+pub use r#box::BoxAlphabet;
 
 #[allow(unused_imports)]
-pub use standard_galactic::*;
+pub use standard_galactic::StandardGalacticAlphabet;
 
 /// Reverses the order of bits in a `u8`.
 ///
@@ -133,7 +130,7 @@ mod tests {
     use crate::text::GlyphIndex;
 
     const SAMPLE_SOURCE: [[u8; 8]; 2] = [[0b00000001; 8], [0b10000000; 8]];
-    impl_font_8x8!(ReversedFont, REVERSED_FONT, SAMPLE_SOURCE);
+    impl_font_8x8!(ReversedFont, SAMPLE_SOURCE);
 
     impl ReversedFont {
         pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {
@@ -144,7 +141,7 @@ mod tests {
     #[test]
     fn test_reverse_font_macro() {
         assert_eq!(
-            *REVERSED_FONT.0.as_ref(),
+            *ReversedFont::GLYPHS.as_ref(),
             [[0b10000000; 8], [0b00000001; 8]]
         );
     }

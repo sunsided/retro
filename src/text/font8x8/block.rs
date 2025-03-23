@@ -49,7 +49,7 @@ const _FONT8X8_BLOCK: [[u8; 8]; 32] = [
     [0xF0, 0xF0, 0xF0, 0xF0, 0xFF, 0xFF, 0xFF, 0xFF], // U+259F (boxes right and bottom)
 ];
 
-impl_font_8x8!(BlockAlphabet, FONT8X8_BLOCK, _FONT8X8_BLOCK);
+impl_font_8x8!(BlockAlphabet, _FONT8X8_BLOCK);
 
 impl BlockAlphabet {
     pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {

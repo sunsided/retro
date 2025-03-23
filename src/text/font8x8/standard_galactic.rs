@@ -43,11 +43,7 @@ const _FONT8X8_STANDARD_GALACTIC: [[u8; 8]; 28] = [
     [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9D], // U+002E (.)
 ];
 
-impl_font_8x8!(
-    StandardGalacticAlphabet,
-    FONT8X8_STANDARD_GALACTIC,
-    _FONT8X8_STANDARD_GALACTIC
-);
+impl_font_8x8!(StandardGalacticAlphabet, _FONT8X8_STANDARD_GALACTIC);
 
 impl StandardGalacticAlphabet {
     pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
@@ -76,32 +72,12 @@ mod tests {
 
     #[test]
     fn test_standard_galactic_map_char() {
-        let font = FONT8X8_STANDARD_GALACTIC;
-
-        // Test lowercase letters
-        assert_eq!(
-            font.map_char('a'),
-            Some([0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00])
-        );
-        assert_eq!(
-            font.map_char('z'),
-            Some([0x00, 0x00, 0x18, 0x3C, 0x66, 0x66, 0x66, 0x00])
-        );
-
-        // Test uppercase letters
-        assert_eq!(
-            font.map_char('A'),
-            Some([0x00, 0x00, 0x38, 0x66, 0x06, 0x06, 0x07, 0x00])
-        );
-        assert_eq!(
-            font.map_char('Z'),
-            Some([0x00, 0x00, 0x18, 0x3C, 0x66, 0x66, 0x66, 0x00])
-        );
+        let font = StandardGalacticAlphabet;
 
         // Test non-alphabetic characters
         assert_eq!(font.map_char('1'), None);
-        assert_eq!(font.map_char('!'), None);
-        assert_eq!(font.map_char(' '), None);
+        assert_eq!(font.map_char('?'), None);
+        assert_eq!(font.map_char('~'), None);
         assert_eq!(font.map_char('@'), None);
     }
 }

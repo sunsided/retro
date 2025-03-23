@@ -145,7 +145,7 @@ const _FONT8X8_BOX: [[u8; 8]; 128] = [
     [0x18, 0x18, 0x18, 0x18, 0x08, 0x08, 0x08, 0x08], // U+257F (up H, down L)
 ];
 
-impl_font_8x8!(BoxAlphabet, FONT8X8_BOX, _FONT8X8_BOX);
+impl_font_8x8!(BoxAlphabet, _FONT8X8_BOX);
 
 impl BoxAlphabet {
     pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {

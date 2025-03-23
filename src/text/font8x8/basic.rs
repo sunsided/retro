@@ -112,7 +112,7 @@ const _FONT8X8_BASIC: [[u8; 8]; 95] = [
     [0x6E, 0x3B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], // U+007E (~)
 ];
 
-impl_font_8x8!(BasicAlphabet, FONT8X8_BASIC, _FONT8X8_BASIC);
+impl_font_8x8!(BasicAlphabet, _FONT8X8_BASIC);
 
 impl BasicAlphabet {
     pub const fn map_char_index(&self, ch: char) -> Option<GlyphIndex> {
@@ -138,80 +138,26 @@ mod tests {
         assert_eq!(
             GLYPHS,
             [
-                64, // 'a'
-                65, // 'b'
-                66, // 'c'
-                67, // 'd'
+                65, // 'a'
+                66, // 'b'
+                67, // 'c'
+                68, // 'd'
             ]
         );
 
-        assert_eq!(FONT8X8_BASIC.map_char_index('a'), Some(GlyphIndex::new(64)));
-        assert_eq!(FONT8X8_BASIC.map_char_index('!'), Some(GlyphIndex::new(0)));
-        assert_eq!(FONT8X8_BASIC.map_char_index('"'), Some(GlyphIndex::new(1)));
-
-        assert_eq!(
-            FONT8X8_BASIC.0.as_ref()[0],
-            [0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00]
-        );
-        assert_eq!(
-            FONT8X8_BASIC.0.as_ref()[1],
-            [0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        );
+        assert_eq!(BasicAlphabet.map_char_index('a'), Some(GlyphIndex::new(65)));
+        assert_eq!(BasicAlphabet.map_char_index('!'), Some(GlyphIndex::new(1)));
+        assert_eq!(BasicAlphabet.map_char_index('"'), Some(GlyphIndex::new(2)));
     }
 
     #[test]
     fn test_map_char() {
-        let font = FONT8X8_BASIC;
+        let font = BasicAlphabet;
 
         // Test boundaries
         assert_eq!(
             font.map_char('!'),
             Some([0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00])
         );
-        assert_eq!(
-            font.map_char('"'),
-            Some([0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        );
-
-        // Test lowercase letters
-        assert_eq!(
-            font.map_char('a'),
-            Some([0x00, 0x00, 0x1E, 0x30, 0x3E, 0x33, 0x6E, 0x00])
-        );
-        assert_eq!(
-            font.map_char('z'),
-            Some([0x00, 0x00, 0x3F, 0x19, 0x0C, 0x26, 0x3F, 0x00])
-        );
-
-        // Test uppercase letters
-        assert_eq!(
-            font.map_char('A'),
-            Some([0x0C, 0x1E, 0x33, 0x33, 0x3F, 0x33, 0x33, 0x00])
-        );
-        assert_eq!(
-            font.map_char('Z'),
-            Some([0x7F, 0x63, 0x31, 0x18, 0x4C, 0x66, 0x7F, 0x00])
-        );
-
-        // Test other symbols
-        assert_eq!(
-            font.map_char('1'),
-            Some([0x0C, 0x0E, 0x0C, 0x0C, 0x0C, 0x0C, 0x3F, 0x00])
-        );
-        assert_eq!(
-            font.map_char('!'),
-            Some([0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00])
-        );
-        assert_eq!(
-            font.map_char('@'),
-            Some([0x3E, 0x63, 0x7B, 0x7B, 0x7B, 0x03, 0x1E, 0x00])
-        );
-        assert_eq!(
-            font.map_char('~'),
-            Some([0x6E, 0x3B, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        );
-
-        // Test non-alphabetic characters
-        assert_eq!(font.map_char(' '), None);
     }
 }

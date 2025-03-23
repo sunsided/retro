@@ -113,7 +113,7 @@ const _FONT8X8_EXT_LATIN: [[u8; 8]; 96] = [
     [0x00, 0x33, 0x00, 0x33, 0x33, 0x3E, 0x30, 0x1F], // U+00FF (y umlaut)
 ];
 
-impl_font_8x8!(ExtLatinAlphabet, FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);
+impl_font_8x8!(ExtLatinAlphabet, _FONT8X8_EXT_LATIN);
 
 impl ExtLatinAlphabet {
     pub const fn map_char_index(&self, _ch: char) -> Option<GlyphIndex> {
