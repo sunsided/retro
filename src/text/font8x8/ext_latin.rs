@@ -116,7 +116,7 @@ const _FONT8X8_EXT_LATIN: [[u8; 8]; 96] = [
 impl_font_8x8!(ExtLatinAlphabet, FONT8X8_EXT_LATIN, _FONT8X8_EXT_LATIN);
 
 impl ExtLatinAlphabet {
-    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
         todo!()
     }
 }

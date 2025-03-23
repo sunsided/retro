@@ -148,7 +148,7 @@ const _FONT8X8_BOX: [[u8; 8]; 128] = [
 impl_font_8x8!(BoxAlphabet, FONT8X8_BOX, _FONT8X8_BOX);
 
 impl BoxAlphabet {
-    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
         todo!()
     }
 }

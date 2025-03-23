@@ -112,9 +112,9 @@ const _FONT8X8_BASIC: [[u8; 8]; 94] = [
 impl_font_8x8!(BasicAlphabet, FONT8X8_BASIC, _FONT8X8_BASIC);
 
 impl BasicAlphabet {
-    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
         if ch >= '\u{0021}' && ch <= '\u{007E}' {
-            Some(_FONT8X8_BASIC[(ch as u8 - 0x21) as usize])
+            Some(ch as u8 - b'!')
         } else {
             None
         }
@@ -124,10 +124,49 @@ impl BasicAlphabet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::text::font8x8::Sentence;
 
     #[test]
-    fn test_standard_galactic_map_char() {
+    fn test_font8x8_glyphs_macro() {
+        const GLYPHS: Sentence = font8x8_sentence!(FONT8X8_BASIC, "abcd");
+
+        assert_eq!(
+            GLYPHS,
+            [
+                64, // 'a'
+                65, // 'b'
+                66, // 'c'
+                67, // 'd'
+            ]
+        );
+
+        assert_eq!(FONT8X8_BASIC.map_char_index('a'), Some(64));
+        assert_eq!(FONT8X8_BASIC.map_char_index('!'), Some(0));
+        assert_eq!(FONT8X8_BASIC.map_char_index('"'), Some(1));
+
+        assert_eq!(
+            FONT8X8_BASIC.0.as_ref()[0],
+            [0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00]
+        );
+        assert_eq!(
+            FONT8X8_BASIC.0.as_ref()[1],
+            [0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        );
+    }
+
+    #[test]
+    fn test_map_char() {
         let font = FONT8X8_BASIC;
+
+        // Test boundaries
+        assert_eq!(
+            font.map_char('!'),
+            Some([0x18, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x18, 0x00])
+        );
+        assert_eq!(
+            font.map_char('"'),
+            Some([0x36, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        );
 
         // Test lowercase letters
         assert_eq!(
@@ -169,20 +208,5 @@ mod tests {
 
         // Test non-alphabetic characters
         assert_eq!(font.map_char(' '), None);
-    }
-
-    #[test]
-    fn test_font8x8_glyphs_macro() {
-        const GLYPHS: [[u8; 8]; 4] = font8x8_glyphs!(FONT8X8_BASIC, "abcd");
-
-        assert_eq!(
-            GLYPHS,
-            [
-                [0x00, 0x00, 0x1E, 0x30, 0x3E, 0x33, 0x6E, 0x00], // 'a'
-                [0x07, 0x06, 0x06, 0x3E, 0x66, 0x66, 0x3B, 0x00], // 'b'
-                [0x00, 0x00, 0x1E, 0x33, 0x03, 0x33, 0x1E, 0x00], // 'c'
-                [0x38, 0x30, 0x30, 0x3e, 0x33, 0x33, 0x6E, 0x00], // 'd'
-            ]
-        );
     }
 }

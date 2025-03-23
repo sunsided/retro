@@ -46,15 +46,15 @@ impl_font_8x8!(
 );
 
 impl StandardGalacticAlphabet {
-    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
         if !ch.is_ascii() {
             None
         } else {
             let byte = ch as u8;
             if byte >= b'A' && byte <= b'Z' {
-                Some(_FONT8X8_STANDARD_GALACTIC[(byte - b'A') as usize])
+                Some(byte - b'A')
             } else if byte >= b'a' && byte <= b'z' {
-                Some(_FONT8X8_STANDARD_GALACTIC[(byte - b'a') as usize])
+                Some(byte - b'a')
             } else {
                 None
             }

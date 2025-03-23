@@ -52,7 +52,7 @@ const _FONT8X8_BLOCK: [[u8; 8]; 32] = [
 impl_font_8x8!(BlockAlphabet, FONT8X8_BLOCK, _FONT8X8_BLOCK);
 
 impl BlockAlphabet {
-    pub const fn map_char(&self, ch: char) -> Option<[u8; 8]> {
+    pub const fn map_char_index(&self, ch: char) -> Option<u8> {
         todo!()
     }
 }
