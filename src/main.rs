@@ -10,8 +10,10 @@ mod text;
 use crate::logic::start_logic_thread;
 use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
-use crossbeam::channel;
+use arc_swap::ArcSwap;
+use crossbeam::{channel, select};
 use minifb::{Key, Window, WindowOptions};
+use std::sync::Arc;
 use std::time::Duration;
 
 const WIDTH: usize = 320;
@@ -31,10 +33,23 @@ struct GameState {
     y: usize,
 }
 
+#[derive(Clone, Copy, Default)]
+struct InputState {
+    escape_pressed: bool,
+    // later: movement keys, mouse, etc.
+}
+
+enum MainEvent {
+    Shutdown,
+}
+
 fn main() {
+    let input_state = Arc::new(ArcSwap::from_pointee(InputState::default()));
+
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
-    let (ready_tx, ready_rx) = channel::bounded::<Box<[u32; WIDTH * HEIGHT]>>(NUM_BUFFERS);
-    let (free_tx, free_rx) = channel::bounded::<Box<[u32; WIDTH * HEIGHT]>>(NUM_BUFFERS);
+    let (tx_main, rx_main) = channel::unbounded::<MainEvent>();
+    let (ready_tx, ready_rx) = channel::bounded::<Box<FrameBuffer>>(NUM_BUFFERS);
+    let (free_tx, free_rx) = channel::bounded::<Box<FrameBuffer>>(NUM_BUFFERS);
 
     for _ in 0..NUM_BUFFERS {
         let buffer = Box::new([0u32; WIDTH * HEIGHT]);
@@ -42,7 +57,7 @@ fn main() {
     }
 
     start_render_thread(make_sin_lut(), rx_state, ready_tx, free_rx);
-    start_logic_thread(tx_state);
+    start_logic_thread(tx_state, input_state.clone(), tx_main);
 
     let mut window = Window::new(
         "Plasma Animation - ESC to exit",
@@ -57,21 +72,40 @@ fn main() {
     .unwrap();
 
     while window.is_open() {
-        match ready_rx.recv_timeout(INPUT_DURATION) {
-            Ok(buffer_arc) => {
-                window
-                    .update_with_buffer(buffer_arc.as_slice(), WIDTH, HEIGHT)
-                    .unwrap();
-                free_tx.send(buffer_arc).unwrap();
+        select! {
+            recv(ready_rx) -> msg => match msg {
+                Ok(buffer_arc) => {
+                    window
+                        .update_with_buffer(buffer_arc.as_slice(), WIDTH, HEIGHT)
+                        .unwrap();
+                    free_tx.send(buffer_arc).unwrap();
+                }
+                Err(_) => {
+                    eprintln!("Error receiving buffer event");
+                    break;
+                },
+            },
+
+            recv(rx_main) -> msg => match msg {
+                Ok(event) => {
+                    match event {
+                        MainEvent::Shutdown => break,
+                    }
+                }
+                Err(_) => {
+                    eprintln!("Error receiving output event");
+                    break;
+                },
+            },
+
+            default(INPUT_DURATION) => {
+                // Neither frame nor event received in INPUT_DURATION
             }
-            Err(channel::RecvTimeoutError::Timeout) => {
-                // Timeout: check input
-            }
-            Err(channel::RecvTimeoutError::Disconnected) => break,
         }
 
-        if window.is_key_down(Key::Escape) {
-            break;
-        }
+        let input = InputState {
+            escape_pressed: window.is_key_down(Key::Escape),
+        };
+        input_state.store(Arc::new(input));
     }
 }
