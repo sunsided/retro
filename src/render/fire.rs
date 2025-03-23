@@ -11,7 +11,7 @@ impl Fire {
     pub fn new() -> Self {
         Self {
             heat: vec![0u8; WIDTH * HEIGHT],
-            rng: rand::thread_rng(),
+            rng: rand::rng(),
         }
     }
 

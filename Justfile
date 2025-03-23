@@ -19,11 +19,14 @@ build:
 test *ARGS:
     cargo test --workspace {{ARGS}}
 
+# Run benchmarks
+bench *ARGS:
+    cargo bench {{ARGS}}
+
 # Just build the documentation.
 build-docs:
     export DOCSRS=1
     cargo +nightly doc --no-deps --workspace --all-features --document-private-items
-
 
 [private]
 build-doc: build-docs
