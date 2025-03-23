@@ -47,6 +47,7 @@ pub fn start_logic_thread(
                         0 => state.background = SceneBackground::None,
                         1 => state.background = SceneBackground::Plasma(Default::default()),
                         2 => state.background = SceneBackground::Fire,
+                        3 => state.background = SceneBackground::Matrix,
                         _ => (),
                     },
                     InputEvent::ToggleItalic => {

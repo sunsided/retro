@@ -34,6 +34,8 @@ define_key_bindings! {
     Number1, num_1 => Key::Key1,
     /// Switch to setting two
     Number2, num_2 => Key::Key2,
+    /// Switch to setting three
+    Number3, num_3 => Key::Key3,
     /// Toggle italic fonts
     Italic, italic => Key::I,
 }

@@ -1,7 +1,11 @@
+use crate::text::Alphabet::StandardGalactic;
+use crate::text::{Alphabet, GlyphIndex, draw_char};
 use crate::{FrameBuffer, HEIGHT, WIDTH};
+use rand::rng;
 
 pub struct MatrixEffect {
     columns: Vec<usize>,
+    alphabet: Alphabet,
 }
 
 impl MatrixEffect {
@@ -9,17 +13,18 @@ impl MatrixEffect {
         let cols = WIDTH / 8;
         Self {
             columns: vec![0; cols],
+            alphabet: StandardGalactic,
         }
     }
 
     pub fn render(&mut self, buffer: &mut FrameBuffer, frame: usize) {
-        use rand::{Rng, thread_rng};
+        use rand::Rng;
         const ROWS: usize = HEIGHT / 8;
         const SPEED: usize = 2;
 
         for col in 0..self.columns.len() {
             if frame % SPEED == 0 {
-                if thread_rng().gen_bool(0.1) {
+                if rng().random_bool(0.1) {
                     self.columns[col] = 0;
                 } else {
                     self.columns[col] += 1;
@@ -33,15 +38,8 @@ impl MatrixEffect {
                     let x = col * 8;
                     let y = row * 8;
                     let color = ((brightness as u32) << 8);
-                    for dy in 0..8 {
-                        for dx in 0..8 {
-                            let px = x + dx;
-                            let py = y + dy;
-                            if px < WIDTH && py < HEIGHT {
-                                buffer[py * WIDTH + px] = color;
-                            }
-                        }
-                    }
+                    let ch = GlyphIndex::new(rng().random_range(0..self.alphabet.len()) as u8);
+                    draw_char(buffer, x, y, self.alphabet, ch, color, 1, false);
                 }
             }
         }

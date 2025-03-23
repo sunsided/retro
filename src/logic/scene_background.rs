@@ -3,6 +3,7 @@ pub enum SceneBackground {
     None,
     Plasma(PlasmaBackground),
     Fire,
+    Matrix,
 }
 
 #[derive(Debug, Clone)]

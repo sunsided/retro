@@ -94,8 +94,10 @@ pub fn start_render_thread(
                     plasma.render(&mut buffer);
                 }
                 SceneBackground::Fire => {
-                    // fire.update();
-                    // fire.render(&mut buffer);
+                    fire.update();
+                    fire.render(&mut buffer);
+                }
+                SceneBackground::Matrix => {
                     matrix.render(&mut buffer, frame);
                 }
             }
@@ -109,6 +111,11 @@ pub fn start_render_thread(
             }
 
             let t3 = Instant::now();
+            if state.crt {
+                crt.render(&mut buffer, frame / 10);
+            }
+
+            let t4 = Instant::now();
             draw_text(
                 &mut buffer,
                 20,
@@ -142,11 +149,6 @@ pub fn start_render_thread(
                 false,
             );
 
-            let t4 = Instant::now();
-            if state.crt {
-                crt.render(&mut buffer, frame / 10);
-            }
-
             let t5 = Instant::now();
 
             if ready_tx.try_send(current_buffer.take().unwrap()).is_err() {
@@ -158,7 +160,7 @@ pub fn start_render_thread(
             let elapsed_since_frame_start = t6.duration_since(t0);
             if elapsed_since_frame_start <= FRAME_DURATION {
                 trace!(
-                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, crt: {:.3} ms, text: {:.3} ms, send: {:.3} ms",
                     elapsed_since_frame_start.as_secs_f32() * 1000.0,
                     (t1 - t0).as_secs_f32() * 1000.0,
                     (t2 - t1).as_secs_f32() * 1000.0,
@@ -169,7 +171,7 @@ pub fn start_render_thread(
                 );
             } else {
                 warn!(
-                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, crt: {:.3} ms, text: {:.3} ms, send: {:.3} ms",
                     elapsed_since_frame_start.as_secs_f32() * 1000.0,
                     (t1 - t0).as_secs_f64() * 1000.0,
                     (t2 - t1).as_secs_f64() * 1000.0,
