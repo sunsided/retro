@@ -22,6 +22,7 @@ pub const INPUT_DURATION: Duration = Duration::from_millis(10); // 100 Hz
 const LUT_SIZE: usize = 256;
 pub const NUM_BUFFERS: usize = 3;
 
+pub type PaletteIndex = u8;
 pub type Color = u32;
 pub type FrameBuffer = [Color; WIDTH * HEIGHT];
 

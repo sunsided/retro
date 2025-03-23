@@ -27,7 +27,14 @@ use crate::{FrameBuffer, HEIGHT, WIDTH};
 /// let mut buffer = [0; WIDTH * HEIGHT];
 /// draw_line(&mut buffer, 10, 10, 100, 50, 0xFF00FF); // Draw a purple line
 /// ```
-pub fn draw_line(buffer: &mut FrameBuffer, x0: usize, y0: usize, x1: usize, y1: usize, color: u32) {
+pub const fn draw_line(
+    buffer: &mut FrameBuffer,
+    x0: usize,
+    y0: usize,
+    x1: usize,
+    y1: usize,
+    color: u32,
+) {
     let mut x0 = x0 as isize;
     let mut y0 = y0 as isize;
     let x1 = x1 as isize;

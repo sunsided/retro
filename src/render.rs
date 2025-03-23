@@ -107,7 +107,8 @@ pub fn start_render_thread(
 
             let t2 = Instant::now();
             if state.x < WIDTH && state.y < HEIGHT {
-                draw_sprite(&mut buffer, &UFO_SPRITE, 8, state.x, state.y, 4);
+                let scale = (state.x * 4 / WIDTH + 1).clamp(1, 4);
+                draw_sprite(&mut buffer, &UFO_SPRITE, 8, state.x, state.y, scale);
             }
 
             let t3 = Instant::now();
