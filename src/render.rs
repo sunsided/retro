@@ -1,19 +1,20 @@
 mod crt_effect;
+mod fire;
 mod plasma;
 mod sprite;
 
-use crate::colors::palettes;
 use crate::logic::GameState;
 use crate::logic::scene_background::SceneBackground;
-use crate::render::crt_effect::apply_crt_effect;
-use crate::render::plasma::Plasma;
+pub use crate::render::crt_effect::apply_crt_effect;
+pub use crate::render::fire::Fire;
+pub use crate::render::plasma::Plasma;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
 use crate::text::{Alphabet, draw_text, font8x8_sentence};
 use crate::{FRAME_DURATION, FrameBuffer, HEIGHT, WIDTH};
 use crossbeam::channel;
-use rand::Rng;
 use std::thread;
 use std::time::Instant;
+use tracing::{debug, error, trace, warn};
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -27,74 +28,48 @@ pub const fn dim_color(color: u32, factor: f32) -> u32 {
     (color & 0xFF000000) | (r << 16) | (g << 8) | b
 }
 
-struct Fire {
-    heat: Vec<u8>,
-    rng: rand::rngs::ThreadRng,
-}
-
-impl Fire {
-    fn new() -> Self {
-        Self {
-            heat: vec![0u8; WIDTH * HEIGHT],
-            rng: rand::thread_rng(),
-        }
-    }
-
-    fn update(&mut self) {
-        for x in 0..WIDTH {
-            self.heat[(HEIGHT - 1) * WIDTH + x] = if self.rng.gen_range(0..10) > 1 {
-                255
-            } else {
-                0
-            };
-        }
-        for y in 1..HEIGHT {
-            for x in 0..WIDTH {
-                let src = y * WIDTH + x;
-                let below = src + WIDTH;
-                let decay = self.rng.gen_range(1..20);
-                let new_val = self
-                    .heat
-                    .get(below)
-                    .copied()
-                    .unwrap_or(0)
-                    .saturating_sub(decay);
-                let dx = self.rng.gen_range(0..3);
-                let dst_x = x.wrapping_add(dx).wrapping_sub(1).min(WIDTH - 1);
-                let dst_y = y - 1;
-                let dst = dst_y * WIDTH + dst_x;
-                self.heat[dst] = new_val;
-            }
-        }
-    }
-
-    fn render(&self, buffer: &mut FrameBuffer) {
-        for (i, &val) in self.heat.iter().enumerate() {
-            buffer[i] = palettes::FIRE[val as usize];
-        }
-    }
-}
-
 pub fn start_render_thread(
     rx_state: channel::Receiver<GameState>,
     ready_tx: channel::Sender<Box<FrameBuffer>>,
     free_rx: channel::Receiver<Box<FrameBuffer>>,
 ) {
     thread::spawn(move || {
-        let start = Instant::now();
         let mut state = GameState::default();
 
         let mut plasma = Plasma::new();
         let mut fire = Fire::new();
 
         let mut frame = 0;
+        let mut fps_counter = 0;
+        let mut fps_display = 0;
+        let mut last_fps_at = Instant::now();
+        let mut next_frame_due = Instant::now();
+
+        let sleeper = spin_sleep::SpinSleeper::new(0)
+            .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
+
+        let mut current_buffer: Option<Box<FrameBuffer>> = None;
+
         loop {
-            let mut buffer = free_rx.recv().unwrap();
+            let t0 = Instant::now();
+
+            if current_buffer.is_none() {
+                current_buffer = match free_rx.try_recv() {
+                    Ok(buffer) => Some(buffer),
+                    Err(_) => {
+                        error!("Stalling: waiting for a free frame buffer...");
+                        Some(free_rx.recv().unwrap())
+                    }
+                };
+            }
+
+            let mut buffer = current_buffer.as_mut().unwrap();
 
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
             }
 
+            let t1 = Instant::now();
             match state.background {
                 SceneBackground::None => {
                     for pixel in buffer.iter_mut() {
@@ -111,10 +86,12 @@ pub fn start_render_thread(
                 }
             }
 
+            let t2 = Instant::now();
             if state.x < WIDTH && state.y < HEIGHT {
                 draw_sprite(&mut buffer, &UFO_SPRITE, 8, state.x, state.y, 4);
             }
 
+            let t3 = Instant::now();
             draw_text(
                 &mut buffer,
                 20,
@@ -122,7 +99,7 @@ pub fn start_render_thread(
                 font8x8_sentence!("HELLO VGA WORLD"),
                 0xFFFFFF,
                 2,
-                true,
+                state.italic,
             );
             draw_text(
                 &mut buffer,
@@ -138,13 +115,67 @@ pub fn start_render_thread(
                 false,
             );
 
+            let t4 = Instant::now();
             if state.crt {
                 apply_crt_effect(&mut buffer, frame / 10);
             }
 
-            ready_tx.send(buffer).unwrap();
-            thread::sleep(FRAME_DURATION);
+            let t5 = Instant::now();
+
+            if ready_tx.try_send(current_buffer.take().unwrap()).is_err() {
+                // Couldn't send this frame — keep the buffer and try again next loop
+                error!("Contention detected: unable to send frame buffer to the channel");
+            }
+
+            let t6 = Instant::now();
+            let elapsed_since_frame_start = t6.duration_since(t0);
+            if elapsed_since_frame_start <= FRAME_DURATION {
+                trace!(
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    elapsed_since_frame_start.as_secs_f32() * 1000.0,
+                    (t1 - t0).as_secs_f32() * 1000.0,
+                    (t2 - t1).as_secs_f32() * 1000.0,
+                    (t3 - t2).as_secs_f32() * 1000.0,
+                    (t4 - t3).as_secs_f32() * 1000.0,
+                    (t5 - t4).as_secs_f32() * 1000.0,
+                    (t6 - t5).as_secs_f32() * 1000.0,
+                );
+            } else {
+                warn!(
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    elapsed_since_frame_start.as_secs_f32() * 1000.0,
+                    (t1 - t0).as_secs_f64() * 1000.0,
+                    (t2 - t1).as_secs_f64() * 1000.0,
+                    (t3 - t2).as_secs_f64() * 1000.0,
+                    (t4 - t3).as_secs_f64() * 1000.0,
+                    (t5 - t4).as_secs_f64() * 1000.0,
+                    (t6 - t5).as_secs_f64() * 1000.0,
+                );
+            }
+
+            // Schedule next frame time exactly `FRAME_DURATION` after previous
+            next_frame_due += FRAME_DURATION;
+
+            let now = Instant::now();
+            if now < next_frame_due {
+                sleeper.sleep_until(next_frame_due);
+            } else {
+                warn!(
+                    "Render frame missed deadline by {:?}",
+                    now.duration_since(next_frame_due)
+                );
+                next_frame_due = now;
+            }
+
             frame += 1;
+            fps_counter += 1;
+            if last_fps_at.elapsed().as_secs() >= 1 {
+                fps_display = fps_counter;
+                fps_counter = 0;
+                last_fps_at = Instant::now();
+
+                debug!("FPS: {}", fps_display);
+            }
         }
     });
 }

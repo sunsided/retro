@@ -19,11 +19,26 @@ build:
 test *ARGS:
     cargo test --workspace {{ARGS}}
 
+# Run benchmarks
+bench *ARGS:
+    cargo bench {{ARGS}}
+
+# Run in release mode
+run:
+    RUST_LOG=retro=info cargo run --release
+
+# Run with debug logging enabled
+debug:
+    RUST_LOG=retro=debug cargo run
+
+# Run with tracing enabled
+trace:
+    RUST_LOG=retro=trace cargo run
+
 # Just build the documentation.
 build-docs:
     export DOCSRS=1
     cargo +nightly doc --no-deps --workspace --all-features --document-private-items
-
 
 [private]
 build-doc: build-docs

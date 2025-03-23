@@ -16,7 +16,7 @@ pub struct Plasma {
 }
 
 impl Plasma {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             start: Instant::now(),
             speed: 60.0,
@@ -36,14 +36,15 @@ impl Plasma {
     pub fn render(&self, buffer: &mut FrameBuffer) {
         let t = (self.start.elapsed().as_secs_f32() * self.speed) as usize;
 
+        let lut = SIN_LUT.as_ref();
         for y in 0..HEIGHT {
             for x in 0..WIDTH {
-                let a = SIN_LUT[((x * self.scale_x).wrapping_add(t * 1)) & 0xFF] as usize;
-                let b = SIN_LUT[((y * self.scale_y).wrapping_add(t * 2)) & 0xFF] as usize;
-                let c = SIN_LUT[(((x + y) * self.scale_mix).wrapping_add(t * 3)) & 0xFF] as usize;
+                let a = lut[((x * self.scale_x).wrapping_add(t * 1)) & 0xFF] as usize;
+                let b = lut[((y * self.scale_y).wrapping_add(t * 2)) & 0xFF] as usize;
+                let c = lut[(((x + y) * self.scale_mix).wrapping_add(t * 3)) & 0xFF] as usize;
                 let dist =
                     (((x * x + y * y) as f32).sqrt() as usize).wrapping_add(t * self.radial_scale);
-                let d = SIN_LUT[(dist * 2) & 0xFF] as usize;
+                let d = lut[(dist * 2) & 0xFF] as usize;
                 let v = ((a + b + c + d) >> 2) & 0xFF;
                 let index = (v + self.offset) & 0xFF;
                 buffer[y * WIDTH + x] = dim_color(PLASMA[index], self.intensity);

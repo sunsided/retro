@@ -34,6 +34,8 @@ define_key_bindings! {
     Number1, num_1 => Key::Key1,
     /// Switch to setting two
     Number2, num_2 => Key::Key2,
+    /// Toggle italic fonts
+    Italic, italic => Key::I,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -43,4 +45,5 @@ pub enum InputEvent {
     IncreasePressed,
     DecreasePressed,
     NumberSelected(usize),
+    ToggleItalic,
 }

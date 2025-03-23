@@ -118,7 +118,6 @@ pub fn draw_text<'a, S>(
     for sentence in text.iter() {
         let alphabet = sentence.alphabet();
         for ch in sentence.bytes() {
-            offset += 1;
             draw_char(
                 buffer,
                 x + offset * 8 * scale,
@@ -129,6 +128,7 @@ pub fn draw_text<'a, S>(
                 scale,
                 italic,
             );
+            offset += 1;
         }
     }
 }
