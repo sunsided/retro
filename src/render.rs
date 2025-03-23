@@ -5,7 +5,7 @@ mod sprite;
 
 use crate::logic::GameState;
 use crate::logic::scene_background::SceneBackground;
-pub use crate::render::crt_effect::apply_crt_effect;
+pub use crate::render::crt_effect::CrtEffect;
 pub use crate::render::fire::Fire;
 pub use crate::render::plasma::Plasma;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
@@ -38,6 +38,7 @@ pub fn start_render_thread(
 
         let mut plasma = Plasma::new();
         let mut fire = Fire::new();
+        let mut crt = CrtEffect::new();
 
         let mut frame = 0;
         let mut fps_counter = 0;
@@ -118,7 +119,7 @@ pub fn start_render_thread(
 
             let t4 = Instant::now();
             if state.crt {
-                apply_crt_effect(&mut buffer, frame / 10);
+                crt.render(&mut buffer, frame / 10);
             }
 
             let t5 = Instant::now();
