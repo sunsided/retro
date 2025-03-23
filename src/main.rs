@@ -12,13 +12,13 @@ use crate::lut::make_sin_lut;
 use crate::render::start_render_thread;
 use crossbeam::channel;
 use minifb::{Key, Window, WindowOptions};
-use std::thread;
 use std::time::Duration;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
 const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 FPS
 const LOGIC_DURATION: Duration = Duration::from_millis(40); // 25 Hz
+const INPUT_DURATION: Duration = Duration::from_millis(20); // 50 Hz
 const LUT_SIZE: usize = 256;
 const NUM_BUFFERS: usize = 3;
 
@@ -56,13 +56,22 @@ fn main() {
     )
     .unwrap();
 
-    while window.is_open() && !window.is_key_down(Key::Escape) {
-        if let Ok(buffer_arc) = ready_rx.recv() {
-            window
-                .update_with_buffer(buffer_arc.as_slice(), WIDTH, HEIGHT)
-                .unwrap();
-            free_tx.send(buffer_arc).unwrap();
+    while window.is_open() {
+        match ready_rx.recv_timeout(INPUT_DURATION) {
+            Ok(buffer_arc) => {
+                window
+                    .update_with_buffer(buffer_arc.as_slice(), WIDTH, HEIGHT)
+                    .unwrap();
+                free_tx.send(buffer_arc).unwrap();
+            }
+            Err(channel::RecvTimeoutError::Timeout) => {
+                // Timeout: check input
+            }
+            Err(channel::RecvTimeoutError::Disconnected) => break,
         }
-        thread::sleep(Duration::from_millis(1));
+
+        if window.is_key_down(Key::Escape) {
+            break;
+        }
     }
 }
