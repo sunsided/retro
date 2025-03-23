@@ -1,3 +1,5 @@
+mod scene_background;
+
 use crate::{GameState, HEIGHT, InputEvent, LOGIC_DURATION, MainEvent, WIDTH};
 use crossbeam::channel::{Receiver, Sender};
 use std::thread;
