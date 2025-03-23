@@ -1,4 +1,4 @@
-use crate::{FrameBuffer, HEIGHT, WIDTH};
+use crate::{Color, FrameBuffer, HEIGHT, WIDTH};
 use rand::Rng;
 use rayon::prelude::*;
 
@@ -9,7 +9,7 @@ pub struct CrtEffect {
 impl CrtEffect {
     pub fn new() -> Self {
         Self {
-            scratch: [0; WIDTH * HEIGHT],
+            scratch: [Color::default(); WIDTH * HEIGHT],
         }
     }
 
@@ -32,18 +32,10 @@ impl CrtEffect {
             let r = (((*px >> 16) & 0xFF).saturating_add(noise as _)) * brightness / 255;
             let g = (((*px >> 8) & 0xFF).saturating_add(noise as _)) * brightness / 255;
             let b = ((*px) & 0xFF).saturating_add(noise as _) * brightness / 255;
+            // *px = (r << 16) | (g << 8) | b;
 
-            *px = (r << 16) | (g << 8) | b;
-        });
-
-        // RGB shadow mask simulation
-        pixels.par_iter_mut().enumerate().for_each(|(i, px)| {
+            // RGB shadow mask simulation
             let x = i % WIDTH;
-
-            let r = (*px >> 16) & 0xFF;
-            let g = (*px >> 8) & 0xFF;
-            let b = *px & 0xFF;
-
             let modulated = match x % 3 {
                 0 => (r / 2) << 16,
                 1 => (g / 2) << 8,
