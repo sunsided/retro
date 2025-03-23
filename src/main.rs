@@ -41,7 +41,11 @@ struct InputState {
     // later: movement keys, mouse, etc.
     plus_pressed: bool,
     minus_pressed: bool,
-    toogle_crt: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum InputEvent {
+    ToggleCRT,
 }
 
 enum MainEvent {
@@ -49,6 +53,7 @@ enum MainEvent {
 }
 
 fn main() {
+    let (input_event_tx, input_event_rx) = channel::unbounded::<InputEvent>();
     let input_state = Arc::new(ArcSwap::from_pointee(InputState::default()));
 
     let (tx_state, rx_state) = channel::bounded::<GameState>(1);
@@ -62,7 +67,7 @@ fn main() {
     }
 
     start_render_thread(make_sin_lut(), rx_state, ready_tx, free_rx);
-    start_logic_thread(tx_state, input_state.clone(), tx_main);
+    start_logic_thread(tx_state, input_state.clone(), tx_main, input_event_rx);
 
     let mut window = Window::new(
         "Plasma Animation - ESC to exit",
@@ -77,6 +82,24 @@ fn main() {
     .unwrap();
 
     while window.is_open() {
+        for key in window.get_keys_pressed(KeyRepeat::No) {
+            match key {
+                Key::Space => {
+                    let _ = input_event_tx.send(InputEvent::ToggleCRT);
+                }
+                _ => {}
+            }
+        }
+
+        let input = InputState {
+            escape_pressed: window.is_key_down(Key::Escape),
+            plus_pressed: window.is_key_pressed(Key::Up, KeyRepeat::Yes),
+            minus_pressed: window.is_key_pressed(Key::Down, KeyRepeat::Yes),
+        };
+
+        // TODO: We may lose input events here if we're not reading them fast enough
+        input_state.store(Arc::new(input));
+
         select! {
             recv(ready_rx) -> msg => match msg {
                 Ok(buffer_arc) => {
@@ -107,15 +130,5 @@ fn main() {
                 // Neither frame nor event received in INPUT_DURATION
             }
         }
-
-        let input = InputState {
-            escape_pressed: window.is_key_down(Key::Escape),
-            plus_pressed: window.is_key_pressed(Key::Up, KeyRepeat::Yes),
-            minus_pressed: window.is_key_pressed(Key::Down, KeyRepeat::Yes),
-            toogle_crt: window.is_key_pressed(Key::Space, KeyRepeat::No),
-        };
-
-        // TODO: We may lose input events here if we're not reading them fast enough
-        input_state.store(Arc::new(input));
     }
 }

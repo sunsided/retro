@@ -1,6 +1,6 @@
-use crate::{GameState, HEIGHT, InputState, LOGIC_DURATION, MainEvent, WIDTH};
+use crate::{GameState, HEIGHT, InputEvent, InputState, LOGIC_DURATION, MainEvent, WIDTH};
 use arc_swap::ArcSwapAny;
-use crossbeam::channel::Sender;
+use crossbeam::channel::{Receiver, Sender};
 use std::sync::Arc;
 use std::thread;
 
@@ -8,6 +8,7 @@ pub fn start_logic_thread(
     tx_state: Sender<GameState>,
     input: Arc<ArcSwapAny<Arc<InputState>>>,
     tx_main: Sender<MainEvent>,
+    input_event_rx: Receiver<InputEvent>,
 ) {
     thread::spawn(move || {
         let mut state = GameState {
@@ -31,8 +32,13 @@ pub fn start_logic_thread(
                 state.plasma = (state.plasma + 0.1).clamp(0.0, 1.0);
             }
 
-            if input.toogle_crt {
-                state.crt = !state.crt;
+            // handle one-shot events
+            while let Ok(event) = input_event_rx.try_recv() {
+                match event {
+                    InputEvent::ToggleCRT => {
+                        state.crt = !state.crt;
+                    }
+                }
             }
 
             state.tick += 1;
