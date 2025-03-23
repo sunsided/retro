@@ -66,7 +66,7 @@ impl CrtEffect {
 
             let xf = (x as f32 - WIDTH as f32 / 2.0) / (WIDTH as f32 / 2.0);
             let yf = (y as f32 - HEIGHT as f32 / 2.0) / (HEIGHT as f32 / 2.0);
-            let vignette = (1.0 - (xf * xf + yf * yf) * 0.2).clamp(0.0, 1.0);
+            let vignette = (1.0 - (xf * xf + yf * yf) * 0.5).clamp(0.0, 1.0);
 
             let r = (((*px >> 16) & 0xFF) as f32 * vignette) as u8;
             let g = (((*px >> 8) & 0xFF) as f32 * vignette) as u8;
