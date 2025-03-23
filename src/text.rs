@@ -54,12 +54,14 @@ pub fn draw_text<'a, S>(
     S: Borrow<Sentence<'a>>,
 {
     let text = text.borrow();
+    let mut offset = 0;
     for sentence in text.iter() {
         let alphabet = sentence.alphabet();
-        for (i, ch) in sentence.bytes().enumerate() {
+        for ch in sentence.bytes() {
+            offset += 1;
             draw_char(
                 buffer,
-                x + i * 8 * scale,
+                x + offset * 8 * scale,
                 y,
                 alphabet,
                 *ch,

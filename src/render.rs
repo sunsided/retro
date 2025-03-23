@@ -248,7 +248,11 @@ pub fn start_render_thread(
                 &mut buffer,
                 20,
                 40,
-                font8x8_sentence!(Alphabet::StandardGalactic, "beep boop robot."),
+                font8x8_sentence!(
+                    "Happy "
+                    Alphabet::StandardGalactic, "beep boop robot"
+                    " y'all"
+                ),
                 0xFFFFFF,
                 1,
                 false,

@@ -1,25 +1,41 @@
 use std::ops::Deref;
 
 macro_rules! font8x8_sentence {
-    ($text:literal) => {{
-        use $crate::text::Alphabet;
-        $crate::text::font8x8_sentence!(Alphabet::Basic, $text)
+    (
+        $(
+            $( $alphabet:path , )? $text:literal
+        )+
+        $(,)?
+    ) => {{
+        const GLYPHS_ARR: &[$crate::text::Glyphs] = &[
+            $(
+                {
+                    const ALPHABET: $crate::text::Alphabet = font8x8_sentence!(@resolve_alphabet $( $alphabet )?);
+
+                    const GLYPHS: [$crate::text::GlyphIndex; $text.len()] = {
+                        let mut out = [$crate::text::GlyphIndex::new(0); $text.len()];
+                        let bytes = $text.as_bytes();
+                        let mut i = 0;
+                        while i < $text.len() {
+                            let ch = bytes[i] as char;
+                            out[i] = ALPHABET.map_char_index_or_panic(ch);
+                            i += 1;
+                        }
+                        out
+                    };
+                    $crate::text::Glyphs::new(ALPHABET, &GLYPHS)
+                }
+            ),+
+        ];
+        $crate::text::Sentence::new(GLYPHS_ARR)
     }};
-    ($alphabet:path, $text:literal) => {{
-        const GLYPHS: [$crate::text::GlyphIndex; $text.len()] = {
-            let mut out = [$crate::text::GlyphIndex::new(0); $text.len()];
-            let bytes = $text.as_bytes();
-            let mut i = 0;
-            while i < $text.len() {
-                out[i] = $alphabet.map_char_index_or_panic(bytes[i] as char);
-                i += 1;
-            }
-            out
-        };
-        const GLYPHS_ARR: [$crate::text::Glyphs; 1] =
-            [$crate::text::Glyphs::new($alphabet, &GLYPHS)];
-        $crate::text::Sentence::new(&GLYPHS_ARR)
-    }};
+
+    (@resolve_alphabet) => {
+        $crate::text::Alphabet::Basic
+    };
+    (@resolve_alphabet $alphabet:path) => {
+        $alphabet
+    };
 }
 
 use crate::text::GlyphIndex;
