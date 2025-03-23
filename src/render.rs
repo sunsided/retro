@@ -18,6 +18,22 @@ pub const fn dim_color(color: u32, factor: f32) -> u32 {
     (color & 0xFF000000) | (r << 16) | (g << 8) | b
 }
 
+fn apply_crt_effect(pixels: &mut FrameBuffer) {
+    for y in 0..HEIGHT {
+        let brightness = if y % 2 == 0 { 255 } else { 220 }; // simulate scanlines
+        for x in 0..WIDTH {
+            let idx = y * WIDTH + x;
+            let mut px = pixels[idx];
+
+            let r = ((px >> 16) & 0xFF) * brightness / 255;
+            let g = ((px >> 8) & 0xFF) * brightness / 255;
+            let b = (px & 0xFF) * brightness / 255;
+
+            pixels[idx] = (r << 16) | (g << 8) | b;
+        }
+    }
+}
+
 pub fn start_render_thread(
     sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
@@ -98,6 +114,8 @@ pub fn start_render_thread(
             if state.x < WIDTH && state.y < HEIGHT {
                 buffer[state.y * WIDTH + state.x] = 0xFFFFFF;
             }
+
+            apply_crt_effect(&mut buffer);
 
             ready_tx.send(buffer).unwrap();
             thread::sleep(FRAME_DURATION);
