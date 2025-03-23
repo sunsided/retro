@@ -1,10 +1,13 @@
 use crate::LUT_SIZE;
+use std::sync::LazyLock;
 
-pub fn make_sin_lut() -> [u8; LUT_SIZE] {
+pub static SIN_LUT: LazyLock<[u8; LUT_SIZE]> = LazyLock::new(make_sin_lut);
+
+fn make_sin_lut() -> [u8; LUT_SIZE] {
     let mut lut = [0u8; LUT_SIZE];
-    for (i, entry) in lut.iter_mut().enumerate().take(LUT_SIZE) {
+    for (i, entry) in lut.iter_mut().enumerate() {
         let angle = i as f32 * std::f32::consts::TAU / LUT_SIZE as f32;
-        *entry = ((f32::sin(angle) * 127.5) + 127.5) as u8;
+        *entry = ((angle.sin() * 127.5) + 127.5) as u8;
     }
     lut
 }

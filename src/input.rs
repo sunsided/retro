@@ -20,12 +20,27 @@ use minifb::Key;
 
 // Defines specific key bindings and their corresponding high-level intents.
 define_key_bindings! {
+    /// Exit or escape the current context.
+    Escape, escape => Key::Escape,
     /// Toggle the CRT effect.
     ToggleCrt, toggle_crt => Key::Space,
     /// Increase a specific setting.
     Increase, increase => Key::Up,
     /// Decrease a specific setting.
     Decrease, decrease => Key::Down,
-    /// Exit or escape the current context.
-    Escape, escape => Key::Escape,
+    /// Switch to setting zero
+    Number0, num_0 => Key::Key0,
+    /// Switch to setting one
+    Number1, num_1 => Key::Key1,
+    /// Switch to setting two
+    Number2, num_2 => Key::Key2,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum InputEvent {
+    ToggleCRT,
+    EscapePressed,
+    IncreasePressed,
+    DecreasePressed,
+    NumberSelected(usize),
 }

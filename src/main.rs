@@ -7,9 +7,9 @@ mod lut;
 mod render;
 mod text;
 
-use crate::input::{KeyBindings, KeyHandling};
-use crate::logic::start_logic_thread;
-use crate::lut::make_sin_lut;
+use crate::input::{InputEvent, KeyBindings, KeyHandling};
+use crate::logic::scene_background::SceneBackground;
+use crate::logic::{GameState, start_logic_thread};
 use crate::render::start_render_thread;
 use crossbeam::{channel, select};
 use minifb::{Window, WindowOptions};
@@ -25,23 +25,6 @@ const NUM_BUFFERS: usize = 3;
 
 type Color = u32;
 type FrameBuffer = [Color; WIDTH * HEIGHT];
-
-#[derive(Clone, Copy)]
-struct GameState {
-    tick: u64,
-    x: usize,
-    y: usize,
-    plasma: f32,
-    crt: bool,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum InputEvent {
-    ToggleCRT,
-    EscapePressed,
-    IncreasePressed,
-    DecreasePressed,
-}
 
 enum MainEvent {
     Shutdown,
@@ -59,7 +42,7 @@ fn main() {
         free_tx.send(buffer).unwrap();
     }
 
-    start_render_thread(make_sin_lut(), rx_state, ready_tx, free_rx);
+    start_render_thread(rx_state, ready_tx, free_rx);
     start_logic_thread(tx_state, tx_main, input_event_rx);
 
     let mut window = Window::new(

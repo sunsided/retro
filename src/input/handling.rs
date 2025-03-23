@@ -8,8 +8,7 @@
 //! The `KeyHandling` struct exposes methods to process user input, emit events for detected key intents,
 //! and manage key debouncing.
 
-use crate::InputEvent;
-use crate::input::{InputIntent, KeyBindings, KeyDebounce};
+use crate::input::{InputEvent, InputIntent, KeyBindings, KeyDebounce};
 use crossbeam::channel::Sender;
 use minifb::Window;
 
@@ -59,6 +58,9 @@ impl KeyHandling {
         self.try_emit_event(window, InputIntent::Escape, InputEvent::EscapePressed)?;
         self.try_emit_event(window, InputIntent::Increase, InputEvent::IncreasePressed)?;
         self.try_emit_event(window, InputIntent::Decrease, InputEvent::DecreasePressed)?;
+        self.try_emit_event(window, InputIntent::Number0, InputEvent::NumberSelected(0))?;
+        self.try_emit_event(window, InputIntent::Number1, InputEvent::NumberSelected(1))?;
+        self.try_emit_event(window, InputIntent::Number2, InputEvent::NumberSelected(2))?;
         Ok(())
     }
 

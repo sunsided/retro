@@ -1,11 +1,15 @@
 mod crt_effect;
+mod plasma;
 mod sprite;
 
 use crate::colors::palettes;
+use crate::logic::GameState;
+use crate::logic::scene_background::SceneBackground;
 use crate::render::crt_effect::apply_crt_effect;
+use crate::render::plasma::Plasma;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
 use crate::text::{Alphabet, draw_text, font8x8_sentence};
-use crate::{FRAME_DURATION, FrameBuffer, GameState, HEIGHT, LUT_SIZE, WIDTH};
+use crate::{FRAME_DURATION, FrameBuffer, HEIGHT, WIDTH};
 use crossbeam::channel;
 use rand::Rng;
 use std::thread;
@@ -71,53 +75,16 @@ impl Fire {
     }
 }
 
-struct Plasma {
-    sin_lut: [u8; LUT_SIZE],
-    start: Instant,
-}
-
-impl Plasma {
-    fn new(sin_lut: [u8; LUT_SIZE]) -> Self {
-        Self {
-            sin_lut,
-            start: Instant::now(),
-        }
-    }
-
-    fn render(&self, buffer: &mut FrameBuffer, tick: u64, intensity: f32) {
-        let t = (self.start.elapsed().as_secs_f32() * 60.0) as usize;
-        for y in 0..HEIGHT {
-            for x in 0..WIDTH {
-                let a = self.sin_lut[((x << 3).wrapping_add(t * 1)) & 0xFF] as usize;
-                let b = self.sin_lut[((y << 2).wrapping_add(t * 2)) & 0xFF] as usize;
-                let c = self.sin_lut[(((x + y) << 2).wrapping_add(t * 3)) & 0xFF] as usize;
-                let dist = (((x * x + y * y) as f32).sqrt() as usize).wrapping_add(t * 4);
-                let d = self.sin_lut[(dist << 1) & 0xFF] as usize;
-                let v = ((a + b + c + d) >> 2) & 0xFF;
-                let shifted_index = (v + tick as usize) & 0xFF;
-                buffer[y * WIDTH + x] = dim_color(palettes::STANDARD[shifted_index], intensity);
-            }
-        }
-    }
-}
-
 pub fn start_render_thread(
-    sin_lut: [u8; LUT_SIZE],
     rx_state: channel::Receiver<GameState>,
     ready_tx: channel::Sender<Box<FrameBuffer>>,
     free_rx: channel::Receiver<Box<FrameBuffer>>,
 ) {
     thread::spawn(move || {
         let start = Instant::now();
-        let mut state = GameState {
-            tick: 0,
-            x: 0,
-            y: 0,
-            plasma: 1.0,
-            crt: true,
-        };
+        let mut state = GameState::default();
 
-        let mut plasma = Plasma::new(sin_lut);
+        let mut plasma = Plasma::new();
         let mut fire = Fire::new();
 
         let mut frame = 0;
@@ -128,10 +95,21 @@ pub fn start_render_thread(
                 state = new_state;
             }
 
-            // fire.update();
-            // fire.render(&mut buffer);
-
-            plasma.render(&mut buffer, state.tick, state.plasma);
+            match state.background {
+                SceneBackground::None => {
+                    for pixel in buffer.iter_mut() {
+                        *pixel = 0x000000;
+                    }
+                }
+                SceneBackground::Plasma(ref config) => {
+                    plasma.update(config.intensity);
+                    plasma.render(&mut buffer);
+                }
+                SceneBackground::Fire => {
+                    fire.update();
+                    fire.render(&mut buffer);
+                }
+            }
 
             if state.x < WIDTH && state.y < HEIGHT {
                 draw_sprite(&mut buffer, &UFO_SPRITE, 8, state.x, state.y, 4);

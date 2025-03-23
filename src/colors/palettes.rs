@@ -1,7 +1,12 @@
 //! Provides color palette functions.
 
+use std::sync::LazyLock;
+
 /// A fire palette.
 pub const FIRE: [u32; 256] = make_fire_palette();
+
+/// A plasma palette.
+pub static PLASMA: LazyLock<[u32; 256]> = LazyLock::new(make_plasma_palette);
 
 pub const fn make_fire_palette() -> [u32; 256] {
     let mut palette = [0u32; 256];
@@ -16,6 +21,20 @@ pub const fn make_fire_palette() -> [u32; 256] {
         } else {
             (255, 255, 255) // Yellow → White
         };
+        palette[i] = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
+        i += 1;
+    }
+    palette
+}
+
+pub fn make_plasma_palette() -> [u32; 256] {
+    let mut palette = [0u32; 256];
+    let mut i = 0;
+    while i < 256 {
+        let angle = i as f32 * std::f32::consts::PI * 2.0 / 256.0;
+        let r = ((angle.sin() * 127.0 + 128.0) as u8).saturating_sub(32);
+        let g = (angle.cos() * 127.0 + 128.0) as u8;
+        let b = (angle.sin().cos() * 127.0 + 128.0) as u8;
         palette[i] = ((r as u32) << 16) | ((g as u32) << 8) | b as u32;
         i += 1;
     }
