@@ -23,6 +23,18 @@ test *ARGS:
 bench *ARGS:
     cargo bench {{ARGS}}
 
+# Run in release mode
+run:
+    RUST_LOG=retro=info cargo run --release
+
+# Run with debug logging enabled
+debug:
+    RUST_LOG=retro=debug cargo run
+
+# Run with tracing enabled
+trace:
+    RUST_LOG=retro=trace cargo run
+
 # Just build the documentation.
 build-docs:
     export DOCSRS=1

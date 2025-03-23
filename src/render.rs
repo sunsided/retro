@@ -46,6 +46,7 @@ pub fn start_render_thread(
         let mut fps_display = 0;
         let mut last_fps_at = Instant::now();
         let mut last_frame_at = Instant::now();
+        let mut next_frame_due = Instant::now();
 
         let sleeper = spin_sleep::SpinSleeper::new(0)
             .with_spin_strategy(spin_sleep::SpinStrategy::YieldThread);
@@ -54,7 +55,9 @@ pub fn start_render_thread(
 
         loop {
             let t0 = Instant::now();
-            let elapsed_since_last_frame = t0.duration_since(last_frame_at);
+
+            // Your rendering logic starts here
+            last_frame_at = t0;
 
             if current_buffer.is_none() {
                 current_buffer = match free_rx.try_recv() {
@@ -131,22 +134,21 @@ pub fn start_render_thread(
             }
 
             let t6 = Instant::now();
-            if elapsed_since_last_frame <= FRAME_DURATION {
-                trace!(
-                    "fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
-                    (t1 - t0).as_secs_f64() * 1000.0,
-                    (t2 - t1).as_secs_f64() * 1000.0,
-                    (t3 - t2).as_secs_f64() * 1000.0,
-                    (t4 - t3).as_secs_f64() * 1000.0,
-                    (t5 - t4).as_secs_f64() * 1000.0,
-                    (t6 - t5).as_secs_f64() * 1000.0,
+            let elapsed_since_frame_start = t6.duration_since(t0);
+            if elapsed_since_frame_start <= FRAME_DURATION {
+                debug!(
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    elapsed_since_frame_start.as_secs_f32() * 1000.0,
+                    (t1 - t0).as_secs_f32() * 1000.0,
+                    (t2 - t1).as_secs_f32() * 1000.0,
+                    (t3 - t2).as_secs_f32() * 1000.0,
+                    (t4 - t3).as_secs_f32() * 1000.0,
+                    (t5 - t4).as_secs_f32() * 1000.0,
+                    (t6 - t5).as_secs_f32() * 1000.0,
                 );
-
-                let sleep_until_next_frame = FRAME_DURATION - elapsed_since_last_frame;
-                sleeper.sleep(sleep_until_next_frame);
             } else {
                 warn!(
-                    "Warning: frame took longer than expected: {elapsed_since_last_frame:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
+                    "Warning: frame took longer than expected: {elapsed_since_frame_start:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
                 );
 
                 warn!(
@@ -158,6 +160,20 @@ pub fn start_render_thread(
                     (t5 - t4).as_secs_f64() * 1000.0,
                     (t6 - t5).as_secs_f64() * 1000.0,
                 );
+            }
+
+            // Schedule next frame time exactly `FRAME_DURATION` after previous
+            next_frame_due += FRAME_DURATION;
+
+            let now = Instant::now();
+            if now < next_frame_due {
+                sleeper.sleep_until(next_frame_due);
+            } else {
+                warn!(
+                    "Frame missed deadline by {:?}",
+                    now.duration_since(next_frame_due)
+                );
+                next_frame_due = now;
             }
 
             frame += 1;
@@ -169,8 +185,6 @@ pub fn start_render_thread(
 
                 debug!("FPS: {}", fps_display);
             }
-
-            last_frame_at = t0;
         }
     });
 }
