@@ -29,6 +29,13 @@ impl Alphabet {
             Alphabet::StandardGalactic => StandardGalacticAlphabet.map_char_index_or_panic(ch),
         }
     }
+
+    pub const fn len(&self) -> usize {
+        match self {
+            Alphabet::Basic => BasicAlphabet.len(),
+            Alphabet::StandardGalactic => StandardGalacticAlphabet.len(),
+        }
+    }
 }
 
 /// A statically-known and sized alphabet, i.e. set of glyphs.

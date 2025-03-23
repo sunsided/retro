@@ -61,6 +61,7 @@ impl KeyHandling {
         self.try_emit_event(window, InputIntent::Number0, InputEvent::NumberSelected(0))?;
         self.try_emit_event(window, InputIntent::Number1, InputEvent::NumberSelected(1))?;
         self.try_emit_event(window, InputIntent::Number2, InputEvent::NumberSelected(2))?;
+        self.try_emit_event(window, InputIntent::Number3, InputEvent::NumberSelected(3))?;
         self.try_emit_event(window, InputIntent::Italic, InputEvent::ToggleItalic)?;
         Ok(())
     }

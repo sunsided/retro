@@ -2,6 +2,7 @@ mod crt_effect;
 pub mod cube;
 mod fire;
 pub mod line;
+mod matrix;
 mod plasma;
 mod sphere;
 mod sprite;
@@ -12,6 +13,7 @@ use crate::logic::scene_background::SceneBackground;
 pub use crate::render::crt_effect::CrtEffect;
 use crate::render::cube::draw_wireframe_cube;
 pub use crate::render::fire::Fire;
+use crate::render::matrix::MatrixEffect;
 pub use crate::render::plasma::Plasma;
 use crate::render::sphere::draw_wireframe_sphere;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
@@ -44,6 +46,7 @@ pub fn start_render_thread(
 
         let mut plasma = Plasma::new();
         let mut fire = Fire::new();
+        let mut matrix = MatrixEffect::new();
         let mut crt = CrtEffect::new();
 
         let mut frame = 0;
@@ -73,6 +76,10 @@ pub fn start_render_thread(
 
             let mut buffer = current_buffer.as_mut().unwrap();
 
+            for pixel in buffer.iter_mut() {
+                *pixel = 0x000000;
+            }
+
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
             }
@@ -80,9 +87,7 @@ pub fn start_render_thread(
             let t1 = Instant::now();
             match state.background {
                 SceneBackground::None => {
-                    for pixel in buffer.iter_mut() {
-                        *pixel = 0x000000;
-                    }
+                    // done.
                 }
                 SceneBackground::Plasma(ref config) => {
                     plasma.update(config.intensity);
@@ -91,6 +96,9 @@ pub fn start_render_thread(
                 SceneBackground::Fire => {
                     fire.update();
                     fire.render(&mut buffer);
+                }
+                SceneBackground::Matrix => {
+                    matrix.render(&mut buffer, frame);
                 }
             }
 
@@ -103,6 +111,11 @@ pub fn start_render_thread(
             }
 
             let t3 = Instant::now();
+            if state.crt {
+                crt.render(&mut buffer, frame / 10);
+            }
+
+            let t4 = Instant::now();
             draw_text(
                 &mut buffer,
                 20,
@@ -136,11 +149,6 @@ pub fn start_render_thread(
                 false,
             );
 
-            let t4 = Instant::now();
-            if state.crt {
-                crt.render(&mut buffer, frame / 10);
-            }
-
             let t5 = Instant::now();
 
             if ready_tx.try_send(current_buffer.take().unwrap()).is_err() {
@@ -152,7 +160,7 @@ pub fn start_render_thread(
             let elapsed_since_frame_start = t6.duration_since(t0);
             if elapsed_since_frame_start <= FRAME_DURATION {
                 trace!(
-                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, crt: {:.3} ms, text: {:.3} ms, send: {:.3} ms",
                     elapsed_since_frame_start.as_secs_f32() * 1000.0,
                     (t1 - t0).as_secs_f32() * 1000.0,
                     (t2 - t1).as_secs_f32() * 1000.0,
@@ -163,7 +171,7 @@ pub fn start_render_thread(
                 );
             } else {
                 warn!(
-                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, text: {:.3} ms, crt: {:.3} ms: send: {:.3} ms",
+                    "frame time: {:.3} ms, fetch buffer: {:.3} ms, background.render: {:.3} ms, sprites: {:.3} ms, crt: {:.3} ms, text: {:.3} ms, send: {:.3} ms",
                     elapsed_since_frame_start.as_secs_f32() * 1000.0,
                     (t1 - t0).as_secs_f64() * 1000.0,
                     (t2 - t1).as_secs_f64() * 1000.0,
