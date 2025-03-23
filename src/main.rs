@@ -8,7 +8,6 @@ mod render;
 mod text;
 
 use crate::input::{InputEvent, KeyBindings, KeyHandling};
-use crate::logic::scene_background::SceneBackground;
 use crate::logic::{GameState, start_logic_thread};
 use crate::render::start_render_thread;
 use crossbeam::{channel, select};
@@ -17,7 +16,7 @@ use std::time::Duration;
 
 const WIDTH: usize = 320;
 const HEIGHT: usize = 200;
-const FRAME_DURATION: Duration = Duration::from_millis(25); // 40 FPS
+const FRAME_DURATION: Duration = Duration::from_millis(20); // 50 Hz
 const LOGIC_DURATION: Duration = Duration::from_millis(10); // 100 Hz
 const INPUT_DURATION: Duration = Duration::from_millis(10); // 100 Hz
 const LUT_SIZE: usize = 256;

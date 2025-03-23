@@ -1,4 +1,5 @@
 mod crt_effect;
+mod fire;
 mod plasma;
 mod sprite;
 
@@ -6,6 +7,7 @@ use crate::colors::palettes;
 use crate::logic::GameState;
 use crate::logic::scene_background::SceneBackground;
 use crate::render::crt_effect::apply_crt_effect;
+use crate::render::fire::Fire;
 use crate::render::plasma::Plasma;
 use crate::render::sprite::{UFO_SPRITE, draw_sprite};
 use crate::text::{Alphabet, draw_text, font8x8_sentence};
@@ -13,7 +15,7 @@ use crate::{FRAME_DURATION, FrameBuffer, HEIGHT, WIDTH};
 use crossbeam::channel;
 use rand::Rng;
 use std::thread;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 pub const fn dim_color(color: u32, factor: f32) -> u32 {
     let r = ((color >> 16) & 0xFF) as f32 * factor;
@@ -27,69 +29,31 @@ pub const fn dim_color(color: u32, factor: f32) -> u32 {
     (color & 0xFF000000) | (r << 16) | (g << 8) | b
 }
 
-struct Fire {
-    heat: Vec<u8>,
-    rng: rand::rngs::ThreadRng,
-}
-
-impl Fire {
-    fn new() -> Self {
-        Self {
-            heat: vec![0u8; WIDTH * HEIGHT],
-            rng: rand::thread_rng(),
-        }
-    }
-
-    fn update(&mut self) {
-        for x in 0..WIDTH {
-            self.heat[(HEIGHT - 1) * WIDTH + x] = if self.rng.gen_range(0..10) > 1 {
-                255
-            } else {
-                0
-            };
-        }
-        for y in 1..HEIGHT {
-            for x in 0..WIDTH {
-                let src = y * WIDTH + x;
-                let below = src + WIDTH;
-                let decay = self.rng.gen_range(1..20);
-                let new_val = self
-                    .heat
-                    .get(below)
-                    .copied()
-                    .unwrap_or(0)
-                    .saturating_sub(decay);
-                let dx = self.rng.gen_range(0..3);
-                let dst_x = x.wrapping_add(dx).wrapping_sub(1).min(WIDTH - 1);
-                let dst_y = y - 1;
-                let dst = dst_y * WIDTH + dst_x;
-                self.heat[dst] = new_val;
-            }
-        }
-    }
-
-    fn render(&self, buffer: &mut FrameBuffer) {
-        for (i, &val) in self.heat.iter().enumerate() {
-            buffer[i] = palettes::FIRE[val as usize];
-        }
-    }
-}
-
 pub fn start_render_thread(
     rx_state: channel::Receiver<GameState>,
     ready_tx: channel::Sender<Box<FrameBuffer>>,
     free_rx: channel::Receiver<Box<FrameBuffer>>,
 ) {
     thread::spawn(move || {
-        let start = Instant::now();
         let mut state = GameState::default();
 
         let mut plasma = Plasma::new();
         let mut fire = Fire::new();
 
         let mut frame = 0;
+        let mut fps_counter = 0;
+        let mut fps_display = 0;
+        let mut last_fps_at = Instant::now();
+        let mut last_frame_at = Instant::now();
+
         loop {
-            let mut buffer = free_rx.recv().unwrap();
+            let mut buffer = match free_rx.try_recv() {
+                Ok(buffer) => buffer,
+                Err(_) => {
+                    eprintln!("Stalling: waiting for a free frame buffer...");
+                    free_rx.recv().unwrap()
+                }
+            };
 
             while let Ok(new_state) = rx_state.try_recv() {
                 state = new_state;
@@ -143,8 +107,28 @@ pub fn start_render_thread(
             }
 
             ready_tx.send(buffer).unwrap();
-            thread::sleep(FRAME_DURATION);
+
+            let now = Instant::now();
+            let elapsed_since_last_frame = now.duration_since(last_frame_at);
+            if elapsed_since_last_frame <= FRAME_DURATION {
+                let sleep_until_next_frame = FRAME_DURATION - elapsed_since_last_frame;
+                thread::sleep(sleep_until_next_frame);
+            } else {
+                eprintln!(
+                    "Warning: frame took longer than expected: {elapsed_since_last_frame:.2?} / {FRAME_DURATION:.2?} (current FPS: {fps_display})"
+                );
+            }
+            last_frame_at = now;
+
             frame += 1;
+            fps_counter += 1;
+            if last_fps_at.elapsed().as_secs() >= 1 {
+                fps_display = fps_counter;
+                fps_counter = 0;
+                last_fps_at = Instant::now();
+
+                println!("FPS: {}", fps_display);
+            }
         }
     });
 }
