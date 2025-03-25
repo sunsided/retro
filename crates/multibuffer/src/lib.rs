@@ -128,8 +128,9 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
         let ptr = buffers.as_mut_ptr() as *mut UnsafeCell<T>;
 
         for i in 0..SIZE {
+            let value = factory();
             unsafe {
-                ptr.add(i).write(UnsafeCell::new(factory()));
+                ptr.add(i).write(UnsafeCell::new(value));
             }
         }
 
@@ -165,10 +166,6 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     ///
     /// # Returns
     /// A mutable reference to the specified buffer.
-    ///
-    /// # Panics
-    /// This method will panic if the specified `index` is invalid or if it violates
-    /// the usage constraints of `MultiBuffer`.
     ///
     /// # Safety
     /// - The caller must ensure that the accessed buffer is not being simultaneously read
