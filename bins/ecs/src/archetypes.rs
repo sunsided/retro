@@ -1,12 +1,13 @@
 use crate::Entity;
 use crate::component_vec::ComponentVec;
 use std::any::{Any, TypeId};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::hash::Hash;
 
 pub struct Archetype {
-    entities: Vec<Entity>,
-    components: HashMap<TypeId, ComponentVec>,
+    pub entities: Vec<Entity>,
+    pub components: HashMap<TypeId, ComponentVec>,
 }
 
 impl Archetype {
@@ -24,7 +25,7 @@ impl Archetype {
                 .components
                 .entry(type_id)
                 .or_insert_with(ComponentVec::new);
-            entry.data.push(component);
+            entry.data.push(RefCell::new(component));
         }
     }
 }

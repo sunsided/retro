@@ -29,4 +29,12 @@ impl ComponentTypeSet {
         self.types.insert(t);
         self
     }
+
+    pub fn insert(&mut self, t: TypeId) {
+        self.types.insert(t);
+    }
+
+    pub fn is_subset_of(&self, other: &ComponentTypeSet) -> bool {
+        self.types.is_subset(&other.types)
+    }
 }
