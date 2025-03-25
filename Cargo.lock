@@ -810,14 +810,21 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "crossbeam",
- "deranged",
- "dotenvy",
  "fastrand",
  "minifb",
  "rand",
  "rayon",
  "spin_sleep",
  "tracing",
+]
+
+[[package]]
+name = "retrorun"
+version = "0.1.0"
+dependencies = [
+ "deranged",
+ "dotenvy",
+ "retro",
  "tracing-appender",
  "tracing-subscriber",
 ]
