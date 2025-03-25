@@ -1,3 +1,8 @@
+mod archetypes;
+mod component_type_set;
+mod component_vec;
+mod world;
+
 use crossbeam_channel::{select, tick};
 use multibuffer::TripleBuffer;
 use std::sync::Arc;
