@@ -9,20 +9,20 @@ documentation:
   - README.md
 
 fonts:
-  - src/text.rs
-  - src/text/**
+  - crates/retro/src/text.rs
+  - crates/retro/src/text/**
 
 lut:
-  - src/lut.rs
+  - crates/retro/src/lut.rs
 
 logic:
-  - src/logic.rs
-  - src/logic/**
+  - crates/retro/src/logic.rs
+  - crates/retro/src/logic/**
 
 input:
-  - src/input.rs
-  - src/input/**
+  - crates/retro/src/input.rs
+  - crates/retro/src/input/**
 
 render:
-  - src/render.rs
-  - src/render/**
+  - crates/retro/src/render.rs
+  - crates/retro/src/render/**
