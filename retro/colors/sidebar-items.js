@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["hex_to_u32"],"mod":["palettes"]};

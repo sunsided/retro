@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["draw_char","draw_text"],"mod":["alphabet","font8x8","glyphs","sentence"]};

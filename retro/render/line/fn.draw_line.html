@@ -1,0 +1,33 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Draws a line on a framebuffer using Bresenham’s line algorithm."><title>draw_line in retro::render::line - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="retro" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (f8c27dfe1 2025-03-24)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../../../static.files/storage-82c7156e.js"></script><script defer src="sidebar-items.js"></script><script defer src="../../../static.files/main-fb8c74a8.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc fn"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../../retro/index.html">retro</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">draw_<wbr>line</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#parameters" title="Parameters">Parameters</a></li><li><a href="#functionality" title="Functionality">Functionality</a></li><li><a href="#important-notes" title="Important Notes">Important Notes</a></li><li><a href="#example" title="Example">Example</a></li></ul></section><div id="rustdoc-modnav"><h2><a href="index.html">In retro::<wbr>render::<wbr>line</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../../index.html">retro</a>::<wbr><a href="../index.html">render</a>::<wbr><a href="index.html">line</a></div><h1>Function <span class="fn">draw_line</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../../src/retro/render/line.rs.html#30-66">Source</a> </span></div><pre class="rust item-decl"><code>pub const fn draw_line(
+    buffer: &amp;mut <a class="type" href="../../type.FrameBuffer.html" title="type retro::FrameBuffer">FrameBuffer</a>,
+    x0: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
+    y0: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
+    x1: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
+    y1: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.usize.html">usize</a>,
+    color: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a>,
+)</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Draws a line on a framebuffer using Bresenham’s line algorithm.</p>
+<h2 id="parameters"><a class="doc-anchor" href="#parameters">§</a>Parameters</h2>
+<ul>
+<li><code>buffer</code>: A mutable reference to the framebuffer where the line will be drawn.</li>
+<li><code>x0</code>, <code>y0</code>: The starting point of the line (coordinates in pixels).</li>
+<li><code>x1</code>, <code>y1</code>: The ending point of the line (coordinates in pixels).</li>
+<li><code>color</code>: The color of the line, represented as a 32-bit integer.</li>
+</ul>
+<h2 id="functionality"><a class="doc-anchor" href="#functionality">§</a>Functionality</h2>
+<p>This function calculates a line between the <code>(x0, y0)</code> and <code>(x1, y1)</code> coordinates
+using Bresenham’s line-drawing algorithm. It then modifies the provided framebuffer
+by setting the pixels along the line to the specified color. The framebuffer is assumed
+to be a 1-dimensional array of pixels with a width of <code>WIDTH</code> and height of <code>HEIGHT</code>.</p>
+<h2 id="important-notes"><a class="doc-anchor" href="#important-notes">§</a>Important Notes</h2>
+<ul>
+<li>The function clamps drawing to the bounds of the framebuffer (<code>WIDTH</code> by <code>HEIGHT</code>);
+pixels outside these dimensions are ignored.</li>
+<li>Ensure that the framebuffer has been properly initialized before calling this function.</li>
+</ul>
+<h2 id="example"><a class="doc-anchor" href="#example">§</a>Example</h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>retro::render::line::draw_line;
+<span class="kw">use </span>retro::{HEIGHT, WIDTH};
+
+<span class="kw">let </span><span class="kw-2">mut </span>buffer = [<span class="number">0</span>; WIDTH * HEIGHT];
+draw_line(<span class="kw-2">&amp;mut </span>buffer, <span class="number">10</span>, <span class="number">10</span>, <span class="number">100</span>, <span class="number">50</span>, <span class="number">0xFF00FF</span>); <span class="comment">// Draw a purple line</span></code></pre></div>
+</div></details></section></div></main></body></html>

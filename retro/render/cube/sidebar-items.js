@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["draw_wireframe_cube","project","rotate_y"],"struct":["Vec3"]};

@@ -1,0 +1,3 @@
+var srcIndex = new Map(JSON.parse('[["multibuffer",["",[],["lib.rs"]]],["retro",["",[["colors",[],["palettes.rs"]],["input",[],["bindings.rs","debounce.rs","handling.rs"]],["logic",[],["game_state.rs","scene_background.rs"]],["render",[],["crt_effect.rs","cube.rs","fire.rs","line.rs","matrix.rs","plasma.rs","sphere.rs","sprite.rs"]],["text",[["font8x8",[],["basic.rs","block.rs","box.rs","ext_latin.rs","standard_galactic.rs"]]],["alphabet.rs","font8x8.rs","glyphs.rs","sentence.rs"]]],["colors.rs","input.rs","lib.rs","logic.rs","lut.rs","render.rs","text.rs"]]],["retrorun",["",[],["main.rs"]]]]'));
+createSrcSidebar();
+//{"start":36,"fragment_lengths":[34,495,33]}

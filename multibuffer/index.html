@@ -1,0 +1,59 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Triple Buffering Crate"><title>multibuffer - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-916cea96.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="multibuffer" data-themes="" data-resource-suffix="" data-rustdoc-version="1.87.0-nightly (f8c27dfe1 2025-03-24)" data-channel="nightly" data-search-js="search-e7298875.js" data-settings-js="settings-d72f25bb.js" ><script src="../static.files/storage-82c7156e.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-fb8c74a8.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../multibuffer/index.html">multibuffer</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#triple-buffering-crate" title="Triple Buffering Crate">Triple Buffering Crate</a><ul><li><a href="#main-features" title="Main Features">Main Features</a></li><li><a href="#examples" title="Examples">Examples</a></li><li><a href="#implementation-details" title="Implementation Details">Implementation Details</a></li><li><a href="#notes" title="Notes">Notes</a></li></ul></li></ul><h3><a href="#structs">Crate Items</a></h3><ul class="block"><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>multibuffer</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/multibuffer/lib.rs.html#1-237">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="triple-buffering-crate"><a class="doc-anchor" href="#triple-buffering-crate">§</a>Triple Buffering Crate</h2>
+<p>This crate provides a utility for implementing triple buffering or more generalized
+multi-buffering patterns. It includes the <a href="type.TripleBuffer.html" title="type multibuffer::TripleBuffer"><code>TripleBuffer</code></a> type alias built on top of
+the generic <a href="struct.MultiBuffer.html" title="struct multibuffer::MultiBuffer"><code>MultiBuffer</code></a> struct, allowing developers to create and manage buffers
+designed for concurrent or time-sensitive workloads.</p>
+<p>The primary purpose of this crate is to enable safe, lock-free access to the latest
+data in one buffer while allowing modifications in other buffers. This pattern is
+commonly used in applications like video processing, gaming, or other scenarios
+that demand a balance of performance and data synchronization.</p>
+<h3 id="main-features"><a class="doc-anchor" href="#main-features">§</a>Main Features</h3>
+<ul>
+<li><strong><code>TripleBuffer&lt;T&gt;</code></strong>: A convenience alias for three buffers (standard triple buffering).</li>
+<li><strong>Generic Multi-buffering</strong>: <code>MultiBuffer&lt;T, SIZE&gt;</code> supports any number of buffers via constant generics.</li>
+<li>Lock-free concurrency: Ensures safe access without blocking threads.</li>
+<li>Convenience methods for buffer access, mutation, and updating the <code>latest</code> pointer.</li>
+</ul>
+<h3 id="examples"><a class="doc-anchor" href="#examples">§</a>Examples</h3><h4 id="triplebuffer-example"><a class="doc-anchor" href="#triplebuffer-example">§</a>TripleBuffer Example</h4>
+<p>The following example demonstrates how to use a <code>TripleBuffer</code>:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>multibuffer::TripleBuffer;
+
+<span class="kw">fn </span>main() {
+    <span class="comment">// Create a TripleBuffer with an initial value of 0.
+    </span><span class="kw">let </span>buffer = TripleBuffer::new(|| <span class="number">0</span>);
+
+    <span class="comment">// Modify a specific buffer (index 1).
+    </span><span class="kw-2">*</span>buffer.get_mut(<span class="number">1</span>) = <span class="number">42</span>;
+
+    <span class="comment">// Publish the updated buffer (index 1).
+    </span>buffer.publish(<span class="number">1</span>);
+
+    <span class="comment">// Access the latest published buffer.
+    </span><span class="macro">assert_eq!</span>(<span class="kw-2">*</span>buffer.get_latest(), <span class="number">42</span>);
+     
+    <span class="comment">// Further modifications and publishing.
+    </span><span class="kw-2">*</span>buffer.get_mut(<span class="number">2</span>) = <span class="number">100</span>;
+    buffer.publish(<span class="number">2</span>);
+    <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>buffer.get_latest(), <span class="number">100</span>);
+}</code></pre></div>
+<h3 id="implementation-details"><a class="doc-anchor" href="#implementation-details">§</a>Implementation Details</h3>
+<ul>
+<li>The <a href="struct.MultiBuffer.html" title="struct multibuffer::MultiBuffer"><code>MultiBuffer</code></a> struct stores an internal array of buffers, fence markers, and exposes
+methods for interaction. Buffers are allocated using <a href="https://doc.rust-lang.org/nightly/core/cell/struct.UnsafeCell.html" title="struct core::cell::UnsafeCell"><code>UnsafeCell</code></a> for efficient mutable
+access without synchronization primitives.</li>
+<li>The <code>Sync</code> implementation leverages careful safety design to allow multi-threaded use
+while adhering to Rust’s safety guarantees. The buffers must not be simultaneously accessed
+in unsafe ways outside the provided API.</li>
+</ul>
+<h3 id="notes"><a class="doc-anchor" href="#notes">§</a>Notes</h3>
+<ul>
+<li>The correctness of this implementation depends on the user following the API’s
+safety rules—<code>get_latest</code> and <code>get_mut</code> methods should never be misused concurrently
+in order to prevent undefined behavior.</li>
+<li>As of now, the crate relies on constant generics (<code>const SIZE: usize</code>) for specifying
+buffer sizes, which requires a fixed buffer count at compile-time.</li>
+</ul>
+</div></details><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.MultiBuffer.html" title="struct multibuffer::MultiBuffer">Multi<wbr>Buffer</a></dt><dd>A generic multi-buffering structure designed for lock-free concurrency, supporting a
+configurable number of buffers.</dd></dl><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><dl class="item-table"><dt><a class="type" href="type.BufferIndex.html" title="type multibuffer::BufferIndex">Buffer<wbr>Index</a></dt><dd>A type alias representing the index of a buffer.</dd><dt><a class="type" href="type.TripleBuffer.html" title="type multibuffer::TripleBuffer">Triple<wbr>Buffer</a></dt><dd>A type alias for a triple buffer, which is a specialized form of the <a href="struct.MultiBuffer.html" title="struct multibuffer::MultiBuffer"><code>MultiBuffer</code></a> struct
+with a fixed size of three buffers. This is commonly used for triple buffering scenarios.</dd></dl></section></div></main></body></html>

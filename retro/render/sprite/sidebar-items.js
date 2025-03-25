@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["UFO_SPRITE"],"fn":["draw_sprite"]};

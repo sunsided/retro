@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["_FONT8X8_BASIC"],"struct":["BasicAlphabet"]};

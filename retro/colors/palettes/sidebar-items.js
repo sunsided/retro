@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["FIRE","STANDARD"],"fn":["make_fire_palette","make_plasma_palette"],"macro":["apply_hex_to_u32"],"static":["PLASMA"]};

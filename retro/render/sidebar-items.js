@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["dim_color","start_render_thread"],"mod":["crt_effect","cube","fire","line","matrix","plasma","sphere","sprite"],"struct":["CrtEffect","Fire","Plasma"]};

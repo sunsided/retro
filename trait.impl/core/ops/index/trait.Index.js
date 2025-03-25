@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["retro",[["impl&lt;const B: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.usize.html\">usize</a>, const N: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.usize.html\">usize</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/index/trait.Index.html\" title=\"trait core::ops::index::Index\">Index</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.usize.html\">usize</a>&gt; for <a class=\"struct\" href=\"retro/text/alphabet/struct.StaticAlphabet.html\" title=\"struct retro::text::alphabet::StaticAlphabet\">StaticAlphabet</a>&lt;B, N&gt;"],["impl&lt;const B: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.usize.html\">usize</a>, const N: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/std/primitive.usize.html\">usize</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/index/trait.Index.html\" title=\"trait core::ops::index::Index\">Index</a>&lt;<a class=\"struct\" href=\"retro/text/glyphs/struct.GlyphIndex.html\" title=\"struct retro::text::glyphs::GlyphIndex\">GlyphIndex</a>&gt; for <a class=\"struct\" href=\"retro/text/alphabet/struct.StaticAlphabet.html\" title=\"struct retro::text::alphabet::StaticAlphabet\">StaticAlphabet</a>&lt;B, N&gt;"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1354]}

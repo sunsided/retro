@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"macro":["font8x8_sentence","font8x8_sentence_runtime"],"struct":["Glyphs","Sentence"]};

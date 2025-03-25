@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["InputEvent","InputIntent"],"mod":["bindings","debounce","handling"],"struct":["KeyBindings"]};
