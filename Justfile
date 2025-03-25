@@ -25,15 +25,15 @@ bench *ARGS:
 
 # Run in release mode
 run:
-    RUST_LOG=retro=info cargo run --release
+    RUST_LOG=retro=info cargo run --release --bin retrorun
 
 # Run with debug logging enabled
 debug:
-    RUST_LOG=retro=debug cargo run
+    RUST_LOG=retro=debug cargo run --bin retrorun
 
 # Run with tracing enabled
 trace:
-    RUST_LOG=retro=trace cargo run
+    RUST_LOG=retro=trace cargo run --bin retrorun
 
 # Just build the documentation.
 build-docs:
