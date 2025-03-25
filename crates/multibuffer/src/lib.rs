@@ -69,11 +69,9 @@ use std::cell::UnsafeCell;
 use std::mem::MaybeUninit;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-const TRIPLE: usize = 3;
-
 /// A type alias for a triple buffer, which is a specialized form of the [`MultiBuffer`] struct
 /// with a fixed size of three buffers. This is commonly used for triple buffering scenarios.
-pub type TripleBuffer<T> = MultiBuffer<T, TRIPLE>;
+pub type TripleBuffer<T> = MultiBuffer<T, 3>;
 
 /// A type alias representing the index of a buffer.
 ///
@@ -156,7 +154,7 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     #[inline]
     #[must_use]
     pub fn get_latest(&self) -> &T {
-        let idx = self.fence.load(Ordering::Acquire) % TRIPLE;
+        let idx = self.fence.load(Ordering::Acquire) % SIZE;
         unsafe { &*self.buffers[idx].get() }
     }
 
@@ -180,7 +178,7 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     #[inline]
     #[must_use]
     pub fn get_mut(&self, index: BufferIndex) -> &mut T {
-        unsafe { &mut *self.buffers[index % TRIPLE].get() }
+        unsafe { &mut *self.buffers[index % SIZE].get() }
     }
 
     /// Publishes a specific buffer by updating the internal fence.
@@ -195,7 +193,7 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     ///   the changes to the buffer are visible to other threads that subsequently read it.
     #[inline]
     pub fn publish(&self, index: BufferIndex) {
-        self.fence.store(index % TRIPLE, Ordering::Release);
+        self.fence.store(index % SIZE, Ordering::Release);
     }
 }
 
@@ -209,7 +207,7 @@ mod tests {
         let buffer = TripleBuffer::new(|| 0);
 
         // Test the initial size of the buffer
-        assert_eq!(buffer.len(), TRIPLE);
+        assert_eq!(buffer.len(), 3);
 
         // Verify the latest buffer returns the initial value
         assert_eq!(*buffer.get_latest(), 0);
