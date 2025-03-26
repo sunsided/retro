@@ -1,13 +1,14 @@
-/// Marker trait for components.
-pub trait Component: 'static + Send + Sync {}
-impl<T: 'static + Send + Sync> Component for T {}
+include!(concat!(env!("OUT_DIR"), "/components.gen.rs"));
 
 pub struct ComponentVec<T: Component> {
     data: Vec<T>,
 }
 
-pub struct Position(f32, f32);
+#[derive(Debug)]
+pub struct PositionData;
 
-pub struct Velocity(f32, f32);
+#[derive(Debug)]
+pub struct VelocityData;
 
-pub struct Health(u32);
+#[derive(Debug)]
+pub struct HealthData;

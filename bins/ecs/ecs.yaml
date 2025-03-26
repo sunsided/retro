@@ -1,1 +1,18 @@
-archetypes: [ ]
+components:
+  - name: Position
+  - name: Velocity
+  - name: Health
+
+archetypes:
+  - name: Particle
+    components:
+      - Position
+      - Velocity
+  - name: Player
+    components:
+      - Position
+      - Velocity
+      - Health
+    # TODO promote from -> to, remove x,y,z, add a,b
+    # TODO double check the existence of x,y,z on the source
+    # TODO double check the existence of a,b on the destination
