@@ -34,6 +34,10 @@ impl ComponentTypeSet {
         self.types.insert(t);
     }
 
+    pub fn is_disjoint(&self, other: &ComponentTypeSet) -> bool {
+        self.types.is_disjoint(&other.types)
+    }
+
     pub fn is_subset_of(&self, other: &ComponentTypeSet) -> bool {
         self.types.is_subset(&other.types)
     }

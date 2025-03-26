@@ -1,6 +1,7 @@
 mod archetypes;
 mod component_type_set;
 mod component_vec;
+mod utils;
 mod world;
 
 use crossbeam_channel::{select, tick};
