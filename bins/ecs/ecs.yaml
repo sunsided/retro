@@ -16,3 +16,8 @@ archetypes:
     # TODO promote from -> to, remove x,y,z, add a,b
     # TODO double check the existence of x,y,z on the source
     # TODO double check the existence of a,b on the destination
+
+# TODO: Generate a World that knows all archetypes
+
+# TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.
+# TODO: Generate a function that loops all archetypes matching the signature of a given system
