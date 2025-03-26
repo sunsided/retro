@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 crossbeam-channel = "0.5.14"
 multibuffer = { path = "../../crates/multibuffer" }
+rayon = "1.10.0"
