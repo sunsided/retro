@@ -1,5 +1,5 @@
 mod archetype;
-mod components;
+mod component;
 mod entity;
 
 fn main() {}
