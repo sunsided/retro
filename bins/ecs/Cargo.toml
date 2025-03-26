@@ -7,3 +7,6 @@ edition = "2024"
 crossbeam-channel = "0.5.14"
 multibuffer = { path = "../../crates/multibuffer" }
 rayon = "1.10.0"
+
+[build-dependencies]
+ecs-builder = { path = "../../crates/ecs-builder" }
