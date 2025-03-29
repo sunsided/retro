@@ -12,3 +12,6 @@ pub struct VelocityData;
 
 #[derive(Debug, Clone)]
 pub struct HealthData;
+
+#[derive(Debug, Clone)]
+pub struct ColliderData;
