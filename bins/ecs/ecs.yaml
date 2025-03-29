@@ -17,6 +17,13 @@ archetypes:
     # TODO double check the existence of x,y,z on the source
     # TODO double check the existence of a,b on the destination
 
+systems:
+  - name: Physics
+    inputs:
+      - Velocity
+    outputs:
+      - Position
+
 # TODO: Generate a World that knows all archetypes
 
 # TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.

@@ -1,3 +1,3 @@
-use crate::component::*;
+use crate::archetype::*;
 
-include!(concat!(env!("OUT_DIR"), "/archetypes.gen.rs"));
+include!(concat!(env!("OUT_DIR"), "/world.gen.rs"));

@@ -4,11 +4,11 @@ pub struct ComponentVec<T: Component> {
     data: Vec<T>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PositionData;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VelocityData;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HealthData;

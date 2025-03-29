@@ -14,15 +14,22 @@ fn main() {
 
     // Write components to a file
     let mut components_file = File::create(format!("{out_dir}/components.gen.rs"))
-        .expect("Failed to create components.rs");
+        .expect("Failed to create components.gen.rs");
     components_file
         .write_all(code.components.as_bytes())
         .expect("Failed to write to components.gen.rs");
 
     // Write archetypes to a file
     let mut archetypes_file = File::create(format!("{out_dir}/archetypes.gen.rs"))
-        .expect("Failed to create archetypes.rs");
+        .expect("Failed to create archetypes.gen.rs");
     archetypes_file
         .write_all(code.archetypes.as_bytes())
         .expect("Failed to write to archetypes.gen.rs");
+
+    // Write world to a file
+    let mut archetypes_file =
+        File::create(format!("{out_dir}/world.gen.rs")).expect("Failed to create world.gen.rs");
+    archetypes_file
+        .write_all(code.world.as_bytes())
+        .expect("Failed to write to world.gen.rs");
 }
