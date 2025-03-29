@@ -26,6 +26,13 @@ fn main() {
         .write_all(code.archetypes.as_bytes())
         .expect("Failed to write to archetypes.gen.rs");
 
+    // Write systems to a file
+    let mut systems_file =
+        File::create(format!("{out_dir}/systems.gen.rs")).expect("Failed to create systems.gen.rs");
+    systems_file
+        .write_all(code.systems.as_bytes())
+        .expect("Failed to write to systems.gen.rs");
+
     // Write world to a file
     let mut archetypes_file =
         File::create(format!("{out_dir}/world.gen.rs")).expect("Failed to create world.gen.rs");
