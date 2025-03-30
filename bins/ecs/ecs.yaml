@@ -24,6 +24,7 @@ archetypes:
       - Position
       - Collider
     promotions:
+      # TODO: Implement promotions of individual entities, not entire archetypes
       - BackgroundObject
 
   - name: BackgroundObject
