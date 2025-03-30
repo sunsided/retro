@@ -1,3 +1,4 @@
+use crate::archetype::*;
 use crate::component::*;
 
 include!(concat!(env!("OUT_DIR"), "/systems.gen.rs"));
