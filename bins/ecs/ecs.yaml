@@ -36,8 +36,15 @@ archetypes:
     # TODO double check the existence of x,y,z on the source
     # TODO double check the existence of a,b on the destination
 
+phases:
+  - name: Startup
+  - name: FixedUpdate
+  - name: Update
+  - name: Render
+
 systems:
   - name: Physics
+    phase: FixedUpdate
     # TODO: Allow passing of entity IDs (entities: true?)
     inputs:
       - Velocity
