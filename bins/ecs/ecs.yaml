@@ -47,7 +47,6 @@ archetypes:
 systems:
   - name: Physics
     # TODO: Ensure that there is any archetype with this combination of components
-    # TODO: Ensure there are no duplicate mentions
     inputs:
       - Velocity
     outputs:
