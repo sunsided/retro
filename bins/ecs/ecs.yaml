@@ -6,6 +6,7 @@ components:
 
 archetypes:
   - name: Particle
+    description: A particle system particle.
     components:
       - Position
       - Velocity
