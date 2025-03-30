@@ -46,8 +46,10 @@ archetypes:
 
 systems:
   - name: Physics
+    # TODO: Allow passing of entity IDs (entities: true?)
     inputs:
       - Velocity
+      - Health  # TODO: Remove ...
     outputs:
       - Position
 
