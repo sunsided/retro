@@ -1,3 +1,5 @@
+# TODO: How to pass in globals such as delta time since last frame, etc? Systems will need those.
+
 components:
   - name: Position
   - name: Velocity
