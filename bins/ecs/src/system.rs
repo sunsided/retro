@@ -7,7 +7,7 @@ include!(concat!(env!("OUT_DIR"), "/systems.gen.rs"));
 pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
-    fn apply(
+    fn apply_single(
         &self,
         velocity: &VelocityComponent,
         health_component: &HealthComponent,
