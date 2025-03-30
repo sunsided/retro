@@ -50,6 +50,7 @@ systems:
     # TODO: Ensure these components actually exist
     inputs:
       - Velocity
+      - Lol
     outputs:
       - Position
 

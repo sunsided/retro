@@ -3,14 +3,14 @@ use std::env;
 use std::fs::File;
 use std::io::{BufReader, Write};
 
-fn main() {
+fn main() -> eyre::Result<()> {
     println!("cargo:rerun-if-changed=ecs.yaml");
 
     let file = File::open("ecs.yaml").expect("Failed to open ecs.yaml");
     let reader = BufReader::new(file);
-    let code = build(reader).expect("Failed to build ECS");
+    let code = build(reader)?;
 
-    let out_dir = env::var("OUT_DIR").unwrap();
+    let out_dir = env::var("OUT_DIR")?;
 
     // Write components to a file
     let mut components_file = File::create(format!("{out_dir}/components.gen.rs"))
@@ -39,4 +39,6 @@ fn main() {
     archetypes_file
         .write_all(code.world.as_bytes())
         .expect("Failed to write to world.gen.rs");
+
+    Ok(())
 }

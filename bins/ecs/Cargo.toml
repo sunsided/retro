@@ -10,3 +10,4 @@ rayon = "1.10.0"
 
 [build-dependencies]
 ecs-builder = { path = "../../crates/ecs-builder" }
+eyre = "0.6.12"
