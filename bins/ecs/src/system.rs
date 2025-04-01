@@ -11,3 +11,12 @@ impl ApplyPhysicsSystem for PhysicsSystem {
         todo!()
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct RenderSystemData;
+
+impl ApplyRenderSystem for RenderSystem {
+    fn apply_single(&self, position: &PositionComponent) {
+        todo!()
+    }
+}

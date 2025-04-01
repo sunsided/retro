@@ -50,6 +50,10 @@ systems:
       - Velocity
     outputs:
       - Position
+  - name: Render
+    phase: Render
+    inputs:
+      - Position
 
 # TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.
 # TODO: Generate a function that loops all archetypes matching the signature of a given system
