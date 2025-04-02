@@ -1,13 +1,17 @@
 [package]
 name = "ecs"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
 crossbeam-channel = "0.5.14"
+dotenvy = "0.15.7"
 multibuffer = { path = "../../crates/multibuffer" }
 rayon = "1.10.0"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2.3"
 
 [build-dependencies]
-ecs-builder = { path = "../../crates/ecs-builder" }
+sillyecs = { git = "https://github.com/sunsided/sillyecs.git", branch = "main" }
 eyre = "0.6.12"
