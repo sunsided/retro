@@ -1021,7 +1021,6 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 [[package]]
 name = "sillyecs"
 version = "0.0.2"
-source = "git+https://github.com/sunsided/sillyecs.git?branch=main#36fa61ae574cec160a2942258af2bacb93b9bdbf"
 dependencies = [
  "minijinja",
  "serde",
@@ -1595,7 +1594,3 @@ dependencies = [
  "quote",
  "syn",
 ]
-
-[[patch.unused]]
-name = "sillyecs"
-version = "0.0.2"

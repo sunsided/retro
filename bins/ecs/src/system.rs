@@ -26,7 +26,7 @@ impl Default for PhysicsSystem {
 pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
-    fn apply_single(&self, velocity: &VelocityComponent, position: &mut PositionComponent) {
+    fn apply_single(&self, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
         // TODO: Factor in time delta
         position.x += velocity.x;
         position.y += velocity.y;

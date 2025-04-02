@@ -46,6 +46,7 @@ systems:
   - name: Physics
     phase: FixedUpdate
     # TODO: Allow passing of entity IDs (entities: true?)
+    entities: true
     inputs:
       - Velocity
     outputs:

@@ -13,5 +13,6 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
 
 [build-dependencies]
-sillyecs = { git = "https://github.com/sunsided/sillyecs.git", branch = "main" }
+# sillyecs = { git = "https://github.com/sunsided/sillyecs.git", branch = "main" }
+sillyecs.path = "../../../sillyecs"
 eyre = "0.6.12"
