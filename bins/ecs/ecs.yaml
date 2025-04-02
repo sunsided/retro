@@ -47,6 +47,7 @@ systems:
     phase: FixedUpdate
     # TODO: Allow passing of entity IDs (entities: true?)
     entities: true
+    context: true
     inputs:
       - Velocity
     outputs:

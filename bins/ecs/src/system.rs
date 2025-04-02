@@ -1,6 +1,7 @@
 use tracing::trace;
 use crate::archetype::*;
 use crate::component::*;
+use crate::world::FrameContext;
 
 include!(concat!(env!("OUT_DIR"), "/systems.gen.rs"));
 
@@ -26,7 +27,7 @@ impl Default for PhysicsSystem {
 pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
-    fn apply_single(&self, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
+    fn apply_single(&self, _context: &FrameContext, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
         // TODO: Factor in time delta
         position.x += velocity.x;
         position.y += velocity.y;
