@@ -1,3 +1,4 @@
+use tracing::trace;
 use crate::archetype::*;
 use crate::component::*;
 
@@ -44,6 +45,6 @@ pub struct RenderSystemData;
 
 impl ApplyRenderSystem for RenderSystem {
     fn apply_single(&self, position: &PositionComponent) {
-        todo!()
+        trace!("Rendering position: {:?}", position);
     }
 }
