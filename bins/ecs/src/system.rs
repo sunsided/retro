@@ -3,6 +3,18 @@ use crate::component::*;
 
 include!(concat!(env!("OUT_DIR"), "/systems.gen.rs"));
 
+pub struct SystemFactory;
+
+impl CreateSystems for SystemFactory {
+    fn create_physics(&self) -> PhysicsSystem {
+        PhysicsSystem::default()
+    }
+
+    fn create_render(&self) -> RenderSystem {
+        RenderSystem::default()
+    }
+}
+
 impl Default for PhysicsSystem {
     fn default() -> Self {
         Self(PhysicsSystemData)
