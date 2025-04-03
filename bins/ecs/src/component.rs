@@ -1,4 +1,4 @@
-include!("../generated/components.gen.rs");
+include!("../generated/components_gen.rs");
 
 #[derive(Debug, Clone)]
 pub struct PositionData {

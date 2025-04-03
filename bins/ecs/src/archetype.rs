@@ -1,3 +1,3 @@
 use crate::component::*;
 
-include!("../generated/archetypes.gen.rs");
+include!("../generated/archetypes_gen.rs");

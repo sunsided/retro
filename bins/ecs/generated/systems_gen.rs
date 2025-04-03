@@ -48,7 +48,7 @@ pub enum SystemPhase {
     Startup = 0,
     /// The `FixedUpdate` system phase.
     ///
-    /// This phase runs using a **fixed-time loop** and may iterate zero or multiple times per frame.
+    /// This phase runs using a **fixed-time loop** of approximately 60.0 Hz (i.e., every 0.0167 seconds) and may iterate zero or multiple times per frame.
     FixedUpdate = 1,
     /// The `Update` system phase.
     ///
@@ -64,6 +64,34 @@ pub enum SystemPhase {
 impl SystemPhase {
     /// The number of system phases.
     pub const COUNT: usize = 4;
+
+    /// The number of seconds the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step should run.
+    pub const FIXED_UPDATE_SECS: f32 = 0.01666666753590107;
+
+    /// The frequency of the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
+    pub const FIXED_UPDATE_HZ: f32 = 60.0;
+
+    /// Returns the number of seconds between the fixed time steps if this phase
+    /// is configured to run in fixed time, otherwise [`None`].
+    pub const fn fixed_secs(&self) -> Option<f32> {
+        match self {
+            Self::Startup => None,
+            Self::FixedUpdate => Some(Self::FIXED_UPDATE_SECS),
+            Self::Update => None,
+            Self::Render => None,
+        }
+    }
+
+    /// Returns frequency this phase should run if this phase
+    /// is configured to run in fixed time, otherwise [`None`].
+    pub const fn fixed_hz(&self) -> Option<f32> {
+        match self {
+            Self::Startup => None,
+            Self::FixedUpdate => Some(Self::FIXED_UPDATE_HZ),
+            Self::Update => None,
+            Self::Render => None,
+        }
+    }
 }
 
 /// Trait for constructing system instances.
@@ -81,14 +109,14 @@ pub trait SystemPhaseEvents {
     /// Marks the beginning of a phase.
     #[inline(always)]
     #[allow(unused_variables)]
-    fn on_begin_phase(&mut self, phase: SystemPhase) {
+    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext) {
         // empty placeholder implementation
     }
 
     /// Marks the end of a phase.
     #[inline(always)]
     #[allow(unused_variables)]
-    fn on_end_phase(&mut self, phase: SystemPhase) {
+    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext) {
         // empty placeholder implementation
     }
 }
@@ -104,12 +132,12 @@ const NO_PHASE_EVENTS: Option<NoOpPhaseEvents> = Option::<NoOpPhaseEvents>::None
 #[automatically_derived]
 impl SystemPhaseEvents for NoOpPhaseEvents {
     #[inline(always)]
-    fn on_begin_phase(&mut self, _phase: SystemPhase) {
+    fn on_begin_phase(&mut self, _phase: SystemPhase, _context: &FrameContext) {
         // empty placeholder implementation
     }
 
     #[inline(always)]
-    fn on_end_phase(&mut self, _phase: SystemPhase) {
+    fn on_end_phase(&mut self, _phase: SystemPhase, _context: &FrameContext) {
         // empty placeholder implementation
     }
 }
@@ -165,8 +193,10 @@ pub trait ApplyPhysicsSystem: System {
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
     ) {
-        let iter = entities.iter().zip(velocities.iter().zip(positions.iter_mut()));
-        for (entity, (velocity, position)) in iter {
+        let count = velocities.len();
+        debug_assert_eq!(entities.len(), count);
+        let zipped_iter = entities.iter().zip(velocities.iter().zip(positions.iter_mut()));
+        for (entity, (velocity, position)) in zipped_iter {
             self.apply_single(
                 &context,
                 *entity,
@@ -330,8 +360,8 @@ pub trait ApplyRenderSystem: System {
         &self,
         positions: &[PositionComponent],
     ) {
-        let iter = positions;
-        for position in iter {
+        let zipped_iter = positions;
+        for position in zipped_iter {
             self.apply_single(
                 position,
             );

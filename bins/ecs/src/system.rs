@@ -1,9 +1,9 @@
-use tracing::trace;
 use crate::archetype::*;
 use crate::component::*;
 use crate::world::FrameContext;
+use tracing::trace;
 
-include!("../generated/systems.gen.rs");
+include!("../generated/systems_gen.rs");
 
 pub struct SystemFactory;
 
@@ -27,7 +27,13 @@ impl Default for PhysicsSystem {
 pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
-    fn apply_single(&self, context: &FrameContext, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
+    fn apply_single(
+        &self,
+        context: &FrameContext,
+        _entity: EntityId,
+        velocity: &VelocityComponent,
+        position: &mut PositionComponent,
+    ) {
         let dt = context.fixed_time_secs;
         position.x += velocity.x * dt;
         position.y += velocity.y * dt;

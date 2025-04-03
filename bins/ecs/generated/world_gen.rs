@@ -64,8 +64,18 @@ pub struct World<E = ()> {
     /// The frame context.
     context: FrameContext,
 
+    /// The fixed-time accumulators.
+    fixed_accumulators: FixedAccumulators,
+
     /// The system phase events
     events: Option<E>
+}
+
+/// Time accumulators for fixed-time phases.
+#[derive(Debug, Clone, Default)]
+struct FixedAccumulators {
+    /// The time accumulator for the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
+    fixed_update: f32,
 }
 
 #[allow(dead_code)]
@@ -87,6 +97,7 @@ impl<E> World<E> {
             physics_system,
             render_system,
             context,
+            fixed_accumulators: Default::default(),
             events: phase_events
         }
     }
@@ -125,7 +136,16 @@ impl<E> World<E> {
     {
         self.on_begin_frame();
         self.apply_system_phase_startup();
-        self.apply_system_phase_fixed_update();
+
+        // Apply fixed-time loop for phase FixedUpdate
+        self.context.fixed_time_secs = SystemPhase::FIXED_UPDATE_SECS;
+        self.fixed_accumulators.fixed_update += self.context.delta_time_secs;
+        while self.fixed_accumulators.fixed_update >= SystemPhase::FIXED_UPDATE_SECS {
+            self.apply_system_phase_fixed_update();
+            self.fixed_accumulators.fixed_update -= SystemPhase::FIXED_UPDATE_SECS;
+        }
+
+        self.context.fixed_time_secs = 0.0;
         self.apply_system_phase_update();
         self.apply_system_phase_render();
         self.on_end_frame();
@@ -154,7 +174,16 @@ impl<E> World<E> {
     {
         self.on_begin_frame();
         self.par_apply_system_phase_startup();
-        self.par_apply_system_phase_fixed_update();
+
+        // Apply fixed-time loop for phase FixedUpdate
+        self.context.fixed_time_secs = SystemPhase::FIXED_UPDATE_SECS;
+        self.fixed_accumulators.fixed_update += self.context.delta_time_secs;
+        while self.fixed_accumulators.fixed_update >= SystemPhase::FIXED_UPDATE_SECS {
+            self.par_apply_system_phase_fixed_update();
+            self.fixed_accumulators.fixed_update -= SystemPhase::FIXED_UPDATE_SECS;
+        }
+
+        self.context.fixed_time_secs = 0.0;
         self.par_apply_system_phase_update();
         self.par_apply_system_phase_render();
         self.on_end_frame();
@@ -182,13 +211,13 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Startup);
+            events.on_begin_phase(SystemPhase::Startup, &self.context);
         }
 
         self.apply_system_phase_startup_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Startup);
+            events.on_end_phase(SystemPhase::Startup, &self.context);
         }
     }
 
@@ -219,12 +248,12 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Startup);
+            events.on_begin_phase(SystemPhase::Startup, &self.context);
         }
         // no systems in this phase
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Startup);
+            events.on_end_phase(SystemPhase::Startup, &self.context);
         }
     }
 
@@ -250,13 +279,13 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::FixedUpdate);
+            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context);
         }
 
         self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::FixedUpdate);
+            events.on_end_phase(SystemPhase::FixedUpdate, &self.context);
         }
     }
 
@@ -303,13 +332,13 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::FixedUpdate);
+            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context);
         }
         // Only one system in this phase; skip spawning thread.
         self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::FixedUpdate);
+            events.on_end_phase(SystemPhase::FixedUpdate, &self.context);
         }
     }
 
@@ -335,13 +364,13 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Update);
+            events.on_begin_phase(SystemPhase::Update, &self.context);
         }
 
         self.apply_system_phase_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Update);
+            events.on_end_phase(SystemPhase::Update, &self.context);
         }
     }
 
@@ -372,12 +401,12 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Update);
+            events.on_begin_phase(SystemPhase::Update, &self.context);
         }
         // no systems in this phase
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Update);
+            events.on_end_phase(SystemPhase::Update, &self.context);
         }
     }
 
@@ -403,13 +432,13 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Render);
+            events.on_begin_phase(SystemPhase::Render, &self.context);
         }
 
         self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Render);
+            events.on_end_phase(SystemPhase::Render, &self.context);
         }
     }
 
@@ -458,13 +487,13 @@ impl<E> World<E> {
         E: SystemPhaseEvents
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Render);
+            events.on_begin_phase(SystemPhase::Render, &self.context);
         }
         // Only one system in this phase; skip spawning thread.
         self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Render);
+            events.on_end_phase(SystemPhase::Render, &self.context);
         }
     }
 }

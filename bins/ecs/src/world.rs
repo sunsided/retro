@@ -1,7 +1,7 @@
-use crate::system::*;
 use crate::archetype::*;
+use crate::system::*;
 
-include!("../generated/world.gen.rs");
+include!("../generated/world_gen.rs");
 
 #[derive(Debug, Clone, Default)]
 pub struct FrameContextData;
