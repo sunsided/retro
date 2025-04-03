@@ -1,6 +1,6 @@
 use crate::archetype::*;
 use crate::component::*;
-use crate::world::FrameContext;
+use crate::world::{FrameContext, UserState};
 use tracing::trace;
 
 include!("../generated/systems_gen.rs");
@@ -51,7 +51,7 @@ impl Default for RenderSystem {
 pub struct RenderSystemData;
 
 impl ApplyRenderSystem for RenderSystem {
-    fn apply_single(&self, position: &PositionComponent) {
-        trace!("Rendering position: {:?}", position);
+    fn apply_single(&self, context: &FrameContext, _state: &UserState, position: &PositionComponent) {
+        trace!("Rendering position: {:?} in frame {}", position, context.frame_number);
     }
 }

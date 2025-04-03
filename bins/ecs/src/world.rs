@@ -4,4 +4,4 @@ use crate::system::*;
 include!("../generated/world_gen.rs");
 
 #[derive(Debug, Clone, Default)]
-pub struct FrameContextData;
+pub struct UserState;

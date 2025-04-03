@@ -109,14 +109,14 @@ pub trait SystemPhaseEvents {
     /// Marks the beginning of a phase.
     #[inline(always)]
     #[allow(unused_variables)]
-    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext) {
+    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut UserState) {
         // empty placeholder implementation
     }
 
     /// Marks the end of a phase.
     #[inline(always)]
     #[allow(unused_variables)]
-    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext) {
+    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut UserState) {
         // empty placeholder implementation
     }
 }
@@ -132,12 +132,12 @@ const NO_PHASE_EVENTS: Option<NoOpPhaseEvents> = Option::<NoOpPhaseEvents>::None
 #[automatically_derived]
 impl SystemPhaseEvents for NoOpPhaseEvents {
     #[inline(always)]
-    fn on_begin_phase(&mut self, _phase: SystemPhase, _context: &FrameContext) {
+    fn on_begin_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut UserState) {
         // empty placeholder implementation
     }
 
     #[inline(always)]
-    fn on_end_phase(&mut self, _phase: SystemPhase, _context: &FrameContext) {
+    fn on_end_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut UserState) {
         // empty placeholder implementation
     }
 }
@@ -345,6 +345,8 @@ pub trait ApplyRenderSystem: System {
     /// 
     fn apply_single(
         &self,
+        context: &FrameContext,
+        state: &UserState,
         position: &PositionComponent,
     );
 
@@ -358,11 +360,15 @@ pub trait ApplyRenderSystem: System {
     /// 
     fn apply_many(
         &self,
+        context: &FrameContext,
+        state: &UserState,
         positions: &[PositionComponent],
     ) {
         let zipped_iter = positions;
         for position in zipped_iter {
             self.apply_single(
+                &context,
+                &state,
                 position,
             );
         }
@@ -375,10 +381,14 @@ impl RenderSystem {
     #[inline]
     pub fn apply_single(
         &self,
+        context: &FrameContext,
+        state: &UserState,
         position: &PositionComponent,
     ) {
         ApplyRenderSystem::apply_single(
             self,
+            context,
+            &state,
             position,
         );
     }
@@ -394,10 +404,14 @@ impl RenderSystem {
     #[inline]
     fn apply_many(
         &self,
+        context: &FrameContext,
+        state: &UserState,
         positions: &[PositionComponent],
     ) {
         ApplyRenderSystem::apply_many(
             self,
+            context,
+            &state,
             positions,
         );
     }
@@ -407,8 +421,12 @@ impl RenderSystem {
     pub fn apply_to_particle(
         &self,
         archetype: &mut ParticleArchetype,
+        context: &FrameContext,
+        state: &UserState,
     ) {
         self.apply_many(
+            &context,
+            &state,
             &archetype.positions,
         );
     }
@@ -418,8 +436,12 @@ impl RenderSystem {
     pub fn apply_to_player(
         &self,
         archetype: &mut PlayerArchetype,
+        context: &FrameContext,
+        state: &UserState,
     ) {
         self.apply_many(
+            &context,
+            &state,
             &archetype.positions,
         );
     }
@@ -429,8 +451,12 @@ impl RenderSystem {
     pub fn apply_to_foreground_object(
         &self,
         archetype: &mut ForegroundObjectArchetype,
+        context: &FrameContext,
+        state: &UserState,
     ) {
         self.apply_many(
+            &context,
+            &state,
             &archetype.positions,
         );
     }
@@ -440,8 +466,12 @@ impl RenderSystem {
     pub fn apply_to_background_object(
         &self,
         archetype: &mut BackgroundObjectArchetype,
+        context: &FrameContext,
+        state: &UserState,
     ) {
         self.apply_many(
+            &context,
+            &state,
             &archetype.positions,
         );
     }
