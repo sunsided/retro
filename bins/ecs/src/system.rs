@@ -28,7 +28,6 @@ pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
     fn apply_single(&self, context: &FrameContext, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
-        // TODO: Factor in time delta
         let dt = context.fixed_time_secs;
         position.x += velocity.x * dt;
         position.y += velocity.y * dt;

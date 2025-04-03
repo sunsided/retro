@@ -39,6 +39,7 @@ archetypes:
 phases:
   - name: Startup
   - name: FixedUpdate
+    fixed: true
   - name: Update
   - name: Render
 

@@ -184,11 +184,21 @@ impl<E> World<E> {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Startup);
         }
-        // no systems in this phase
+
+        self.apply_system_phase_startup_without_events();
 
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Startup);
         }
+    }
+
+    /// Execute system phase `Startup` without calling events. See [`apply_system_phase_startup`](Self::apply_system_phase_startup).
+    #[inline]
+    fn apply_system_phase_startup_without_events(&mut self)
+    where
+        E: SystemPhaseEvents
+    {
+        // no systems in this phase
     }
 
     /// Applies the specified system phase with parallel execution of systems.
@@ -242,23 +252,36 @@ impl<E> World<E> {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::FixedUpdate);
         }
-        // System group 1: Apply PhysicsSystem to ParticleArchetype
-        self.physics_system.apply_many(
-            &self.context,
-            &self.particle.entities,
-            &self.particle.velocities,
-            &mut self.particle.positions,
-        );
-        // System group 1: Apply PhysicsSystem to PlayerArchetype
-        self.physics_system.apply_many(
-            &self.context,
-            &self.player.entities,
-            &self.player.velocities,
-            &mut self.player.positions,
-        );
+
+        self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::FixedUpdate);
+        }
+    }
+
+    /// Execute system phase `FixedUpdate` without calling events. See [`apply_system_phase_fixed_update`](Self::apply_system_phase_fixed_update).
+    #[inline]
+    fn apply_system_phase_fixed_update_without_events(&mut self)
+    where
+        E: SystemPhaseEvents
+    {
+        // System group 1 of 1
+        {
+            // Apply PhysicsSystem to ParticleArchetype
+            self.physics_system.apply_many(
+                &self.context,
+                &self.particle.entities,
+                &self.particle.velocities,
+                &mut self.particle.positions,
+            );
+            // Apply PhysicsSystem to PlayerArchetype
+            self.physics_system.apply_many(
+                &self.context,
+                &self.player.entities,
+                &self.player.velocities,
+                &mut self.player.positions,
+            );
         }
     }
 
@@ -282,26 +305,8 @@ impl<E> World<E> {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::FixedUpdate);
         }
-        // System group 1
-        rayon::scope(|s| {
-            // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-            s.spawn(|_| {
-                // Apply PhysicsSystem to ParticleArchetype
-                self.physics_system.apply_many(
-                    &self.context,
-                    &self.particle.entities,
-                    &self.particle.velocities,
-                    &mut self.particle.positions,
-                );
-                // Apply PhysicsSystem to PlayerArchetype
-                self.physics_system.apply_many(
-                    &self.context,
-                    &self.player.entities,
-                    &self.player.velocities,
-                    &mut self.player.positions,
-                );
-            });
-        });
+        // Only one system in this phase; skip spawning thread.
+        self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::FixedUpdate);
@@ -332,11 +337,21 @@ impl<E> World<E> {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Update);
         }
-        // no systems in this phase
+
+        self.apply_system_phase_update_without_events();
 
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Update);
         }
+    }
+
+    /// Execute system phase `Update` without calling events. See [`apply_system_phase_update`](Self::apply_system_phase_update).
+    #[inline]
+    fn apply_system_phase_update_without_events(&mut self)
+    where
+        E: SystemPhaseEvents
+    {
+        // no systems in this phase
     }
 
     /// Applies the specified system phase with parallel execution of systems.
@@ -390,25 +405,38 @@ impl<E> World<E> {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Render);
         }
-        // System group 1: Apply RenderSystem to ParticleArchetype
-        self.render_system.apply_many(
-            &self.particle.positions,
-        );
-        // System group 1: Apply RenderSystem to PlayerArchetype
-        self.render_system.apply_many(
-            &self.player.positions,
-        );
-        // System group 1: Apply RenderSystem to ForegroundObjectArchetype
-        self.render_system.apply_many(
-            &self.foreground_object.positions,
-        );
-        // System group 1: Apply RenderSystem to BackgroundObjectArchetype
-        self.render_system.apply_many(
-            &self.background_object.positions,
-        );
+
+        self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Render);
+        }
+    }
+
+    /// Execute system phase `Render` without calling events. See [`apply_system_phase_render`](Self::apply_system_phase_render).
+    #[inline]
+    fn apply_system_phase_render_without_events(&mut self)
+    where
+        E: SystemPhaseEvents
+    {
+        // System group 1 of 1
+        {
+            // Apply RenderSystem to ParticleArchetype
+            self.render_system.apply_many(
+                &self.particle.positions,
+            );
+            // Apply RenderSystem to PlayerArchetype
+            self.render_system.apply_many(
+                &self.player.positions,
+            );
+            // Apply RenderSystem to ForegroundObjectArchetype
+            self.render_system.apply_many(
+                &self.foreground_object.positions,
+            );
+            // Apply RenderSystem to BackgroundObjectArchetype
+            self.render_system.apply_many(
+                &self.background_object.positions,
+            );
         }
     }
 
@@ -432,28 +460,8 @@ impl<E> World<E> {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Render);
         }
-        // System group 1
-        rayon::scope(|s| {
-            // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-            s.spawn(|_| {
-                // Apply RenderSystem to ParticleArchetype
-                self.render_system.apply_many(
-                    &self.particle.positions,
-                );
-                // Apply RenderSystem to PlayerArchetype
-                self.render_system.apply_many(
-                    &self.player.positions,
-                );
-                // Apply RenderSystem to ForegroundObjectArchetype
-                self.render_system.apply_many(
-                    &self.foreground_object.positions,
-                );
-                // Apply RenderSystem to BackgroundObjectArchetype
-                self.render_system.apply_many(
-                    &self.background_object.positions,
-                );
-            });
-        });
+        // Only one system in this phase; skip spawning thread.
+        self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Render);

@@ -43,12 +43,20 @@ pub trait System: 'static + Send + Sync {
 #[allow(dead_code)]
 pub enum SystemPhase {
     /// The `Startup` system phase.
+    ///
+    /// This phase is executed exactly once per frame.
     Startup = 0,
     /// The `FixedUpdate` system phase.
+    ///
+    /// This phase runs using a **fixed-time loop** and may iterate zero or multiple times per frame.
     FixedUpdate = 1,
     /// The `Update` system phase.
+    ///
+    /// This phase is executed exactly once per frame.
     Update = 2,
     /// The `Render` system phase.
+    ///
+    /// This phase is executed exactly once per frame.
     Render = 3,
 }
 
