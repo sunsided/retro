@@ -1,7 +1,7 @@
 use crate::system::*;
 use crate::archetype::*;
 
-include!(concat!(env!("OUT_DIR"), "/world.gen.rs"));
+include!("../generated/world.gen.rs");
 
 #[derive(Debug, Clone, Default)]
 pub struct FrameContextData;

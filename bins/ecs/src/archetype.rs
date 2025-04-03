@@ -1,3 +1,3 @@
 use crate::component::*;
 
-include!(concat!(env!("OUT_DIR"), "/archetypes.gen.rs"));
+include!("../generated/archetypes.gen.rs");

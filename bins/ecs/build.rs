@@ -7,6 +7,6 @@ fn main() -> eyre::Result<()> {
 
     let file = File::open("ecs.yaml").expect("Failed to open ecs.yaml");
     let reader = BufReader::new(file);
-    EcsCode::generate(reader)?.write_files()?;
+    EcsCode::generate(reader)?.write_files_to("generated")?;
     Ok(())
 }

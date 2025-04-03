@@ -1,4 +1,4 @@
-include!(concat!(env!("OUT_DIR"), "/components.gen.rs"));
+include!("../generated/components.gen.rs");
 
 #[derive(Debug, Clone)]
 pub struct PositionData {

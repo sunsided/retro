@@ -3,7 +3,7 @@ use crate::archetype::*;
 use crate::component::*;
 use crate::world::FrameContext;
 
-include!(concat!(env!("OUT_DIR"), "/systems.gen.rs"));
+include!("../generated/systems.gen.rs");
 
 pub struct SystemFactory;
 
@@ -27,11 +27,12 @@ impl Default for PhysicsSystem {
 pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
-    fn apply_single(&self, _context: &FrameContext, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
+    fn apply_single(&self, context: &FrameContext, _entity: EntityId, velocity: &VelocityComponent, position: &mut PositionComponent) {
         // TODO: Factor in time delta
-        position.x += velocity.x;
-        position.y += velocity.y;
-        position.z += velocity.z;
+        let dt = context.fixed_time_secs;
+        position.x += velocity.x * dt;
+        position.y += velocity.y * dt;
+        position.z += velocity.z * dt;
     }
 }
 
