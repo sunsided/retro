@@ -41,6 +41,9 @@ pub struct World<E = ()> {
     pub physics_system: PhysicsSystem,
     pub render_system: RenderSystem,
 
+    /// The entity locator.
+    entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
+
     /// The frame context.
     context: FrameContext,
 
@@ -79,12 +82,84 @@ impl<E> World<E> {
             background_object: BackgroundObjectArchetype::default(),
             physics_system,
             render_system,
+            entity_locations: Default::default(),
             context,
             state,
             fixed_accumulators: Default::default(),
             events: phase_events
         }
     }
+
+    /// Spawn a new `Particle` entity into the world.
+    pub fn spawn_particle_with(
+        &mut self,
+        position: PositionComponent,
+        velocity: VelocityComponent,
+    ) -> EntityId {
+        let (entity_id, archetype_ref) = self.particle
+            .spawn_with(
+                position,
+                velocity,
+            );
+
+        self.entity_locations.insert(entity_id, archetype_ref);
+        entity_id
+    }
+
+    /// Spawn a new `Player` entity into the world.
+    pub fn spawn_player_with(
+        &mut self,
+        position: PositionComponent,
+        velocity: VelocityComponent,
+        health: HealthComponent,
+    ) -> EntityId {
+        let (entity_id, archetype_ref) = self.player
+            .spawn_with(
+                position,
+                velocity,
+                health,
+            );
+
+        self.entity_locations.insert(entity_id, archetype_ref);
+        entity_id
+    }
+
+    /// Spawn a new `ForegroundObject` entity into the world.
+    pub fn spawn_foreground_object_with(
+        &mut self,
+        position: PositionComponent,
+        collider: ColliderComponent,
+    ) -> EntityId {
+        let (entity_id, archetype_ref) = self.foreground_object
+            .spawn_with(
+                position,
+                collider,
+            );
+
+        self.entity_locations.insert(entity_id, archetype_ref);
+        entity_id
+    }
+
+    /// Spawn a new `BackgroundObject` entity into the world.
+    pub fn spawn_background_object_with(
+        &mut self,
+        position: PositionComponent,
+    ) -> EntityId {
+        let (entity_id, archetype_ref) = self.background_object
+            .spawn_with(
+                position,
+            );
+
+        self.entity_locations.insert(entity_id, archetype_ref);
+        entity_id
+    }
+
+    /// Callback function for an archetype to spawn an entity.
+    #[doc(hidden)]
+    #[inline]
+    pub fn register_entity_from_spawn(&mut self, entity_id: EntityId, archetype_ref: EntityArchetypeRef) {
+        self.entity_locations.insert(entity_id, archetype_ref);
+    }  
 
     /// Runs a per-frame update of the frame context at the start of a frame.
     fn on_begin_frame(&mut self) {

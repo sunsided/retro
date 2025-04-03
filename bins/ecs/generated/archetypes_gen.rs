@@ -82,6 +82,16 @@ impl From<ArchetypeId> for u64 {
     }
 }
 
+/// A locator for an entity across archetypes.
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct EntityArchetypeRef {
+    /// The ID of the archetype the entity is in.
+    pub archetype: ArchetypeId,
+
+    /// The Entity's index within that archetype.
+    pub index: usize
+}
+
 /// Marker trait for archetypes.
 #[allow(dead_code)]
 pub trait Archetype: 'static + Send + Sync {
@@ -145,6 +155,27 @@ impl ParticleArchetype {
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
         id == 1 || id == 2 || false
+    }
+
+    /// Spawn a new entity into the world.
+    pub fn spawn_with(
+        &mut self,
+        position: PositionComponent,
+        velocity: VelocityComponent,
+    ) -> (EntityId, EntityArchetypeRef) {
+        self.positions.push(position);
+        self.velocities.push(velocity);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+        (entity_id, reference)
     }
 }
 
@@ -236,6 +267,29 @@ impl PlayerArchetype {
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
         id == 1 || id == 2 || id == 3 || false
+    }
+
+    /// Spawn a new entity into the world.
+    pub fn spawn_with(
+        &mut self,
+        position: PositionComponent,
+        velocity: VelocityComponent,
+        health: HealthComponent,
+    ) -> (EntityId, EntityArchetypeRef) {
+        self.positions.push(position);
+        self.velocities.push(velocity);
+        self.healths.push(health);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+        (entity_id, reference)
     }
 }
 
@@ -340,6 +394,27 @@ impl ForegroundObjectArchetype {
         id == 1 || id == 4 || false
     }
 
+    /// Spawn a new entity into the world.
+    pub fn spawn_with(
+        &mut self,
+        position: PositionComponent,
+        collider: ColliderComponent,
+    ) -> (EntityId, EntityArchetypeRef) {
+        self.positions.push(position);
+        self.colliders.push(collider);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+        (entity_id, reference)
+    }
+
     /// Promotes this [`ForegroundObjectArchetype`] to [`BackgroundObjectArchetype`].
     pub fn promote_to_background_objects(
         self,
@@ -436,6 +511,25 @@ impl BackgroundObjectArchetype {
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
         id == 1 || false
+    }
+
+    /// Spawn a new entity into the world.
+    pub fn spawn_with(
+        &mut self,
+        position: PositionComponent,
+    ) -> (EntityId, EntityArchetypeRef) {
+        self.positions.push(position);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+        (entity_id, reference)
     }
 
     /// Promotes this [`BackgroundObjectArchetype`] to [`ForegroundObjectArchetype`].
