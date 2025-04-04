@@ -31,57 +31,93 @@ impl Default for FrameContext {
     }
 }
 
+
 /// A world holding all archetypes.
 #[derive(Debug, Clone)]
-pub struct World<E = ()> {
+pub struct MainWorld<E = ()> {
+    /// The archetypes.
+    archetypes: MainWorldArchetypes,
+    /// The systems.
+    systems: MainWorldSystems,
+    /// The entity locator.
+    entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
+    /// The frame context.
+    context: FrameContext,
+    /// The fixed-time accumulators.
+    fixed_accumulators: FixedAccumulators,
+    /// The system phase events
+    events: Option<E>,
+    /// User-specific data.
+    pub state: UserState,
+}
+
+/// The archetypes used in the world.
+#[derive(Debug, Clone, Default)]
+struct MainWorldArchetypes {
     pub particle: ParticleArchetype,
     pub player: PlayerArchetype,
     pub foreground_object: ForegroundObjectArchetype,
     pub background_object: BackgroundObjectArchetype,
-    pub physics_system: PhysicsSystem,
-    pub render_system: RenderSystem,
-
-    /// The entity locator.
-    entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
-
-    /// The frame context.
-    context: FrameContext,
-
-    /// User-specific data.
-    pub state: UserState,
-
-    /// The fixed-time accumulators.
-    fixed_accumulators: FixedAccumulators,
-
-    /// The system phase events
-    events: Option<E>
 }
 
-/// Time accumulators for fixed-time phases.
-#[derive(Debug, Clone, Default)]
-struct FixedAccumulators {
-    /// The time accumulator for the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
-    fixed_update: f32,
+/// The systems.
+#[derive(Debug, Clone)]
+struct MainWorldSystems {
+    pub physics: PhysicsSystem,
+    pub render: RenderSystem,
+}
+
+/// Spawns an entity into the world.
+impl<E> Spawn<ParticleEntityData> for MainWorld<E> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: ParticleEntityData) -> EntityId {
+        self.spawn_particle(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E> Spawn<PlayerEntityData> for MainWorld<E> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: PlayerEntityData) -> EntityId {
+        self.spawn_player(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E> Spawn<ForegroundObjectEntityData> for MainWorld<E> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: ForegroundObjectEntityData) -> EntityId {
+        self.spawn_foreground_object(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E> Spawn<BackgroundObjectEntityData> for MainWorld<E> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: BackgroundObjectEntityData) -> EntityId {
+        self.spawn_background_object(data)
+    }
 }
 
 #[allow(dead_code)]
-impl<E> World<E> {
-    /// Creates a new [`World`].
+impl<E>MainWorld<E> {
+    /// Creates a new [`MainWorld`].
     pub fn new<S>(create_systems: &S, state: UserState, phase_events: Option<E>) -> Self
     where
         S: CreateSystems,
         E: SystemPhaseEvents
     {
         let context = FrameContext::default();
-        let physics_system = create_systems.create_physics();
-        let render_system = create_systems.create_render();
         Self {
-            particle: ParticleArchetype::default(),
-            player: PlayerArchetype::default(),
-            foreground_object: ForegroundObjectArchetype::default(),
-            background_object: BackgroundObjectArchetype::default(),
-            physics_system,
-            render_system,
+            archetypes: Default::default(),
+            systems: MainWorldSystems {
+                physics: create_systems.create_physics(),
+                render: create_systems.create_render(),
+            },
             entity_locations: Default::default(),
             context,
             state,
@@ -90,13 +126,25 @@ impl<E> World<E> {
         }
     }
 
+    /// Spawn a new `Particle` entity into the world given its [`ParticleEntityData`].
+    #[inline]
+    pub fn spawn_particle(
+        &mut self,
+        particle: ParticleEntityData
+    ) -> EntityId {
+        self.spawn_particle_with(
+            particle.position,
+            particle.velocity,
+        )
+    }
+
     /// Spawn a new `Particle` entity into the world.
     pub fn spawn_particle_with(
         &mut self,
-        position: PositionComponent,
-        velocity: VelocityComponent,
+        position: PositionData,
+        velocity: VelocityData,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.particle
+        let (entity_id, archetype_ref) = self.archetypes.particle
             .spawn_with(
                 position,
                 velocity,
@@ -106,14 +154,27 @@ impl<E> World<E> {
         entity_id
     }
 
+    /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
+    #[inline]
+    pub fn spawn_player(
+        &mut self,
+        player: PlayerEntityData
+    ) -> EntityId {
+        self.spawn_player_with(
+            player.position,
+            player.velocity,
+            player.health,
+        )
+    }
+
     /// Spawn a new `Player` entity into the world.
     pub fn spawn_player_with(
         &mut self,
-        position: PositionComponent,
-        velocity: VelocityComponent,
-        health: HealthComponent,
+        position: PositionData,
+        velocity: VelocityData,
+        health: HealthData,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.player
+        let (entity_id, archetype_ref) = self.archetypes.player
             .spawn_with(
                 position,
                 velocity,
@@ -124,13 +185,25 @@ impl<E> World<E> {
         entity_id
     }
 
+    /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
+    #[inline]
+    pub fn spawn_foreground_object(
+        &mut self,
+        foreground_object: ForegroundObjectEntityData
+    ) -> EntityId {
+        self.spawn_foreground_object_with(
+            foreground_object.position,
+            foreground_object.collider,
+        )
+    }
+
     /// Spawn a new `ForegroundObject` entity into the world.
     pub fn spawn_foreground_object_with(
         &mut self,
-        position: PositionComponent,
-        collider: ColliderComponent,
+        position: PositionData,
+        collider: ColliderData,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.foreground_object
+        let (entity_id, archetype_ref) = self.archetypes.foreground_object
             .spawn_with(
                 position,
                 collider,
@@ -140,12 +213,23 @@ impl<E> World<E> {
         entity_id
     }
 
+    /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
+    #[inline]
+    pub fn spawn_background_object(
+        &mut self,
+        background_object: BackgroundObjectEntityData
+    ) -> EntityId {
+        self.spawn_background_object_with(
+            background_object.position,
+        )
+    }
+
     /// Spawn a new `BackgroundObject` entity into the world.
     pub fn spawn_background_object_with(
         &mut self,
-        position: PositionComponent,
+        position: PositionData,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.background_object
+        let (entity_id, archetype_ref) = self.archetypes.background_object
             .spawn_with(
                 position,
             );
@@ -153,13 +237,6 @@ impl<E> World<E> {
         self.entity_locations.insert(entity_id, archetype_ref);
         entity_id
     }
-
-    /// Callback function for an archetype to spawn an entity.
-    #[doc(hidden)]
-    #[inline]
-    pub fn register_entity_from_spawn(&mut self, entity_id: EntityId, archetype_ref: EntityArchetypeRef) {
-        self.entity_locations.insert(entity_id, archetype_ref);
-    }  
 
     /// Runs a per-frame update of the frame context at the start of a frame.
     fn on_begin_frame(&mut self) {
@@ -357,18 +434,18 @@ impl<E> World<E> {
         // System group 1 of 1
         {
             // Apply PhysicsSystem to ParticleArchetype
-            self.physics_system.apply_many(
+            self.systems.physics.apply_many(
                 &self.context,
-                &self.particle.entities,
-                &self.particle.velocities,
-                &mut self.particle.positions,
+                &self.archetypes.particle.entities,
+                &self.archetypes.particle.velocities,
+                &mut self.archetypes.particle.positions,
             );
             // Apply PhysicsSystem to PlayerArchetype
-            self.physics_system.apply_many(
+            self.systems.physics.apply_many(
                 &self.context,
-                &self.player.entities,
-                &self.player.velocities,
-                &mut self.player.positions,
+                &self.archetypes.player.entities,
+                &self.archetypes.player.velocities,
+                &mut self.archetypes.player.positions,
             );
         }
     }
@@ -510,28 +587,28 @@ impl<E> World<E> {
         // System group 1 of 1
         {
             // Apply RenderSystem to ParticleArchetype
-            self.render_system.apply_many(
+            self.systems.render.apply_many(
                 &self.context,
                 &self.state,
-                &self.particle.positions,
+                &self.archetypes.particle.positions,
             );
             // Apply RenderSystem to PlayerArchetype
-            self.render_system.apply_many(
+            self.systems.render.apply_many(
                 &self.context,
                 &self.state,
-                &self.player.positions,
+                &self.archetypes.player.positions,
             );
             // Apply RenderSystem to ForegroundObjectArchetype
-            self.render_system.apply_many(
+            self.systems.render.apply_many(
                 &self.context,
                 &self.state,
-                &self.foreground_object.positions,
+                &self.archetypes.foreground_object.positions,
             );
             // Apply RenderSystem to BackgroundObjectArchetype
-            self.render_system.apply_many(
+            self.systems.render.apply_many(
                 &self.context,
                 &self.state,
-                &self.background_object.positions,
+                &self.archetypes.background_object.positions,
             );
         }
     }
@@ -563,4 +640,11 @@ impl<E> World<E> {
             events.on_end_phase(SystemPhase::Render, &self.context, &mut self.state);
         }
     }
+}
+
+/// Time accumulators for fixed-time phases.
+#[derive(Debug, Clone, Default)]
+struct FixedAccumulators {
+    /// The time accumulator for the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
+    fixed_update: f32,
 }

@@ -1,7 +1,7 @@
 use crate::system::{SystemPhase, SystemPhaseEvents};
+use crate::world::{FrameContext, UserState};
 use std::time::Instant;
 use tracing::trace;
-use crate::world::{FrameContext, UserState};
 
 #[derive(Debug)]
 pub struct PhaseEvents(Instant);
@@ -13,7 +13,12 @@ impl Default for PhaseEvents {
 }
 
 impl SystemPhaseEvents for PhaseEvents {
-    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext, _state: &mut UserState) {
+    fn on_begin_phase(
+        &mut self,
+        phase: SystemPhase,
+        context: &FrameContext,
+        _state: &mut UserState,
+    ) {
         let duration = Instant::now() - self.0;
         self.0 = Instant::now();
         trace!(phase = ?phase, duration_since_last = ?duration, frame = context.frame_number, "Beginning phase");

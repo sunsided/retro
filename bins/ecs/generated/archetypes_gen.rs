@@ -92,6 +92,13 @@ pub struct EntityArchetypeRef {
     pub index: usize
 }
 
+/// Spawns an entity into the world.
+#[allow(dead_code)]
+pub trait Spawn<E> {
+    /// Spawn a new entity into the world.
+    fn spawn(&mut self, data: E) -> EntityId;
+}
+
 /// Marker trait for archetypes.
 #[allow(dead_code)]
 pub trait Archetype: 'static + Send + Sync {
@@ -123,6 +130,48 @@ pub struct ParticleArchetype {
     pub entities: Vec<EntityId>,
     pub positions: Vec<PositionComponent>,
     pub velocities: Vec<VelocityComponent>,
+}
+
+/// An entity of the [`ParticleArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ParticleEntity {
+    pub id: EntityId,
+    pub data: ParticleEntityData,
+}
+
+/// An entity of the [`ParticleArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ParticleEntityData {
+    pub position: PositionData,
+    pub velocity: VelocityData,
+}
+
+impl ParticleEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<ParticleEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl std::ops::Deref for ParticleEntity {
+    type Target = ParticleEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl std::ops::DerefMut for ParticleEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
 }
 
 #[allow(dead_code)]
@@ -160,11 +209,11 @@ impl ParticleArchetype {
     /// Spawn a new entity into the world.
     pub fn spawn_with(
         &mut self,
-        position: PositionComponent,
-        velocity: VelocityComponent,
+        position: PositionData,
+        velocity: VelocityData,
     ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(position);
-        self.velocities.push(velocity);
+        self.positions.push(PositionComponent::new(position));
+        self.velocities.push(VelocityComponent::new(velocity));
 
         let entity_id = EntityId::new();
 
@@ -236,6 +285,49 @@ pub struct PlayerArchetype {
     pub healths: Vec<HealthComponent>,
 }
 
+/// An entity of the [`PlayerArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PlayerEntity {
+    pub id: EntityId,
+    pub data: PlayerEntityData,
+}
+
+/// An entity of the [`PlayerArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PlayerEntityData {
+    pub position: PositionData,
+    pub velocity: VelocityData,
+    pub health: HealthData,
+}
+
+impl PlayerEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<PlayerEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl std::ops::Deref for PlayerEntity {
+    type Target = PlayerEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl std::ops::DerefMut for PlayerEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
 #[allow(dead_code)]
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
@@ -272,13 +364,13 @@ impl PlayerArchetype {
     /// Spawn a new entity into the world.
     pub fn spawn_with(
         &mut self,
-        position: PositionComponent,
-        velocity: VelocityComponent,
-        health: HealthComponent,
+        position: PositionData,
+        velocity: VelocityData,
+        health: HealthData,
     ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(position);
-        self.velocities.push(velocity);
-        self.healths.push(health);
+        self.positions.push(PositionComponent::new(position));
+        self.velocities.push(VelocityComponent::new(velocity));
+        self.healths.push(HealthComponent::new(health));
 
         let entity_id = EntityId::new();
 
@@ -362,6 +454,48 @@ pub struct ForegroundObjectArchetype {
     pub colliders: Vec<ColliderComponent>,
 }
 
+/// An entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntity {
+    pub id: EntityId,
+    pub data: ForegroundObjectEntityData,
+}
+
+/// An entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityData {
+    pub position: PositionData,
+    pub collider: ColliderData,
+}
+
+impl ForegroundObjectEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<ForegroundObjectEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl std::ops::Deref for ForegroundObjectEntity {
+    type Target = ForegroundObjectEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl std::ops::DerefMut for ForegroundObjectEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
 #[allow(dead_code)]
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
@@ -397,11 +531,11 @@ impl ForegroundObjectArchetype {
     /// Spawn a new entity into the world.
     pub fn spawn_with(
         &mut self,
-        position: PositionComponent,
-        collider: ColliderComponent,
+        position: PositionData,
+        collider: ColliderData,
     ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(position);
-        self.colliders.push(collider);
+        self.positions.push(PositionComponent::new(position));
+        self.colliders.push(ColliderComponent::new(collider));
 
         let entity_id = EntityId::new();
 
@@ -482,6 +616,47 @@ pub struct BackgroundObjectArchetype {
     pub positions: Vec<PositionComponent>,
 }
 
+/// An entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntity {
+    pub id: EntityId,
+    pub data: BackgroundObjectEntityData,
+}
+
+/// An entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityData {
+    pub position: PositionData,
+}
+
+impl BackgroundObjectEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<BackgroundObjectEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl std::ops::Deref for BackgroundObjectEntity {
+    type Target = BackgroundObjectEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl std::ops::DerefMut for BackgroundObjectEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
 #[allow(dead_code)]
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
@@ -516,9 +691,9 @@ impl BackgroundObjectArchetype {
     /// Spawn a new entity into the world.
     pub fn spawn_with(
         &mut self,
-        position: PositionComponent,
+        position: PositionData,
     ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(position);
+        self.positions.push(PositionComponent::new(position));
 
         let entity_id = EntityId::new();
 
