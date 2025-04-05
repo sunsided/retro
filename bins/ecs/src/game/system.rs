@@ -1,9 +1,9 @@
-use crate::archetype::*;
-use crate::component::*;
-use crate::world::{FrameContext, RenderState, WorldState, WorldCommandSender};
+use crate::game::archetype::*;
+use crate::game::component::*;
+use crate::game::world::{FrameContext, RenderState, WorldState, WorldCommandSender};
 use tracing::trace;
 
-include!("../generated/systems_gen.rs");
+include!("../../generated/systems_gen.rs");
 
 pub struct SystemFactory;
 

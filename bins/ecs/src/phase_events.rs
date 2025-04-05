@@ -1,5 +1,5 @@
-use crate::system::{SystemPhase, SystemPhaseEvents};
-use crate::world::{FrameContext, MainWorldStates};
+use crate::game::system::{SystemPhase, SystemPhaseEvents};
+use crate::game::world::{FrameContext, MainWorldStates};
 use std::time::Instant;
 use tracing::trace;
 

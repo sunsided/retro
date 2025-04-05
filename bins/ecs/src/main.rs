@@ -1,17 +1,14 @@
 use crossbeam_channel::TryRecvError;
-use crate::archetype::ParticleEntityData;
-use crate::component::{PositionData, VelocityData};
+use crate::game::archetype::ParticleEntityData;
+use crate::game::component::{PositionData, VelocityData};
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
-use crate::system::SystemFactory;
-use crate::world::{MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crate::game::system::SystemFactory;
+use crate::game::world::{MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
 
-mod archetype;
-mod component;
 mod logging;
 mod phase_events;
-mod system;
-mod world;
+mod game;
 
 fn main() {
     dotenvy::dotenv().ok();
