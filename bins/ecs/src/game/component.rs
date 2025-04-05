@@ -1,4 +1,4 @@
-use crate::game::system::background::BackgroundColorData;
+use crate::game::system::rendering::background::BackgroundColorData;
 
 include!("../../generated/components_gen.rs");
 

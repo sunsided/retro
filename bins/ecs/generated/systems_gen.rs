@@ -124,7 +124,7 @@ pub struct NoOpPhaseEvents;
 
 impl SystemStartupPhaseEvents for NoOpPhaseEvents {
     type Result = ();
-    type Error = Infallible;
+    type Error = core::convert::Infallible;
 
     #[inline]
     fn on_begin_phase(
@@ -170,7 +170,7 @@ pub trait SystemStartupPhaseEvents {
 
 impl SystemFixedUpdatePhaseEvents for NoOpPhaseEvents {
     type Result = ();
-    type Error = Infallible;
+    type Error = core::convert::Infallible;
 
     #[inline]
     fn on_begin_phase(
@@ -216,7 +216,7 @@ pub trait SystemFixedUpdatePhaseEvents {
 
 impl SystemUpdatePhaseEvents for NoOpPhaseEvents {
     type Result = ();
-    type Error = Infallible;
+    type Error = core::convert::Infallible;
 
     #[inline]
     fn on_begin_phase(
@@ -262,7 +262,7 @@ pub trait SystemUpdatePhaseEvents {
 
 impl SystemRenderPhaseEvents for NoOpPhaseEvents {
     type Result = ();
-    type Error = Infallible;
+    type Error = core::convert::Infallible;
 
     #[inline]
     fn on_begin_phase(

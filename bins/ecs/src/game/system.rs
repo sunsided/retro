@@ -1,14 +1,13 @@
-pub mod render_system;
+pub mod rendering;
 mod vertex;
-pub mod background;
+pub mod physics;
 
-use std::convert::Infallible;
-use crate::game::system::render_system::RenderSystemData;
-use crate::game::system::background::RenderBackgroundSystemData;
+use crate::game::system::rendering::{background::RenderBackgroundSystemData, RenderSystemData};
+use crate::game::system::physics::PhysicsSystemData;
 use crate::game::archetype::*;
 use crate::game::component::*;
 use crate::game::world::{FrameContext, WorldCommandSender};
-use crate::game::system::render_system::WgpuRenderState;
+use crate::game::system::rendering::WgpuRenderState;
 
 include!("../../generated/systems_gen.rs");
 
@@ -25,32 +24,5 @@ impl CreateSystems for SystemFactory {
 
     fn create_render(&self) -> RenderSystem {
         RenderSystem::default()
-    }
-}
-
-impl Default for PhysicsSystem {
-    fn default() -> Self {
-        Self(PhysicsSystemData)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct PhysicsSystemData;
-
-impl ApplyPhysicsSystem for PhysicsSystem {
-    type Error = Infallible;
-
-    fn apply_single(
-        &mut self,
-        context: &FrameContext,
-        _entity: EntityId,
-        velocity: &VelocityComponent,
-        position: &mut PositionComponent,
-        _commands: &impl WorldCommandSender,
-    ) {
-        let dt = context.fixed_time_secs;
-        position.x += velocity.x * dt;
-        position.y += velocity.y * dt;
-        position.z += velocity.z * dt;
     }
 }

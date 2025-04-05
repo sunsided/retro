@@ -18,7 +18,7 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use crate::game::system::background::BackgroundColorData;
+use crate::game::system::rendering::background::BackgroundColorData;
 
 mod game;
 mod logging;
@@ -132,7 +132,7 @@ impl App {
         let mut world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
 
         world.spawn_scene_background(SceneBackgroundEntityData {
-            background_color: BackgroundColorData.into()
+            background_color: BackgroundColorData::default().into()
         });
 
         Self {
