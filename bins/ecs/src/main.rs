@@ -10,7 +10,7 @@ use std::cell::{Ref, RefCell};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, trace};
-use wgpu::{Adapter, CompositeAlphaMode, Device, Queue, TextureFormat};
+use wgpu::{Adapter, CompositeAlphaMode, Device, PresentMode, Queue, TextureFormat};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
@@ -28,28 +28,35 @@ mod phase_events;
 pub struct WgpuState {
     instance: wgpu::Instance,
     surface: wgpu::Surface<'static>,
-    surface_format: TextureFormat,
     adapter: Adapter,
     device: Device,
     queue: Queue,
+    surface_config: wgpu::SurfaceConfiguration,
 }
 
 impl WgpuState {
     pub async fn new(window: Arc<Window>) -> WgpuState {
         // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
+
+        // There's trouble with the Vulkan backend on NVIDIA + Wayland.
+        // If the application hangs after a couple of seconds, use `WGPU_BACKEND=gl`
         let instance = wgpu::Instance::default();
+
+        // TODO: See if we need to drop existing surfaces first?
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
 
-        let adapter = pollster::block_on(instance.request_adapter(
+        let adapter = pollster::block_on(instance
+            .request_adapter(
             &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
+                power_preference: wgpu::PowerPreference::HighPerformance, // or LowPower (e.g., iGPU)
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
             },
         ))
             .unwrap();
 
-        let (device, queue) = pollster::block_on(adapter.request_device(
+        let (device, queue) = pollster::block_on(adapter
+            .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
                 required_features: wgpu::Features::empty(),
@@ -60,39 +67,45 @@ impl WgpuState {
         ))
             .unwrap();
 
-        let surface_format = surface
-            .get_capabilities(&adapter)
-            .formats
-            .first()
-            .cloned()
-            .expect("No format found");
+        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
+        // one will result in all the colors coming out darker. If you want to support non
+        // sRGB surfaces, you'll need to account for that when drawing to the frame.
+        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_format = surface_caps.formats.iter()
+            .find(|f| f.is_srgb())
+            .copied()
+            .unwrap_or(surface_caps.formats[0]);
+        debug!("Using surface format {surface_format:?}");
 
-        let mut state = Self {
+        let size = window.inner_size();
+        let surface_config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface_format,
+            width: size.width,
+            height: size.height,
+            present_mode: PresentMode::Fifo, // surface_caps.present_modes[0],
+            alpha_mode: surface_caps.alpha_modes[0],
+            view_formats: vec![],
+            desired_maximum_frame_latency: 2,
+        };
+
+        Self {
             instance,
             surface,
-            surface_format,
+            surface_config,
             adapter,
             device,
             queue
-        };
-        state.resize(window.inner_size());
-
-        state
+        }
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        debug!("Resizing window to {:?}", new_size);
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: self.surface_format,
-            width: new_size.width,
-            height: new_size.height,
-            present_mode: wgpu::PresentMode::Fifo,
-            desired_maximum_frame_latency: 1, // Set to 1 for single frame in flight
-            alpha_mode: CompositeAlphaMode::Opaque,
-            view_formats: vec![self.surface_format], // Set to the surface's format
-        };
-        self.surface.configure(&self.device, &config);
+        if new_size.width > 0 && new_size.height > 0 {
+            debug!("Resizing window to {:?}", new_size);
+            self.surface_config.width = new_size.width;
+            self.surface_config.height = new_size.height;
+            self.surface.configure(&self.device, &self.surface_config);
+        }
     }
 
     pub fn draw(&mut self) {
@@ -138,6 +151,9 @@ impl ApplicationHandler for App {
                     .expect("Failed to create window"),
             );
             self.window = Some(window.clone());
+
+            // Drop any previous surfaces.
+            self.state = None;
 
             let state = pollster::block_on(WgpuState::new(window.clone()));
             self.state = Some(Arc::new(Mutex::new(state)));

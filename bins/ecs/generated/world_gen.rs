@@ -536,7 +536,8 @@ impl<E, Q>MainWorld<E, Q> {
         // The Update phase always runs.
         self.apply_system_phase_update();
 
-        // The Render phase is marked manual and will be skipped here.
+        // NOTE: The Render phase is marked manual and will be skipped here.
+        //       self.par_apply_system_phase_render();
         self.on_end_frame();
         self.handle_commands();
     }
@@ -579,7 +580,8 @@ impl<E, Q>MainWorld<E, Q> {
         // The Update phase always runs.
         self.apply_system_phase_update();
 
-        // The Render phase is marked manual and will be skipped here.
+        // NOTE: The Render phase is marked manual and will be skipped here.
+        //       self.par_apply_system_phase_render();
         self.on_end_frame();
         self.handle_commands();
     }
