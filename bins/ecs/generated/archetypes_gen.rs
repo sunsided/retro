@@ -95,6 +95,7 @@ impl core::fmt::Display for ArchetypeId {
             2 => write!(f, "Player (Archetype ID 2)"),
             3 => write!(f, "ForegroundObject (Archetype ID 3)"),
             4 => write!(f, "BackgroundObject (Archetype ID 4)"),
+            5 => write!(f, "SceneBackground (Archetype ID 5)"),
             id => write!(f, "Archetype ID {id}")
         }
     }
@@ -164,6 +165,8 @@ pub enum ArchetypeEntity {
     ForegroundObject(ForegroundObjectEntity),
     /// An entity in the [`BackgroundObject`](BackgroundObjectArchetype) archetype.
     BackgroundObject(BackgroundObjectEntity),
+    /// The scene background.
+    SceneBackground(SceneBackgroundEntity),
 }
 
 /// An enumeration holding variants for entity data, e.g. when spawning entities.
@@ -178,6 +181,8 @@ pub enum ArchetypeEntityData {
     ForegroundObject(ForegroundObjectEntityData),
     /// An entity in the [`BackgroundObject`](BackgroundObjectArchetype) archetype.
     BackgroundObject(BackgroundObjectEntityData),
+    /// The scene background.
+    SceneBackground(SceneBackgroundEntityData),
 }
 
 #[allow(dead_code)]
@@ -189,6 +194,7 @@ impl ArchetypeEntity {
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
             Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
+            Self::SceneBackground(_) => SceneBackgroundArchetype::ID,
         }
     }
 }
@@ -202,6 +208,7 @@ impl ArchetypeEntityData {
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
             Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
+            Self::SceneBackground(_) => SceneBackgroundArchetype::ID,
         }
     }
 }
@@ -1113,6 +1120,189 @@ impl Archetype for BackgroundObjectArchetype {
 }
 
 impl PartialEq<ArchetypeId> for BackgroundObjectArchetype {
+    fn eq(&self, other: &ArchetypeId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+/// The scene background.
+#[derive(Debug, Default, Clone)]
+pub struct SceneBackgroundArchetype {
+    pub entities: Vec<EntityId>,
+    pub background_colors: Vec<BackgroundColorComponent>,
+}
+
+/// An entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntity {
+    pub id: EntityId,
+    pub data: SceneBackgroundEntityData,
+}
+
+/// An entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityData {
+    pub background_color: BackgroundColorComponent,
+}
+
+#[allow(dead_code)]
+impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntity {
+    #[inline]
+    fn get(&self) -> &BackgroundColorComponent {
+        &self.data.background_color
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut BackgroundColorComponent {
+        &mut self.data.background_color
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntityData {
+    #[inline]
+    fn get(&self) -> &BackgroundColorComponent {
+        &self.background_color
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut BackgroundColorComponent {
+        &mut self.background_color
+    }
+}
+impl SceneBackgroundEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<SceneBackgroundEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl core::ops::Deref for SceneBackgroundEntity {
+    type Target = SceneBackgroundEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl core::ops::DerefMut for SceneBackgroundEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+#[allow(dead_code)]
+impl SceneBackgroundArchetype {
+    /// The IDs of the components used by this archetype, in ascending order.
+    pub const COMPONENT_IDS: [ComponentId; 1] = [
+        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
+    ];
+
+    /// Returns the number of entities in this archetype.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Indicates whether this archetype has no entities.
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Returns the number of components used by this archetype.
+    #[inline(always)]
+    pub const fn num_components(&self) -> usize {
+        1
+    }
+
+    /// Dynamically determines whether this archetype has a specific component.
+    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+        let id = id.as_u64();
+        id == 5 || false
+    }
+
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
+        &mut self,
+        background_color: BackgroundColorComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.background_colors.push(background_color);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.background_colors.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
+    }
+}
+
+
+#[automatically_derived]
+impl HasComponents<BackgroundColorComponent> for SceneBackgroundArchetype {
+    /// Returns a slice of all [`BackgroundColorComponent`] component values.
+    fn get(&self) -> &[BackgroundColorComponent] {
+        self.background_colors.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`BackgroundColorComponent`] component values.
+    fn get_mut(&mut self) -> &mut [BackgroundColorComponent] {
+        self.background_colors.as_mut_slice()
+    }
+}
+
+
+#[automatically_derived]
+#[allow(dead_code)]
+impl Archetype for SceneBackgroundArchetype {
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(5).expect("A zero archetype ID was provided"));
+
+    fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+}
+
+impl PartialEq<ArchetypeId> for SceneBackgroundArchetype {
     fn eq(&self, other: &ArchetypeId) -> bool {
         Self::ID.eq(other)
     }

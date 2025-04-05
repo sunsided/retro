@@ -370,3 +370,84 @@ impl core::borrow::BorrowMut<ColliderData> for ColliderComponent {
         &mut self.0
     }
 }
+
+/// The background color used for clearing the render buffer
+///
+/// See also [`BackgroundColorData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct BackgroundColorComponent(BackgroundColorData);
+
+#[allow(dead_code)]
+impl BackgroundColorComponent {
+    /// Creates a new [`BackgroundColorComponent`] instance from [`BackgroundColorData`].
+    pub const fn new(data: BackgroundColorData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`BackgroundColorData`].
+    pub const fn into_inner(self) -> BackgroundColorData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for BackgroundColorComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(5).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for BackgroundColorComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<BackgroundColorData> for BackgroundColorComponent {
+    fn from(data: BackgroundColorData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for BackgroundColorComponent {
+    type Target = BackgroundColorData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for BackgroundColorComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<BackgroundColorData> for BackgroundColorComponent {
+    fn as_ref(&self) -> &BackgroundColorData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<BackgroundColorData> for BackgroundColorComponent {
+    fn as_mut(&mut self) -> &mut BackgroundColorData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<BackgroundColorData> for BackgroundColorComponent {
+    fn borrow(&self) -> &BackgroundColorData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<BackgroundColorData> for BackgroundColorComponent {
+    fn borrow_mut(&mut self) -> &mut BackgroundColorData {
+        &mut self.0
+    }
+}

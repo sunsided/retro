@@ -162,9 +162,10 @@ impl<E, Q> World for MainWorld<E, Q> {
 /// The user states used in the world.
 #[derive(Debug, Default)]
 pub struct MainWorldStates {
-    /// The render state
+    /// The WGPU render state; will be initialized in the Render phase hooks
     ///
     /// The state is used in the following systems:
+    /// - [`RenderBackgroundSystem`]
     /// - [`RenderSystem`]
     pub wgpu_render: WgpuRenderState,
 }
@@ -176,6 +177,7 @@ struct MainWorldArchetypes {
     pub player: PlayerArchetype,
     pub foreground_object: ForegroundObjectArchetype,
     pub background_object: BackgroundObjectArchetype,
+    pub scene_background: SceneBackgroundArchetype,
 }
 
 /// The systems.
@@ -277,6 +279,15 @@ impl<E, Q> Spawn<BackgroundObjectEntityData> for MainWorld<E, Q> {
     #[inline]
     fn spawn(&mut self, data: BackgroundObjectEntityData) -> EntityId {
         self.spawn_background_object(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<SceneBackgroundEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: SceneBackgroundEntityData) -> EntityId {
+        self.spawn_scene_background(data)
     }
 }
 
@@ -497,6 +508,39 @@ impl<E, Q> MainWorld<E, Q> {
         self.archetypes.background_object
             .spawn_with(
                 position,
+                Registry(&mut self.entity_locations)
+            )
+    }
+
+    /// Spawn a new `SceneBackground` entity into the world given its [`SceneBackgroundEntityData`].
+    #[inline]
+    pub fn spawn_scene_background(
+        &mut self,
+        scene_background: SceneBackgroundEntityData
+    ) -> EntityId {
+        self.spawn_scene_background_with(
+            scene_background.background_color,
+        )
+    }
+
+    /// Spawn a new `SceneBackground` entity into the world.
+    pub fn spawn_scene_background_with(
+        &mut self,
+        background_color: BackgroundColorComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.scene_background
+            .spawn_with(
+                background_color,
                 Registry(&mut self.entity_locations)
             )
     }
@@ -969,44 +1013,37 @@ impl<E, Q> MainWorld<E, Q> {
     {
         // System group 1 of 1
         let is_ready = self.systems.render.is_ready(
-               &self.context,
-               &self.states.wgpu_render,
+               &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render.on_begin_phase(
-                    &self.context,
-                    &self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
                 )
                 .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
             // Apply RenderSystem to ParticleArchetype
             self.systems.render.apply_many(
-                &self.context,
-                &self.states.wgpu_render,
+                &mut self.states.wgpu_render,
                 &self.archetypes.particle.positions,
             );
             // Apply RenderSystem to PlayerArchetype
             self.systems.render.apply_many(
-                &self.context,
-                &self.states.wgpu_render,
+                &mut self.states.wgpu_render,
                 &self.archetypes.player.positions,
             );
             // Apply RenderSystem to ForegroundObjectArchetype
             self.systems.render.apply_many(
-                &self.context,
-                &self.states.wgpu_render,
+                &mut self.states.wgpu_render,
                 &self.archetypes.foreground_object.positions,
             );
             // Apply RenderSystem to BackgroundObjectArchetype
             self.systems.render.apply_many(
-                &self.context,
-                &self.states.wgpu_render,
+                &mut self.states.wgpu_render,
                 &self.archetypes.background_object.positions,
             );
 
             self.systems.render.on_end_phase(
-                &self.context,
-                &self.states.wgpu_render,
+                &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
             .ok();
@@ -1099,6 +1136,10 @@ impl<E, Q> MainWorld<E, Q> {
                 let id = self.spawn_background_object(data);
                 tracing::trace!(%id, "Spawned BackgroundObject entity");
             },
+            ArchetypeEntityData::SceneBackground(data) => {
+                let id = self.spawn_scene_background(data);
+                tracing::trace!(%id, "Spawned SceneBackground entity");
+            },
             // TODO: Make it a non-panic on release builds?
             #[allow(unreachable_patterns)]
             unhandled => panic!("Cannot spawn entity for {id} which is not known to this world.", id = unhandled.archetype_id())
@@ -1131,6 +1172,12 @@ impl<E, Q> MainWorld<E, Q> {
                         .background_object
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, BackgroundObjectArchetype::ID))?
+                }
+                SceneBackgroundArchetype::ID => {
+                    self.archetypes
+                        .scene_background
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, SceneBackgroundArchetype::ID))?
                 }
                 // TODO: Make it a non-panic on release builds?
                 #[allow(unreachable_patterns)]

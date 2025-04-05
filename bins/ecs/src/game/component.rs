@@ -1,3 +1,5 @@
+use crate::game::system::BackgroundColorData;
+
 include!("../../generated/components_gen.rs");
 
 #[derive(Debug, Clone, Default)]

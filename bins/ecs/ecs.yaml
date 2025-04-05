@@ -2,13 +2,27 @@
 
 states:
   - name: WgpuRender
-    description: The render state
+    description: The WGPU render state; will be initialized in the Render phase hooks
 
-components:
-  - name: Position
-  - name: Velocity
-  - name: Health
-  - name: Collider
+phases:
+  - name: Startup
+  - name: FixedUpdate
+    fixed: 60Hz
+  - name: Update
+  - name: Render
+    manual: true
+    states:
+      - use: WgpuRender
+        write: true
+
+worlds:
+  - name: Main
+    archetypes:
+      - Particle
+      - Player
+      - ForegroundObject
+      - BackgroundObject
+      - SceneBackground
 
 archetypes:
   - name: Particle
@@ -32,16 +46,18 @@ archetypes:
     components:
       - Position
 
-phases:
-  - name: Startup
-  - name: FixedUpdate
-    fixed: 60Hz
-  - name: Update
-  - name: Render
-    manual: true
-    states:
-      - use: WgpuRender
-        write: true
+  - name: SceneBackground
+    description: The scene background.
+    components:
+      - BackgroundColor
+
+components:
+  - name: Position
+  - name: Velocity
+  - name: Health
+  - name: Collider
+  - name: BackgroundColor
+    description: The background color used for clearing the render buffer
 
 systems:
   - name: Physics
@@ -53,22 +69,24 @@ systems:
       - Velocity
     outputs:
       - Position
-  - name: Render
+
+  - name: RenderBackground
     phase: Render
-    context: true
+    inputs:
+      - BackgroundColor
     states:
       - use: WgpuRender
-        write: false  # optional
+        write: true
+
+  - name: Render
+    phase: Render
+    # run_after:
+    #   - RenderBackground
     inputs:
       - Position
-
-worlds:
-  - name: Main
-    archetypes:
-      - Particle
-      - Player
-      - ForegroundObject
-      - BackgroundObject
+    states:
+      - use: WgpuRender
+        write: true
 
 # TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.
 # TODO: Generate a function that loops all archetypes matching the signature of a given system
