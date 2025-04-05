@@ -5,14 +5,86 @@ use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
 use crate::game::system::SystemFactory;
 use crate::game::world::{MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use winit::{
+    event::{Event, WindowEvent, ElementState},
+    event_loop::{ControlFlow, EventLoop},
+};
+use winit::application::ApplicationHandler;
+use winit::event_loop::ActiveEventLoop;
+use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
+use winit::window::{Fullscreen, Window, WindowAttributes, WindowId};
 
 mod logging;
 mod phase_events;
 mod game;
 
-fn main() {
+#[derive(Default)]
+struct App {
+    window: Option<Window>,
+}
+
+impl ApplicationHandler for App {
+    fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
+        // Create the window when the app resumes.
+        self.window = Some(active_event_loop.create_window(Window::default_attributes()).unwrap());
+    }
+
+    fn window_event(&mut self, active_event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
+        match event {
+            WindowEvent::CloseRequested => {
+                active_event_loop.exit();
+            }
+            WindowEvent::KeyboardInput { event, .. } => {
+                match event.physical_key {
+                    PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
+                        active_event_loop.exit();
+                    }
+                    PhysicalKey::Code(KeyCode::KeyF) if event.state == ElementState::Pressed => {
+                        // Toggle fullscreen mode.
+                        if let Some(window) = &self.window {
+                            if window.fullscreen().is_some() {
+                                window.set_fullscreen(None);
+                            } else {
+                                window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            WindowEvent::MouseInput { state, button, .. } => {
+                println!("Mouse button {:?} is {:?}", button, state);
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                println!("Cursor moved to: {:?}", position);
+            }
+            WindowEvent::Resized(new_size) => {
+                println!("Window resized: {:?}", new_size);
+            }
+            _ => (),
+        }
+    }
+
+    fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
+        // Request a redraw each cycle.
+        if let Some(window) = &self.window {
+            window.request_redraw();
+        }
+    }
+}
+
+fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
     let _logging = setup_logging();
+
+    let event_loop = EventLoop::new().unwrap();
+    let mut app = App::default();
+
+    // Set a continuous loop if needed (for games, often ControlFlow::Poll is used).
+    event_loop.set_control_flow(ControlFlow::Poll);
+    event_loop.run_app(&mut app)?;
+
+    /*
     let events = PhaseEvents::default();
     let state = RenderState::default();
     let mut world = MainWorld::new(&SystemFactory, state, Some(events), CommandQueue::new());
@@ -43,6 +115,10 @@ fn main() {
     world.despawn_by_id(id).expect("Failed to despawn entity");
     debug_assert_eq!(world.len(), 0);
     world.apply_system_phases();
+
+    */
+
+    Ok(())
 }
 
 struct CommandQueue {
