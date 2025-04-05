@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Instant;
 use crossbeam_channel::TryRecvError;
 use tracing::{debug, trace};
@@ -19,21 +20,44 @@ mod logging;
 mod phase_events;
 mod game;
 
-struct App {
-    window: Option<Window>,
+pub struct WgpuState<'a> {
+    instance: wgpu::Instance,
+    surface: wgpu::Surface<'a>,
+}
+
+impl<'a> WgpuState<'a> {
+    pub async fn new(window: Arc<Window>) -> WgpuState<'a> {
+        let instance = wgpu::Instance::default();
+        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
+
+        Self {
+            instance,
+            surface,
+        }
+    }
+}
+
+struct App<'a> {
+    window: Option<Arc<Window>>,
+    state: Option<WgpuState<'a>>,
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
 }
 
-impl App {
+impl App<'_> {
     pub fn new() -> Self {
         let events = PhaseEvents::default();
         let state = RenderState::default();
+
+        // window.as_ref().expect("Failed to get window handle.")
+        // let render_system = pollster::block_on(WgpuRenderSystemData::new(self.window)).expect("Failed to create render system");
+
         let world = MainWorld::new(&SystemFactory, state, Some(events), CommandQueue::new());
 
         Self {
-            window: Default::default(),
+            window: None,
+            state: None,
             modifiers: Default::default(),
             last_update: Instant::now(),
             ecs_world: world
@@ -41,15 +65,21 @@ impl App {
     }
 }
 
-impl ApplicationHandler for App {
+impl ApplicationHandler for App<'_> {
     fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
-        let attributes = Window::default_attributes()
-            .with_title("Retro 2000")
-            .with_inner_size(LogicalSize::new(1024.0, 640.0))
-            .with_resizable(false);
+        if self.window.is_none() {
+            let attributes = Window::default_attributes()
+                .with_title("Retro 2000")
+                .with_inner_size(LogicalSize::new(1024.0, 640.0))
+                .with_resizable(false);
 
-        let window = active_event_loop.create_window(attributes).unwrap();
-        self.window = Some(window);
+            let window = Arc::new(active_event_loop.create_window(attributes).expect("Failed to create window"));
+            self.window = Some(window.clone());
+
+            let state = pollster::block_on(WgpuState::new(window.clone()));
+            self.state = Some(state);
+        }
+
         self.last_update = Instant::now();
         self.ecs_world.reset_frame_context();
     }

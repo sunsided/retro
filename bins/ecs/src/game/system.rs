@@ -1,7 +1,11 @@
+pub mod render_system;
+mod vertex;
+
 use crate::game::archetype::*;
 use crate::game::component::*;
 use crate::game::world::{FrameContext, RenderState, WorldState, WorldCommandSender};
 use tracing::trace;
+use crate::game::system::render_system::RenderSystemData;
 
 include!("../../generated/systems_gen.rs");
 
@@ -28,7 +32,7 @@ pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
     fn apply_single(
-        &self,
+        &mut self,
         context: &FrameContext,
         _entity: EntityId,
         velocity: &VelocityComponent,
@@ -48,12 +52,9 @@ impl Default for RenderSystem {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct RenderSystemData;
-
 impl ApplyRenderSystem for RenderSystem {
     fn apply_single(
-        &self,
+        &mut self,
         context: &FrameContext,
         _state: &RenderState,
         position: &PositionComponent,

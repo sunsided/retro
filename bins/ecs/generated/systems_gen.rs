@@ -173,7 +173,7 @@ pub trait ApplyPhysicsSystem: System {
     /// 
     /// - `position`: A mutable reference to the component of type [`PositionComponent`].
     fn apply_single(
-        &self,
+        &mut self,
         context: &FrameContext,
         entity: EntityId,
         velocity: &VelocityComponent,
@@ -191,7 +191,7 @@ pub trait ApplyPhysicsSystem: System {
     /// 
     /// - `position`: A mutable slice of the components of type [`PositionComponent`].
     fn apply_many(
-        &self,
+        &mut self,
         context: &FrameContext,
         entities: &[EntityId],
         velocities: &[VelocityComponent],
@@ -218,7 +218,7 @@ impl PhysicsSystem {
     /// Apply the system to the given entity components
     #[inline]
     pub fn apply_single(
-        &self,
+        &mut self,
         context: &FrameContext,
         entity: EntityId,
         velocity: &VelocityComponent,
@@ -246,7 +246,7 @@ impl PhysicsSystem {
     /// - `position`: A mutable slice of the components of type [`PositionComponent`].
     #[inline]
     fn apply_many(
-        &self,
+        &mut self,
         context: &FrameContext,
         entities: &[EntityId],
         velocities: &[VelocityComponent],
@@ -267,7 +267,7 @@ impl PhysicsSystem {
     #[inline]
     #[deprecated]
     fn apply_to_particle(
-        &self,
+        &mut self,
         archetype: &mut ParticleArchetype,
         context: &FrameContext,
         commands: &impl WorldCommandSender
@@ -285,7 +285,7 @@ impl PhysicsSystem {
     #[inline]
     #[deprecated]
     fn apply_to_player(
-        &self,
+        &mut self,
         archetype: &mut PlayerArchetype,
         context: &FrameContext,
         commands: &impl WorldCommandSender
@@ -360,7 +360,7 @@ pub trait ApplyRenderSystem: System {
     /// ### Mutates
     /// 
     fn apply_single(
-        &self,
+        &mut self,
         context: &FrameContext,
         render: &RenderState,
         position: &PositionComponent,
@@ -375,7 +375,7 @@ pub trait ApplyRenderSystem: System {
     /// ### Mutates
     /// 
     fn apply_many(
-        &self,
+        &mut self,
         context: &FrameContext,
         render: &RenderState,
         positions: &[PositionComponent],
@@ -396,7 +396,7 @@ impl RenderSystem {
     /// Apply the system to the given entity components
     #[inline]
     pub fn apply_single(
-        &self,
+        &mut self,
         context: &FrameContext,
         render: &RenderState,
         position: &PositionComponent,
@@ -419,7 +419,7 @@ impl RenderSystem {
     /// 
     #[inline]
     fn apply_many(
-        &self,
+        &mut self,
         context: &FrameContext,
         render: &RenderState,
         positions: &[PositionComponent],
@@ -436,7 +436,7 @@ impl RenderSystem {
     #[inline]
     #[deprecated]
     fn apply_to_particle(
-        &self,
+        &mut self,
         archetype: &mut ParticleArchetype,
         context: &FrameContext,
         render: &RenderState,
@@ -452,7 +452,7 @@ impl RenderSystem {
     #[inline]
     #[deprecated]
     fn apply_to_player(
-        &self,
+        &mut self,
         archetype: &mut PlayerArchetype,
         context: &FrameContext,
         render: &RenderState,
@@ -468,7 +468,7 @@ impl RenderSystem {
     #[inline]
     #[deprecated]
     fn apply_to_foreground_object(
-        &self,
+        &mut self,
         archetype: &mut ForegroundObjectArchetype,
         context: &FrameContext,
         render: &RenderState,
@@ -484,7 +484,7 @@ impl RenderSystem {
     #[inline]
     #[deprecated]
     fn apply_to_background_object(
-        &self,
+        &mut self,
         archetype: &mut BackgroundObjectArchetype,
         context: &FrameContext,
         render: &RenderState,
