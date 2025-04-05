@@ -160,13 +160,13 @@ impl<E, Q> World for MainWorld<E, Q> {
 }
 
 /// The user states used in the world.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default)]
 pub struct MainWorldStates {
     /// The render state
     ///
     /// The state is used in the following systems:
     /// - [`RenderSystem`]
-    pub render: RenderState,
+    pub wgpu_render: WgpuRenderState,
 }
 
 /// The archetypes used in the world.
@@ -291,7 +291,7 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new<S>(
         create_systems: &S,
-        render: RenderState,
+        wgpu_render: WgpuRenderState,
         command_queue: Q) -> Self
     where
         S: CreateSystems,
@@ -299,7 +299,7 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     {
         Self::new_with_events(
             create_systems,
-            render,
+            wgpu_render,
             command_queue,
             NoOpPhaseEvents
         )
@@ -311,7 +311,7 @@ impl<E, Q> MainWorld<E, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new_with_events<S>(
         create_systems: &S,
-        render: RenderState,
+        wgpu_render: WgpuRenderState,
         command_queue: Q,
         phase_events: E) -> Self
     where
@@ -329,7 +329,7 @@ impl<E, Q> MainWorld<E, Q> {
             entity_locations: Default::default(),
             context,
             states: MainWorldStates {
-                render,
+                wgpu_render,
             },
             fixed_accumulators: Default::default(),
             events: phase_events,
@@ -940,6 +940,7 @@ impl<E, Q> MainWorld<E, Q> {
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
+            &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
@@ -950,6 +951,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             result,
             &self.context,
+            &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
@@ -968,11 +970,11 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 1 of 1
         let is_ready = self.systems.render.is_ready(
                &self.context,
-               &self.states.render,
+               &self.states.wgpu_render,
            );
         if is_ready && self.systems.render.on_begin_phase(
                     &self.context,
-                    &self.states.render,
+                    &self.states.wgpu_render,
                 )
                 .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
                 .is_ok()
@@ -980,31 +982,31 @@ impl<E, Q> MainWorld<E, Q> {
             // Apply RenderSystem to ParticleArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.states.render,
+                &self.states.wgpu_render,
                 &self.archetypes.particle.positions,
             );
             // Apply RenderSystem to PlayerArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.states.render,
+                &self.states.wgpu_render,
                 &self.archetypes.player.positions,
             );
             // Apply RenderSystem to ForegroundObjectArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.states.render,
+                &self.states.wgpu_render,
                 &self.archetypes.foreground_object.positions,
             );
             // Apply RenderSystem to BackgroundObjectArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.states.render,
+                &self.states.wgpu_render,
                 &self.archetypes.background_object.positions,
             );
 
             self.systems.render.on_end_phase(
                 &self.context,
-                &self.states.render,
+                &self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
             .ok();
@@ -1035,6 +1037,7 @@ impl<E, Q> MainWorld<E, Q> {
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
+            &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
@@ -1045,6 +1048,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             result,
             &self.context,
+            &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();

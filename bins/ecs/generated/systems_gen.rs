@@ -256,6 +256,7 @@ impl SystemRenderPhaseEvents for NoOpPhaseEvents {
     fn on_begin_phase(
         &mut self,
         context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -265,6 +266,7 @@ impl SystemRenderPhaseEvents for NoOpPhaseEvents {
         &mut self,
         result: Option<Self::Result>,
         context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -278,6 +280,7 @@ pub trait SystemRenderPhaseEvents {
     fn on_begin_phase(
         &mut self,
         context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
     ) -> Result<Self::Result, Self::Error>;
 
     /// Executed at the end of the phase (after all systems).
@@ -288,6 +291,7 @@ pub trait SystemRenderPhaseEvents {
         &mut self,
         result: Option<Self::Result>,
         context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error>;
 }
 
@@ -548,7 +552,7 @@ pub trait ApplyRenderSystem: System {
     fn is_ready(
         &self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -561,7 +565,7 @@ pub trait ApplyRenderSystem: System {
     fn on_begin_phase(
         &mut self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -574,7 +578,7 @@ pub trait ApplyRenderSystem: System {
     fn on_end_phase(
         &mut self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -593,7 +597,7 @@ pub trait ApplyRenderSystem: System {
     fn apply_single(
         &mut self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
         position: &PositionComponent,
     );
 
@@ -608,14 +612,14 @@ pub trait ApplyRenderSystem: System {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
         positions: &[PositionComponent],
     ) {
         let zipped_iter = positions;
         for position in zipped_iter {
             self.apply_single(
                 &context,
-                render,
+                wgpu_render,
                 position,
             );
         }
@@ -629,13 +633,13 @@ impl RenderSystem {
     pub fn apply_single(
         &mut self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
         position: &PositionComponent,
     ) {
         ApplyRenderSystem::apply_single(
             self,
             context,
-            render,
+            wgpu_render,
             position,
         );
     }
@@ -652,13 +656,13 @@ impl RenderSystem {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
         positions: &[PositionComponent],
     ) {
         ApplyRenderSystem::apply_many(
             self,
             context,
-            render,
+            wgpu_render,
             positions,
         );
     }
@@ -670,11 +674,11 @@ impl RenderSystem {
         &mut self,
         archetype: &mut ParticleArchetype,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) {
         self.apply_many(
             &context,
-            render,
+            wgpu_render,
             &archetype.positions,
         );
     }
@@ -686,11 +690,11 @@ impl RenderSystem {
         &mut self,
         archetype: &mut PlayerArchetype,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) {
         self.apply_many(
             &context,
-            render,
+            wgpu_render,
             &archetype.positions,
         );
     }
@@ -702,11 +706,11 @@ impl RenderSystem {
         &mut self,
         archetype: &mut ForegroundObjectArchetype,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) {
         self.apply_many(
             &context,
-            render,
+            wgpu_render,
             &archetype.positions,
         );
     }
@@ -718,11 +722,11 @@ impl RenderSystem {
         &mut self,
         archetype: &mut BackgroundObjectArchetype,
         context: &FrameContext,
-        render: &RenderState,
+        wgpu_render: &WgpuRenderState,
     ) {
         self.apply_many(
             &context,
-            render,
+            wgpu_render,
             &archetype.positions,
         );
     }

@@ -1,7 +1,5 @@
 use crate::game::system::SystemFactory;
-use crate::game::world::{
-    MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender,
-};
+use crate::game::world::{MainWorld, WgpuRenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
 use crossbeam_channel::TryRecvError;
@@ -128,7 +126,7 @@ struct App {
 impl App {
     pub fn new() -> Self {
         let events = PhaseEvents::default();
-        let state = RenderState::default();
+        let state = WgpuRenderState::default();
         let world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
 
         Self {
@@ -163,8 +161,7 @@ impl ApplicationHandler for App {
             self.state = Some(Arc::new(Mutex::new(state)));
 
             // Set WGPU render state.
-            let render = self.ecs_world.systems.as_render_mut();
-            render.set_state(self.state.clone());
+            self.ecs_world.states.wgpu_render.set_state(self.state.clone());
         }
 
         self.last_update = Instant::now();

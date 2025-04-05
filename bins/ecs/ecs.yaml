@@ -1,7 +1,7 @@
 # TODO: Allow definition of custom commands to be emitted by systems
 
 states:
-  - name: Render
+  - name: WgpuRender
     description: The render state
 
 components:
@@ -39,6 +39,9 @@ phases:
   - name: Update
   - name: Render
     manual: true
+    states:
+      - use: WgpuRender
+        write: true
 
 systems:
   - name: Physics
@@ -54,7 +57,7 @@ systems:
     phase: Render
     context: true
     states:
-      - use: Render
+      - use: WgpuRender
         write: false  # optional
     inputs:
       - Position

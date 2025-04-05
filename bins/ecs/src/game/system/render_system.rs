@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use crate::WgpuState;
 use parking_lot::Mutex;
 use std::fmt::{Debug, Formatter};
@@ -5,8 +6,9 @@ use std::sync::Arc;
 use tracing::{error, trace};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
 use crate::game::component::PositionComponent;
-use crate::game::system::{ApplyRenderSystem, RenderSystem};
-use crate::game::world::{FrameContext, RenderState};
+use crate::game::system::{ApplyRenderSystem, RenderSystem, SystemRenderPhaseEvents};
+use crate::game::world::FrameContext;
+use crate::phase_events::PhaseEvents;
 
 impl Default for RenderSystem {
     fn default() -> Self {
@@ -14,19 +16,22 @@ impl Default for RenderSystem {
     }
 }
 
+#[derive(Default, Debug)]
+pub struct RenderSystemData;
+
 #[derive(Default)]
-pub struct RenderSystemData {
+pub struct WgpuRenderState {
     state: Option<Arc<Mutex<WgpuState>>>,
     frame_state: Option<FrameState>
 }
 
-impl RenderSystemData {
+impl WgpuRenderState {
     pub fn set_state(&mut self, state: Option<Arc<Mutex<WgpuState>>>) {
         self.state = state;
     }
 }
 
-impl Debug for RenderSystemData {
+impl Debug for WgpuRenderState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if self.state.is_some() {
             write!(f, "RenderSystemData")
@@ -43,17 +48,14 @@ struct FrameState {
     render_start: std::time::Instant,
 }
 
-impl ApplyRenderSystem for RenderSystem {
+impl SystemRenderPhaseEvents for PhaseEvents {
+    type Result = ();
     type Error = wgpu::SurfaceError;
 
-    fn is_ready(&self, _context: &FrameContext, _state: &RenderState) -> bool {
-        self.state.is_some()
-    }
-
-    fn on_begin_phase(&mut self, _context: &FrameContext, _state: &RenderState) -> Result<(), Self::Error> {
-        self.frame_state = {
+    fn on_begin_phase(&mut self, _context: &FrameContext, render: &mut WgpuRenderState) -> Result<Self::Result, Self::Error> {
+        render.frame_state = {
             let render_start = std::time::Instant::now();
-            let state = self.state.as_ref().expect("State exists as per readiness check").lock();
+            let state = render.state.as_ref().expect("State exists as per readiness check").lock();
             let frame = state
                 .surface
                 .get_current_texture()
@@ -101,10 +103,10 @@ impl ApplyRenderSystem for RenderSystem {
         Ok(())
     }
 
-    fn on_end_phase(&mut self, context: &FrameContext, _state: &RenderState)  -> Result<(), Self::Error> {
-        if let Some(frame_state) = self.frame_state.take() {
+    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext, render: &mut WgpuRenderState) -> Result<(), Self::Error> {
+        if let Some(frame_state) = render.frame_state.take() {
             let command_buffer = frame_state.encoder.finish();
-            let state = self.state.as_ref().expect("State exists").lock();
+            let state = render.state.as_ref().expect("State exists").lock();
             state.queue.submit(Some(command_buffer));
             // Optionally poll
             // state.device.poll(wgpu::Maintain::Poll);
@@ -115,11 +117,20 @@ impl ApplyRenderSystem for RenderSystem {
         }
         Ok(())
     }
+}
+
+
+impl ApplyRenderSystem for RenderSystem {
+    type Error = wgpu::SurfaceError;
+
+    fn is_ready(&self, _context: &FrameContext, state: &WgpuRenderState) -> bool {
+        state.state.is_some()
+    }
 
     fn apply_single(
         &mut self,
         context: &FrameContext,
-        _state: &RenderState,
+        _state: &WgpuRenderState,
         position: &PositionComponent,
     ) {
         trace!(

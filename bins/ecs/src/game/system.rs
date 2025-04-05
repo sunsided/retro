@@ -5,7 +5,8 @@ use std::convert::Infallible;
 use crate::game::system::render_system::RenderSystemData;
 use crate::game::archetype::*;
 use crate::game::component::*;
-use crate::game::world::{FrameContext, RenderState, WorldCommandSender};
+use crate::game::world::{FrameContext, WorldCommandSender};
+use crate::game::system::render_system::WgpuRenderState;
 
 include!("../../generated/systems_gen.rs");
 
