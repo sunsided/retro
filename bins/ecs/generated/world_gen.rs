@@ -258,6 +258,21 @@ impl<E, Q>MainWorld<E, Q> {
         }
     }
 
+    /// Returns the overall number of entities in this world.
+    pub fn len(&self) -> usize {
+        self.entity_locations.len()
+    }
+
+    /// Indicates whether there are no entities in this world.
+    pub fn is_empty(&self) -> bool {
+        self.entity_locations.is_empty()
+    }
+
+    /// De-spawns an entity given by its [`EntityId`]. Returns an error if the entity was unknown in this world.
+    pub fn despawn_by_id(&mut self, id: EntityId) -> Result<(), DespawnError> {
+        self.handle_despawn_command(id)
+    }
+
     /// Spawn a new `Particle` entity into the world given its [`ParticleEntityData`].
     #[inline]
     pub fn spawn_particle(
@@ -602,7 +617,6 @@ impl<E, Q>MainWorld<E, Q> {
         E: SystemPhaseEvents<MainWorldStates>,
         Q: WorldCommandSender
     {
-        // TODO: Test if PhysicsSystem is part of the MainWorld.
         // System group 1 of 1
         {
             // Apply PhysicsSystem to ParticleArchetype
@@ -764,7 +778,6 @@ impl<E, Q>MainWorld<E, Q> {
         E: SystemPhaseEvents<MainWorldStates>,
         Q: WorldCommandSender
     {
-        // TODO: Test if RenderSystem is part of the MainWorld.
         // System group 1 of 1
         {
             // Apply RenderSystem to ParticleArchetype
@@ -873,37 +886,44 @@ impl<E, Q>MainWorld<E, Q> {
 
     fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
          if let Some(loc) = self.entity_locations.remove(&id) {
-            match loc.archetype {
+            let result = match loc.archetype {
                 ParticleArchetype::ID => {
                     self.archetypes
                         .particle
                         .drop_at_index(loc.index)
-                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ParticleArchetype::ID))?;
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ParticleArchetype::ID))?
                 }
                 PlayerArchetype::ID => {
                     self.archetypes
                         .player
                         .drop_at_index(loc.index)
-                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, PlayerArchetype::ID))?;
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, PlayerArchetype::ID))?
                 }
                 ForegroundObjectArchetype::ID => {
                     self.archetypes
                         .foreground_object
                         .drop_at_index(loc.index)
-                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ForegroundObjectArchetype::ID))?;
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ForegroundObjectArchetype::ID))?
                 }
                 BackgroundObjectArchetype::ID => {
                     self.archetypes
                         .background_object
                         .drop_at_index(loc.index)
-                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, BackgroundObjectArchetype::ID))?;
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, BackgroundObjectArchetype::ID))?
                 }
                 // TODO: Make it a non-panic on release builds?
                 #[allow(unreachable_patterns)]
                 archetype_id => unreachable!("Cannot remove entity {id} from archetype {archetype_id} which is not known to this world.")
+            };
+
+            if let Some(moved_entity) = result {
+                self.entity_locations.insert(moved_entity, EntityArchetypeRef {
+                    archetype: loc.archetype,
+                    index: loc.index
+                });
             }
          } else {
-            tracing::error!(%id, "Attempted to remove unknown entity");
+            return Err(DespawnError::EntityNotFound(id));
          }
          Ok(())
     }
@@ -918,12 +938,16 @@ struct FixedAccumulators {
 
 #[derive(Debug)]
 pub enum DespawnError {
+    EntityNotFound(EntityId),
     InvalidIndexInArchetype(usize, ArchetypeId)
 }
 
 impl core::fmt::Display for DespawnError {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
+            Self::EntityNotFound(id) => {
+                write!(f, "Failed to despawn unknown entity {id}")
+            }
             Self::InvalidIndexInArchetype(index, aid) => {
                 write!(f, "Failed to despawn entity at invalid index {index} in archetype {aid}")
             }

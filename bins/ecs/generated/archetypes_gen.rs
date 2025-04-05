@@ -367,11 +367,22 @@ impl ParticleArchetype {
     }
 
     /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
-        let _ = &self.positions;
-        let _ = &self.velocities;
-        todo!();
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.positions.swap_remove(index);
+        self.velocities.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
     }
 }
 
@@ -615,12 +626,23 @@ impl PlayerArchetype {
     }
 
     /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
-        let _ = &self.positions;
-        let _ = &self.velocities;
-        let _ = &self.healths;
-        todo!();
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.positions.swap_remove(index);
+        self.velocities.swap_remove(index);
+        self.healths.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
     }
 }
 
@@ -846,11 +868,22 @@ impl ForegroundObjectArchetype {
     }
 
     /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
-        let _ = &self.positions;
-        let _ = &self.colliders;
-        todo!();
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.positions.swap_remove(index);
+        self.colliders.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
     }
 
     /// Promotes this [`ForegroundObjectArchetype`] to [`BackgroundObjectArchetype`].
@@ -1044,10 +1077,21 @@ impl BackgroundObjectArchetype {
     }
 
     /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
-        let _ = &self.positions;
-        todo!();
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.positions.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
     }
 
     /// Promotes this [`BackgroundObjectArchetype`] to [`ForegroundObjectArchetype`].

@@ -28,10 +28,15 @@ fn main() {
             z: -0.1,
         }.into(),
     };
-    let _id = entity.spawn_into(&mut world);
+    let id = entity.spawn_into(&mut world);
+    debug_assert_eq!(world.len(), 1);
 
     world.apply_system_phases();
     std::thread::sleep(std::time::Duration::from_secs_f32(0.5));
+    world.apply_system_phases();
+
+    world.despawn_by_id(id).expect("Failed to despawn entity");
+    debug_assert_eq!(world.len(), 0);
     world.apply_system_phases();
 }
 
