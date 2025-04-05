@@ -1,6 +1,6 @@
 use crate::archetype::*;
 use crate::component::*;
-use crate::world::{FrameContext, UserState};
+use crate::world::{FrameContext, RenderState, WorldState, WorldCommandSender};
 use tracing::trace;
 
 include!("../generated/systems_gen.rs");
@@ -33,6 +33,7 @@ impl ApplyPhysicsSystem for PhysicsSystem {
         _entity: EntityId,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
+        _commands: &impl WorldCommandSender
     ) {
         let dt = context.fixed_time_secs;
         position.x += velocity.x * dt;
@@ -54,7 +55,7 @@ impl ApplyRenderSystem for RenderSystem {
     fn apply_single(
         &self,
         context: &FrameContext,
-        _state: &UserState,
+        _state: &RenderState,
         position: &PositionComponent,
     ) {
         trace!(

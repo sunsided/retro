@@ -1,10 +1,10 @@
 /// The ID of a [`System`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct SystemId(std::num::NonZeroU64);
+pub struct SystemId(core::num::NonZeroU64);
 
 impl SystemId {
-    /// Returns this ID as a [`NonZeroU64`](std::num::NonZeroU64) value.
-    pub const fn as_nonzero_u64(&self) -> std::num::NonZeroU64 {
+    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
+    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         self.0
     }
 
@@ -14,14 +14,14 @@ impl SystemId {
     }
 }
 
-impl std::hash::Hash for SystemId {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl core::hash::Hash for SystemId {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }
 }
 
-impl From<SystemId> for std::num::NonZeroU64 {
-    fn from(value: SystemId) -> std::num::NonZeroU64 {
+impl From<SystemId> for core::num::NonZeroU64 {
+    fn from(value: SystemId) -> core::num::NonZeroU64 {
         value.as_nonzero_u64()
     }
 }
@@ -105,39 +105,42 @@ pub trait CreateSystems {
 }
 
 /// Trait for constructing system instances.
-pub trait SystemPhaseEvents {
+pub trait SystemPhaseEvents<S>
+where
+    S: WorldState
+{
     /// Marks the beginning of a phase.
     #[inline(always)]
     #[allow(unused_variables)]
-    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut UserState) {
+    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut S) {
         // empty placeholder implementation
     }
 
     /// Marks the end of a phase.
     #[inline(always)]
     #[allow(unused_variables)]
-    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut UserState) {
+    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut S) {
         // empty placeholder implementation
     }
 }
 
-/// An alias type for a no-op implementation of [`SystemPhaseEvents`].
-#[allow(dead_code)]
-pub type NoOpPhaseEvents = ();
-
-/// A constant for passing no system type events.
-#[allow(dead_code)]
-const NO_PHASE_EVENTS: Option<NoOpPhaseEvents> = Option::<NoOpPhaseEvents>::None;
+/// A no-op event struct.
+pub struct NoOpPhaseEvents<S> {
+    _phantom: core::marker::PhantomData<S>
+}
 
 #[automatically_derived]
-impl SystemPhaseEvents for NoOpPhaseEvents {
+impl<S> SystemPhaseEvents<S> for NoOpPhaseEvents<S>
+where
+    S: WorldState
+{
     #[inline(always)]
-    fn on_begin_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut UserState) {
+    fn on_begin_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut S) {
         // empty placeholder implementation
     }
 
     #[inline(always)]
-    fn on_end_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut UserState) {
+    fn on_end_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut S) {
         // empty placeholder implementation
     }
 }
@@ -175,6 +178,7 @@ pub trait ApplyPhysicsSystem: System {
         entity: EntityId,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
+        commands: &impl WorldCommandSender
     );
 
     /// Applies the system's business logic to the given entity components.
@@ -192,6 +196,7 @@ pub trait ApplyPhysicsSystem: System {
         entities: &[EntityId],
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
+        commands: &impl WorldCommandSender
     ) {
         let count = velocities.len();
         debug_assert_eq!(entities.len(), count);
@@ -202,6 +207,7 @@ pub trait ApplyPhysicsSystem: System {
                 *entity,
                 velocity,
                 position,
+                commands
             );
         }
     }
@@ -217,6 +223,7 @@ impl PhysicsSystem {
         entity: EntityId,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
+        commands: &impl WorldCommandSender
     ) {
         ApplyPhysicsSystem::apply_single(
             self,
@@ -224,6 +231,7 @@ impl PhysicsSystem {
             entity,
             velocity,
             position,
+            commands
         );
     }
 
@@ -243,6 +251,7 @@ impl PhysicsSystem {
         entities: &[EntityId],
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
+        commands: &impl WorldCommandSender
     ) {
         ApplyPhysicsSystem::apply_many(
             self,
@@ -250,43 +259,50 @@ impl PhysicsSystem {
             entities,
             velocities,
             positions,
+            commands
         );
     }
 
     /// Applies this system to the [`ParticleArchetype`].
     #[inline]
-    pub fn apply_to_particle(
+    #[deprecated]
+    fn apply_to_particle(
         &self,
         archetype: &mut ParticleArchetype,
         context: &FrameContext,
+        commands: &impl WorldCommandSender
     ) {
         self.apply_many(
             &context,
             &archetype.entities,
             &archetype.velocities,
             &mut archetype.positions,
+            commands
         );
     }
 
     /// Applies this system to the [`PlayerArchetype`].
     #[inline]
-    pub fn apply_to_player(
+    #[deprecated]
+    fn apply_to_player(
         &self,
         archetype: &mut PlayerArchetype,
         context: &FrameContext,
+        commands: &impl WorldCommandSender
     ) {
         self.apply_many(
             &context,
             &archetype.entities,
             &archetype.velocities,
             &mut archetype.positions,
+            commands
         );
     }
 }
 
 #[automatically_derived]
 impl System for PhysicsSystem {
-    const ID: SystemId = SystemId(std::num::NonZeroU64::new(1).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(1).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for PhysicsSystem {
@@ -303,7 +319,7 @@ impl From<PhysicsSystemData> for PhysicsSystem {
 }
 
 #[automatically_derived]
-impl std::ops::Deref for PhysicsSystem {
+impl core::ops::Deref for PhysicsSystem {
     type Target = PhysicsSystemData;
 
     fn deref(&self) -> &Self::Target {
@@ -312,7 +328,7 @@ impl std::ops::Deref for PhysicsSystem {
 }
 
 #[automatically_derived]
-impl std::ops::DerefMut for PhysicsSystem {
+impl core::ops::DerefMut for PhysicsSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -346,7 +362,7 @@ pub trait ApplyRenderSystem: System {
     fn apply_single(
         &self,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
         position: &PositionComponent,
     );
 
@@ -361,14 +377,14 @@ pub trait ApplyRenderSystem: System {
     fn apply_many(
         &self,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
         positions: &[PositionComponent],
     ) {
         let zipped_iter = positions;
         for position in zipped_iter {
             self.apply_single(
                 &context,
-                &state,
+                render,
                 position,
             );
         }
@@ -382,13 +398,13 @@ impl RenderSystem {
     pub fn apply_single(
         &self,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
         position: &PositionComponent,
     ) {
         ApplyRenderSystem::apply_single(
             self,
             context,
-            &state,
+            render,
             position,
         );
     }
@@ -405,73 +421,77 @@ impl RenderSystem {
     fn apply_many(
         &self,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
         positions: &[PositionComponent],
     ) {
         ApplyRenderSystem::apply_many(
             self,
             context,
-            &state,
+            render,
             positions,
         );
     }
 
     /// Applies this system to the [`ParticleArchetype`].
     #[inline]
-    pub fn apply_to_particle(
+    #[deprecated]
+    fn apply_to_particle(
         &self,
         archetype: &mut ParticleArchetype,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
     ) {
         self.apply_many(
             &context,
-            &state,
+            render,
             &archetype.positions,
         );
     }
 
     /// Applies this system to the [`PlayerArchetype`].
     #[inline]
-    pub fn apply_to_player(
+    #[deprecated]
+    fn apply_to_player(
         &self,
         archetype: &mut PlayerArchetype,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
     ) {
         self.apply_many(
             &context,
-            &state,
+            render,
             &archetype.positions,
         );
     }
 
     /// Applies this system to the [`ForegroundObjectArchetype`].
     #[inline]
-    pub fn apply_to_foreground_object(
+    #[deprecated]
+    fn apply_to_foreground_object(
         &self,
         archetype: &mut ForegroundObjectArchetype,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
     ) {
         self.apply_many(
             &context,
-            &state,
+            render,
             &archetype.positions,
         );
     }
 
     /// Applies this system to the [`BackgroundObjectArchetype`].
     #[inline]
-    pub fn apply_to_background_object(
+    #[deprecated]
+    fn apply_to_background_object(
         &self,
         archetype: &mut BackgroundObjectArchetype,
         context: &FrameContext,
-        state: &UserState,
+        render: &RenderState,
     ) {
         self.apply_many(
             &context,
-            &state,
+            render,
             &archetype.positions,
         );
     }
@@ -479,7 +499,7 @@ impl RenderSystem {
 
 #[automatically_derived]
 impl System for RenderSystem {
-    const ID: SystemId = SystemId(std::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderSystem {
@@ -496,7 +516,7 @@ impl From<RenderSystemData> for RenderSystem {
 }
 
 #[automatically_derived]
-impl std::ops::Deref for RenderSystem {
+impl core::ops::Deref for RenderSystem {
     type Target = RenderSystemData;
 
     fn deref(&self) -> &Self::Target {
@@ -505,7 +525,7 @@ impl std::ops::Deref for RenderSystem {
 }
 
 #[automatically_derived]
-impl std::ops::DerefMut for RenderSystem {
+impl core::ops::DerefMut for RenderSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

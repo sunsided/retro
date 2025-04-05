@@ -1,6 +1,6 @@
 /// The ID of an entity.
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct EntityId(std::num::NonZeroU64);
+pub struct EntityId(core::num::NonZeroU64);
 
 #[allow(dead_code)]
 impl EntityId {
@@ -13,30 +13,30 @@ impl EntityId {
     /// This function uses a thread-safe counter with sequential consistency ordering
     /// to ensure unique IDs even under concurrent access.
     pub fn new() -> Self {
-        static ENTITY_IDS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        let id = ENTITY_IDS.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        EntityId(std::num::NonZeroU64::new(id).expect("ID was zero"))
+        static ENTITY_IDS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
+        let id = ENTITY_IDS.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
+        EntityId(core::num::NonZeroU64::new(id).expect("ID was zero"))
     }
 
-    /// Returns this ID as a [`NonZeroU64`](std::num::NonZeroU64) value.
-    pub const fn as_nonzero_u64(&self) -> std::num::NonZeroU64 {
+    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
+    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         self.0
     }
 
     /// Returns this ID as a `u64` value.
     pub const fn as_u64(&self) -> u64 {
-            self.0.get()
+        self.0.get()
     }
 }
 
-impl std::hash::Hash for EntityId {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl core::hash::Hash for EntityId {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }
 }
 
-impl From<EntityId> for std::num::NonZeroU64 {
-    fn from(value: EntityId) -> std::num::NonZeroU64 {
+impl From<EntityId> for core::num::NonZeroU64 {
+    fn from(value: EntityId) -> core::num::NonZeroU64 {
         value.as_nonzero_u64()
     }
 }
@@ -47,14 +47,20 @@ impl From<EntityId> for u64 {
     }
 }
 
+impl core::fmt::Display for EntityId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        core::fmt::Display::fmt(&self.0.get(), f)
+    }
+}
+
 /// The ID of an [`Archetype`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct ArchetypeId(std::num::NonZeroU64);
+pub struct ArchetypeId(core::num::NonZeroU64);
 
 #[allow(dead_code)]
 impl ArchetypeId {
-    /// Returns this ID as a [`NonZeroU64`](std::num::NonZeroU64) value.
-    pub const fn as_nonzero_u64(&self) -> std::num::NonZeroU64 {
+    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
+    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         self.0
     }
 
@@ -64,14 +70,14 @@ impl ArchetypeId {
     }
 }
 
-impl std::hash::Hash for ArchetypeId {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+impl core::hash::Hash for ArchetypeId {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
         self.0.hash(state);
     }
 }
 
-impl From<ArchetypeId> for std::num::NonZeroU64 {
-    fn from(value: ArchetypeId) -> std::num::NonZeroU64 {
+impl From<ArchetypeId> for core::num::NonZeroU64 {
+    fn from(value: ArchetypeId) -> core::num::NonZeroU64 {
         value.as_nonzero_u64()
     }
 }
@@ -79,6 +85,18 @@ impl From<ArchetypeId> for std::num::NonZeroU64 {
 impl From<ArchetypeId> for u64 {
     fn from(value: ArchetypeId) -> u64 {
         value.as_u64()
+    }
+}
+
+impl core::fmt::Display for ArchetypeId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        match self.0.get() {
+            1 => write!(f, "Particle (Archetype ID 1)"),
+            2 => write!(f, "Player (Archetype ID 2)"),
+            3 => write!(f, "ForegroundObject (Archetype ID 3)"),
+            4 => write!(f, "BackgroundObject (Archetype ID 4)"),
+            id => write!(f, "Archetype ID {id}")
+        }
     }
 }
 
@@ -116,12 +134,76 @@ pub trait Archetype: 'static + Send + Sync {
 
 /// Trait for archetypes containing the specified `Component`.
 #[allow(dead_code)]
-pub trait HasComponent<T: Component> {
+pub trait HasComponents<T: Component> {
     /// Returns a slice of all component values.
     fn get(&self) -> &[T];
 
     /// Returns a mutable slice of all component values.
     fn get_mut(&mut self) -> &mut [T];
+}
+
+/// Trait for entities containing the specified `Component`.
+#[allow(dead_code)]
+pub trait HasComponent<T: Component> {
+    /// Returns the component value.
+    fn get(&self) -> &T;
+
+    /// Mutably returns the component value.
+    fn get_mut(&mut self) -> &mut T;
+}
+
+/// An enumeration holding variants for entities.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum ArchetypeEntity {
+    /// A particle system particle.
+    Particle(ParticleEntity),
+    /// An entity in the [`Player`](PlayerArchetype) archetype.
+    Player(PlayerEntity),
+    /// An entity in the [`ForegroundObject`](ForegroundObjectArchetype) archetype.
+    ForegroundObject(ForegroundObjectEntity),
+    /// An entity in the [`BackgroundObject`](BackgroundObjectArchetype) archetype.
+    BackgroundObject(BackgroundObjectEntity),
+}
+
+/// An enumeration holding variants for entity data, e.g. when spawning entities.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub enum ArchetypeEntityData {
+    /// A particle system particle.
+    Particle(ParticleEntityData),
+    /// An entity in the [`Player`](PlayerArchetype) archetype.
+    Player(PlayerEntityData),
+    /// An entity in the [`ForegroundObject`](ForegroundObjectArchetype) archetype.
+    ForegroundObject(ForegroundObjectEntityData),
+    /// An entity in the [`BackgroundObject`](BackgroundObjectArchetype) archetype.
+    BackgroundObject(BackgroundObjectEntityData),
+}
+
+#[allow(dead_code)]
+impl ArchetypeEntity {
+    /// Determines the [`ArchetypeId`] of this [`ArchetypeEntity`] variant.
+    pub const fn archetype_id(&self) -> ArchetypeId {
+        match self {
+            Self::Particle(_) => ParticleArchetype::ID,
+            Self::Player(_) => PlayerArchetype::ID,
+            Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
+            Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl ArchetypeEntityData {
+    /// Determines the [`ArchetypeId`] of this [`ArchetypeEntityData`] variant.
+    pub const fn archetype_id(&self) -> ArchetypeId {
+        match self {
+            Self::Particle(_) => ParticleArchetype::ID,
+            Self::Player(_) => PlayerArchetype::ID,
+            Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
+            Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
+        }
+    }
 }
 
 /// A particle system particle.
@@ -144,10 +226,61 @@ pub struct ParticleEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ParticleEntityData {
-    pub position: PositionData,
-    pub velocity: VelocityData,
+    pub position: PositionComponent,
+    pub velocity: VelocityComponent,
 }
 
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for ParticleEntity {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.data.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.data.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for ParticleEntityData {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<VelocityComponent> for ParticleEntity {
+    #[inline]
+    fn get(&self) -> &VelocityComponent {
+        &self.data.velocity
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut VelocityComponent {
+        &mut self.data.velocity
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<VelocityComponent> for ParticleEntityData {
+    #[inline]
+    fn get(&self) -> &VelocityComponent {
+        &self.velocity
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut VelocityComponent {
+        &mut self.velocity
+    }
+}
 impl ParticleEntityData {
     /// Spawn this entity into the given world.
     #[inline]
@@ -160,7 +293,7 @@ impl ParticleEntityData {
     }
 }
 
-impl std::ops::Deref for ParticleEntity {
+impl core::ops::Deref for ParticleEntity {
     type Target = ParticleEntityData;
 
     fn deref(&self) -> &Self::Target {
@@ -168,7 +301,7 @@ impl std::ops::Deref for ParticleEntity {
     }
 }
 
-impl std::ops::DerefMut for ParticleEntity {
+impl core::ops::DerefMut for ParticleEntity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
@@ -206,14 +339,19 @@ impl ParticleArchetype {
         id == 1 || id == 2 || false
     }
 
-    /// Spawn a new entity into the world.
-    pub fn spawn_with(
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
         &mut self,
-        position: PositionData,
-        velocity: VelocityData,
-    ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(PositionComponent::new(position));
-        self.velocities.push(VelocityComponent::new(velocity));
+        position: PositionComponent,
+        velocity: VelocityComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.positions.push(position);
+        self.velocities.push(velocity);
 
         let entity_id = EntityId::new();
 
@@ -224,34 +362,43 @@ impl ParticleArchetype {
             archetype: Self::ID,
             index: entity_index
         };
-        (entity_id, reference)
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
+        let _ = &self.positions;
+        let _ = &self.velocities;
+        todo!();
     }
 }
 
 
 #[automatically_derived]
-impl HasComponent<PositionComponent> for ParticleArchetype {
+impl HasComponents<PositionComponent> for ParticleArchetype {
     /// Returns a slice of all [`PositionComponent`] component values.
     fn get(&self) -> &[PositionComponent] {
-        &self.positions
+        self.positions.as_slice()
     }
 
     /// Returns a mutable slice of all [`PositionComponent`] component values.
     fn get_mut(&mut self) -> &mut [PositionComponent] {
-        &mut self.positions
+        self.positions.as_mut_slice()
     }
 }
 
 #[automatically_derived]
-impl HasComponent<VelocityComponent> for ParticleArchetype {
+impl HasComponents<VelocityComponent> for ParticleArchetype {
     /// Returns a slice of all [`VelocityComponent`] component values.
     fn get(&self) -> &[VelocityComponent] {
-        &self.velocities
+        self.velocities.as_slice()
     }
 
     /// Returns a mutable slice of all [`VelocityComponent`] component values.
     fn get_mut(&mut self) -> &mut [VelocityComponent] {
-        &mut self.velocities
+        self.velocities.as_mut_slice()
     }
 }
 
@@ -259,7 +406,7 @@ impl HasComponent<VelocityComponent> for ParticleArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for ParticleArchetype {
-    const ID: ArchetypeId = ArchetypeId(std::num::NonZeroU64::new(1).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(1).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -297,11 +444,88 @@ pub struct PlayerEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct PlayerEntityData {
-    pub position: PositionData,
-    pub velocity: VelocityData,
-    pub health: HealthData,
+    pub position: PositionComponent,
+    pub velocity: VelocityComponent,
+    pub health: HealthComponent,
 }
 
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for PlayerEntity {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.data.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.data.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for PlayerEntityData {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<VelocityComponent> for PlayerEntity {
+    #[inline]
+    fn get(&self) -> &VelocityComponent {
+        &self.data.velocity
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut VelocityComponent {
+        &mut self.data.velocity
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<VelocityComponent> for PlayerEntityData {
+    #[inline]
+    fn get(&self) -> &VelocityComponent {
+        &self.velocity
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut VelocityComponent {
+        &mut self.velocity
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<HealthComponent> for PlayerEntity {
+    #[inline]
+    fn get(&self) -> &HealthComponent {
+        &self.data.health
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut HealthComponent {
+        &mut self.data.health
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<HealthComponent> for PlayerEntityData {
+    #[inline]
+    fn get(&self) -> &HealthComponent {
+        &self.health
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut HealthComponent {
+        &mut self.health
+    }
+}
 impl PlayerEntityData {
     /// Spawn this entity into the given world.
     #[inline]
@@ -314,7 +538,7 @@ impl PlayerEntityData {
     }
 }
 
-impl std::ops::Deref for PlayerEntity {
+impl core::ops::Deref for PlayerEntity {
     type Target = PlayerEntityData;
 
     fn deref(&self) -> &Self::Target {
@@ -322,7 +546,7 @@ impl std::ops::Deref for PlayerEntity {
     }
 }
 
-impl std::ops::DerefMut for PlayerEntity {
+impl core::ops::DerefMut for PlayerEntity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
@@ -361,16 +585,21 @@ impl PlayerArchetype {
         id == 1 || id == 2 || id == 3 || false
     }
 
-    /// Spawn a new entity into the world.
-    pub fn spawn_with(
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
         &mut self,
-        position: PositionData,
-        velocity: VelocityData,
-        health: HealthData,
-    ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(PositionComponent::new(position));
-        self.velocities.push(VelocityComponent::new(velocity));
-        self.healths.push(HealthComponent::new(health));
+        position: PositionComponent,
+        velocity: VelocityComponent,
+        health: HealthComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.positions.push(position);
+        self.velocities.push(velocity);
+        self.healths.push(health);
 
         let entity_id = EntityId::new();
 
@@ -381,47 +610,57 @@ impl PlayerArchetype {
             archetype: Self::ID,
             index: entity_index
         };
-        (entity_id, reference)
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
+        let _ = &self.positions;
+        let _ = &self.velocities;
+        let _ = &self.healths;
+        todo!();
     }
 }
 
 
 #[automatically_derived]
-impl HasComponent<PositionComponent> for PlayerArchetype {
+impl HasComponents<PositionComponent> for PlayerArchetype {
     /// Returns a slice of all [`PositionComponent`] component values.
     fn get(&self) -> &[PositionComponent] {
-        &self.positions
+        self.positions.as_slice()
     }
 
     /// Returns a mutable slice of all [`PositionComponent`] component values.
     fn get_mut(&mut self) -> &mut [PositionComponent] {
-        &mut self.positions
+        self.positions.as_mut_slice()
     }
 }
 
 #[automatically_derived]
-impl HasComponent<VelocityComponent> for PlayerArchetype {
+impl HasComponents<VelocityComponent> for PlayerArchetype {
     /// Returns a slice of all [`VelocityComponent`] component values.
     fn get(&self) -> &[VelocityComponent] {
-        &self.velocities
+        self.velocities.as_slice()
     }
 
     /// Returns a mutable slice of all [`VelocityComponent`] component values.
     fn get_mut(&mut self) -> &mut [VelocityComponent] {
-        &mut self.velocities
+        self.velocities.as_mut_slice()
     }
 }
 
 #[automatically_derived]
-impl HasComponent<HealthComponent> for PlayerArchetype {
+impl HasComponents<HealthComponent> for PlayerArchetype {
     /// Returns a slice of all [`HealthComponent`] component values.
     fn get(&self) -> &[HealthComponent] {
-        &self.healths
+        self.healths.as_slice()
     }
 
     /// Returns a mutable slice of all [`HealthComponent`] component values.
     fn get_mut(&mut self) -> &mut [HealthComponent] {
-        &mut self.healths
+        self.healths.as_mut_slice()
     }
 }
 
@@ -429,7 +668,7 @@ impl HasComponent<HealthComponent> for PlayerArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for PlayerArchetype {
-    const ID: ArchetypeId = ArchetypeId(std::num::NonZeroU64::new(2).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(2).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -466,10 +705,61 @@ pub struct ForegroundObjectEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ForegroundObjectEntityData {
-    pub position: PositionData,
-    pub collider: ColliderData,
+    pub position: PositionComponent,
+    pub collider: ColliderComponent,
 }
 
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for ForegroundObjectEntity {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.data.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.data.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for ForegroundObjectEntityData {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<ColliderComponent> for ForegroundObjectEntity {
+    #[inline]
+    fn get(&self) -> &ColliderComponent {
+        &self.data.collider
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut ColliderComponent {
+        &mut self.data.collider
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<ColliderComponent> for ForegroundObjectEntityData {
+    #[inline]
+    fn get(&self) -> &ColliderComponent {
+        &self.collider
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut ColliderComponent {
+        &mut self.collider
+    }
+}
 impl ForegroundObjectEntityData {
     /// Spawn this entity into the given world.
     #[inline]
@@ -482,7 +772,7 @@ impl ForegroundObjectEntityData {
     }
 }
 
-impl std::ops::Deref for ForegroundObjectEntity {
+impl core::ops::Deref for ForegroundObjectEntity {
     type Target = ForegroundObjectEntityData;
 
     fn deref(&self) -> &Self::Target {
@@ -490,7 +780,7 @@ impl std::ops::Deref for ForegroundObjectEntity {
     }
 }
 
-impl std::ops::DerefMut for ForegroundObjectEntity {
+impl core::ops::DerefMut for ForegroundObjectEntity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
@@ -528,14 +818,19 @@ impl ForegroundObjectArchetype {
         id == 1 || id == 4 || false
     }
 
-    /// Spawn a new entity into the world.
-    pub fn spawn_with(
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
         &mut self,
-        position: PositionData,
-        collider: ColliderData,
-    ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(PositionComponent::new(position));
-        self.colliders.push(ColliderComponent::new(collider));
+        position: PositionComponent,
+        collider: ColliderComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.positions.push(position);
+        self.colliders.push(collider);
 
         let entity_id = EntityId::new();
 
@@ -546,10 +841,20 @@ impl ForegroundObjectArchetype {
             archetype: Self::ID,
             index: entity_index
         };
-        (entity_id, reference)
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
+        let _ = &self.positions;
+        let _ = &self.colliders;
+        todo!();
     }
 
     /// Promotes this [`ForegroundObjectArchetype`] to [`BackgroundObjectArchetype`].
+    #[deprecated]
     pub fn promote_to_background_objects(
         self,
     ) -> BackgroundObjectArchetype {
@@ -563,28 +868,28 @@ impl ForegroundObjectArchetype {
 
 
 #[automatically_derived]
-impl HasComponent<PositionComponent> for ForegroundObjectArchetype {
+impl HasComponents<PositionComponent> for ForegroundObjectArchetype {
     /// Returns a slice of all [`PositionComponent`] component values.
     fn get(&self) -> &[PositionComponent] {
-        &self.positions
+        self.positions.as_slice()
     }
 
     /// Returns a mutable slice of all [`PositionComponent`] component values.
     fn get_mut(&mut self) -> &mut [PositionComponent] {
-        &mut self.positions
+        self.positions.as_mut_slice()
     }
 }
 
 #[automatically_derived]
-impl HasComponent<ColliderComponent> for ForegroundObjectArchetype {
+impl HasComponents<ColliderComponent> for ForegroundObjectArchetype {
     /// Returns a slice of all [`ColliderComponent`] component values.
     fn get(&self) -> &[ColliderComponent] {
-        &self.colliders
+        self.colliders.as_slice()
     }
 
     /// Returns a mutable slice of all [`ColliderComponent`] component values.
     fn get_mut(&mut self) -> &mut [ColliderComponent] {
-        &mut self.colliders
+        self.colliders.as_mut_slice()
     }
 }
 
@@ -592,7 +897,7 @@ impl HasComponent<ColliderComponent> for ForegroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for ForegroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(std::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -628,9 +933,34 @@ pub struct BackgroundObjectEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityData {
-    pub position: PositionData,
+    pub position: PositionComponent,
 }
 
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for BackgroundObjectEntity {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.data.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.data.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for BackgroundObjectEntityData {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.position
+    }
+}
 impl BackgroundObjectEntityData {
     /// Spawn this entity into the given world.
     #[inline]
@@ -643,7 +973,7 @@ impl BackgroundObjectEntityData {
     }
 }
 
-impl std::ops::Deref for BackgroundObjectEntity {
+impl core::ops::Deref for BackgroundObjectEntity {
     type Target = BackgroundObjectEntityData;
 
     fn deref(&self) -> &Self::Target {
@@ -651,7 +981,7 @@ impl std::ops::Deref for BackgroundObjectEntity {
     }
 }
 
-impl std::ops::DerefMut for BackgroundObjectEntity {
+impl core::ops::DerefMut for BackgroundObjectEntity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
@@ -688,12 +1018,17 @@ impl BackgroundObjectArchetype {
         id == 1 || false
     }
 
-    /// Spawn a new entity into the world.
-    pub fn spawn_with(
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
         &mut self,
-        position: PositionData,
-    ) -> (EntityId, EntityArchetypeRef) {
-        self.positions.push(PositionComponent::new(position));
+        position: PositionComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.positions.push(position);
 
         let entity_id = EntityId::new();
 
@@ -704,10 +1039,19 @@ impl BackgroundObjectArchetype {
             archetype: Self::ID,
             index: entity_index
         };
-        (entity_id, reference)
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<(), usize> {
+        let _ = &self.positions;
+        todo!();
     }
 
     /// Promotes this [`BackgroundObjectArchetype`] to [`ForegroundObjectArchetype`].
+    #[deprecated]
     pub fn promote_to_foreground_objects(
         self,
         colliders: Vec<ColliderComponent>,
@@ -723,15 +1067,15 @@ impl BackgroundObjectArchetype {
 
 
 #[automatically_derived]
-impl HasComponent<PositionComponent> for BackgroundObjectArchetype {
+impl HasComponents<PositionComponent> for BackgroundObjectArchetype {
     /// Returns a slice of all [`PositionComponent`] component values.
     fn get(&self) -> &[PositionComponent] {
-        &self.positions
+        self.positions.as_slice()
     }
 
     /// Returns a mutable slice of all [`PositionComponent`] component values.
     fn get_mut(&mut self) -> &mut [PositionComponent] {
-        &mut self.positions
+        self.positions.as_mut_slice()
     }
 }
 
@@ -739,7 +1083,7 @@ impl HasComponent<PositionComponent> for BackgroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for BackgroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(std::num::NonZeroU64::new(4).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(4).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()

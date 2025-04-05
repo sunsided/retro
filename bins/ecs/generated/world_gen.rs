@@ -1,27 +1,117 @@
+/// The ID of a world.
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+pub struct WorldId(core::num::NonZeroU64);
+
+#[allow(dead_code)]
+impl WorldId {
+    /// Returns a new, unique world ID.
+    ///
+    /// Uniqueness is guaranteed by using a monotonically increasing `AtomicU64` counter
+    /// for generating IDs, starting from 1.
+    ///
+    /// # Implementation
+    /// This function uses a thread-safe counter with sequential consistency ordering
+    /// to ensure unique IDs even under concurrent access.
+    pub fn new() -> Self {
+        static WORLD_IDS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
+        let id = WORLD_IDS.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
+        WorldId(core::num::NonZeroU64::new(id).expect("ID was zero"))
+    }
+
+    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
+    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
+        self.0
+    }
+
+    /// Returns this ID as a `u64` value.
+    pub const fn as_u64(&self) -> u64 {
+        self.0.get()
+    }
+}
+
+impl core::hash::Hash for WorldId {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.0.hash(state);
+    }
+}
+
+impl From<WorldId> for core::num::NonZeroU64 {
+    fn from(value: WorldId) -> core::num::NonZeroU64 {
+        value.as_nonzero_u64()
+    }
+}
+
+impl From<WorldId> for u64 {
+    fn from(value: WorldId) -> u64 {
+        value.as_u64()
+    }
+}
+
+/// A command in the [`World`].
+#[allow(dead_code)]
+pub enum WorldCommand {
+    /// Spawn an entity.
+    ///
+    /// # Note:
+    /// Due to the reusability of systems, not all commands are valid in all worlds.
+    SpawnEntity(ArchetypeEntityData),
+    /// Despawn an entity.
+    DespawnEntity(EntityId),
+    // TODO: Allow for user-specified commands.
+}
+
+/// Sender of [`WorldCommand`] instances.
+#[allow(dead_code)]
+pub trait WorldCommandSender {
+    type Error: core::error::Error;
+
+    /// Sends a command. May block until the send is complete.
+    fn send(&self, command: WorldCommand) -> Result<(), Self::Error>;
+}
+
+/// Sender of [`WorldCommand`] instances.
+#[allow(dead_code)]
+pub trait WorldCommandReceiver {
+    type Error: core::error::Error;
+
+    /// Attempts to receive a message from the channel without blocking.
+    /// Returns [`Ok(None)`] if no command was queued.
+    fn recv(&self) -> Result<Option<WorldCommand>, Self::Error>;
+}
+
+/// A sender and receiver of [`WorldCommand`] instances.
+#[allow(dead_code)]
+pub trait WorldCommandQueue: WorldCommandSender + WorldCommandReceiver { }
+
+impl<T> WorldCommandQueue for T
+where
+    T: WorldCommandSender + WorldCommandReceiver
+{ }
+
 /// A frame context.
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct FrameContext {
+    /// The world ID.
+    pub world_id: WorldId,
     /// The frame number.
     pub frame_number: u64,
-
     /// The delta time since the last frame.
     pub delta_time_secs: f32,
-
     /// The fixed time for fixed-time systems. Defaults to 60 Hz (~16.66 ms).
     pub fixed_time_secs: f32,
-
     /// The start time of the current frame.
     pub current_frame_start: std::time::Instant,
-
     /// The start time of the last frame.
     pub last_frame_start: std::time::Instant,
 }
 
 #[allow(dead_code)]
-impl Default for FrameContext {
-    fn default() -> Self {
+impl FrameContext {
+    /// Constructs a new frame context.
+    fn new(world_id: WorldId) -> Self {
         Self {
+            world_id,
             frame_number: 0,
             delta_time_secs: 0.0,
             fixed_time_secs: 1.0 / 60.0,
@@ -31,10 +121,20 @@ impl Default for FrameContext {
     }
 }
 
+/// Marker trait for worlds.
+#[allow(dead_code)]
+pub trait World {
+    /// The ID of this world.
+    const ID: WorldId;
+}
+
+/// Marker trait for world states.
+pub trait WorldState { }
+
 
 /// A world holding all archetypes.
 #[derive(Debug, Clone)]
-pub struct MainWorld<E = ()> {
+pub struct MainWorld<E, Q> {
     /// The archetypes.
     archetypes: MainWorldArchetypes,
     /// The systems.
@@ -48,7 +148,25 @@ pub struct MainWorld<E = ()> {
     /// The system phase events
     events: Option<E>,
     /// User-specific data.
-    pub state: UserState,
+    pub states: MainWorldStates,
+    command_queue: Q
+}
+
+impl<E, Q> World for MainWorld<E, Q> {
+    const ID: WorldId = WorldId(core::num::NonZeroU64::new(1).expect("Invalid ID on ECS construction time"));
+}
+
+/// The user states used in the world.
+#[derive(Debug, Clone, Default)]
+pub struct MainWorldStates {
+    /// The render state
+    ///
+    /// The state is used in the following systems:
+    /// - [`RenderSystem`]
+    pub render: RenderState,
+}
+
+impl WorldState for MainWorldStates {
 }
 
 /// The archetypes used in the world.
@@ -68,7 +186,7 @@ struct MainWorldSystems {
 }
 
 /// Spawns an entity into the world.
-impl<E> Spawn<ParticleEntityData> for MainWorld<E> {
+impl<E, Q> Spawn<ParticleEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: ParticleEntityData) -> EntityId {
@@ -77,7 +195,7 @@ impl<E> Spawn<ParticleEntityData> for MainWorld<E> {
 }
 
 /// Spawns an entity into the world.
-impl<E> Spawn<PlayerEntityData> for MainWorld<E> {
+impl<E, Q> Spawn<PlayerEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: PlayerEntityData) -> EntityId {
@@ -86,7 +204,7 @@ impl<E> Spawn<PlayerEntityData> for MainWorld<E> {
 }
 
 /// Spawns an entity into the world.
-impl<E> Spawn<ForegroundObjectEntityData> for MainWorld<E> {
+impl<E, Q> Spawn<ForegroundObjectEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: ForegroundObjectEntityData) -> EntityId {
@@ -95,7 +213,7 @@ impl<E> Spawn<ForegroundObjectEntityData> for MainWorld<E> {
 }
 
 /// Spawns an entity into the world.
-impl<E> Spawn<BackgroundObjectEntityData> for MainWorld<E> {
+impl<E, Q> Spawn<BackgroundObjectEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: BackgroundObjectEntityData) -> EntityId {
@@ -103,15 +221,26 @@ impl<E> Spawn<BackgroundObjectEntityData> for MainWorld<E> {
     }
 }
 
+/// Helper trait to prevent accidental abuse of the Archetype's spawning function.
+pub trait WorldEntityRegistry {
+    /// Registers an entity with the world.
+    fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId;
+}
+
 #[allow(dead_code)]
-impl<E>MainWorld<E> {
+impl<E, Q>MainWorld<E, Q> {
     /// Creates a new [`MainWorld`].
-    pub fn new<S>(create_systems: &S, state: UserState, phase_events: Option<E>) -> Self
+    pub fn new<S>(
+        create_systems: &S,
+        render: RenderState,
+        phase_events: Option<E>,
+        command_queue: Q) -> Self
     where
         S: CreateSystems,
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandQueue
     {
-        let context = FrameContext::default();
+        let context = FrameContext::new(Self::ID);
         Self {
             archetypes: Default::default(),
             systems: MainWorldSystems {
@@ -120,9 +249,12 @@ impl<E>MainWorld<E> {
             },
             entity_locations: Default::default(),
             context,
-            state,
+            states: MainWorldStates {
+                render,
+            },
             fixed_accumulators: Default::default(),
-            events: phase_events
+            events: phase_events,
+            command_queue
         }
     }
 
@@ -141,17 +273,25 @@ impl<E>MainWorld<E> {
     /// Spawn a new `Particle` entity into the world.
     pub fn spawn_particle_with(
         &mut self,
-        position: PositionData,
-        velocity: VelocityData,
+        position: PositionComponent,
+        velocity: VelocityComponent,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.archetypes.particle
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.particle
             .spawn_with(
                 position,
                 velocity,
-            );
-
-        self.entity_locations.insert(entity_id, archetype_ref);
-        entity_id
+                Registry(&mut self.entity_locations)
+            )
     }
 
     /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
@@ -170,19 +310,27 @@ impl<E>MainWorld<E> {
     /// Spawn a new `Player` entity into the world.
     pub fn spawn_player_with(
         &mut self,
-        position: PositionData,
-        velocity: VelocityData,
-        health: HealthData,
+        position: PositionComponent,
+        velocity: VelocityComponent,
+        health: HealthComponent,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.archetypes.player
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.player
             .spawn_with(
                 position,
                 velocity,
                 health,
-            );
-
-        self.entity_locations.insert(entity_id, archetype_ref);
-        entity_id
+                Registry(&mut self.entity_locations)
+            )
     }
 
     /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
@@ -200,17 +348,25 @@ impl<E>MainWorld<E> {
     /// Spawn a new `ForegroundObject` entity into the world.
     pub fn spawn_foreground_object_with(
         &mut self,
-        position: PositionData,
-        collider: ColliderData,
+        position: PositionComponent,
+        collider: ColliderComponent,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.archetypes.foreground_object
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.foreground_object
             .spawn_with(
                 position,
                 collider,
-            );
-
-        self.entity_locations.insert(entity_id, archetype_ref);
-        entity_id
+                Registry(&mut self.entity_locations)
+            )
     }
 
     /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
@@ -227,15 +383,23 @@ impl<E>MainWorld<E> {
     /// Spawn a new `BackgroundObject` entity into the world.
     pub fn spawn_background_object_with(
         &mut self,
-        position: PositionData,
+        position: PositionComponent,
     ) -> EntityId {
-        let (entity_id, archetype_ref) = self.archetypes.background_object
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.background_object
             .spawn_with(
                 position,
-            );
-
-        self.entity_locations.insert(entity_id, archetype_ref);
-        entity_id
+                Registry(&mut self.entity_locations)
+            )
     }
 
     /// Runs a per-frame update of the frame context at the start of a frame.
@@ -268,7 +432,8 @@ impl<E>MainWorld<E> {
     /// - `E`: The type implementing [`SystemPhaseEvents`] for phase lifecycle events
     pub fn apply_system_phases(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         self.on_begin_frame();
         self.apply_system_phase_startup();
@@ -306,7 +471,8 @@ impl<E>MainWorld<E> {
     /// - Thread parallelism is implemented using the Rayon library
     pub fn par_apply_system_phases(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         self.on_begin_frame();
         self.par_apply_system_phase_startup();
@@ -344,16 +510,17 @@ impl<E>MainWorld<E> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_startup(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.states);
         }
 
         self.apply_system_phase_startup_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.states);
         }
     }
 
@@ -361,7 +528,8 @@ impl<E>MainWorld<E> {
     #[inline]
     fn apply_system_phase_startup_without_events(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         // no systems in this phase
     }
@@ -381,15 +549,16 @@ impl<E>MainWorld<E> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_startup(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.states);
         }
         // no systems in this phase
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.states);
         }
     }
 
@@ -412,16 +581,17 @@ impl<E>MainWorld<E> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_fixed_update(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
         }
 
         self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
         }
     }
 
@@ -429,8 +599,10 @@ impl<E>MainWorld<E> {
     #[inline]
     fn apply_system_phase_fixed_update_without_events(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
+        // TODO: Test if PhysicsSystem is part of the MainWorld.
         // System group 1 of 1
         {
             // Apply PhysicsSystem to ParticleArchetype
@@ -439,6 +611,7 @@ impl<E>MainWorld<E> {
                 &self.archetypes.particle.entities,
                 &self.archetypes.particle.velocities,
                 &mut self.archetypes.particle.positions,
+                &self.command_queue
             );
             // Apply PhysicsSystem to PlayerArchetype
             self.systems.physics.apply_many(
@@ -446,6 +619,7 @@ impl<E>MainWorld<E> {
                 &self.archetypes.player.entities,
                 &self.archetypes.player.velocities,
                 &mut self.archetypes.player.positions,
+                &self.command_queue
             );
         }
     }
@@ -465,16 +639,17 @@ impl<E>MainWorld<E> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_fixed_update(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
         }
         // Only one system in this phase; skip spawning thread.
         self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
         }
     }
 
@@ -497,16 +672,17 @@ impl<E>MainWorld<E> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_update(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.states);
         }
 
         self.apply_system_phase_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Update, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::Update, &self.context, &mut self.states);
         }
     }
 
@@ -514,7 +690,8 @@ impl<E>MainWorld<E> {
     #[inline]
     fn apply_system_phase_update_without_events(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         // no systems in this phase
     }
@@ -534,15 +711,16 @@ impl<E>MainWorld<E> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_update(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.states);
         }
         // no systems in this phase
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Update, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::Update, &self.context, &mut self.states);
         }
     }
 
@@ -565,16 +743,17 @@ impl<E>MainWorld<E> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_render(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.states);
         }
 
         self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Render, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::Render, &self.context, &mut self.states);
         }
     }
 
@@ -582,32 +761,34 @@ impl<E>MainWorld<E> {
     #[inline]
     fn apply_system_phase_render_without_events(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
+        // TODO: Test if RenderSystem is part of the MainWorld.
         // System group 1 of 1
         {
             // Apply RenderSystem to ParticleArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.state,
+                &self.states.render,
                 &self.archetypes.particle.positions,
             );
             // Apply RenderSystem to PlayerArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.state,
+                &self.states.render,
                 &self.archetypes.player.positions,
             );
             // Apply RenderSystem to ForegroundObjectArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.state,
+                &self.states.render,
                 &self.archetypes.foreground_object.positions,
             );
             // Apply RenderSystem to BackgroundObjectArchetype
             self.systems.render.apply_many(
                 &self.context,
-                &self.state,
+                &self.states.render,
                 &self.archetypes.background_object.positions,
             );
         }
@@ -628,17 +809,103 @@ impl<E>MainWorld<E> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_render(&mut self)
     where
-        E: SystemPhaseEvents
+        E: SystemPhaseEvents<MainWorldStates>,
+        Q: WorldCommandSender
     {
         if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.state);
+            events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.states);
         }
         // Only one system in this phase; skip spawning thread.
         self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Render, &self.context, &mut self.state);
+            events.on_end_phase(SystemPhase::Render, &self.context, &mut self.states);
         }
+    }
+
+    /// Handles all queued commands.
+    fn handle_commands(&mut self)
+    where
+        Q: WorldCommandReceiver
+    {
+        loop {
+            match self.command_queue.recv() {
+                Ok(Some(cmd)) => {
+                    match cmd {
+                        WorldCommand::SpawnEntity(data) => self.handle_spawn_command(data),
+                        WorldCommand::DespawnEntity(id) => self.handle_despawn_command(id).expect("Failed to despawn"),
+                    }
+                }
+                Ok(None) => break,
+                Err(error) => {
+                    // TODO: Make logging configurable.
+                    tracing::error!(?error, "Failed to dequeue world command");
+                    break;
+                }
+            }
+        }
+    }
+
+    fn handle_spawn_command(&mut self, data: ArchetypeEntityData) {
+        match data {
+            // Accept only archetypes known to the world
+            ArchetypeEntityData::Particle(data) => {
+                let id = self.spawn_particle(data);
+                tracing::trace!(%id, "Spawned Particle entity");
+            },
+            ArchetypeEntityData::Player(data) => {
+                let id = self.spawn_player(data);
+                tracing::trace!(%id, "Spawned Player entity");
+            },
+            ArchetypeEntityData::ForegroundObject(data) => {
+                let id = self.spawn_foreground_object(data);
+                tracing::trace!(%id, "Spawned ForegroundObject entity");
+            },
+            ArchetypeEntityData::BackgroundObject(data) => {
+                let id = self.spawn_background_object(data);
+                tracing::trace!(%id, "Spawned BackgroundObject entity");
+            },
+            // TODO: Make it a non-panic on release builds?
+            #[allow(unreachable_patterns)]
+            unhandled => panic!("Cannot spawn entity for {id} which is not known to this world.", id = unhandled.archetype_id())
+        }
+    }
+
+    fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
+         if let Some(loc) = self.entity_locations.remove(&id) {
+            match loc.archetype {
+                ParticleArchetype::ID => {
+                    self.archetypes
+                        .particle
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ParticleArchetype::ID))?;
+                }
+                PlayerArchetype::ID => {
+                    self.archetypes
+                        .player
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, PlayerArchetype::ID))?;
+                }
+                ForegroundObjectArchetype::ID => {
+                    self.archetypes
+                        .foreground_object
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ForegroundObjectArchetype::ID))?;
+                }
+                BackgroundObjectArchetype::ID => {
+                    self.archetypes
+                        .background_object
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, BackgroundObjectArchetype::ID))?;
+                }
+                // TODO: Make it a non-panic on release builds?
+                #[allow(unreachable_patterns)]
+                archetype_id => unreachable!("Cannot remove entity {id} from archetype {archetype_id} which is not known to this world.")
+            }
+         } else {
+            tracing::error!(%id, "Attempted to remove unknown entity");
+         }
+         Ok(())
     }
 }
 
@@ -648,3 +915,20 @@ struct FixedAccumulators {
     /// The time accumulator for the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
     fixed_update: f32,
 }
+
+#[derive(Debug)]
+pub enum DespawnError {
+    InvalidIndexInArchetype(usize, ArchetypeId)
+}
+
+impl core::fmt::Display for DespawnError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        match self {
+            Self::InvalidIndexInArchetype(index, aid) => {
+                write!(f, "Failed to despawn entity at invalid index {index} in archetype {aid}")
+            }
+        }
+    }
+}
+
+impl core::error::Error for DespawnError { }

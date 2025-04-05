@@ -1,4 +1,8 @@
-# TODO: How to pass in globals such as delta time since last frame, etc? Systems will need those.
+# TODO: Allow definition of custom commands to be emitted by systems
+
+states:
+  - name: Render
+    description: The render state
 
 components:
   - name: Position
@@ -48,6 +52,7 @@ systems:
     phase: FixedUpdate
     context: true
     entities: true
+    commands: true
     inputs:
       - Velocity
     outputs:
@@ -55,7 +60,9 @@ systems:
   - name: Render
     phase: Render
     context: true
-    state: true
+    states:
+      - use: Render
+        write: false  # optional
     inputs:
       - Position
 

@@ -1,5 +1,5 @@
 use crate::system::{SystemPhase, SystemPhaseEvents};
-use crate::world::{FrameContext, UserState};
+use crate::world::{FrameContext, MainWorldStates};
 use std::time::Instant;
 use tracing::trace;
 
@@ -12,19 +12,19 @@ impl Default for PhaseEvents {
     }
 }
 
-impl SystemPhaseEvents for PhaseEvents {
+impl SystemPhaseEvents<MainWorldStates> for PhaseEvents {
     fn on_begin_phase(
         &mut self,
         phase: SystemPhase,
         context: &FrameContext,
-        _state: &mut UserState,
+        _state: &mut MainWorldStates,
     ) {
         let duration = Instant::now() - self.0;
         self.0 = Instant::now();
         trace!(phase = ?phase, duration_since_last = ?duration, frame = context.frame_number, "Beginning phase");
     }
 
-    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, _state: &mut UserState) {
+    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, _state: &mut MainWorldStates) {
         let duration = Instant::now() - self.0;
         trace!(phase = ?phase, duration = ?duration, frame = context.frame_number, "End of phase");
     }
