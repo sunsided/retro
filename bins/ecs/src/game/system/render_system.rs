@@ -3,7 +3,7 @@ use parking_lot::Mutex;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tracing::{debug, error, trace, warn};
-use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
+use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
 use crate::game::component::PositionComponent;
 use crate::game::system::{ApplyRenderSystem, RenderSystem};
 use crate::game::world::{FrameContext, RenderState};
@@ -54,12 +54,43 @@ impl ApplyRenderSystem for RenderSystem {
         self.frame_state = {
             let render_start = std::time::Instant::now();
             let state = self.state.as_ref().expect("State exists as per readiness check").lock();
-            let frame = state.surface.get_current_texture().inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
-            let view = frame.texture.create_view(&Default::default());
+            let frame = state
+                .surface
+                .get_current_texture()
+                .inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
+            let view = frame
+                .texture
+                .create_view(&Default::default());
+            let mut encoder = state
+                .device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some("Render Encoder"),
+                });
 
-            let mut encoder = state.device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
+            // Clear background.
+            {
+                let _render_pass = encoder
+                    .begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Clear Background Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(wgpu::Color {
+                                    r: 0.1,
+                                    g: 0.2,
+                                    b: 0.3,
+                                    a: 1.0,
+                                }),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                    });
+            }
+
             Some(FrameState {
                 frame,
                 view,
@@ -75,11 +106,12 @@ impl ApplyRenderSystem for RenderSystem {
             let command_buffer = frame_state.encoder.finish();
             let state = self.state.as_ref().expect("State exists").lock();
             state.queue.submit(Some(command_buffer));
-            state.device.poll(wgpu::Maintain::Poll);
+            // Optionally poll
+            // state.device.poll(wgpu::Maintain::Poll);
             frame_state.frame.present();
 
             let render_duration = frame_state.render_start.elapsed();
-            debug!(context.frame_number, "Rendered frame in {render_duration:?}");
+            trace!(context.frame_number, "Rendered frame in {render_duration:?}");
         }
         Ok(())
     }

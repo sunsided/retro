@@ -63,7 +63,7 @@ impl WgpuState {
         let (device, queue) = pollster::block_on(adapter
             .request_device(
             &wgpu::DeviceDescriptor {
-                label: None,
+                label: Some("Device Descriptor"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::default(),
                 memory_hints: Default::default(),
