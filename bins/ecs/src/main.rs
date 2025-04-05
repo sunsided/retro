@@ -11,7 +11,7 @@ use winit::{
 };
 use winit::application::ApplicationHandler;
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
+use winit::keyboard::{Key, KeyCode, ModifiersState, NamedKey, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowAttributes, WindowId};
 
 mod logging;
@@ -21,6 +21,7 @@ mod game;
 #[derive(Default)]
 struct App {
     window: Option<Window>,
+    modifiers: ModifiersState,
 }
 
 impl ApplicationHandler for App {
@@ -34,12 +35,16 @@ impl ApplicationHandler for App {
             WindowEvent::CloseRequested => {
                 active_event_loop.exit();
             }
+            WindowEvent::ModifiersChanged(new_modifiers) => {
+                // Update our tracked modifier state.
+                self.modifiers = new_modifiers.state();
+            }
             WindowEvent::KeyboardInput { event, .. } => {
                 match event.physical_key {
                     PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
                         active_event_loop.exit();
                     }
-                    PhysicalKey::Code(KeyCode::KeyF) if event.state == ElementState::Pressed => {
+                    PhysicalKey::Code(KeyCode::Enter) if event.state == ElementState::Pressed && self.modifiers.alt_key() => {
                         // Toggle fullscreen mode.
                         if let Some(window) = &self.window {
                             if window.fullscreen().is_some() {
