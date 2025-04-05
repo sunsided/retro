@@ -29,7 +29,7 @@ impl ApplicationHandler for App {
     fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
         let mut attributes = Window::default_attributes();
         attributes.title = "Retro 2000".to_string();
-        attributes.inner_size = Some(Size::Logical(LogicalSize::new(1024.0, 768.0)));
+        attributes.inner_size = Some(Size::Logical(LogicalSize::new(1024.0, 640.0)));
         attributes.resizable = false;
         let window = active_event_loop.create_window(attributes).unwrap();
         self.window = Some(window);
@@ -53,7 +53,7 @@ impl ApplicationHandler for App {
                         // Toggle fullscreen mode.
                         if let Some(window) = &self.window {
                             if window.fullscreen().is_some() {
-                                window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(1024.0, 768.0))));
+                                window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(1024.0, 640.0))));
                                 window.set_fullscreen(None);
                             } else {
                                 window.set_max_inner_size::<Size>(None);
