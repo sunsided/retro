@@ -1,4 +1,6 @@
+use std::cell::{Ref, RefCell};
 use std::sync::Arc;
+use parking_lot::Mutex;
 use std::time::Instant;
 use crossbeam_channel::TryRecvError;
 use tracing::{debug, trace};
@@ -48,7 +50,7 @@ impl WgpuState {
 
 struct App {
     window: Option<Arc<Window>>,
-    state: Option<WgpuState>,
+    state: Option<Arc<Mutex<WgpuState>>>,
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
@@ -58,10 +60,6 @@ impl App {
     pub fn new() -> Self {
         let events = PhaseEvents::default();
         let state = RenderState::default();
-
-        // window.as_ref().expect("Failed to get window handle.")
-        // let render_system = pollster::block_on(WgpuRenderSystemData::new(self.window)).expect("Failed to create render system");
-
         let world = MainWorld::new(&SystemFactory, state, Some(events), CommandQueue::new());
 
         Self {
@@ -86,7 +84,11 @@ impl ApplicationHandler for App {
             self.window = Some(window.clone());
 
             let state = pollster::block_on(WgpuState::new(window.clone()));
-            self.state = Some(state);
+            self.state = Some(Arc::new(Mutex::new(state)));
+
+            // Set WGPU render state.
+            let render = self.ecs_world.systems.as_render_mut();
+            render.state = self.state.clone();
         }
 
         self.last_update = Instant::now();
@@ -131,14 +133,17 @@ impl ApplicationHandler for App {
             WindowEvent::Resized(new_size) => {
                 debug!("Window resized: {:?}", new_size);
                 if let Some(surface) = &mut self.state {
-                    surface.resize(new_size);
+                    surface.lock_arc().resize(new_size);
                 }
             }
+
+            // TODO: Allow external access to system data
+
             WindowEvent::RedrawRequested => {
                 trace!("Redraw requested");
                 if let Some(surface) = &mut self.state {
                     self.ecs_world.apply_system_phase_render();
-                    surface.draw();
+                    surface.lock_arc().draw();
                 }
 
             }

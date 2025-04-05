@@ -65,7 +65,7 @@ pub enum WorldCommand {
 pub trait WorldCommandSender {
     type Error: core::error::Error;
 
-    /// Sends a command. May block until the send is complete.
+    /// Sends a command. May block until sending is complete.
     fn send(&self, command: WorldCommand) -> Result<(), Self::Error>;
 }
 
@@ -144,7 +144,7 @@ pub struct MainWorld<E, Q> {
     /// The archetypes.
     archetypes: MainWorldArchetypes,
     /// The systems.
-    systems: MainWorldSystems,
+    pub systems: MainWorldSystems,
     /// The entity locator.
     entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
     /// The frame context.
@@ -186,9 +186,68 @@ struct MainWorldArchetypes {
 
 /// The systems.
 #[derive(Debug, Clone)]
-struct MainWorldSystems {
-    pub physics: PhysicsSystem,
-    pub render: RenderSystem,
+pub struct MainWorldSystems {
+    physics: PhysicsSystem,
+    render: RenderSystem,
+}
+
+impl MainWorldSystems {
+
+    /// Gives immutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
+    #[inline]
+    pub fn as_physics_ref(&self) -> &PhysicsSystemData {
+        use core::ops::Deref;
+        self.physics.deref()
+    }
+
+    /// Gives mutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
+    #[inline]
+    pub fn as_physics_mut(&mut self) -> &mut PhysicsSystemData {
+        use core::ops::DerefMut;
+        self.physics.deref_mut()
+    }
+
+    /// Gives immutable access to the [`RenderSystemData`] of the [`RenderSystem`].
+    #[inline]
+    pub fn as_render_ref(&self) -> &RenderSystemData {
+        use core::ops::Deref;
+        self.render.deref()
+    }
+
+    /// Gives mutable access to the [`RenderSystemData`] of the [`RenderSystem`].
+    #[inline]
+    pub fn as_render_mut(&mut self) -> &mut RenderSystemData {
+        use core::ops::DerefMut;
+        self.render.deref_mut()
+    }
+}
+
+impl AsRef<PhysicsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &PhysicsSystemData {
+        self.as_physics_ref()
+    }
+}
+
+impl AsMut<PhysicsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut PhysicsSystemData {
+        self.as_physics_mut()
+    }
+}
+
+impl AsRef<RenderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &RenderSystemData {
+        self.as_render_ref()
+    }
+}
+
+impl AsMut<RenderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut RenderSystemData {
+        self.as_render_mut()
+    }
 }
 
 /// Spawns an entity into the world.
@@ -459,9 +518,10 @@ impl<E, Q>MainWorld<E, Q> {
     pub fn apply_system_phases(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         self.on_begin_frame();
+        self.handle_commands();
         // The Startup phase always runs.
         self.apply_system_phase_startup();
 
@@ -478,6 +538,7 @@ impl<E, Q>MainWorld<E, Q> {
 
         // The Render phase is marked manual and will be skipped here.
         self.on_end_frame();
+        self.handle_commands();
     }
 
     /// Apply all system phases with thread parallelism.
@@ -500,9 +561,10 @@ impl<E, Q>MainWorld<E, Q> {
     pub fn par_apply_system_phases(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         self.on_begin_frame();
+        self.handle_commands();
         // The Startup phase always runs.
         self.par_apply_system_phase_startup();
 
@@ -519,6 +581,7 @@ impl<E, Q>MainWorld<E, Q> {
 
         // The Render phase is marked manual and will be skipped here.
         self.on_end_frame();
+        self.handle_commands();
     }
 
     /// Execute system phase `Startup`
@@ -541,7 +604,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_startup(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.states);
@@ -559,9 +622,12 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_startup_without_events(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         // no systems in this phase
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Applies the specified system phase with parallel execution of systems.
@@ -580,7 +646,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn par_apply_system_phase_startup(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.states);
@@ -590,6 +656,9 @@ impl<E, Q>MainWorld<E, Q> {
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.states);
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `FixedUpdate`
@@ -612,7 +681,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_fixed_update(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
@@ -630,7 +699,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_fixed_update_without_events(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
         {
@@ -651,6 +720,9 @@ impl<E, Q>MainWorld<E, Q> {
                 &self.command_queue
             );
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Applies the specified system phase with parallel execution of systems.
@@ -669,7 +741,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn par_apply_system_phase_fixed_update(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
@@ -680,6 +752,9 @@ impl<E, Q>MainWorld<E, Q> {
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `Update`
@@ -702,7 +777,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_update(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.states);
@@ -720,9 +795,12 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_update_without_events(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         // no systems in this phase
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Applies the specified system phase with parallel execution of systems.
@@ -741,7 +819,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn par_apply_system_phase_update(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.states);
@@ -751,6 +829,9 @@ impl<E, Q>MainWorld<E, Q> {
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Update, &self.context, &mut self.states);
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `Render`
@@ -773,7 +854,7 @@ impl<E, Q>MainWorld<E, Q> {
     pub fn apply_system_phase_render(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.states);
@@ -791,7 +872,7 @@ impl<E, Q>MainWorld<E, Q> {
     fn apply_system_phase_render_without_events(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
         {
@@ -820,6 +901,9 @@ impl<E, Q>MainWorld<E, Q> {
                 &self.archetypes.background_object.positions,
             );
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Applies the specified system phase with parallel execution of systems.
@@ -838,7 +922,7 @@ impl<E, Q>MainWorld<E, Q> {
     pub fn par_apply_system_phase_render(&mut self)
     where
         E: SystemPhaseEvents<MainWorldStates>,
-        Q: WorldCommandSender
+        Q: WorldCommandSender + WorldCommandReceiver
     {
         if let Some(events) = &mut self.events {
             events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.states);
@@ -849,6 +933,9 @@ impl<E, Q>MainWorld<E, Q> {
         if let Some(events) = &mut self.events {
             events.on_end_phase(SystemPhase::Render, &self.context, &mut self.states);
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Handles all queued commands.

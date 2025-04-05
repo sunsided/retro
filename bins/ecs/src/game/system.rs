@@ -48,7 +48,7 @@ impl ApplyPhysicsSystem for PhysicsSystem {
 
 impl Default for RenderSystem {
     fn default() -> Self {
-        Self(RenderSystemData)
+        Self(RenderSystemData::default())
     }
 }
 
