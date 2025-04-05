@@ -27,18 +27,10 @@ archetypes:
     components:
       - Position
       - Collider
-    promotions:
-      # TODO: Implement promotions of individual entities, not entire archetypes
-      - BackgroundObject
 
   - name: BackgroundObject
     components:
       - Position
-    promotions:
-      - ForegroundObject
-    # TODO promote from -> to, remove x,y,z, add a,b
-    # TODO double check the existence of x,y,z on the source
-    # TODO double check the existence of a,b on the destination
 
 phases:
   - name: Startup
@@ -46,6 +38,7 @@ phases:
     fixed: 60Hz
   - name: Update
   - name: Render
+    on_request: true
 
 systems:
   - name: Physics

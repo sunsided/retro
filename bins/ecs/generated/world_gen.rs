@@ -131,6 +131,39 @@ pub trait World {
 /// Marker trait for world states.
 pub trait WorldState { }
 
+/// Spawns an entity into the world.
+#[derive(Debug, Default)]
+struct ConditionalPhaseFlags {
+    /// Whether the [`Render`](RenderPhase) phase is requested.
+    pub render_requested: core::sync::atomic::AtomicBool,
+}
+
+impl ConditionalPhaseFlags {
+    /// Returns whether the [`Render`](RenderPhase) phase was requested
+    /// and atomically sets the flag to `false`.
+    #[inline]
+    pub fn is_render_requested(&self) -> bool {
+        self.render_requested.swap(false, core::sync::atomic::Ordering::AcqRel)
+    }
+
+    /// Sets the request status of the [`Render`](RenderPhase) phase.
+    #[inline]
+    pub fn set_render_requested(&self) {
+        self.render_requested
+            .store(true, core::sync::atomic::Ordering::Release);
+    }
+}
+
+impl Clone for ConditionalPhaseFlags {
+    fn clone(&self) -> Self {
+        Self {
+            render_requested: core::sync::atomic::AtomicBool::new(
+                self.render_requested.load(core::sync::atomic::Ordering::Acquire),
+            ),
+        }
+    }
+}
+
 
 /// A world holding all archetypes.
 #[derive(Debug, Clone)]
@@ -139,6 +172,8 @@ pub struct MainWorld<E, Q> {
     archetypes: MainWorldArchetypes,
     /// The systems.
     systems: MainWorldSystems,
+    /// Flags for conditional phase execution.
+    phase_flags: ConditionalPhaseFlags,
     /// The entity locator.
     entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
     /// The frame context.
@@ -248,6 +283,7 @@ impl<E, Q>MainWorld<E, Q> {
                 render: create_systems.create_render(),
             },
             entity_locations: Default::default(),
+            phase_flags: ConditionalPhaseFlags::default(),
             context,
             states: MainWorldStates {
                 render,
@@ -271,6 +307,12 @@ impl<E, Q>MainWorld<E, Q> {
     /// De-spawns an entity given by its [`EntityId`]. Returns an error if the entity was unknown in this world.
     pub fn despawn_by_id(&mut self, id: EntityId) -> Result<(), DespawnError> {
         self.handle_despawn_command(id)
+    }
+
+    /// Requests the execution of the [`Render`](RenderPhase) phase.
+    #[inline]
+    pub fn request_render_phase(&self) {
+        self.phase_flags.set_render_requested();
     }
 
     /// Spawn a new `Particle` entity into the world given its [`ParticleEntityData`].
@@ -451,6 +493,7 @@ impl<E, Q>MainWorld<E, Q> {
         Q: WorldCommandSender
     {
         self.on_begin_frame();
+        // The Startup phase always runs.
         self.apply_system_phase_startup();
 
         // Apply fixed-time loop for phase FixedUpdate
@@ -460,10 +503,14 @@ impl<E, Q>MainWorld<E, Q> {
             self.apply_system_phase_fixed_update();
             self.fixed_accumulators.fixed_update -= SystemPhase::FIXED_UPDATE_SECS;
         }
-
         self.context.fixed_time_secs = 0.0;
+        // The Update phase always runs.
         self.apply_system_phase_update();
-        self.apply_system_phase_render();
+
+        // The Render phase is conditional.
+        if self.phase_flags.is_render_requested() {
+            self.apply_system_phase_render();
+        }
         self.on_end_frame();
     }
 
@@ -490,6 +537,7 @@ impl<E, Q>MainWorld<E, Q> {
         Q: WorldCommandSender
     {
         self.on_begin_frame();
+        // The Startup phase always runs.
         self.par_apply_system_phase_startup();
 
         // Apply fixed-time loop for phase FixedUpdate
@@ -499,10 +547,14 @@ impl<E, Q>MainWorld<E, Q> {
             self.par_apply_system_phase_fixed_update();
             self.fixed_accumulators.fixed_update -= SystemPhase::FIXED_UPDATE_SECS;
         }
-
         self.context.fixed_time_secs = 0.0;
+        // The Update phase always runs.
         self.par_apply_system_phase_update();
-        self.par_apply_system_phase_render();
+
+        // The Render phase is conditional.
+        if self.phase_flags.is_render_requested() {
+            self.par_apply_system_phase_render();
+        }
         self.on_end_frame();
     }
 

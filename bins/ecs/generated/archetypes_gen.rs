@@ -885,18 +885,6 @@ impl ForegroundObjectArchetype {
             Ok(Some(self.entities[index]))
         }
     }
-
-    /// Promotes this [`ForegroundObjectArchetype`] to [`BackgroundObjectArchetype`].
-    #[deprecated]
-    pub fn promote_to_background_objects(
-        self,
-    ) -> BackgroundObjectArchetype {
-        // TODO: Move dropped arrays to a pool? Create a trait with "recycle_<component vector>".
-        BackgroundObjectArchetype {
-            entities: self.entities,
-            positions: self.positions,
-        }
-    }
 }
 
 
@@ -1091,20 +1079,6 @@ impl BackgroundObjectArchetype {
         }
         else {
             Ok(Some(self.entities[index]))
-        }
-    }
-
-    /// Promotes this [`BackgroundObjectArchetype`] to [`ForegroundObjectArchetype`].
-    #[deprecated]
-    pub fn promote_to_foreground_objects(
-        self,
-        colliders: Vec<ColliderComponent>,
-    ) -> ForegroundObjectArchetype {
-        // TODO: Move dropped arrays to a pool? Create a trait with "recycle_<component vector>".
-        ForegroundObjectArchetype {
-            entities: self.entities,
-            colliders,
-            positions: self.positions,
         }
     }
 }

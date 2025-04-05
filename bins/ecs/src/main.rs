@@ -28,8 +28,16 @@ fn main() {
     let id = entity.spawn_into(&mut world);
     debug_assert_eq!(world.len(), 1);
 
+    // Request a render.
+    world.request_render_phase();
     world.apply_system_phases();
+
+    // Do not request a render.
     std::thread::sleep(std::time::Duration::from_secs_f32(0.5));
+    world.apply_system_phases();
+
+    // Request another render.
+    world.request_render_phase();
     world.apply_system_phases();
 
     world.despawn_by_id(id).expect("Failed to despawn entity");
