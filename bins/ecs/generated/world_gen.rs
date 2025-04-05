@@ -138,8 +138,8 @@ pub trait World {
 pub trait WorldState { }
 
 
-/// A world holding all archetypes.
-#[derive(Debug, Clone)]
+/// A world  all archetypes.
+#[derive(Debug)]
 pub struct MainWorld<E, Q> {
     /// The archetypes.
     archetypes: MainWorldArchetypes,
@@ -185,7 +185,7 @@ struct MainWorldArchetypes {
 }
 
 /// The systems.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct MainWorldSystems {
     physics: PhysicsSystem,
     render: RenderSystem,
@@ -566,7 +566,7 @@ impl<E, Q>MainWorld<E, Q> {
         self.on_begin_frame();
         self.handle_commands();
         // The Startup phase always runs.
-        self.par_apply_system_phase_startup();
+        self.apply_system_phase_startup();
 
         // Apply fixed-time loop for phase FixedUpdate
         self.context.fixed_time_secs = SystemPhase::FIXED_UPDATE_SECS;
@@ -577,7 +577,7 @@ impl<E, Q>MainWorld<E, Q> {
         }
         self.context.fixed_time_secs = 0.0;
         // The Update phase always runs.
-        self.par_apply_system_phase_update();
+        self.apply_system_phase_update();
 
         // The Render phase is marked manual and will be skipped here.
         self.on_end_frame();
@@ -702,6 +702,14 @@ impl<E, Q>MainWorld<E, Q> {
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
+        let is_ready = self.systems.physics.is_ready(
+               &self.context,
+           );
+        if is_ready && self.systems.physics.on_begin_phase(
+                    &self.context,
+                )
+                .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_begin_phase returned an error"))
+                .is_ok()
         {
             // Apply PhysicsSystem to ParticleArchetype
             self.systems.physics.apply_many(
@@ -719,6 +727,12 @@ impl<E, Q>MainWorld<E, Q> {
                 &mut self.archetypes.player.positions,
                 &self.command_queue
             );
+
+            self.systems.physics.on_end_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_end_phase returned an error"))
+            .ok();
         }
 
         // Process all commands.
@@ -875,6 +889,16 @@ impl<E, Q>MainWorld<E, Q> {
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
+        let is_ready = self.systems.render.is_ready(
+               &self.context,
+               &self.states.render,
+           );
+        if is_ready && self.systems.render.on_begin_phase(
+                    &self.context,
+                    &self.states.render,
+                )
+                .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
+                .is_ok()
         {
             // Apply RenderSystem to ParticleArchetype
             self.systems.render.apply_many(
@@ -900,6 +924,13 @@ impl<E, Q>MainWorld<E, Q> {
                 &self.states.render,
                 &self.archetypes.background_object.positions,
             );
+
+            self.systems.render.on_end_phase(
+                &self.context,
+                &self.states.render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
+            .ok();
         }
 
         // Process all commands.

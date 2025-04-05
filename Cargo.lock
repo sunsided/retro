@@ -560,6 +560,7 @@ dependencies = [
  "dotenvy",
  "eyre",
  "multibuffer",
+ "parking_lot",
  "pollster",
  "rayon",
  "sillyecs",

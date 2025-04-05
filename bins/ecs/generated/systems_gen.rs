@@ -157,13 +157,54 @@ where
 /// ### Mutates
 /// 
 /// - [`PositionComponent`]
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PhysicsSystem(PhysicsSystemData);
 
 /// Implements the business logic for the [`PhysicsSystem`] system.
 #[allow(dead_code)]
 pub trait ApplyPhysicsSystem: System {
+    type Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    fn is_ready(
+        &self,
+        context: &FrameContext,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    fn on_end_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
     /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
     ///
     /// ### Reads
     /// 
@@ -345,13 +386,57 @@ impl core::ops::DerefMut for PhysicsSystem {
 ///
 /// ### Mutates
 /// 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct RenderSystem(RenderSystemData);
 
 /// Implements the business logic for the [`RenderSystem`] system.
 #[allow(dead_code)]
 pub trait ApplyRenderSystem: System {
+    type Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    fn is_ready(
+        &self,
+        context: &FrameContext,
+        render: &RenderState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+        render: &RenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    fn on_end_phase(
+        &mut self,
+        context: &FrameContext,
+        render: &RenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
     /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
     ///
     /// ### Reads
     /// 

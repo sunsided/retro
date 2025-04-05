@@ -1,6 +1,7 @@
 pub mod render_system;
 mod vertex;
 
+use std::convert::Infallible;
 use crate::game::archetype::*;
 use crate::game::component::*;
 use crate::game::system::render_system::RenderSystemData;
@@ -31,6 +32,8 @@ impl Default for PhysicsSystem {
 pub struct PhysicsSystemData;
 
 impl ApplyPhysicsSystem for PhysicsSystem {
+    type Error = Infallible;
+
     fn apply_single(
         &mut self,
         context: &FrameContext,
@@ -43,26 +46,5 @@ impl ApplyPhysicsSystem for PhysicsSystem {
         position.x += velocity.x * dt;
         position.y += velocity.y * dt;
         position.z += velocity.z * dt;
-    }
-}
-
-impl Default for RenderSystem {
-    fn default() -> Self {
-        Self(RenderSystemData::default())
-    }
-}
-
-impl ApplyRenderSystem for RenderSystem {
-    fn apply_single(
-        &mut self,
-        context: &FrameContext,
-        _state: &RenderState,
-        position: &PositionComponent,
-    ) {
-        trace!(
-            "Rendering position: {:?} in frame {}",
-            position,
-            context.frame_number
-        );
     }
 }
