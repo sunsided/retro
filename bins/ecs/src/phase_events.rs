@@ -1,7 +1,7 @@
-use crate::game::system::{SystemPhase, SystemPhaseEvents};
-use crate::game::world::{FrameContext, MainWorldStates};
+use std::convert::Infallible;
+use crate::game::system::{SystemFixedUpdatePhaseEvents, SystemRenderPhaseEvents, SystemStartupPhaseEvents, SystemUpdatePhaseEvents};
+use crate::game::world::FrameContext;
 use std::time::Instant;
-use tracing::trace;
 
 #[derive(Debug)]
 pub struct PhaseEvents(Instant);
@@ -12,25 +12,54 @@ impl Default for PhaseEvents {
     }
 }
 
-impl SystemPhaseEvents<MainWorldStates> for PhaseEvents {
-    fn on_begin_phase(
-        &mut self,
-        phase: SystemPhase,
-        context: &FrameContext,
-        _state: &mut MainWorldStates,
-    ) {
-        let duration = Instant::now() - self.0;
-        self.0 = Instant::now();
-        trace!(phase = ?phase, duration_since_last = ?duration, frame = context.frame_number, "Beginning phase");
+impl SystemStartupPhaseEvents for PhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    fn on_begin_phase(&mut self, context: &FrameContext) -> Result<Self::Result, Self::Error> {
+        Ok(())
     }
 
-    fn on_end_phase(
-        &mut self,
-        phase: SystemPhase,
-        context: &FrameContext,
-        _state: &mut MainWorldStates,
-    ) {
-        let duration = Instant::now() - self.0;
-        trace!(phase = ?phase, duration = ?duration, frame = context.frame_number, "End of phase");
+    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl SystemFixedUpdatePhaseEvents for PhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    fn on_begin_phase(&mut self, context: &FrameContext) -> Result<Self::Result, Self::Error> {
+        Ok(())
+    }
+
+    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl SystemUpdatePhaseEvents for PhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    fn on_begin_phase(&mut self, context: &FrameContext) -> Result<Self::Result, Self::Error> {
+        Ok(())
+    }
+
+    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+impl SystemRenderPhaseEvents for PhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    fn on_begin_phase(&mut self, context: &FrameContext) -> Result<Self::Result, Self::Error> {
+        Ok(())
+    }
+
+    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext) -> Result<(), Self::Error> {
+        Ok(())
     }
 }

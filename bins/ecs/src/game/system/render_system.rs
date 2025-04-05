@@ -2,8 +2,8 @@ use crate::WgpuState;
 use parking_lot::Mutex;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use tracing::{debug, error, trace, warn};
-use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
+use tracing::{error, trace};
+use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
 use crate::game::component::PositionComponent;
 use crate::game::system::{ApplyRenderSystem, RenderSystem};
 use crate::game::world::{FrameContext, RenderState};
@@ -38,7 +38,7 @@ impl Debug for RenderSystemData {
 
 struct FrameState {
     frame: SurfaceTexture,
-    view: TextureView,
+    _view: TextureView,
     encoder: CommandEncoder,
     render_start: std::time::Instant,
 }
@@ -93,7 +93,7 @@ impl ApplyRenderSystem for RenderSystem {
 
             Some(FrameState {
                 frame,
-                view,
+                _view: view,
                 encoder,
                 render_start,
             })

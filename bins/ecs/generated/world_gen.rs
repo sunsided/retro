@@ -134,9 +134,6 @@ pub trait World {
     const ID: WorldId;
 }
 
-/// Marker trait for world states.
-pub trait WorldState { }
-
 
 /// A world  all archetypes.
 #[derive(Debug)]
@@ -170,9 +167,6 @@ pub struct MainWorldStates {
     /// The state is used in the following systems:
     /// - [`RenderSystem`]
     pub render: RenderState,
-}
-
-impl WorldState for MainWorldStates {
 }
 
 /// The archetypes used in the world.
@@ -302,7 +296,7 @@ impl<E, Q>MainWorld<E, Q> {
         command_queue: Q) -> Self
     where
         S: CreateSystems,
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandQueue
     {
         let context = FrameContext::new(Self::ID);
@@ -517,7 +511,7 @@ impl<E, Q>MainWorld<E, Q> {
     /// - `E`: The type implementing [`SystemPhaseEvents`] for phase lifecycle events
     pub fn apply_system_phases(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
         self.on_begin_frame();
@@ -561,7 +555,7 @@ impl<E, Q>MainWorld<E, Q> {
     /// - Thread parallelism is implemented using the Rayon library
     pub fn par_apply_system_phases(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
         self.on_begin_frame();
@@ -605,25 +599,41 @@ impl<E, Q>MainWorld<E, Q> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_startup(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemStartupPhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
 
         self.apply_system_phase_startup_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.states);
+            SystemStartupPhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `Startup` without calling events. See [`apply_system_phase_startup`](Self::apply_system_phase_startup).
     #[inline]
     fn apply_system_phase_startup_without_events(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // no systems in this phase
@@ -647,16 +657,29 @@ impl<E, Q>MainWorld<E, Q> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_startup(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Startup, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemStartupPhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
         // no systems in this phase
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Startup, &self.context, &mut self.states);
+            SystemStartupPhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
 
         // Process all commands.
@@ -682,25 +705,41 @@ impl<E, Q>MainWorld<E, Q> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_fixed_update(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemFixedUpdatePhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
 
         self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
+            SystemFixedUpdatePhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `FixedUpdate` without calling events. See [`apply_system_phase_fixed_update`](Self::apply_system_phase_fixed_update).
     #[inline]
     fn apply_system_phase_fixed_update_without_events(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
@@ -756,17 +795,30 @@ impl<E, Q>MainWorld<E, Q> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_fixed_update(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemFixedUpdatePhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
         // Only one system in this phase; skip spawning thread.
         self.apply_system_phase_fixed_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::FixedUpdate, &self.context, &mut self.states);
+            SystemFixedUpdatePhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
 
         // Process all commands.
@@ -792,25 +844,41 @@ impl<E, Q>MainWorld<E, Q> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     fn apply_system_phase_update(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemUpdatePhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
 
         self.apply_system_phase_update_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Update, &self.context, &mut self.states);
+            SystemUpdatePhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `Update` without calling events. See [`apply_system_phase_update`](Self::apply_system_phase_update).
     #[inline]
     fn apply_system_phase_update_without_events(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // no systems in this phase
@@ -834,16 +902,29 @@ impl<E, Q>MainWorld<E, Q> {
     /// - Phase events are triggered at the start and end of execution
     fn par_apply_system_phase_update(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Update, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemUpdatePhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
         // no systems in this phase
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Update, &self.context, &mut self.states);
+            SystemUpdatePhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
 
         // Process all commands.
@@ -869,25 +950,41 @@ impl<E, Q>MainWorld<E, Q> {
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
     pub fn apply_system_phase_render(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemRenderPhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
 
         self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Render, &self.context, &mut self.states);
+            SystemRenderPhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
+
+        // Process all commands.
+        self.handle_commands();
     }
 
     /// Execute system phase `Render` without calling events. See [`apply_system_phase_render`](Self::apply_system_phase_render).
     #[inline]
     fn apply_system_phase_render_without_events(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
@@ -954,17 +1051,30 @@ impl<E, Q>MainWorld<E, Q> {
     /// - Phase events are triggered at the start and end of execution
     pub fn par_apply_system_phase_render(&mut self)
     where
-        E: SystemPhaseEvents<MainWorldStates>,
+        E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        if let Some(events) = &mut self.events {
-            events.on_begin_phase(SystemPhase::Render, &self.context, &mut self.states);
-        }
+        let result = if let Some(events) = &mut self.events {
+            SystemRenderPhaseEvents::on_begin_phase(
+                events,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+            .ok()
+        } else {
+            None
+        };
         // Only one system in this phase; skip spawning thread.
         self.apply_system_phase_render_without_events();
 
         if let Some(events) = &mut self.events {
-            events.on_end_phase(SystemPhase::Render, &self.context, &mut self.states);
+            SystemRenderPhaseEvents::on_end_phase(
+                events,
+                result,
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+            .ok();
         }
 
         // Process all commands.

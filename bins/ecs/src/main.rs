@@ -6,11 +6,10 @@ use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
 use crossbeam_channel::TryRecvError;
 use parking_lot::Mutex;
-use std::cell::{Ref, RefCell};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, trace};
-use wgpu::{Adapter, CompositeAlphaMode, Device, InstanceDescriptor, PresentMode, Queue, TextureFormat};
+use wgpu::{Adapter, Device, InstanceDescriptor, PresentMode, Queue};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
@@ -26,9 +25,9 @@ mod logging;
 mod phase_events;
 
 pub struct WgpuState {
-    instance: wgpu::Instance,
+    _instance: wgpu::Instance,
     surface: wgpu::Surface<'static>,
-    adapter: Adapter,
+    _adapter: Adapter,
     device: Device,
     queue: Queue,
     surface_config: wgpu::SurfaceConfiguration,
@@ -95,10 +94,10 @@ impl WgpuState {
         };
 
         Self {
-            instance,
+            _instance: instance,
             surface,
             surface_config,
-            adapter,
+            _adapter: adapter,
             device,
             queue
         }

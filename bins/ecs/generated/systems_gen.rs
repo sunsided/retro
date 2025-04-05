@@ -105,44 +105,190 @@ pub trait CreateSystems {
 }
 
 /// Trait for constructing system instances.
-pub trait SystemPhaseEvents<S>
-where
-    S: WorldState
+pub trait SystemPhaseEvents: SystemStartupPhaseEvents + SystemFixedUpdatePhaseEvents + SystemUpdatePhaseEvents + SystemRenderPhaseEvents
 {
-    /// Marks the beginning of a phase.
-    #[inline(always)]
-    #[allow(unused_variables)]
-    fn on_begin_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut S) {
-        // empty placeholder implementation
-    }
-
-    /// Marks the end of a phase.
-    #[inline(always)]
-    #[allow(unused_variables)]
-    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, state: &mut S) {
-        // empty placeholder implementation
-    }
-}
-
-/// A no-op event struct.
-pub struct NoOpPhaseEvents<S> {
-    _phantom: core::marker::PhantomData<S>
 }
 
 #[automatically_derived]
-impl<S> SystemPhaseEvents<S> for NoOpPhaseEvents<S>
+impl<T> SystemPhaseEvents for T
 where
-    S: WorldState
+    T: SystemStartupPhaseEvents + SystemFixedUpdatePhaseEvents + SystemUpdatePhaseEvents + SystemRenderPhaseEvents
 {
-    #[inline(always)]
-    fn on_begin_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut S) {
-        // empty placeholder implementation
+}
+
+/// A no-op event struct.
+pub struct NoOpPhaseEvents;
+
+impl SystemStartupPhaseEvents for NoOpPhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    #[inline]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
     }
 
-    #[inline(always)]
-    fn on_end_phase(&mut self, _phase: SystemPhase, _context: &FrameContext, _state: &mut S) {
-        // empty placeholder implementation
+    #[inline]
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
     }
+}
+
+pub trait SystemStartupPhaseEvents {
+    type Result;
+    type Error: core::error::Error;
+
+    /// Executed at the beginning of the phase (before all systems).
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<Self::Result, Self::Error>;
+
+    /// Executed at the end of the phase (after all systems).
+    ///
+    /// The result from [`SystemStartupPhaseEvents::on_begin_phase`] is passed in
+    /// as [`Some`] value, if the executed succeeded. If the function failed, the value will be [`None`].
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error>;
+}
+
+impl SystemFixedUpdatePhaseEvents for NoOpPhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    #[inline]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    #[inline]
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+pub trait SystemFixedUpdatePhaseEvents {
+    type Result;
+    type Error: core::error::Error;
+
+    /// Executed at the beginning of the phase (before all systems).
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<Self::Result, Self::Error>;
+
+    /// Executed at the end of the phase (after all systems).
+    ///
+    /// The result from [`SystemFixedUpdatePhaseEvents::on_begin_phase`] is passed in
+    /// as [`Some`] value, if the executed succeeded. If the function failed, the value will be [`None`].
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error>;
+}
+
+impl SystemUpdatePhaseEvents for NoOpPhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    #[inline]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    #[inline]
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+pub trait SystemUpdatePhaseEvents {
+    type Result;
+    type Error: core::error::Error;
+
+    /// Executed at the beginning of the phase (before all systems).
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<Self::Result, Self::Error>;
+
+    /// Executed at the end of the phase (after all systems).
+    ///
+    /// The result from [`SystemUpdatePhaseEvents::on_begin_phase`] is passed in
+    /// as [`Some`] value, if the executed succeeded. If the function failed, the value will be [`None`].
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error>;
+}
+
+impl SystemRenderPhaseEvents for NoOpPhaseEvents {
+    type Result = ();
+    type Error = Infallible;
+
+    #[inline]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    #[inline]
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+}
+
+pub trait SystemRenderPhaseEvents {
+    type Result;
+    type Error: core::error::Error;
+
+    /// Executed at the beginning of the phase (before all systems).
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<Self::Result, Self::Error>;
+
+    /// Executed at the end of the phase (after all systems).
+    ///
+    /// The result from [`SystemRenderPhaseEvents::on_begin_phase`] is passed in
+    /// as [`Some`] value, if the executed succeeded. If the function failed, the value will be [`None`].
+    fn on_end_phase(
+        &mut self,
+        result: Option<Self::Result>,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error>;
 }
 
 /// A system operating on multiple [`Component`]s.

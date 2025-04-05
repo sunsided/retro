@@ -2,11 +2,10 @@ pub mod render_system;
 mod vertex;
 
 use std::convert::Infallible;
+use crate::game::system::render_system::RenderSystemData;
 use crate::game::archetype::*;
 use crate::game::component::*;
-use crate::game::system::render_system::RenderSystemData;
-use crate::game::world::{FrameContext, RenderState, WorldCommandSender, WorldState};
-use tracing::trace;
+use crate::game::world::{FrameContext, RenderState, WorldCommandSender};
 
 include!("../../generated/systems_gen.rs");
 
