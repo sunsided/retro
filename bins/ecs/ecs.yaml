@@ -38,7 +38,7 @@ phases:
     fixed: 60Hz
   - name: Update
   - name: Render
-    on_request: true
+    manual: true
 
 systems:
   - name: Physics

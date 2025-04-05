@@ -1,38 +1,57 @@
+use std::time::Instant;
 use crossbeam_channel::TryRecvError;
-use crate::game::archetype::ParticleEntityData;
-use crate::game::component::{PositionData, VelocityData};
+use tracing::{debug, trace};
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
 use crate::game::system::SystemFactory;
 use crate::game::world::{MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
 use winit::{
-    event::{Event, WindowEvent, ElementState},
+    event::{WindowEvent, ElementState},
     event_loop::{ControlFlow, EventLoop},
 };
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
-use winit::keyboard::{Key, KeyCode, ModifiersState, NamedKey, PhysicalKey};
-use winit::window::{Fullscreen, Window, WindowAttributes, WindowId};
+use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
+use winit::window::{Fullscreen, Window,  WindowId};
 
 mod logging;
 mod phase_events;
 mod game;
 
-#[derive(Default)]
 struct App {
     window: Option<Window>,
     modifiers: ModifiersState,
+    ecs_world: MainWorld<PhaseEvents, CommandQueue>,
+    last_update: Instant,
+}
+
+impl App {
+    pub fn new() -> Self {
+        let events = PhaseEvents::default();
+        let state = RenderState::default();
+        let world = MainWorld::new(&SystemFactory, state, Some(events), CommandQueue::new());
+
+        Self {
+            window: Default::default(),
+            modifiers: Default::default(),
+            last_update: Instant::now(),
+            ecs_world: world
+        }
+    }
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
-        let mut attributes = Window::default_attributes();
-        attributes.title = "Retro 2000".to_string();
-        attributes.inner_size = Some(Size::Logical(LogicalSize::new(1024.0, 640.0)));
-        attributes.resizable = false;
+        let attributes = Window::default_attributes()
+            .with_title("Retro 2000")
+            .with_inner_size(LogicalSize::new(1024.0, 640.0))
+            .with_resizable(false);
+
         let window = active_event_loop.create_window(attributes).unwrap();
         self.window = Some(window);
+        self.last_update = Instant::now();
+        self.ecs_world.reset_frame_context();
     }
 
     fn window_event(&mut self, active_event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
@@ -65,19 +84,27 @@ impl ApplicationHandler for App {
                 }
             }
             WindowEvent::MouseInput { state, button, .. } => {
-                println!("Mouse button {:?} is {:?}", button, state);
+                debug!("Mouse button {:?} is {:?}", button, state);
             }
             WindowEvent::CursorMoved { position, .. } => {
-                println!("Cursor moved to: {:?}", position);
+                debug!("Cursor moved to: {:?}", position);
             }
             WindowEvent::Resized(new_size) => {
-                println!("Window resized: {:?}", new_size);
+                debug!("Window resized: {:?}", new_size);
+            }
+            WindowEvent::RedrawRequested => {
+                trace!("Redraw requested");
+                self.ecs_world.apply_system_phase_render();
+
             }
             _ => (),
         }
     }
 
     fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
+        // Update ECS.
+        self.ecs_world.apply_system_phases();
+
         // Request a redraw each cycle.
         if let Some(window) = &self.window {
             window.request_redraw();
@@ -90,7 +117,7 @@ fn main() -> eyre::Result<()> {
     let _logging = setup_logging();
 
     let event_loop = EventLoop::new().unwrap();
-    let mut app = App::default();
+    let mut app = App::new();
 
     // Set a continuous loop if needed (for games, often ControlFlow::Poll is used).
     event_loop.set_control_flow(ControlFlow::Poll);
