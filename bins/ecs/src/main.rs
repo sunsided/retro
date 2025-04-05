@@ -116,7 +116,7 @@ fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
     let _logging = setup_logging();
 
-    let event_loop = EventLoop::new().unwrap();
+    let event_loop = EventLoop::new()?;
     let mut app = App::new();
 
     // Set a continuous loop if needed (for games, often ControlFlow::Poll is used).
