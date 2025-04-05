@@ -21,13 +21,13 @@ mod phase_events;
 mod game;
 
 // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
-pub struct WgpuState<'window> {
+pub struct WgpuState {
     instance: wgpu::Instance,
-    surface: wgpu::Surface<'window>,
+    surface: wgpu::Surface<'static>,
 }
 
-impl<'window> WgpuState<'window> {
-    pub async fn new(window: Arc<Window>) -> WgpuState<'window> {
+impl WgpuState {
+    pub async fn new(window: Arc<Window>) -> WgpuState {
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
 
@@ -42,19 +42,19 @@ impl<'window> WgpuState<'window> {
     }
 
     pub fn draw(&mut self) {
-        debug!("Requesting draw from surface");
+        trace!("Requesting draw from surface");
     }
 }
 
-struct App<'a> {
+struct App {
     window: Option<Arc<Window>>,
-    state: Option<WgpuState<'a>>,
+    state: Option<WgpuState>,
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
 }
 
-impl App<'_> {
+impl App {
     pub fn new() -> Self {
         let events = PhaseEvents::default();
         let state = RenderState::default();
@@ -74,7 +74,7 @@ impl App<'_> {
     }
 }
 
-impl ApplicationHandler for App<'_> {
+impl ApplicationHandler for App {
     fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
             let attributes = Window::default_attributes()
