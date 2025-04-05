@@ -11,7 +11,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit::application::ApplicationHandler;
-use winit::dpi::{LogicalSize, Size};
+use winit::dpi::{LogicalSize, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window,  WindowId};
@@ -20,13 +20,14 @@ mod logging;
 mod phase_events;
 mod game;
 
-pub struct WgpuState<'a> {
+// https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
+pub struct WgpuState<'window> {
     instance: wgpu::Instance,
-    surface: wgpu::Surface<'a>,
+    surface: wgpu::Surface<'window>,
 }
 
-impl<'a> WgpuState<'a> {
-    pub async fn new(window: Arc<Window>) -> WgpuState<'a> {
+impl<'window> WgpuState<'window> {
+    pub async fn new(window: Arc<Window>) -> WgpuState<'window> {
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
 
@@ -34,6 +35,14 @@ impl<'a> WgpuState<'a> {
             instance,
             surface,
         }
+    }
+
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
+        debug!("Resizing window to {:?}", new_size);
+    }
+
+    pub fn draw(&mut self) {
+        debug!("Requesting draw from surface");
     }
 }
 
@@ -121,10 +130,16 @@ impl ApplicationHandler for App<'_> {
             }
             WindowEvent::Resized(new_size) => {
                 debug!("Window resized: {:?}", new_size);
+                if let Some(surface) = &mut self.state {
+                    surface.resize(new_size);
+                }
             }
             WindowEvent::RedrawRequested => {
                 trace!("Redraw requested");
-                self.ecs_world.apply_system_phase_render();
+                if let Some(surface) = &mut self.state {
+                    self.ecs_world.apply_system_phase_render();
+                    surface.draw();
+                }
 
             }
             _ => (),
