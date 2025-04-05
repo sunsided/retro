@@ -24,7 +24,12 @@ impl SystemPhaseEvents<MainWorldStates> for PhaseEvents {
         trace!(phase = ?phase, duration_since_last = ?duration, frame = context.frame_number, "Beginning phase");
     }
 
-    fn on_end_phase(&mut self, phase: SystemPhase, context: &FrameContext, _state: &mut MainWorldStates) {
+    fn on_end_phase(
+        &mut self,
+        phase: SystemPhase,
+        context: &FrameContext,
+        _state: &mut MainWorldStates,
+    ) {
         let duration = Instant::now() - self.0;
         trace!(phase = ?phase, duration = ?duration, frame = context.frame_number, "End of phase");
     }

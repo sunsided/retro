@@ -1,46 +1,98 @@
-use std::cell::{Ref, RefCell};
-use std::sync::Arc;
-use parking_lot::Mutex;
-use std::time::Instant;
-use crossbeam_channel::TryRecvError;
-use tracing::{debug, trace};
+use crate::game::system::SystemFactory;
+use crate::game::world::{
+    MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender,
+};
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
-use crate::game::system::SystemFactory;
-use crate::game::world::{MainWorld, RenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
-use winit::{
-    event::{WindowEvent, ElementState},
-    event_loop::{ControlFlow, EventLoop},
-};
+use crossbeam_channel::TryRecvError;
+use parking_lot::Mutex;
+use std::cell::{Ref, RefCell};
+use std::sync::Arc;
+use std::time::Instant;
+use tracing::{debug, trace};
+use wgpu::{Adapter, CompositeAlphaMode, Device, Queue, TextureFormat};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
-use winit::window::{Fullscreen, Window,  WindowId};
+use winit::window::{Fullscreen, Window, WindowId};
+use winit::{
+    event::{ElementState, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+};
 
+mod game;
 mod logging;
 mod phase_events;
-mod game;
 
-// https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
 pub struct WgpuState {
     instance: wgpu::Instance,
     surface: wgpu::Surface<'static>,
+    surface_format: TextureFormat,
+    adapter: Adapter,
+    device: Device,
+    queue: Queue,
 }
 
 impl WgpuState {
     pub async fn new(window: Arc<Window>) -> WgpuState {
+        // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
         let instance = wgpu::Instance::default();
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
 
-        Self {
+        let adapter = pollster::block_on(instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            },
+        ))
+            .unwrap();
+
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: None,
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+            },
+            None,
+        ))
+            .unwrap();
+
+        let surface_format = surface
+            .get_capabilities(&adapter)
+            .formats
+            .first()
+            .cloned()
+            .expect("No format found");
+
+        let mut state = Self {
             instance,
             surface,
-        }
+            surface_format,
+            adapter,
+            device,
+            queue
+        };
+        state.resize(window.inner_size());
+
+        state
     }
 
     pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
         debug!("Resizing window to {:?}", new_size);
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: self.surface_format,
+            width: new_size.width,
+            height: new_size.height,
+            present_mode: wgpu::PresentMode::Fifo,
+            desired_maximum_frame_latency: 1, // Set to 1 for single frame in flight
+            alpha_mode: CompositeAlphaMode::Opaque,
+            view_formats: vec![self.surface_format], // Set to the surface's format
+        };
+        self.surface.configure(&self.device, &config);
     }
 
     pub fn draw(&mut self) {
@@ -67,7 +119,7 @@ impl App {
             state: None,
             modifiers: Default::default(),
             last_update: Instant::now(),
-            ecs_world: world
+            ecs_world: world,
         }
     }
 }
@@ -80,7 +132,11 @@ impl ApplicationHandler for App {
                 .with_inner_size(LogicalSize::new(1024.0, 640.0))
                 .with_resizable(false);
 
-            let window = Arc::new(active_event_loop.create_window(attributes).expect("Failed to create window"));
+            let window = Arc::new(
+                active_event_loop
+                    .create_window(attributes)
+                    .expect("Failed to create window"),
+            );
             self.window = Some(window.clone());
 
             let state = pollster::block_on(WgpuState::new(window.clone()));
@@ -88,14 +144,19 @@ impl ApplicationHandler for App {
 
             // Set WGPU render state.
             let render = self.ecs_world.systems.as_render_mut();
-            render.state = self.state.clone();
+            render.set_state(self.state.clone());
         }
 
         self.last_update = Instant::now();
         self.ecs_world.reset_frame_context();
     }
 
-    fn window_event(&mut self, active_event_loop: &ActiveEventLoop, _window_id: WindowId, event: WindowEvent) {
+    fn window_event(
+        &mut self,
+        active_event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        event: WindowEvent,
+    ) {
         match event {
             WindowEvent::CloseRequested => {
                 active_event_loop.exit();
@@ -109,11 +170,15 @@ impl ApplicationHandler for App {
                     PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
                         active_event_loop.exit();
                     }
-                    PhysicalKey::Code(KeyCode::Enter) if event.state == ElementState::Pressed && self.modifiers.alt_key() => {
+                    PhysicalKey::Code(KeyCode::Enter)
+                        if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
+                    {
                         // Toggle fullscreen mode.
                         if let Some(window) = &self.window {
                             if window.fullscreen().is_some() {
-                                window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(1024.0, 640.0))));
+                                window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
+                                    1024.0, 640.0,
+                                ))));
                                 window.set_fullscreen(None);
                             } else {
                                 window.set_max_inner_size::<Size>(None);
@@ -138,14 +203,12 @@ impl ApplicationHandler for App {
             }
 
             // TODO: Allow external access to system data
-
             WindowEvent::RedrawRequested => {
                 trace!("Redraw requested");
                 if let Some(surface) = &mut self.state {
                     self.ecs_world.apply_system_phase_render();
                     surface.lock_arc().draw();
                 }
-
             }
             _ => (),
         }
@@ -218,10 +281,7 @@ struct CommandQueue {
 impl CommandQueue {
     pub fn new() -> Self {
         let (sender, receiver) = crossbeam_channel::unbounded();
-        Self {
-            sender,
-            receiver,
-        }
+        Self { sender, receiver }
     }
 }
 

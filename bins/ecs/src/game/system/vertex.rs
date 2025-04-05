@@ -21,9 +21,7 @@ impl Vertex {
     // Returns vertices for a rectangle given x, y, width, height.
     fn rect_vertices(x: f32, y: f32, width: f32, height: f32) -> Vec<Vertex> {
         vec![
-            Vertex {
-                position: [x, y],
-            },
+            Vertex { position: [x, y] },
             Vertex {
                 position: [x + width, y],
             },

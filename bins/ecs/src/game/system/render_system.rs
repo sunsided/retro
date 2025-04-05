@@ -1,11 +1,17 @@
+use crate::WgpuState;
+use parking_lot::Mutex;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use parking_lot::Mutex;
-use crate::WgpuState;
 
 #[derive(Clone, Default)]
 pub struct RenderSystemData {
-    pub state: Option<Arc<Mutex<WgpuState>>>
+    state: Option<Arc<Mutex<WgpuState>>>,
+}
+
+impl RenderSystemData {
+    pub fn set_state(&mut self, state: Option<Arc<Mutex<WgpuState>>>) {
+        self.state = state;
+    }
 }
 
 impl Debug for RenderSystemData {

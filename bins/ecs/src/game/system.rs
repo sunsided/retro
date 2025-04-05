@@ -3,9 +3,9 @@ mod vertex;
 
 use crate::game::archetype::*;
 use crate::game::component::*;
-use crate::game::world::{FrameContext, RenderState, WorldState, WorldCommandSender};
-use tracing::trace;
 use crate::game::system::render_system::RenderSystemData;
+use crate::game::world::{FrameContext, RenderState, WorldCommandSender, WorldState};
+use tracing::trace;
 
 include!("../../generated/systems_gen.rs");
 
@@ -37,7 +37,7 @@ impl ApplyPhysicsSystem for PhysicsSystem {
         _entity: EntityId,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
-        _commands: &impl WorldCommandSender
+        _commands: &impl WorldCommandSender,
     ) {
         let dt = context.fixed_time_secs;
         position.x += velocity.x * dt;
