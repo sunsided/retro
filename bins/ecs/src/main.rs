@@ -129,7 +129,7 @@ impl App {
     pub fn new() -> Self {
         let events = PhaseEvents::default();
         let state = RenderState::default();
-        let world = MainWorld::new(&SystemFactory, state, Some(events), CommandQueue::new());
+        let world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
 
         Self {
             window: None,
