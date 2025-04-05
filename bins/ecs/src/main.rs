@@ -2,6 +2,7 @@ use crate::game::system::SystemFactory;
 use crate::game::world::{MainWorld, WgpuRenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
+use crate::game::archetype::SceneBackgroundEntityData;
 use crossbeam_channel::TryRecvError;
 use parking_lot::Mutex;
 use std::sync::Arc;
@@ -17,6 +18,7 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
+use crate::game::system::background::BackgroundColorData;
 
 mod game;
 mod logging;
@@ -127,7 +129,11 @@ impl App {
     pub fn new() -> Self {
         let events = PhaseEvents::default();
         let state = WgpuRenderState::default();
-        let world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
+        let mut world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
+
+        world.spawn_scene_background(SceneBackgroundEntityData {
+            background_color: BackgroundColorData.into()
+        });
 
         Self {
             window: None,

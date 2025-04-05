@@ -1,6 +1,6 @@
 pub mod render_system;
 mod vertex;
-mod background;
+pub mod background;
 
 use std::convert::Infallible;
 use crate::game::system::render_system::RenderSystemData;
@@ -9,7 +9,6 @@ use crate::game::archetype::*;
 use crate::game::component::*;
 use crate::game::world::{FrameContext, WorldCommandSender};
 use crate::game::system::render_system::WgpuRenderState;
-pub use crate::game::system::background::BackgroundColorData;
 
 include!("../../generated/systems_gen.rs");
 

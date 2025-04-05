@@ -185,6 +185,7 @@ struct MainWorldArchetypes {
 pub struct MainWorldSystems {
     physics: PhysicsSystem,
     render: RenderSystem,
+    render_background: RenderBackgroundSystem,
 }
 
 impl MainWorldSystems {
@@ -216,6 +217,20 @@ impl MainWorldSystems {
         use core::ops::DerefMut;
         self.render.deref_mut()
     }
+
+    /// Gives immutable access to the [`RenderBackgroundSystemData`] of the [`RenderBackgroundSystem`].
+    #[inline]
+    pub fn as_render_background_ref(&self) -> &RenderBackgroundSystemData {
+        use core::ops::Deref;
+        self.render_background.deref()
+    }
+
+    /// Gives mutable access to the [`RenderBackgroundSystemData`] of the [`RenderBackgroundSystem`].
+    #[inline]
+    pub fn as_render_background_mut(&mut self) -> &mut RenderBackgroundSystemData {
+        use core::ops::DerefMut;
+        self.render_background.deref_mut()
+    }
 }
 
 impl AsRef<PhysicsSystemData> for MainWorldSystems {
@@ -243,6 +258,20 @@ impl AsMut<RenderSystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut RenderSystemData {
         self.as_render_mut()
+    }
+}
+
+impl AsRef<RenderBackgroundSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &RenderBackgroundSystemData {
+        self.as_render_background_ref()
+    }
+}
+
+impl AsMut<RenderBackgroundSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut RenderBackgroundSystemData {
+        self.as_render_background_mut()
     }
 }
 
@@ -336,6 +365,7 @@ impl<E, Q> MainWorld<E, Q> {
             systems: MainWorldSystems {
                 physics: create_systems.create_physics(),
                 render: create_systems.create_render(),
+                render_background: create_systems.create_render_background(),
             },
             entity_locations: Default::default(),
             context,
@@ -1011,7 +1041,29 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 1
+        // System group 1 of 2
+        let is_ready = self.systems.render_background.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.render_background.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply RenderBackgroundSystem to SceneBackgroundArchetype
+            self.systems.render_background.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.scene_background.background_colors,
+            );
+
+            self.systems.render_background.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 2
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1078,8 +1130,85 @@ impl<E, Q> MainWorld<E, Q> {
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
-        // Only one system in this phase; skip spawning thread.
-        self.apply_system_phase_render_without_events();
+
+        // System group 1
+        let is_render_background_ready = self.systems.render_background.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_render_background_ready = is_render_background_ready &
+            self.systems.render_background.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_render_background_ready {
+                    s.spawn(|_| {
+                        // Apply RenderBackgroundSystem to SceneBackgroundArchetype
+                        self.systems.render_background.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.scene_background.background_colors,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.render_background.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 2
+        let is_render_ready = self.systems.render.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_render_ready = is_render_ready &
+            self.systems.render.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_render_ready {
+                    s.spawn(|_| {
+                        // Apply RenderSystem to ParticleArchetype
+                        self.systems.render.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.particle.positions,
+                        );
+                        // Apply RenderSystem to PlayerArchetype
+                        self.systems.render.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.player.positions,
+                        );
+                        // Apply RenderSystem to ForegroundObjectArchetype
+                        self.systems.render.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.foreground_object.positions,
+                        );
+                        // Apply RenderSystem to BackgroundObjectArchetype
+                        self.systems.render.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.background_object.positions,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.render.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
+        .ok();
 
         SystemRenderPhaseEvents::on_end_phase(
             &mut self.events,
