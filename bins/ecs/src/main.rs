@@ -10,7 +10,7 @@ use std::cell::{Ref, RefCell};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, trace};
-use wgpu::{Adapter, CompositeAlphaMode, Device, PresentMode, Queue, TextureFormat};
+use wgpu::{Adapter, CompositeAlphaMode, Device, InstanceDescriptor, PresentMode, Queue, TextureFormat};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
@@ -40,7 +40,12 @@ impl WgpuState {
 
         // There's trouble with the Vulkan backend on NVIDIA + Wayland.
         // If the application hangs after a couple of seconds, use `WGPU_BACKEND=gl`
-        let instance = wgpu::Instance::default();
+        let descriptor = InstanceDescriptor {
+            backends: wgpu::Backends::GL,
+            flags: Default::default(),
+            backend_options: Default::default(),
+        };
+        let instance = wgpu::Instance::new(&descriptor);
 
         // TODO: See if we need to drop existing surfaces first?
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
