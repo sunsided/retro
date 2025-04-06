@@ -120,18 +120,20 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
     fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
-        let Some(state) = wgpu_render.frame_state_mut() else {
+        let Some((state, frame_state)) = wgpu_render.states_mut() else {
             return;
         };
-        let _render_pass = state
+
+        let mut render_pass = frame_state
             .encoder
             .begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Clear Background Render Pass"),
                 // NOTE: The color_attachments field is a "sparse" array. This allows you to use a
                 //       pipeline that expects multiple render targets and only supplies the ones you care about.
                 color_attachments: &[
+                    // This is what @location(0) in the fragment shader targets
                     Some(wgpu::RenderPassColorAttachment {
-                        view: &state.view,
+                        view: &frame_state.view,
                         // The resolve_target is the texture that will receive the resolved output.
                         // This will be the same as view unless multisampling is enabled.
                         // We don't need to specify this, so we leave it as None.
@@ -152,5 +154,10 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
+
+        render_pass.set_pipeline(state.render_pipeline());
+
+        // TODO: Refactor this triangle drawing meaningfully.
+        render_pass.draw(0..3, 0..1);
     }
 }

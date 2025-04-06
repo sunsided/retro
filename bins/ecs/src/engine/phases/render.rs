@@ -64,9 +64,10 @@
 pub mod background;
 
 use crate::WgpuState;
-use parking_lot::Mutex;
+use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
+use parking_lot::lock_api::MutexGuard;
 use tracing::{error, trace};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
 use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
@@ -126,6 +127,19 @@ impl WgpuRenderState {
         self.state = state;
     }
 
+    /// Provides a mutable reference to the render state, if available.
+    pub fn states_mut(&mut self) -> Option<(ArcMutexGuard<RawMutex, WgpuState>, &mut FrameState)> {
+        let Some(state) = &mut self.state else {
+            return None;
+        };
+
+        let Some(frame_state) = &mut self.frame_state else {
+            return None;
+        };
+
+        let state = state.lock_arc();
+        Some((state, frame_state))
+    }
     /// Provides a mutable reference to the per-frame state, if available.
     ///
     /// # Returns

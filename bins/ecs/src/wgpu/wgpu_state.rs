@@ -202,6 +202,12 @@ impl WgpuState {
         &self.queue
     }
 
+    /// Returns a reference to the render pipeline.
+    #[inline]
+    pub const fn render_pipeline(&self) -> &RenderPipeline {
+        &self.render_pipeline
+    }
+
     /// Submits a command buffer to the WGPU queue for execution.
     ///
     /// This function is used to send GPU commands for processing.
