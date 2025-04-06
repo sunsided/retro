@@ -25,6 +25,7 @@ struct InstanceInput {
 struct VertexInput {
     @location(0) position: vec3<f32>,
     @location(1) tex_coords: vec2<f32>,
+    @location(2) normal: vec3<f32>,
 };
 
 struct VertexOutput {
@@ -52,6 +53,8 @@ struct VertexOutput {
     // you'll have to pass them in separately.
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
+    @location(1) world_normal: vec3<f32>,
+    @location(2) world_position: vec3<f32>,
 };
 
 @vertex
@@ -69,12 +72,11 @@ fn vs_main(
 
     var out: VertexOutput;
     out.tex_coords = model.tex_coords;
+    out.world_normal = model.normal;
 
-    // We'll apply the model_matrix before we apply camera_uniform.view_proj.
-    // We do this because the camera_uniform.view_proj changes the coordinate system
-    // from world space to camera space. Our model_matrix is a world space transformation,
-    // so we don't want to be in camera space when using it.
-    out.clip_position = camera.view_proj * model_matrix * vec4<f32>(model.position, 1.0);
+    var world_position: vec4<f32> = model_matrix * vec4<f32>(model.position, 1.0);
+    out.world_position = world_position.xyz;
+    out.clip_position = camera.view_proj * world_position;
     return out;
 }
 
@@ -90,7 +92,19 @@ var s_diffuse: sampler;
 // by this function in the first color target.
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.3, 0.2, 0.1, 1.0);
+    let object_color = vec4<f32>(0.3, 0.2, 0.1, 1.0);
+
+    // We don't need (or want) much ambient light, so 0.1 is fine
+    let ambient_strength = 0.1;
+    let ambient_color = light.color * ambient_strength;
+
+    // Diffuse lighting
+    let light_dir = normalize(light.position - in.world_position);
+    let diffuse_strength = max(dot(in.world_normal, light_dir), 0.0);
+    let diffuse_color = light.color * diffuse_strength;
+
+    let result = (ambient_color + diffuse_color) * object_color.xyz;
+    return vec4<f32>(result, object_color.a);
 }
 
 // The @location(0) bit tells WGPU to store the vec4 value returned
@@ -103,7 +117,11 @@ fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let ambient_strength = 0.1;
     let ambient_color = light.color * ambient_strength;
 
-    let result = ambient_color * object_color.xyz;
+    // Diffuse lighting
+    let light_dir = normalize(light.position - in.world_position);
+    let diffuse_strength = max(dot(in.world_normal, light_dir), 0.0);
+    let diffuse_color = light.color * diffuse_strength;
 
+    let result = (ambient_color + diffuse_color) * object_color.xyz;
     return vec4<f32>(result, object_color.a);
 }
