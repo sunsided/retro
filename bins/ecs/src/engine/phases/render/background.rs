@@ -48,6 +48,7 @@
 //! ```
 
 use std::convert::Infallible;
+use wgpu::IndexFormat;
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::wgpu::RenderPipelineSelector;
@@ -160,14 +161,18 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
         render_pass.set_pipeline(state.render_pipeline(self.selector));
 
-        // Set the buffer in buffer slot 0.
-        let (buffer, num_vertices) = state.vertex_buffer();
+        // Set the vertex buffer in buffer slot 0.
+        let (buffer, _num_vertices) = state.vertex_buffer();
         render_pass.set_vertex_buffer(0, buffer);
+
+        // Set the index buffer. There can only be one index buffer at a time.
+        let (buffer, num_indices) = state.index_buffer();
+        render_pass.set_index_buffer(buffer, IndexFormat::Uint16);
 
         // TODO: Refactor this triangle drawing meaningfully.
         // Draw _something_ with three vertices and one instance.
         // This is where @builtin(vertex_index) comes from.
         // The actual coordinates are calculated in the vertex shader.
-        render_pass.draw(0..num_vertices, 0..1);
+        render_pass.draw_indexed(0..num_indices, 0, 0..1);
     }
 }

@@ -49,6 +49,8 @@ pub struct WgpuState {
     colored_render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     pub vertex_buffer_length: usize,
+    pub index_buffer: Buffer,
+    pub index_buffer_length: usize,
 }
 
 impl WgpuState {
@@ -217,11 +219,21 @@ impl WgpuState {
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&Vertex::TRIANGLE_VERTICES),
+                contents: bytemuck::cast_slice(&Vertex::PENTAGON_VERTICES),
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
-        let vertex_buffer_length = Vertex::TRIANGLE_VERTICES.len();
+        let vertex_buffer_length = Vertex::PENTAGON_VERTICES.len();
+
+        // TODO: Refactor!
+        let index_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(&Vertex::PENTAGON_INDICES),
+                usage: wgpu::BufferUsages::INDEX,
+            }
+        );
+        let index_buffer_length = Vertex::PENTAGON_INDICES.len();
 
         Self {
             instance,
@@ -234,6 +246,8 @@ impl WgpuState {
             colored_render_pipeline,
             vertex_buffer,
             vertex_buffer_length,
+            index_buffer,
+            index_buffer_length,
             linear_sampler: sampler
         }
     }
@@ -279,6 +293,12 @@ impl WgpuState {
     #[inline]
     pub fn vertex_buffer(&self) -> (BufferSlice<'_>, u32) {
         (self.vertex_buffer.slice(..), self.vertex_buffer_length as _)
+    }
+
+    /// Provides access to the index buffer.
+    #[inline]
+    pub fn index_buffer(&self) -> (BufferSlice<'_>, u32) {
+        (self.index_buffer.slice(..), self.index_buffer_length as _)
     }
 
     /// Submits a command buffer to the WGPU queue for execution.

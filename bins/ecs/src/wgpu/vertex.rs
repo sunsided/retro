@@ -6,11 +6,22 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    /// The vertex data for a triangle in counter-clockwise order (top, bottom left, bottom right).
-    pub const TRIANGLE_VERTICES: [Vertex; 3] = [
-        Vertex { position: [0.0, 0.5, 0.0], color: [1.0, 0.0, 0.0] },
-        Vertex { position: [-0.5, -0.5, 0.0], color: [0.0, 1.0, 0.0] },
-        Vertex { position: [0.5, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+    /// The vertex data for a pentagon in counter-clockwise order.
+    pub const PENTAGON_VERTICES: [Vertex; 5] = [
+        Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
+        Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
+        Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
+        Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
+        Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+    ];
+
+    /// The vertex indices of the triangles forming the pentagon.
+    /// Refer to [`PENTAGON_VERTICES`](Self::PENTAGON_VERTICES) above for the actual locations.
+    #[rustfmt::skip]
+    pub const PENTAGON_INDICES: [u16; 9] = [
+        0, 1, 4,
+        1, 2, 4,
+        2, 3, 4,
     ];
 
     // attributes: &[
