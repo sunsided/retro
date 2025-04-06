@@ -175,18 +175,12 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
         render_pass.set_pipeline(state.render_pipeline(self.selector));
 
-        // Set the bind group for textures.
-        // Bind to first group, i.e. `@group(0)` in the shader.
-        render_pass.set_bind_group(0, texture, &[]);
-
-        // Set the bind group for the camera uniforms.
-        render_pass.set_bind_group(1, state.camera_bind_group(), &[]);
-
         // Enable the instance buffer.
         render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
-
         let num_instances = state.instances.len() as u32;
-        render_pass.draw_mesh_instanced(&state.obj_model.meshes[0], 0..num_instances);
 
+        let mesh = &state.obj_model.meshes[0];
+        let material = &state.obj_model.materials[mesh.material];
+        render_pass.draw_mesh_instanced(mesh, material, 0..num_instances, state.camera_bind_group());
     }
 }

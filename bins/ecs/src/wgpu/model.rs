@@ -53,30 +53,37 @@ pub struct Mesh {
     pub material: usize,
 }
 
-pub trait DrawModel<'a> {
-    fn draw_mesh(&mut self, mesh: &'a Mesh);
+pub trait DrawModel<'mesh> {
+    fn draw_mesh(&mut self, mesh: &'mesh Mesh, material: &'mesh Material, camera_bind_group: &'mesh wgpu::BindGroup);
+
     fn draw_mesh_instanced(
         &mut self,
-        mesh: &'a Mesh,
+        mesh: &'mesh Mesh,
+        material: &'mesh Material,
         instances: Range<u32>,
+        camera_bind_group: &'mesh wgpu::BindGroup,
     );
 }
 
-impl<'a, 'b> DrawModel<'b> for wgpu::RenderPass<'a>
+impl<'pass, 'mesh> DrawModel<'mesh> for wgpu::RenderPass<'pass>
 where
-    'b: 'a,
+    'mesh: 'pass,
 {
-    fn draw_mesh(&mut self, mesh: &'b Mesh) {
-        self.draw_mesh_instanced(mesh, 0..1);
+    fn draw_mesh(&mut self, mesh: &'mesh Mesh, material: &'mesh Material, camera_bind_group: &'mesh wgpu::BindGroup) {
+        self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group);
     }
 
     fn draw_mesh_instanced(
         &mut self,
-        mesh: &'b Mesh,
+        mesh: &'mesh Mesh,
+        material: &'mesh Material,
         instances: Range<u32>,
+        camera_bind_group: &'mesh wgpu::BindGroup,
     ){
         self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        self.set_bind_group(0, &material.bind_group, &[]);
+        self.set_bind_group(1, camera_bind_group, &[]);
         self.draw_indexed(0..mesh.num_elements, 0, instances);
     }
 }
