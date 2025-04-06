@@ -29,7 +29,7 @@
 use cgmath::prelude::*;
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{BindGroup, BindGroupLayout, Buffer, BufferSlice, Device, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Sampler, Surface, TextureUsages};
+use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Sampler, Surface, TextureUsages};
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -37,9 +37,9 @@ use crate::camera::Camera;
 use crate::camera_controller::CameraController;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::{Instance, InstanceRaw};
+use crate::wgpu::model::{ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
 use crate::wgpu::TextureSampler;
-use crate::wgpu::vertex::Vertex;
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
 const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(NUM_INSTANCES_PER_ROW as f32 * 0.5, 0.0, NUM_INSTANCES_PER_ROW as f32 * 0.5);
@@ -56,10 +56,6 @@ pub struct WgpuState {
     render_pipeline_layout: PipelineLayout,
     render_pipeline: RenderPipeline,
     colored_render_pipeline: RenderPipeline,
-    vertex_buffer: Buffer,
-    vertex_buffer_length: usize,
-    pub(crate) index_buffer: Buffer,
-    index_buffer_length: usize,
     texture_bind_group_layout: BindGroupLayout,
     camera: Camera,
     camera_uniform: CameraUniform,
@@ -168,26 +164,6 @@ impl WgpuState {
                 label: Some("texture_bind_group_layout"),
             });
 
-        // TODO: Refactor!
-        let vertex_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&Vertex::PENTAGON_VERTICES),
-                usage: wgpu::BufferUsages::VERTEX,
-            }
-        );
-        let vertex_buffer_length = Vertex::PENTAGON_VERTICES.len();
-
-        // TODO: Refactor!
-        let index_buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(&Vertex::PENTAGON_INDICES),
-                usage: wgpu::BufferUsages::INDEX,
-            }
-        );
-        let index_buffer_length = Vertex::PENTAGON_INDICES.len();
-
         // TODO: Refactor
         let camera = Camera::new(size.width as f32, size.height as f32);
         let mut camera_uniform = CameraUniform::new();
@@ -282,7 +258,7 @@ impl WgpuState {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[
-                    Vertex::desc(),
+                    ModelVertex::desc(),
                     InstanceRaw::desc(),
                 ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -333,7 +309,7 @@ impl WgpuState {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[
-                    Vertex::desc(),
+                    ModelVertex::desc(),
                     InstanceRaw::desc(),
                 ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
@@ -385,10 +361,6 @@ impl WgpuState {
             render_pipeline_layout,
             render_pipeline,
             colored_render_pipeline,
-            vertex_buffer,
-            vertex_buffer_length,
-            index_buffer,
-            index_buffer_length,
             texture_bind_group_layout,
             linear_sampler: sampler,
             camera,
@@ -440,18 +412,6 @@ impl WgpuState {
             RenderPipelineSelector::Boring => &self.render_pipeline,
             RenderPipelineSelector::Colored => &self.colored_render_pipeline
         }
-    }
-
-    /// Provides access to the vertex buffer.
-    #[inline]
-    pub fn vertex_buffer(&self) -> (BufferSlice<'_>, u32) {
-        (self.vertex_buffer.slice(..), self.vertex_buffer_length as _)
-    }
-
-    /// Provides access to the index buffer.
-    #[inline]
-    pub fn index_buffer(&self) -> (BufferSlice<'_>, u32) {
-        (self.index_buffer.slice(..), self.index_buffer_length as _)
     }
 
     /// Accesses the render pipeline layout.
