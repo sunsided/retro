@@ -14,7 +14,9 @@
 
 pub mod components;
 pub mod phases;
+mod main_world;
 
+pub use main_world::InitializeMainWorld;
 use crate::engine::components::*;
 use crate::engine::phases::fixed_update::physics::PhysicsSystemData;
 use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;

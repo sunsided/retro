@@ -15,9 +15,9 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use crate::engine::{MainWorld, SceneBackgroundEntityData, SystemFactory, WorldCommand, WorldCommandReceiver, WorldCommandSender};
-use crate::engine::phases::render::background::BackgroundColorData;
+use crate::engine::{MainWorld, SystemFactory, WorldCommand, WorldCommandReceiver, WorldCommandSender};
 use crate::engine::phases::render::WgpuRenderState;
+use crate::engine::InitializeMainWorld;
 
 mod engine;
 mod logging;
@@ -130,9 +130,7 @@ impl App {
         let state = WgpuRenderState::default();
         let mut world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
 
-        world.spawn_scene_background(SceneBackgroundEntityData {
-            background_color: BackgroundColorData::default().into()
-        });
+        world.initialize_entities();
 
         Self {
             window: None,
