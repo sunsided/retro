@@ -4,7 +4,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, trace};
 use winit::application::ApplicationHandler;
-use winit::dpi::{LogicalSize, Size};
+use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowId};
@@ -12,6 +12,7 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
+use winit::event::{KeyEvent, Modifiers, MouseButton};
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
@@ -45,10 +46,8 @@ impl App {
             ecs_world: world,
         }
     }
-}
 
-impl ApplicationHandler for App {
-    fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
+    fn reinitialize_window(&mut self, active_event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
             let attributes = Window::default_attributes()
                 .with_title("Retro 2000")
@@ -76,6 +75,61 @@ impl ApplicationHandler for App {
         self.ecs_world.reset_frame_context();
     }
 
+    fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
+        match event.physical_key {
+            PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
+                active_event_loop.exit();
+            }
+            PhysicalKey::Code(KeyCode::Enter)
+            if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
+                {
+                    // Toggle fullscreen mode.
+                    if let Some(window) = &self.window {
+                        if window.fullscreen().is_some() {
+                            window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
+                                1024.0, 640.0,
+                            ))));
+                            window.set_fullscreen(None);
+                        } else {
+                            window.set_max_inner_size::<Size>(None);
+                            window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+                        }
+                    }
+                }
+            _ => {}
+        }
+    }
+
+    fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
+        debug!("Window resized: {:?}", new_size);
+        if let Some(surface) = &mut self.state {
+            surface.lock_arc().resize(new_size);
+        }
+    }
+
+    fn handle_redraw_event(&mut self) {
+        trace!("Redraw requested");
+        self.ecs_world.apply_system_phase_render();
+    }
+
+    fn handle_key_modifiers_event(&mut self, new_modifiers: Modifiers) {
+        self.modifiers = new_modifiers.state();
+    }
+
+    fn handle_mouse_input_event(&self, state: ElementState, button: MouseButton) {
+        debug!("Mouse button {:?} is {:?}", button, state);
+    }
+
+    fn handle_cursor_moved_event(&self, position: PhysicalPosition<f64>) {
+        debug!("Cursor moved to: {:?}", position);
+    }
+}
+
+impl ApplicationHandler for App {
+    fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
+        self.reinitialize_window(active_event_loop);
+    }
+
     fn window_event(
         &mut self,
         active_event_loop: &ActiveEventLoop,
@@ -87,49 +141,22 @@ impl ApplicationHandler for App {
                 active_event_loop.exit();
             }
             WindowEvent::ModifiersChanged(new_modifiers) => {
-                // Update our tracked modifier state.
-                self.modifiers = new_modifiers.state();
+                self.handle_key_modifiers_event(new_modifiers);
             }
             WindowEvent::KeyboardInput { event, .. } => {
-                match event.physical_key {
-                    PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
-                        active_event_loop.exit();
-                    }
-                    PhysicalKey::Code(KeyCode::Enter)
-                        if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
-                    {
-                        // Toggle fullscreen mode.
-                        if let Some(window) = &self.window {
-                            if window.fullscreen().is_some() {
-                                window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
-                                    1024.0, 640.0,
-                                ))));
-                                window.set_fullscreen(None);
-                            } else {
-                                window.set_max_inner_size::<Size>(None);
-                                window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                            }
-                        }
-                    }
-                    _ => {}
-                }
+                self.handle_keypress_event(active_event_loop, event);
             }
             WindowEvent::MouseInput { state, button, .. } => {
-                debug!("Mouse button {:?} is {:?}", button, state);
+                self.handle_mouse_input_event(state, button);
             }
             WindowEvent::CursorMoved { position, .. } => {
-                debug!("Cursor moved to: {:?}", position);
+                self.handle_cursor_moved_event(position);
             }
             WindowEvent::Resized(new_size) => {
-                debug!("Window resized: {:?}", new_size);
-                if let Some(surface) = &mut self.state {
-                    surface.lock_arc().resize(new_size);
-                }
+                self.handle_resize_event(new_size);
             }
-
             WindowEvent::RedrawRequested => {
-                trace!("Redraw requested");
-                self.ecs_world.apply_system_phase_render();
+                self.handle_redraw_event();
             }
             _ => (),
         }
