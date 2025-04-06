@@ -305,8 +305,8 @@ impl WgpuState {
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum RenderPipelineSelector {
-    #[default]
     Boring,
+    #[default]
     Colored
 }
 

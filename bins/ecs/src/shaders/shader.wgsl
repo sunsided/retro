@@ -1,5 +1,10 @@
 // Vertex shader
 
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec3<f32>,
+};
+
 struct VertexOutput {
     // Clip-space is a coordinate space where vertex coordinates are transformed
     // during the graphics pipeline process. It is defined in normalized device coordinates (NDC),
@@ -24,29 +29,16 @@ struct VertexOutput {
     // know the pixel coordinates of a given fragment, but if you want the position coordinates,
     // you'll have to pass them in separately.
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) vert_pos: vec3<f32>,
-    @location(1) color: vec3<f32>,
+    @location(0) color: vec3<f32>,
 };
 
 @vertex
 fn vs_main(
-    @builtin(vertex_index) in_vertex_index: u32,
+    model: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    // Calculate the x coordinate of the vertex in clip-space by alternating -0.5 and 0.5.
-    // Calculate the y coordinate of the vertex in clip-space by alternating between -0.5 and 0.5.
-    let x = f32(1 - i32(in_vertex_index)) * 0.5;
-    let y = f32(i32(in_vertex_index & 1u) * 2 - 1) * 0.5;
-    out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
-
-    // Assigns the xyz components of the clip_position (which are the clip-space coordinates)
-    // to vert_pos, essentially passing the vertex position to the fragment shader.
-    // This is useful for further calculations in the fragment shader, such as lighting or effects.
-    out.vert_pos = out.clip_position.xyz;
-
-    // Compute color from the position (mapping from [-1,1] to [0,1])
-    out.color = (out.clip_position.xyz + vec3<f32>(1.0)) * 0.5;
-
+    out.color = model.color;
+    out.clip_position = vec4<f32>(model.position, 1.0);
     return out;
 }
 
