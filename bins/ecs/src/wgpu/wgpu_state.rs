@@ -31,14 +31,16 @@ use tracing::debug;
 use wgpu::{Device, Instance, InstanceDescriptor, MaintainResult, PresentMode, Queue, Surface, TextureUsages};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
+use crate::wgpu::TextureSampler;
 
 pub struct WgpuState {
     _instance: Instance,
     // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
     surface: Surface<'static>,
+    surface_config: wgpu::SurfaceConfiguration,
     device: Device,
     queue: Queue,
-    surface_config: wgpu::SurfaceConfiguration,
+    linear_sampler: TextureSampler,
 }
 
 impl WgpuState {
@@ -99,12 +101,15 @@ impl WgpuState {
             desired_maximum_frame_latency: 2,
         };
 
+        let sampler = TextureSampler::with_clamp_to_edge_and_linear_filtering(&device);
+
         Self {
             _instance: instance,
             surface,
             surface_config,
             device,
-            queue
+            queue,
+            linear_sampler: sampler
         }
     }
 

@@ -1,3 +1,5 @@
+use derive_more::{Deref, DerefMut, AsRef};
+
 /// A struct representing a GPU texture sampler.
 ///
 /// This structure encapsulates a `wgpu::Sampler` object, which defines how a texture
@@ -8,6 +10,8 @@
 ///
 /// - [`wgpu::Sampler`](https://docs.rs/wgpu/latest/wgpu/struct.Sampler.html)
 /// - [`Texture`](crate::texture::Texture)
+
+#[derive(Debug, Deref, DerefMut, AsRef)]
 pub struct TextureSampler {
     /// The underlying GPU texture sampler resource.
     pub sampler: wgpu::Sampler,
