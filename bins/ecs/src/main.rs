@@ -1,5 +1,4 @@
 use crate::logging::setup_logging;
-use crate::phase_events::PhaseEvents;
 use parking_lot::Mutex;
 use std::sync::Arc;
 use std::time::Instant;
@@ -13,14 +12,13 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use crate::engine::{CommandQueue, MainWorld, SystemFactory};
+use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::wgpu_state::WgpuState;
 
 mod engine;
 mod logging;
-mod phase_events;
 mod wgpu_state;
 
 struct App {

@@ -1,7 +1,6 @@
 use std::convert::Infallible;
 use tracing::trace;
-use crate::engine::{FrameContext, SystemStartupPhaseEvents};
-use crate::phase_events::PhaseEvents;
+use crate::engine::{FrameContext, PhaseEvents, SystemStartupPhaseEvents};
 
 impl SystemStartupPhaseEvents for PhaseEvents {
     type Result = ();

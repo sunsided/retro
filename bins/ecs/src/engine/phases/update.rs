@@ -1,9 +1,8 @@
 use std::convert::Infallible;
 use std::time::Instant;
 use tracing::trace;
-use crate::engine::{BackgroundColorCycleSystem, CreateSystem, FrameContext, RenderSystem, SystemFactory, SystemFixedUpdatePhaseEvents, SystemUpdatePhaseEvents};
+use crate::engine::{BackgroundColorCycleSystem, CreateSystem, FrameContext, PhaseEvents, RenderSystem, SystemFactory, SystemFixedUpdatePhaseEvents, SystemUpdatePhaseEvents};
 use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
-use crate::phase_events::PhaseEvents;
 
 pub mod color_cycle;
 

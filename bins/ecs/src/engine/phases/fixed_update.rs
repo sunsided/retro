@@ -1,9 +1,8 @@
 use std::convert::Infallible;
 use tracing::trace;
-use crate::engine::{BackgroundColorCycleSystem, CreateSystem, CreateSystems, FrameContext, PhysicsSystem, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemFixedUpdatePhaseEvents};
+use crate::engine::{BackgroundColorCycleSystem, CreateSystem, CreateSystems, FrameContext, PhaseEvents, PhysicsSystem, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemFixedUpdatePhaseEvents};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
 use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
-use crate::phase_events::PhaseEvents;
 
 pub mod physics;
 
