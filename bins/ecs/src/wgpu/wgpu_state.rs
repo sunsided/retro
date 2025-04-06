@@ -37,6 +37,7 @@ use winit::window::Window;
 use crate::camera::{Camera, CameraController, Projection};
 use crate::resources;
 use crate::wgpu::camera_uniform::CameraUniform;
+use crate::wgpu::gpu_hardware::WgpuHardware;
 use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::light::LightUniform;
 use crate::wgpu::model::{Model, ModelVertex, Vertex};
@@ -116,6 +117,7 @@ impl WgpuState {
             .copied()
             .unwrap_or(surface_caps.formats[0]);
         debug!("Using surface format {surface_format:?}");
+        drop(adapter);
 
         let size = window.inner_size();
         let surface_config = wgpu::SurfaceConfiguration {

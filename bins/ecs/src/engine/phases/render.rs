@@ -70,8 +70,10 @@ use std::sync::Arc;
 use parking_lot::lock_api::MutexGuard;
 use tracing::{error, trace};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
+use winit::window::Window;
 use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
+use crate::wgpu::gpu_hardware::{WgpuHardware, WgpuReinitializeWindowError};
 
 impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
     fn create(&self) -> RenderBackgroundSystem {
@@ -111,6 +113,8 @@ pub struct RenderSystemData;
 /// - [`ApplyRenderBackgroundSystem`]
 #[derive(Default)]
 pub struct WgpuRenderState {
+    hardware: WgpuHardware,
+
     /// The shared GPU state. Uses `Arc<Mutex<WgpuState>>` to allow shared access.
     state: Option<Arc<Mutex<WgpuState>>>,
     /// The per-frame state, which contains details for the current frame.
@@ -118,6 +122,16 @@ pub struct WgpuRenderState {
 }
 
 impl WgpuRenderState {
+    #[inline]
+    pub fn set_hardware(&mut self, hardware: WgpuHardware) {
+        self.hardware = hardware;
+    }
+
+    #[inline]
+    pub fn reinitialize_surface(&mut self, window: Arc<Window>) -> Result<(), WgpuReinitializeWindowError> {
+        self.hardware.reinitialize_surface(window)
+    }
+
     /// Sets the shared GPU state for the render system.
     ///
     /// # Parameters
@@ -189,8 +203,21 @@ pub struct FrameState {
     render_start: std::time::Instant,
 }
 
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RenderReady {
+    #[default]
+    NotReady,
+    Ready,
+}
+
+impl RenderReady {
+    pub fn is_ready(&self) -> bool {
+        *self == RenderReady::Ready
+    }
+}
+
 impl SystemRenderPhaseEvents for PhaseEvents {
-    type Result = ();
+    type Result = RenderReady;
     type Error = wgpu::SurfaceError;
 
     /// Initializes the frame state at the beginning of the render phase.
@@ -218,6 +245,10 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         // TODO: Have the application (through the ECS) react to wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated by recreating the window.
         // TODO: Have the application react to wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other by exiting
         // TODO: Have the application react to wgpu::SurfaceError::Timeout by hoping for thee best :)
+
+        if render.state.is_none() {
+            return Ok(RenderReady::NotReady);
+        }
 
         self.start_timing();
         render.frame_state = {
@@ -253,7 +284,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                 render_start,
             })
         };
-        Ok(())
+        Ok(RenderReady::Ready)
     }
 
     /// Finalizes the rendering phase, submits commands, and presents the frame.
@@ -280,7 +311,11 @@ impl SystemRenderPhaseEvents for PhaseEvents {
     /// # Returns
     /// - `Ok(())` on success.
     /// - `Err(wgpu::SurfaceError)` if any errors occur during the rendering pipeline.
-    fn on_end_phase(&mut self, _data: Option<Self::Result>, context: &FrameContext, render: &mut WgpuRenderState) -> Result<(), Self::Error> {
+    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext, render: &mut WgpuRenderState) -> Result<(), Self::Error> {
+        if !data.unwrap_or_default().is_ready() {
+            return Ok(());
+        }
+
         if let Some(frame_state) = render.frame_state.take() {
             let command_buffer = frame_state.encoder.finish();
             let state = render.state.as_ref().expect("State exists").lock();

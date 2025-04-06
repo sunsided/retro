@@ -18,8 +18,8 @@ multibuffer = { path = "../../crates/multibuffer" }
 parking_lot = { version = "0.12.3", features = ["arc_lock"] }
 pollster = "0.4.0"
 rayon = "1.10.0"
-thiserror = "1.0.69"
-tracing = "0.1.41"
+thiserror = "2.0.12"
+tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
 winit = "0.30.9"
@@ -28,6 +28,7 @@ image = { version = "0.25.6", default-features = false }
 derive_more = { version = "2.0.1", features = ["as_ref", "deref", "deref_mut"] }
 cgmath = "0.18.0"
 tobj = "4.0.3"
+clap = { version = "4.5.35", features = ["env"] }
 
 [build-dependencies]
 # sillyecs = { git = "https://github.com/sunsided/sillyecs.git", branch = "main" }

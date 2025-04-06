@@ -2,6 +2,7 @@ use crate::logging::setup_logging;
 use parking_lot::Mutex;
 use std::sync::Arc;
 use std::time::Instant;
+use ::wgpu::{Backends, InstanceDescriptor};
 use tracing::{debug, trace};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -14,10 +15,12 @@ use winit::{
 };
 use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
 use crate::camera::CameraController;
+use crate::cli::parse_arguments;
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::wgpu::{RenderPipelineSelector, WgpuState};
+use crate::wgpu::gpu_hardware::WgpuHardware;
 use crate::wgpu::texture::{CreateTexture, Texture, TextureType};
 
 mod engine;
@@ -25,6 +28,7 @@ mod logging;
 mod wgpu;
 mod camera;
 mod resources;
+mod cli;
 
 struct App {
     window: Option<Arc<Window>>,
@@ -33,15 +37,15 @@ struct App {
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
     camera_controller: CameraController,
-    mouse_pressed: bool
+    mouse_pressed: bool,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(wgpu_hardware: WgpuHardware) -> Self {
         let events = PhaseEvents::default();
         let state = WgpuRenderState::default();
         let mut world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
-
+        world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.initialize_entities();
 
         Self {
@@ -69,6 +73,10 @@ impl App {
             );
             self.window = Some(window.clone());
 
+            self.ecs_world.states.wgpu_render.reinitialize_surface(window.clone())
+                .expect("Failed to reinitialize window");
+
+            /*
             // Drop any previous surfaces.
             self.state = None;
             let state = pollster::block_on(WgpuState::new(window.clone()));
@@ -90,6 +98,7 @@ impl App {
             // Set WGPU render state.
             self.state = Some(Arc::new(Mutex::new(state)));
             self.ecs_world.set_wgpu_state(self.state.clone());
+            */
         }
 
         self.last_update = Instant::now();
@@ -173,11 +182,15 @@ impl App {
         self.camera_controller.process_scroll(&delta);
     }
 
-    fn handle_cursor_moved_event(&mut self, position: (f64, f64)) {
-        debug!("Cursor moved to: {:?}", position);
+    fn handle_cursor_moved_by_event(&mut self, position: (f64, f64)) {
+        trace!("Cursor moved by: {:?}", position);
         if self.mouse_pressed {
             self.camera_controller.process_mouse(-position.0, -position.1);
         }
+    }
+
+    fn handle_cursor_moved_to_event(&mut self, position: PhysicalPosition<f64>) {
+        debug!("Cursor moved to: {:?}", position);
     }
 }
 
@@ -191,7 +204,7 @@ impl ApplicationHandler for App {
             DeviceEvent::Added => {}
             DeviceEvent::Removed => {}
             DeviceEvent::MouseMotion { delta } => {
-                self.handle_cursor_moved_event(delta);
+                self.handle_cursor_moved_by_event(delta);
             }
             DeviceEvent::MouseWheel { delta } => {
                 self.handle_mouse_wheel_event(delta);
@@ -220,6 +233,9 @@ impl ApplicationHandler for App {
             }
             WindowEvent::MouseInput { state, button, .. } => {
                 self.handle_mouse_input_event(state, button);
+            }
+            WindowEvent::CursorMoved { position, .. } => {
+                self.handle_cursor_moved_to_event(position);
             }
             WindowEvent::Resized(new_size) => {
                 self.handle_resize_event(new_size);
@@ -256,46 +272,16 @@ fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
     let _logging = setup_logging();
 
-    let event_loop = EventLoop::new()?;
-    let mut app = App::new();
+    let args = parse_arguments();
+    let backend = args.get_one::<Backends>("backend").cloned().unwrap_or(Backends::GL);
+
+    let wgpu_hardware = WgpuHardware::initialize(backend);
+    let mut app = App::new(wgpu_hardware);
 
     // Set a continuous loop if needed (for games, often ControlFlow::Poll is used).
+    let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run_app(&mut app)?;
-
-    /*
-    let events = PhaseEvents::default();
-    let state = RenderState::default();
-    let mut world = MainWorld::new(&SystemFactory, state, Some(events), CommandQueue::new());
-
-    let entity = ParticleEntityData {
-        position: PositionData::default().into(),
-        velocity: VelocityData {
-            x: 1.0,
-            y: 0.1,
-            z: -0.1,
-        }.into(),
-    };
-    let id = entity.spawn_into(&mut world);
-    debug_assert_eq!(world.len(), 1);
-
-    // Request a render.
-    world.request_render_phase();
-    world.apply_system_phases();
-
-    // Do not request a render.
-    std::thread::sleep(std::time::Duration::from_secs_f32(0.5));
-    world.apply_system_phases();
-
-    // Request another render.
-    world.request_render_phase();
-    world.apply_system_phases();
-
-    world.despawn_by_id(id).expect("Failed to despawn entity");
-    debug_assert_eq!(world.len(), 0);
-    world.apply_system_phases();
-
-    */
 
     Ok(())
 }
