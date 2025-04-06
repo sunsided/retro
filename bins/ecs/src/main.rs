@@ -25,6 +25,7 @@ mod logging;
 mod wgpu;
 mod camera_controller;
 mod camera;
+mod resources;
 
 struct App {
     window: Option<Arc<Window>>,

@@ -51,6 +51,7 @@ use std::convert::Infallible;
 use wgpu::{BindGroup, IndexFormat};
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
+use crate::wgpu::model::DrawModel;
 use crate::wgpu::RenderPipelineSelector;
 use crate::wgpu::texture::Texture;
 
@@ -181,23 +182,11 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         // Set the bind group for the camera uniforms.
         render_pass.set_bind_group(1, state.camera_bind_group(), &[]);
 
-        // Set the vertex buffer in buffer slot 0.
-        let (buffer, _num_vertices) = state.vertex_buffer();
-        render_pass.set_vertex_buffer(0, buffer);
-
-        // Set the instance vertex buffer in slot 1.
+        // Enable the instance buffer.
         render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
-        render_pass.set_index_buffer(state.index_buffer.slice(..), IndexFormat::Uint16);
 
-        // Set the index buffer. There can only be one index buffer at a time.
-        let (buffer, num_indices) = state.index_buffer();
-        render_pass.set_index_buffer(buffer, IndexFormat::Uint16);
-
-        // TODO: Refactor this triangle drawing meaningfully.
-        // Draw _something_ with three vertices and one instance.
-        // This is where @builtin(vertex_index) comes from.
-        // The actual coordinates are calculated in the vertex shader.
         let num_instances = state.instances.len() as u32;
-        render_pass.draw_indexed(0..num_indices, 0, 0..num_instances);
+        render_pass.draw_mesh_instanced(&state.obj_model.meshes[0], 0..num_instances);
+
     }
 }

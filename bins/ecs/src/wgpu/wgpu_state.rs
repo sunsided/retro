@@ -35,14 +35,12 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::camera::Camera;
 use crate::camera_controller::CameraController;
+use crate::resources;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::{Instance, InstanceRaw};
-use crate::wgpu::model::{ModelVertex, Vertex};
+use crate::wgpu::model::{Model, ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
 use crate::wgpu::TextureSampler;
-
-const NUM_INSTANCES_PER_ROW: u32 = 10;
-const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(NUM_INSTANCES_PER_ROW as f32 * 0.5, 0.0, NUM_INSTANCES_PER_ROW as f32 * 0.5);
 
 #[allow(dead_code)]
 pub struct WgpuState {
@@ -64,6 +62,7 @@ pub struct WgpuState {
     pub(crate) instances: Vec<Instance>,
     pub(crate) instance_buffer: Buffer,
     pub depth_texture: Texture,
+    pub obj_model: Model,
 }
 
 impl WgpuState {
@@ -207,17 +206,26 @@ impl WgpuState {
             label: Some("camera_bind_group"),
         });
 
+        // TODO: Totally refactor
+        let obj_model =
+            resources::load_model("models/cube/cube.obj", &device, &queue, &texture_bind_group_layout, &sampler)
+                .await
+                .unwrap();
+
         // TODO: Most definitely refactor this.
         // NOTE: Make sure that if you add new instances to the Vec, you recreate the
         //       instance_buffer as well as camera_bind_group. Otherwise, your new instances
         //       won't show up correctly.
+        const SPACE_BETWEEN: f32 = 3.0;
+        const NUM_INSTANCES_PER_ROW: u32 = 10;
         let instances = (0..NUM_INSTANCES_PER_ROW).flat_map(|z| {
             (0..NUM_INSTANCES_PER_ROW).map(move |x| {
-                let position = cgmath::Vector3 { x: x as f32, y: 0.0, z: z as f32 } - INSTANCE_DISPLACEMENT;
+                let x = SPACE_BETWEEN * (x as f32 - NUM_INSTANCES_PER_ROW as f32 / 2.0);
+                let z = SPACE_BETWEEN * (z as f32 - NUM_INSTANCES_PER_ROW as f32 / 2.0);
+
+                let position = cgmath::Vector3 { x, y: 0.0, z };
 
                 let rotation = if position.is_zero() {
-                    // this is needed so an object at (0, 0, 0) won't get scaled to zero
-                    // as Quaternions can affect scale if they're not created correctly
                     cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0))
                 } else {
                     cgmath::Quaternion::from_axis_angle(position.normalize(), cgmath::Deg(45.0))
@@ -369,7 +377,8 @@ impl WgpuState {
             camera_bind_group,
             instances,
             instance_buffer,
-            depth_texture
+            depth_texture,
+            obj_model
         }
     }
 
