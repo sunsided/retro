@@ -26,21 +26,26 @@
 //!
 //! For more details about the underlying WebGPU API, see the [wgpu documentation](https://docs.rs/wgpu).
 
+use cgmath::prelude::*;
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{BindGroup, BindGroupLayout, Buffer, BufferSlice, Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Sampler, Surface, TextureUsages};
+use wgpu::{BindGroup, BindGroupLayout, Buffer, BufferSlice, Device, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Sampler, Surface, TextureUsages};
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::camera::Camera;
 use crate::camera_controller::CameraController;
 use crate::wgpu::camera_uniform::CameraUniform;
+use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::TextureSampler;
 use crate::wgpu::vertex::Vertex;
 
+const NUM_INSTANCES_PER_ROW: u32 = 10;
+const INSTANCE_DISPLACEMENT: cgmath::Vector3<f32> = cgmath::Vector3::new(NUM_INSTANCES_PER_ROW as f32 * 0.5, 0.0, NUM_INSTANCES_PER_ROW as f32 * 0.5);
+
 #[allow(dead_code)]
 pub struct WgpuState {
-    instance: Instance,
+    instance: wgpu::Instance,
     // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
     surface: Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
@@ -52,13 +57,15 @@ pub struct WgpuState {
     colored_render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
     vertex_buffer_length: usize,
-    index_buffer: Buffer,
+    pub(crate) index_buffer: Buffer,
     index_buffer_length: usize,
     texture_bind_group_layout: BindGroupLayout,
     camera: Camera,
     camera_uniform: CameraUniform,
     camera_buffer: Buffer,
     camera_bind_group: BindGroup,
+    pub(crate) instances: Vec<Instance>,
+    pub(crate) instance_buffer: Buffer,
 }
 
 impl WgpuState {
@@ -70,7 +77,7 @@ impl WgpuState {
             flags: Default::default(),
             backend_options: Default::default(),
         };
-        let instance = Instance::new(&descriptor);
+        let instance = wgpu::Instance::new(&descriptor);
 
         // TODO: See if we need to drop existing surfaces first?
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();
@@ -218,6 +225,38 @@ impl WgpuState {
             label: Some("camera_bind_group"),
         });
 
+        // TODO: Most definitely refactor this.
+        // NOTE: Make sure that if you add new instances to the Vec, you recreate the
+        //       instance_buffer as well as camera_bind_group. Otherwise, your new instances
+        //       won't show up correctly.
+        let instances = (0..NUM_INSTANCES_PER_ROW).flat_map(|z| {
+            (0..NUM_INSTANCES_PER_ROW).map(move |x| {
+                let position = cgmath::Vector3 { x: x as f32, y: 0.0, z: z as f32 } - INSTANCE_DISPLACEMENT;
+
+                let rotation = if position.is_zero() {
+                    // this is needed so an object at (0, 0, 0) won't get scaled to zero
+                    // as Quaternions can affect scale if they're not created correctly
+                    cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0))
+                } else {
+                    cgmath::Quaternion::from_axis_angle(position.normalize(), cgmath::Deg(45.0))
+                };
+
+                Instance {
+                    position, rotation,
+                }
+            })
+        }).collect::<Vec<_>>();
+
+        // TODO: This needs a refactor ...
+        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
+        let instance_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Instance Buffer"),
+                contents: bytemuck::cast_slice(&instance_data),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
         // TODO: Refactor
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -238,6 +277,7 @@ impl WgpuState {
                 entry_point: Some("vs_main"),
                 buffers: &[
                     Vertex::desc(),
+                    InstanceRaw::desc(),
                 ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
@@ -282,6 +322,7 @@ impl WgpuState {
                 entry_point: Some("vs_main"),
                 buffers: &[
                     Vertex::desc(),
+                    InstanceRaw::desc(),
                 ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
@@ -335,7 +376,9 @@ impl WgpuState {
             camera,
             camera_uniform,
             camera_buffer,
-            camera_bind_group
+            camera_bind_group,
+            instances,
+            instance_buffer,
         }
     }
 

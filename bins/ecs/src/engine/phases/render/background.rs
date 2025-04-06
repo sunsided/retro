@@ -178,6 +178,10 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         let (buffer, _num_vertices) = state.vertex_buffer();
         render_pass.set_vertex_buffer(0, buffer);
 
+        // Set the instance vertex buffer in slot 1.
+        render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
+        render_pass.set_index_buffer(state.index_buffer.slice(..), IndexFormat::Uint16);
+
         // Set the index buffer. There can only be one index buffer at a time.
         let (buffer, num_indices) = state.index_buffer();
         render_pass.set_index_buffer(buffer, IndexFormat::Uint16);
@@ -186,6 +190,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         // Draw _something_ with three vertices and one instance.
         // This is where @builtin(vertex_index) comes from.
         // The actual coordinates are calculated in the vertex shader.
-        render_pass.draw_indexed(0..num_indices, 0, 0..1);
+        let num_instances = state.instances.len() as u32;
+        render_pass.draw_indexed(0..num_indices, 0, 0..num_instances);
     }
 }
