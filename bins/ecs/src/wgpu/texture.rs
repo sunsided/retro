@@ -30,7 +30,7 @@
 
 use std::path::Path;
 use image::{GenericImageView, ImageError};
-use wgpu::{Device, Queue};
+use wgpu::{Device, Queue, TextureFormat};
 use crate::wgpu::WgpuState;
 
 /// A struct representing a GPU texture along with its corresponding view.
@@ -68,6 +68,7 @@ pub trait CreateTexture {
     fn texture_from_image<P>(
         &self,
         path: P,
+        ty: TextureType,
         label: Option<&str>,
     ) -> Result<Texture, TextureError>
     where P: AsRef<Path>;
@@ -133,6 +134,7 @@ impl Texture {
     /// - `bytes`: A byte array containing the raw image data to be decoded and uploaded.
     /// - `device`: A reference to the `wgpu::Device`, used to create GPU resources.
     /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
+    /// - `ty`: The type of texture to load.
     /// - `label`: A descriptive label for the texture, used for debugging purposes.
     ///
     /// # Returns
@@ -146,12 +148,13 @@ impl Texture {
     #[allow(dead_code)]
     pub fn from_bytes_with(
         bytes: &[u8],
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        device: &Device,
+        queue: &Queue,
+        ty: TextureType,
         label: &str,
     ) -> Result<Self, TextureError> {
         let img = image::load_from_memory(bytes).map_err(TextureError::LoadFromBytes)?;
-        Ok(Self::from_image_with(device, queue, &img, Some(label)))
+        Ok(Self::from_image_with(device, queue, &img, ty, Some(label)))
     }
 
     /// Creates a texture from a decoded image.
@@ -174,9 +177,10 @@ impl Texture {
     /// Returns a newly created [`Texture`] object. This function does not fail since it assumes
     /// that the provided `DynamicImage` is valid and can be converted into a GPU-compatible format.
     pub fn from_image_with(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
+        device: &Device,
+        queue: &Queue,
         img: &image::DynamicImage,
+        ty: TextureType,
         label: Option<&str>,
     ) -> Self {
         let rgba = img.to_rgba8();
@@ -187,6 +191,7 @@ impl Texture {
             height: dimensions.1,
             depth_or_array_layers: 1,
         };
+
         let texture = device.create_texture(
             &wgpu::TextureDescriptor {
                 label,
@@ -195,7 +200,7 @@ impl Texture {
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
                 // Most images are stored using sRGB, so we need to reflect that here.
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                format: ty.into(),
                 // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
                 // COPY_DST means that we want to copy data to this texture
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
@@ -359,13 +364,14 @@ impl Texture {
     pub fn from_file<P>(
         path: P,
         state: &WgpuState,
+        ty: TextureType,
         label: Option<&str>,
     ) -> Result<Self, TextureError>
     where
         P: AsRef<Path>,
     {
         let img = image::open(path).map_err(TextureError::LoadFromFile)?;
-        Ok(Self::from_image_with(state.device(), state.queue(), &img, label))
+        Ok(Self::from_image_with(state.device(), state.queue(), &img, ty, label))
     }
 }
 
@@ -375,15 +381,37 @@ impl CreateTexture for WgpuState {
         Texture::fallback_normal_map(self.device(), self.queue())
     }
 
-    fn texture_from_image<P>(&self, path: P, label: Option<&str>) -> Result<Texture, TextureError>
+    fn texture_from_image<P>(&self, path: P, ty: TextureType, label: Option<&str>) -> Result<Texture, TextureError>
     where
         P: AsRef<Path>
     {
-        Texture::from_file(path, self, label)
+        Texture::from_file(path, self, ty, label)
     }
 
     /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
     fn create_bind_group(&self, texture: &Texture, normals: &Texture) -> wgpu::BindGroup {
         texture.create_bind_group(self, normals)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq)]
+pub enum TextureType {
+    #[default]
+    Diffuse,
+    Normal,
+}
+
+impl TextureType {
+    pub fn to_format(&self) -> TextureFormat {
+        match self {
+            TextureType::Diffuse => TextureFormat::Rgba8UnormSrgb,
+            TextureType::Normal => TextureFormat::Rgba8Unorm,
+        }
+    }
+}
+
+impl From<TextureType> for TextureFormat {
+    fn from(value: TextureType) -> Self {
+        value.to_format()
     }
 }

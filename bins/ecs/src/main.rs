@@ -18,7 +18,7 @@ use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::wgpu::{RenderPipelineSelector, WgpuState};
-use crate::wgpu::texture::{CreateTexture, Texture};
+use crate::wgpu::texture::{CreateTexture, Texture, TextureType};
 
 mod engine;
 mod logging;
@@ -76,7 +76,7 @@ impl App {
             let fallback_normals = state.fallback_normal_map();
 
             // Recreate the textures.
-            let texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
+            let texture = state.texture_from_image("resources/textures/cover.webp", TextureType::Diffuse, Some("cover.jpg"))
                 .expect("Failed to load cover texture");
 
             let bind_group = state.create_bind_group(&texture, &fallback_normals);

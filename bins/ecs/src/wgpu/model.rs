@@ -16,12 +16,16 @@ pub struct ModelVertex {
     pub position: [f32; 3],
     pub tex_coords: [f32; 2],
     pub normal: [f32; 3],
+    pub tangent: [f32; 3],
+    pub bitangent: [f32; 3],
 }
 
-const MODEL_VERTEX_BUFFER_ATTRIBUTES: [wgpu::VertexAttribute; 3] = wgpu::vertex_attr_array![
+const MODEL_VERTEX_BUFFER_ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
         0 => Float32x3, // vertex shader's @position(0)
-        1 => Float32x2,  // vertex shader's @position(1)
-        2 => Float32x3  // vertex shader's @position(2)
+        1 => Float32x2, // vertex shader's @position(1)
+        2 => Float32x3, // vertex shader's @position(2)
+        3 => Float32x3, // vertex shader's @position(3)
+        4 => Float32x3, // vertex shader's @position(4)
     ];
 
 impl Vertex for ModelVertex {
