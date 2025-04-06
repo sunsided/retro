@@ -50,11 +50,10 @@ pub struct Texture {
     pub texture: wgpu::Texture,
     /// A view into the texture, used for binding the texture as a resource in shaders.
     pub view: wgpu::TextureView,
-    /// The bind group
-    pub diffuse_bind_group: wgpu::BindGroup,
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum TextureError {
     #[error("Failed to load image from bytes: {0}")]
     LoadFromBytes(ImageError),
@@ -69,6 +68,9 @@ pub trait CreateTexture {
         label: Option<&str>,
     ) -> Result<Texture, TextureError>
     where P: AsRef<Path>;
+
+    /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
+    fn create_bind_group(&self, texture: &Texture) -> wgpu::BindGroup;
 }
 
 impl Texture {
@@ -83,8 +85,6 @@ impl Texture {
     /// - `bytes`: A byte array containing the raw image data to be decoded and uploaded.
     /// - `device`: A reference to the `wgpu::Device`, used to create GPU resources.
     /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
-    /// - `layout`: A reference to the `wgpu::BindGroupLayout`.
-    /// - `sampler`: A reference to the `wgpu::Sampler`.
     /// - `label`: A descriptive label for the texture, used for debugging purposes.
     ///
     /// # Returns
@@ -95,16 +95,15 @@ impl Texture {
     /// # Errors
     ///
     /// This function will return a `TextureError::LoadFromBytes` if the image decoding fails.
+    #[allow(dead_code)]
     pub fn from_bytes_with(
         bytes: &[u8],
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        layout: &wgpu::BindGroupLayout,
-        sampler: &wgpu::Sampler,
         label: &str,
     ) -> Result<Self, TextureError> {
         let img = image::load_from_memory(bytes).map_err(TextureError::LoadFromBytes)?;
-        Ok(Self::from_image_with(device, queue, layout, sampler, &img, Some(label)))
+        Ok(Self::from_image_with(device, queue, &img, Some(label)))
     }
 
     /// Creates a texture from a decoded image.
@@ -129,8 +128,6 @@ impl Texture {
     pub fn from_image_with(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        layout: &wgpu::BindGroupLayout,
-        sampler: &wgpu::Sampler,
         img: &image::DynamicImage,
         label: Option<&str>,
     ) -> Self {
@@ -183,24 +180,33 @@ impl Texture {
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        let diffuse_bind_group = device.create_bind_group(
+        Self { texture, view }
+    }
+}
+
+impl Texture {
+    /// Create a [`BindGroup`](wgpu::BindGroup).
+    pub fn create_bind_group(&self, state: &WgpuState) -> wgpu::BindGroup {
+        self.create_bind_group_with(state.device(), state.bind_group_layout(), state.linear_sampler())
+    }
+
+    /// Create a [`BindGroup`](wgpu::BindGroup).
+    pub fn create_bind_group_with(&self, device: &wgpu::Device, layout: &wgpu::BindGroupLayout, sampler: &wgpu::Sampler) -> wgpu::BindGroup {
+        device.create_bind_group(
             &wgpu::BindGroupDescriptor {
                 layout,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&view),
+                        resource: wgpu::BindingResource::TextureView(&self.view),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
-                        resource: wgpu::BindingResource::Sampler(sampler),
+                        resource: wgpu::BindingResource::Sampler(&sampler),
                     }
                 ],
                 label: Some("diffuse_bind_group"),
-            }
-        );
-
-        Self { texture, view, diffuse_bind_group }
+            })
     }
 }
 
@@ -237,7 +243,7 @@ impl Texture {
         P: AsRef<Path>,
     {
         let img = image::open(path).map_err(TextureError::LoadFromFile)?;
-        Ok(Self::from_image_with(state.device(), state.queue(), state.bind_group_layout(), state.linear_sampler(), &img, label))
+        Ok(Self::from_image_with(state.device(), state.queue(), &img, label))
     }
 }
 
@@ -248,5 +254,10 @@ impl CreateTexture for WgpuState {
         P: AsRef<Path>
     {
         Texture::from_file(path, self, label)
+    }
+
+    /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
+    fn create_bind_group(&self, texture: &Texture) -> wgpu::BindGroup {
+        texture.create_bind_group(self)
     }
 }

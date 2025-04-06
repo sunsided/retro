@@ -48,7 +48,7 @@
 //! ```
 
 use std::convert::Infallible;
-use wgpu::IndexFormat;
+use wgpu::{BindGroup, IndexFormat};
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::wgpu::RenderPipelineSelector;
@@ -103,7 +103,7 @@ impl BackgroundColorData {
 #[derive(Debug, Default)]
 pub struct RenderBackgroundSystemData {
     pub selector: RenderPipelineSelector,
-    pub texture: Option<Texture>
+    pub texture: Option<BindGroup>
 }
 
 impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
@@ -169,7 +169,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
         // Set the bind group for textures.
         // Bind to first group, i.e. `@group(0)` in the shader.
-        render_pass.set_bind_group(0, &texture.diffuse_bind_group, &[]);
+        render_pass.set_bind_group(0, texture, &[]);
 
         // Set the vertex buffer in buffer slot 0.
         let (buffer, _num_vertices) = state.vertex_buffer();

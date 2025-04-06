@@ -70,10 +70,12 @@ impl App {
             let texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
                 .expect("Failed to load cover texture");
 
+            let bind_group = state.create_bind_group(&texture);
+
             // TODO: Refactor
             // The textures could be attributes on a `Renderable` component.
             let system = self.ecs_world.systems.as_render_background_mut();
-            system.texture = Some(texture);
+            system.texture = Some(bind_group);
 
             // Set WGPU render state.
             self.state = Some(Arc::new(Mutex::new(state)));

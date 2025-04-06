@@ -140,14 +140,6 @@ impl WgpuRenderState {
         let state = state.lock_arc();
         Some((state, frame_state))
     }
-    /// Provides a mutable reference to the per-frame state, if available.
-    ///
-    /// # Returns
-    /// - `Option<&mut FrameState>`: A mutable reference to the current frame state
-    ///   if it exists, otherwise `None`.
-    pub fn frame_state_mut(&mut self) -> Option<&mut FrameState> {
-        self.frame_state.as_mut()
-    }
 }
 
 impl Debug for WgpuRenderState {
