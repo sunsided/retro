@@ -1,4 +1,3 @@
-use crate::engine::system::SystemFactory;
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
 use crossbeam_channel::TryRecvError;
@@ -16,9 +15,9 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use crate::engine::{MainWorld, SceneBackgroundEntityData, WorldCommand, WorldCommandReceiver, WorldCommandSender};
-use crate::engine::system::rendering::background::BackgroundColorData;
-use crate::engine::system::rendering::WgpuRenderState;
+use crate::engine::{MainWorld, SceneBackgroundEntityData, SystemFactory, WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crate::engine::phases::render::background::BackgroundColorData;
+use crate::engine::phases::render::WgpuRenderState;
 
 mod engine;
 mod logging;

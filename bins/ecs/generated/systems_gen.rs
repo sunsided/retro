@@ -95,19 +95,23 @@ impl SystemPhase {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems {
+pub trait CreateSystem<S: System> {
+    /// Create an instance of type `S`.
+    fn create(&self) -> S;
+}
 
-    /// Create an instance of type [`PhysicsSystem`].
-    fn create_physics(&self) -> PhysicsSystem;
+/// Trait for constructing system instances.
+pub trait CreateSystems: CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem>
+{ }
 
-    /// Create an instance of type [`BackgroundColorCycleSystem`].
-    fn create_background_color_cycle(&self) -> BackgroundColorCycleSystem;
-
-    /// Create an instance of type [`RenderBackgroundSystem`].
-    fn create_render_background(&self) -> RenderBackgroundSystem;
-
-    /// Create an instance of type [`RenderSystem`].
-    fn create_render(&self) -> RenderSystem;
+#[automatically_derived]
+impl<T> CreateSystems for T
+where
+    T: CreateSystem<PhysicsSystem>
+     + CreateSystem<BackgroundColorCycleSystem>
+     + CreateSystem<RenderBackgroundSystem>
+     + CreateSystem<RenderSystem>
+{
 }
 
 /// Trait for constructing system instances.
@@ -118,7 +122,10 @@ pub trait SystemPhaseEvents: SystemStartupPhaseEvents + SystemFixedUpdatePhaseEv
 #[automatically_derived]
 impl<T> SystemPhaseEvents for T
 where
-    T: SystemStartupPhaseEvents + SystemFixedUpdatePhaseEvents + SystemUpdatePhaseEvents + SystemRenderPhaseEvents
+    T: SystemStartupPhaseEvents
+     + SystemFixedUpdatePhaseEvents
+     + SystemUpdatePhaseEvents
+     + SystemRenderPhaseEvents
 {
 }
 

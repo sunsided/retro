@@ -49,7 +49,7 @@
 
 use std::convert::Infallible;
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
-use crate::engine::system::rendering::WgpuRenderState;
+use crate::engine::phases::render::WgpuRenderState;
 
 /// Represents a background color with red, green, blue, and alpha components,
 /// used as part of the [`BackgroundColorComponent`].

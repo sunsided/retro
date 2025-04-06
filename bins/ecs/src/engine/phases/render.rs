@@ -69,8 +69,21 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tracing::{error, trace};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
-use crate::engine::{ApplyRenderSystem, FrameContext, PositionComponent, RenderSystem, SystemRenderPhaseEvents};
+use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
+use crate::engine::phases::render::background::RenderBackgroundSystemData;
 use crate::phase_events::PhaseEvents;
+
+impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
+    fn create(&self) -> RenderBackgroundSystem {
+        RenderBackgroundSystem(RenderBackgroundSystemData)
+    }
+}
+
+impl CreateSystem<RenderSystem> for SystemFactory {
+    fn create(&self) -> RenderSystem {
+        RenderSystem::default()
+    }
+}
 
 impl Default for RenderSystem {
     fn default() -> Self {

@@ -384,7 +384,10 @@ impl<E, Q> MainWorld<E, Q> {
         command_queue: Q,
         phase_events: E) -> Self
     where
-        S: CreateSystems,
+        S: CreateSystem<PhysicsSystem>
+         + CreateSystem<RenderSystem>
+         + CreateSystem<BackgroundColorCycleSystem>
+         + CreateSystem<RenderBackgroundSystem>,
         E: SystemPhaseEvents,
         Q: WorldCommandQueue
     {
@@ -392,10 +395,10 @@ impl<E, Q> MainWorld<E, Q> {
         Self {
             archetypes: Default::default(),
             systems: MainWorldSystems {
-                physics: create_systems.create_physics(),
-                render: create_systems.create_render(),
-                background_color_cycle: create_systems.create_background_color_cycle(),
-                render_background: create_systems.create_render_background(),
+                physics: CreateSystem::<PhysicsSystem>::create(create_systems),
+                render: CreateSystem::<RenderSystem>::create(create_systems),
+                background_color_cycle: CreateSystem::<BackgroundColorCycleSystem>::create(create_systems),
+                render_background: CreateSystem::<RenderBackgroundSystem>::create(create_systems),
             },
             entity_locations: Default::default(),
             context,
