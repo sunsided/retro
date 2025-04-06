@@ -1,7 +1,10 @@
+mod camera;
 mod camera_controller;
+mod projection;
 
-use std::f32::consts::FRAC_PI_2;
 pub use crate::camera::camera_controller::CameraController;
+pub use crate::camera::camera::Camera;
+pub use crate::camera::projection::Projection;
 
 /// The coordinate system in Wgpu is based on DirectX and Metal's coordinate systems.
 /// That means that in normalized device coordinates, the x-axis and y-axis are in the
@@ -16,40 +19,3 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
     0.0, 0.0, 0.5, 0.5,
     0.0, 0.0, 0.0, 1.0,
 );
-
-const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
-
-#[derive(Debug, Clone)]
-pub struct Camera {
-    pub eye: cgmath::Point3<f32>,
-    pub target: cgmath::Point3<f32>,
-    pub up: cgmath::Vector3<f32>,
-    aspect: f32,
-    fovy: f32,
-    znear: f32,
-    zfar: f32,
-}
-
-impl Camera {
-    pub fn new(aspect_width: f32, aspect_height: f32) -> Self {
-        Camera {
-            // position the camera 1 unit up and 2 units back
-            // +z is out of the screen
-            eye: (0.0, 1.0, 2.0).into(),
-            // have it look at the origin
-            target: (0.0, 0.0, 0.0).into(),
-            // which way is "up"
-            up: cgmath::Vector3::unit_y(),
-            aspect: aspect_width / aspect_height,
-            fovy: 45.0,
-            znear: 0.1,
-            zfar: 100.0,
-        }
-    }
-
-    pub fn build_view_projection_matrix(&self) -> cgmath::Matrix4<f32> {
-        let view = cgmath::Matrix4::look_at_rh(self.eye, self.target, self.up);
-        let proj = cgmath::perspective(cgmath::Deg(self.fovy), self.aspect, self.znear, self.zfar);
-        OPENGL_TO_WGPU_MATRIX * proj * view
-    }
-}

@@ -12,7 +12,7 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use winit::event::{KeyEvent, Modifiers, MouseButton};
+use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
 use crate::camera::CameraController;
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
@@ -32,7 +32,8 @@ struct App {
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
-    camera_controller: CameraController
+    camera_controller: CameraController,
+    mouse_pressed: bool
 }
 
 impl App {
@@ -49,7 +50,8 @@ impl App {
             modifiers: Default::default(),
             last_update: Instant::now(),
             ecs_world: world,
-            camera_controller: CameraController::new(0.01)
+            camera_controller: CameraController::new(4.0, 0.4),
+            mouse_pressed: false
         }
     }
 
@@ -134,9 +136,13 @@ impl App {
 
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
         debug!("Window resized: {:?}", new_size);
-        if let Some(surface) = &mut self.state {
-            surface.lock_arc().resize(new_size);
-        }
+        let Some(state) = &mut self.state else {
+            return;
+        };
+
+        let mut state = state.lock_arc();
+        state.resize(new_size);
+        state.projection.resize(new_size.width, new_size.height);
     }
 
     fn handle_redraw_event(&mut self) {
@@ -148,18 +154,52 @@ impl App {
         self.modifiers = new_modifiers.state();
     }
 
-    fn handle_mouse_input_event(&self, state: ElementState, button: MouseButton) {
+    fn handle_mouse_input_event(&mut self, state: ElementState, button: MouseButton) {
         debug!("Mouse button {:?} is {:?}", button, state);
+        match button {
+            MouseButton::Left => {
+                self.mouse_pressed = state == ElementState::Pressed;
+            }
+            MouseButton::Right => {}
+            MouseButton::Middle => {}
+            MouseButton::Back => {}
+            MouseButton::Forward => {}
+            MouseButton::Other(_) => {}
+        }
     }
 
-    fn handle_cursor_moved_event(&self, position: PhysicalPosition<f64>) {
+    fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {
+        debug!("Mouse wheel {:?}", delta);
+        self.camera_controller.process_scroll(&delta);
+    }
+
+    fn handle_cursor_moved_event(&mut self, position: (f64, f64)) {
         debug!("Cursor moved to: {:?}", position);
+        if self.mouse_pressed {
+            self.camera_controller.process_mouse(-position.0, -position.1);
+        }
     }
 }
 
 impl ApplicationHandler for App {
     fn resumed(&mut self, active_event_loop: &ActiveEventLoop) {
         self.reinitialize_window(active_event_loop);
+    }
+
+    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+        match event {
+            DeviceEvent::Added => {}
+            DeviceEvent::Removed => {}
+            DeviceEvent::MouseMotion { delta } => {
+                self.handle_cursor_moved_event(delta);
+            }
+            DeviceEvent::MouseWheel { delta } => {
+                self.handle_mouse_wheel_event(delta);
+            }
+            DeviceEvent::Motion { .. } => {}
+            DeviceEvent::Button { .. } => {}
+            DeviceEvent::Key(_) => {}
+        }
     }
 
     fn window_event(
@@ -181,9 +221,6 @@ impl ApplicationHandler for App {
             WindowEvent::MouseInput { state, button, .. } => {
                 self.handle_mouse_input_event(state, button);
             }
-            WindowEvent::CursorMoved { position, .. } => {
-                self.handle_cursor_moved_event(position);
-            }
             WindowEvent::Resized(new_size) => {
                 self.handle_resize_event(new_size);
             }
@@ -195,10 +232,13 @@ impl ApplicationHandler for App {
     }
 
     fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
+        let dt = self.last_update.elapsed();
+        self.last_update = Instant::now();
+
         // Update the camera, light, etc.
         let state = &mut self.ecs_world.states.wgpu_render;
         if let Some(mut state) = state.state_mut() {
-            state.update_camera_uniform(&self.camera_controller);
+            state.update_camera_uniform(&mut self.camera_controller, dt);
             state.update_light();
         }
 

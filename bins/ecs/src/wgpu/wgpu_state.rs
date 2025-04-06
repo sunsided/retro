@@ -28,12 +28,13 @@
 
 use cgmath::prelude::*;
 use std::sync::Arc;
+use std::time::Duration;
 use tracing::debug;
 use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Sampler, Surface, TextureUsages};
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-use crate::camera::{Camera, CameraController};
+use crate::camera::{Camera, CameraController, Projection};
 use crate::resources;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::{Instance, InstanceRaw};
@@ -55,7 +56,7 @@ pub struct WgpuState {
     render_pipeline: RenderPipeline,
     colored_render_pipeline: RenderPipeline,
     texture_bind_group_layout: BindGroupLayout,
-    camera: Camera,
+    pub(crate) camera: Camera,
     camera_uniform: CameraUniform,
     camera_buffer: Buffer,
     camera_bind_group: BindGroup,
@@ -67,6 +68,7 @@ pub struct WgpuState {
     pub light_buffer: Buffer,
     pub light_bind_group: BindGroup,
     pub light_render_pipeline: RenderPipeline,
+    pub projection: Projection,
 }
 
 impl WgpuState {
@@ -178,9 +180,10 @@ impl WgpuState {
             });
 
         // TODO: Refactor
-        let camera = Camera::new(size.width as f32, size.height as f32);
+        let camera = Camera::new((0.0, 5.0, 10.0), cgmath::Deg(-90.0), cgmath::Deg(-20.0));
+        let projection = Projection::new(surface_config.width, surface_config.height, cgmath::Deg(45.0), 0.1, 100.0);
         let mut camera_uniform = CameraUniform::new();
-        camera_uniform.update_view_proj(&camera);
+        camera_uniform.update_view_proj(&camera, &projection);
 
         // TODO: Refactor
         let camera_buffer = device.create_buffer_init(
@@ -387,6 +390,7 @@ impl WgpuState {
             texture_bind_group_layout,
             linear_sampler: sampler,
             camera,
+            projection,
             camera_uniform,
             camera_buffer,
             camera_bind_group,
@@ -481,9 +485,9 @@ impl WgpuState {
 
     /// Update the camera uniform buffer.
     // TODO: Refactor
-    pub fn update_camera_uniform(&mut self, controller: &CameraController) {
-        controller.update_camera(&mut self.camera);
-        self.camera_uniform.update_view_proj(&self.camera);
+    pub fn update_camera_uniform(&mut self, controller: &mut CameraController, dt: Duration) {
+        controller.update_camera(&mut self.camera, dt);
+        self.camera_uniform.update_view_proj(&self.camera, &self.projection);
         self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
     }
 
