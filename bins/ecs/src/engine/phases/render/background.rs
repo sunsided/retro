@@ -171,6 +171,9 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         // Bind to first group, i.e. `@group(0)` in the shader.
         render_pass.set_bind_group(0, texture, &[]);
 
+        // Set the bind group for the camera uniforms.
+        render_pass.set_bind_group(1, state.camera_bind_group(), &[]);
+
         // Set the vertex buffer in buffer slot 0.
         let (buffer, _num_vertices) = state.vertex_buffer();
         render_pass.set_vertex_buffer(0, buffer);
