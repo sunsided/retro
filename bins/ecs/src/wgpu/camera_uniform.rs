@@ -1,4 +1,4 @@
-use crate::wgpu::camera::Camera;
+use crate::camera::Camera;
 
 // We need this for Rust to store our data correctly for the shaders
 #[repr(C)]

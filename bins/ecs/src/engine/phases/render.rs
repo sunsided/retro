@@ -128,6 +128,15 @@ impl WgpuRenderState {
     }
 
     /// Provides a mutable reference to the render state, if available.
+    pub fn state_mut(&mut self) -> Option<ArcMutexGuard<RawMutex, WgpuState>> {
+        let Some(state) = &mut self.state else {
+            return None;
+        };
+
+        Some(state.lock_arc())
+    }
+
+    /// Provides a mutable reference to the render state and the frame state, if available.
     pub fn states_mut(&mut self) -> Option<(ArcMutexGuard<RawMutex, WgpuState>, &mut FrameState)> {
         let Some(state) = &mut self.state else {
             return None;

@@ -13,6 +13,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit::event::{KeyEvent, Modifiers, MouseButton};
+use crate::camera_controller::CameraController;
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
@@ -22,6 +23,8 @@ use crate::wgpu::texture::CreateTexture;
 mod engine;
 mod logging;
 mod wgpu;
+mod camera_controller;
+mod camera;
 
 struct App {
     window: Option<Arc<Window>>,
@@ -29,6 +32,7 @@ struct App {
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
+    camera_controller: CameraController
 }
 
 impl App {
@@ -45,6 +49,7 @@ impl App {
             modifiers: Default::default(),
             last_update: Instant::now(),
             ecs_world: world,
+            camera_controller: CameraController::new(0.01)
         }
     }
 
@@ -87,6 +92,10 @@ impl App {
     }
 
     fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
+        if self.camera_controller.process_events(event.physical_key, event.state) {
+            return;
+        };
+
         match event.physical_key {
             PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
                 active_event_loop.exit();
@@ -183,6 +192,12 @@ impl ApplicationHandler for App {
     }
 
     fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
+        // Update the camera.
+        let state = &mut self.ecs_world.states.wgpu_render;
+        if let Some(mut state) = state.state_mut() {
+            state.update_camera_uniform(&self.camera_controller);
+        }
+
         // Update ECS.
         self.ecs_world.apply_system_phases();
 

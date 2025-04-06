@@ -32,7 +32,8 @@ use wgpu::{BindGroup, BindGroupLayout, Buffer, BufferSlice, Device, Instance, In
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-use crate::wgpu::camera::Camera;
+use crate::camera::Camera;
+use crate::camera_controller::CameraController;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::TextureSampler;
 use crate::wgpu::vertex::Vertex;
@@ -417,6 +418,13 @@ impl WgpuState {
     #[inline]
     pub fn submit_to_queue(&self, command_buffer: wgpu::CommandBuffer) {
         self.queue.submit(Some(command_buffer));
+    }
+
+    /// Update the camera uniform buffer.
+    pub fn update_camera_uniform(&mut self, controller: &CameraController) {
+        controller.update_camera(&mut self.camera);
+        self.camera_uniform.update_view_proj(&self.camera);
+        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
     }
 
     /// Polls the underlying device.
