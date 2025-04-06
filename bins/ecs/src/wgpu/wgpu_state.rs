@@ -28,19 +28,21 @@
 
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{Device, Instance, InstanceDescriptor, MaintainResult, PresentMode, Queue, Surface, TextureUsages};
+use wgpu::{Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, Surface, TextureUsages};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::wgpu::TextureSampler;
 
+#[allow(dead_code)]
 pub struct WgpuState {
-    _instance: Instance,
+    instance: Instance,
     // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
     surface: Surface<'static>,
     surface_config: wgpu::SurfaceConfiguration,
     device: Device,
     queue: Queue,
     linear_sampler: TextureSampler,
+    render_pipeline_layout: PipelineLayout,
 }
 
 impl WgpuState {
@@ -103,12 +105,27 @@ impl WgpuState {
 
         let sampler = TextureSampler::with_clamp_to_edge_and_linear_filtering(&device);
 
+        // TODO: Move shader to meaningful place
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/shader.wgsl").into()),
+        });
+
+        // TODO Refactor
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Render Pipeline Layout"),
+                bind_group_layouts: &[],
+                push_constant_ranges: &[],
+            });
+
         Self {
-            _instance: instance,
+            instance,
             surface,
             surface_config,
             device,
             queue,
+            render_pipeline_layout,
             linear_sampler: sampler
         }
     }
