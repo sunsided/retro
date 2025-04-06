@@ -28,7 +28,7 @@
 
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, Surface, TextureUsages};
+use wgpu::{Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Surface, TextureUsages};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::wgpu::TextureSampler;
@@ -43,6 +43,7 @@ pub struct WgpuState {
     queue: Queue,
     linear_sampler: TextureSampler,
     render_pipeline_layout: PipelineLayout,
+    render_pipeline: RenderPipeline,
 }
 
 impl WgpuState {
@@ -111,13 +112,55 @@ impl WgpuState {
             source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/shader.wgsl").into()),
         });
 
-        // TODO Refactor
+        // TODO: Refactor
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[],
                 push_constant_ranges: &[],
             });
+
+        // TODO: Refactor
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Render Pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[], // Which types of vertices to pass. Will be added later.
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState { // Currently only one for the target surface.
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState::REPLACE),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: None, // Stencil buffers are currently not implemented.
+            multisample: wgpu::MultisampleState {
+                count: 1, // Don't use multi-sampling.
+                mask: !0, // Use all samples.
+                alpha_to_coverage_enabled: false, // Anti-aliasing is currently not enabled.
+            },
+            multiview: None, // We're not using array textures.
+            cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
+        });
 
         Self {
             instance,
@@ -126,6 +169,7 @@ impl WgpuState {
             device,
             queue,
             render_pipeline_layout,
+            render_pipeline,
             linear_sampler: sampler
         }
     }
