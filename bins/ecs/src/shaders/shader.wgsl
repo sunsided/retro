@@ -7,6 +7,14 @@ struct CameraUniform {
 @group(1) @binding(0)
 var<uniform> camera: CameraUniform;
 
+struct Light {
+    position: vec3<f32>,
+    color: vec3<f32>,
+}
+
+@group(2) @binding(0)
+var<uniform> light: Light;
+
 struct InstanceInput {
     @location(5) model_matrix_0: vec4<f32>,
     @location(6) model_matrix_1: vec4<f32>,
@@ -89,5 +97,13 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 // by this function in the first color target.
 @fragment
 fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+
+    // We don't need (or want) much ambient light, so 0.1 is fine
+    let ambient_strength = 0.1;
+    let ambient_color = light.color * ambient_strength;
+
+    let result = ambient_color * object_color.xyz;
+
+    return vec4<f32>(result, object_color.a);
 }
