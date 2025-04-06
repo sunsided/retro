@@ -2,17 +2,17 @@
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     position: [f32; 3],
-    color: [f32; 3],
+    tex_coords: [f32; 2],
 }
 
 impl Vertex {
     /// The vertex data for a pentagon in counter-clockwise order.
     pub const PENTAGON_VERTICES: [Vertex; 5] = [
-        Vertex { position: [-0.0868241, 0.49240386, 0.0], color: [0.5, 0.0, 0.5] }, // A
-        Vertex { position: [-0.49513406, 0.06958647, 0.0], color: [0.5, 0.0, 0.5] }, // B
-        Vertex { position: [-0.21918549, -0.44939706, 0.0], color: [0.5, 0.0, 0.5] }, // C
-        Vertex { position: [0.35966998, -0.3473291, 0.0], color: [0.5, 0.0, 0.5] }, // D
-        Vertex { position: [0.44147372, 0.2347359, 0.0], color: [0.5, 0.0, 0.5] }, // E
+        Vertex { position: [-0.0868241, 0.49240386, 0.0], tex_coords: [0.4131759, 0.99240386], }, // A
+        Vertex { position: [-0.49513406, 0.06958647, 0.0], tex_coords: [0.0048659444, 0.56958647], }, // B
+        Vertex { position: [-0.21918549, -0.44939706, 0.0], tex_coords: [0.28081453, 0.05060294], }, // C
+        Vertex { position: [0.35966998, -0.3473291, 0.0], tex_coords: [0.85967, 0.1526709], }, // D
+        Vertex { position: [0.44147372, 0.2347359, 0.0], tex_coords: [0.9414737, 0.7347359], }, // E
     ];
 
     /// The vertex indices of the triangles forming the pentagon.
@@ -31,14 +31,14 @@ impl Vertex {
     //         format: wgpu::VertexFormat::Float32x3,
     //     },
     //     wgpu::VertexAttribute {
-    //         offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
-    //         shader_location: 1, // vertex shader's @position(1)
-    //         format: wgpu::VertexFormat::Float32x3,
-    //     }
+    //         offset: mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
+    //         shader_location: 1,
+    //         format: wgpu::VertexFormat::Float32x2
+    //     },
     // ]
     const VERTEX_BUFFER_ATTRIBUTES: [wgpu::VertexAttribute; 2] = wgpu::vertex_attr_array![
         0 => Float32x3, // vertex shader's @position(0)
-        1 => Float32x3  // vertex shader's @position(1)
+        1 => Float32x2  // vertex shader's @position(1)
     ];
 
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {

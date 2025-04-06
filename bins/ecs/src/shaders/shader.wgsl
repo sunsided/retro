@@ -2,7 +2,7 @@
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) color: vec3<f32>,
+    @location(1) tex_coords: vec2<f32>,
 };
 
 struct VertexOutput {
@@ -29,7 +29,7 @@ struct VertexOutput {
     // know the pixel coordinates of a given fragment, but if you want the position coordinates,
     // you'll have to pass them in separately.
     @builtin(position) clip_position: vec4<f32>,
-    @location(0) color: vec3<f32>,
+    @location(0) tex_coords: vec2<f32>,
 };
 
 @vertex
@@ -37,12 +37,18 @@ fn vs_main(
     model: VertexInput,
 ) -> VertexOutput {
     var out: VertexOutput;
-    out.color = model.color;
+    out.tex_coords = model.tex_coords;
     out.clip_position = vec4<f32>(model.position, 1.0);
     return out;
 }
 
 // Fragment shader
+
+@group(0) @binding(0)
+var t_diffuse: texture_2d<f32>;
+
+@group(0) @binding(1)
+var s_diffuse: sampler;
 
 // The @location(0) bit tells WGPU to store the vec4 value returned
 // by this function in the first color target.
@@ -55,6 +61,5 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 // by this function in the first color target.
 @fragment
 fn fs_colored_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // Output the computed color with full opacity
-    return vec4<f32>(in.color, 1.0);
+    return textureSample(t_diffuse, s_diffuse, in.tex_coords);
 }

@@ -168,6 +168,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         render_pass.set_pipeline(state.render_pipeline(self.selector));
 
         // Set the bind group for textures.
+        // Bind to first group, i.e. `@group(0)` in the shader.
         render_pass.set_bind_group(0, &texture.diffuse_bind_group, &[]);
 
         // Set the vertex buffer in buffer slot 0.
