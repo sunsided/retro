@@ -50,6 +50,7 @@
 use std::convert::Infallible;
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
+use crate::wgpu::RenderPipelineSelector;
 
 /// Represents a background color with red, green, blue, and alpha components,
 /// used as part of the [`BackgroundColorComponent`].
@@ -97,8 +98,10 @@ impl BackgroundColorData {
     }
 }
 
-#[derive(Debug)]
-pub struct RenderBackgroundSystemData;
+#[derive(Debug, Default)]
+pub struct RenderBackgroundSystemData {
+    pub selector: RenderPipelineSelector
+}
 
 impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     /// The error type returned by the system. Infallible means this system cannot fail.
@@ -155,7 +158,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
                 timestamp_writes: None,
             });
 
-        render_pass.set_pipeline(state.render_pipeline());
+        render_pass.set_pipeline(state.render_pipeline(self.selector));
 
         // TODO: Refactor this triangle drawing meaningfully.
         // Draw _something_ with three vertices and one instance.

@@ -75,7 +75,7 @@ use crate::engine::phases::render::background::RenderBackgroundSystemData;
 
 impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
     fn create(&self) -> RenderBackgroundSystem {
-        RenderBackgroundSystem(RenderBackgroundSystemData)
+        RenderBackgroundSystem(RenderBackgroundSystemData::default())
     }
 }
 

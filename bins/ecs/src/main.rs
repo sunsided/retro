@@ -16,7 +16,7 @@ use winit::event::{KeyEvent, Modifiers, MouseButton};
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
-use crate::wgpu::WgpuState;
+use crate::wgpu::{RenderPipelineSelector, WgpuState};
 use crate::wgpu::texture::CreateTexture;
 
 mod engine;
@@ -99,6 +99,15 @@ impl App {
                             window.set_fullscreen(Some(Fullscreen::Borderless(None)));
                         }
                     }
+                }
+            PhysicalKey::Code(KeyCode::Space)
+            if event.state == ElementState::Pressed =>
+                {
+                    let system = self.ecs_world.systems.as_render_background_mut();
+                    system.selector = match system.selector {
+                        RenderPipelineSelector::Boring => RenderPipelineSelector::Colored,
+                        RenderPipelineSelector::Colored => RenderPipelineSelector::Boring
+                    };
                 }
             _ => {}
         }

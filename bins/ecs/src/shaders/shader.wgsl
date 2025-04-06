@@ -25,6 +25,7 @@ struct VertexOutput {
     // you'll have to pass them in separately.
     @builtin(position) clip_position: vec4<f32>,
     @location(0) vert_pos: vec3<f32>,
+    @location(1) color: vec3<f32>,
 };
 
 @vertex
@@ -37,10 +38,15 @@ fn vs_main(
     let x = f32(1 - i32(in_vertex_index)) * 0.5;
     let y = f32(i32(in_vertex_index & 1u) * 2 - 1) * 0.5;
     out.clip_position = vec4<f32>(x, y, 0.0, 1.0);
+
     // Assigns the xyz components of the clip_position (which are the clip-space coordinates)
     // to vert_pos, essentially passing the vertex position to the fragment shader.
     // This is useful for further calculations in the fragment shader, such as lighting or effects.
     out.vert_pos = out.clip_position.xyz;
+
+    // Compute color from the position (mapping from [-1,1] to [0,1])
+    out.color = (out.clip_position.xyz + vec3<f32>(1.0)) * 0.5;
+
     return out;
 }
 
@@ -51,4 +57,12 @@ fn vs_main(
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return vec4<f32>(0.3, 0.2, 0.1, 1.0);
+}
+
+// The @location(0) bit tells WGPU to store the vec4 value returned
+// by this function in the first color target.
+@fragment
+fn fs_colored_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    // Output the computed color with full opacity
+    return vec4<f32>(in.color, 1.0);
 }
