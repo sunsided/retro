@@ -201,6 +201,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
     /// - `Ok(())` if the frame state was successfully initialized.
     /// - `Err(wgpu::SurfaceError)` if there was an issue obtaining the surface texture.
     fn on_begin_phase(&mut self, _context: &FrameContext, render: &mut WgpuRenderState) -> Result<Self::Result, Self::Error> {
+        self.start_timing();
         render.frame_state = {
             let render_start = std::time::Instant::now();
             let state = render.state.as_ref().expect("State exists as per readiness check").lock();
@@ -263,6 +264,8 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             let render_duration = frame_state.render_start.elapsed();
             trace!(context.frame_number, "Rendered frame in {render_duration:?}");
         }
+        let elapsed = self.elapsed();
+        trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemRenderPhaseEvents>::NAME);
         Ok(())
     }
 }
