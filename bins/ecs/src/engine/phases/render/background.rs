@@ -127,14 +127,27 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
             .encoder
             .begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Clear Background Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &state.view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
+                // NOTE: The color_attachments field is a "sparse" array. This allows you to use a
+                //       pipeline that expects multiple render targets and only supplies the ones you care about.
+                color_attachments: &[
+                    Some(wgpu::RenderPassColorAttachment {
+                        view: &state.view,
+                        // The resolve_target is the texture that will receive the resolved output.
+                        // This will be the same as view unless multisampling is enabled.
+                        // We don't need to specify this, so we leave it as None.
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            // The `load` field tells wgpu how to handle colors stored from the
+                            // previous frame. Currently, we are clearing the screen with a color.
+                            load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
+                            // The `store` field tells wgpu whether we want to store the rendered
+                            // results to the Texture behind our TextureView (in this case, it's
+                            // the SurfaceTexture). We use StoreOp::Store as we do want to store
+                            // our render results.
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })
+                ],
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,

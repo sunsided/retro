@@ -52,7 +52,7 @@ impl WgpuState {
             flags: Default::default(),
             backend_options: Default::default(),
         };
-        let instance = wgpu::Instance::new(&descriptor);
+        let instance = Instance::new(&descriptor);
 
         // TODO: See if we need to drop existing surfaces first?
         let surface = instance.create_surface(Arc::clone(&window)).unwrap();

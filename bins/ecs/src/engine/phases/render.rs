@@ -200,17 +200,31 @@ impl SystemRenderPhaseEvents for PhaseEvents {
     /// - `Ok(())` if the frame state was successfully initialized.
     /// - `Err(wgpu::SurfaceError)` if there was an issue obtaining the surface texture.
     fn on_begin_phase(&mut self, _context: &FrameContext, render: &mut WgpuRenderState) -> Result<Self::Result, Self::Error> {
+        // TODO: Have the application (through the ECS) react to wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated by recreating the window.
+        // TODO: Have the application react to wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other by exiting
+        // TODO: Have the application react to wgpu::SurfaceError::Timeout by hoping for thee best :)
+
         self.start_timing();
         render.frame_state = {
             let render_start = std::time::Instant::now();
             let state = render.state.as_ref().expect("State exists as per readiness check").lock();
+
+            // The `get_current_texture` function will wait for the surface to provide a new
+            // `SurfaceTexture` that we will render to. This can time out, particularly
+            // on Vulkan/Wayland/NVIDIA setups. (In that case, use the GL backend, e.g. via `WGPU_BACKEND=gl`).
             let frame = state
                 .surface()
                 .get_current_texture()
                 .inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
+
+            // Create a `TextureView` to control how we interact with the render texture.
             let view = frame
                 .texture
-                .create_view(&Default::default());
+                .create_view(&wgpu::TextureViewDescriptor::default());
+
+            // We also create a CommandEncoder to create the actual commands to send to the GPU.
+            // Most modern graphics frameworks expect commands to be stored in a command buffer
+            // before being sent to the GPU.
             let encoder = state
                 .device()
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
