@@ -13,7 +13,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit::event::{KeyEvent, Modifiers, MouseButton};
-use crate::camera_controller::CameraController;
+use crate::camera::CameraController;
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
@@ -23,7 +23,6 @@ use crate::wgpu::texture::{CreateTexture, Texture, TextureType};
 mod engine;
 mod logging;
 mod wgpu;
-mod camera_controller;
 mod camera;
 mod resources;
 

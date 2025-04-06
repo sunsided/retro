@@ -33,8 +33,7 @@ use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, InstanceDescriptor, Maint
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-use crate::camera::Camera;
-use crate::camera_controller::CameraController;
+use crate::camera::{Camera, CameraController};
 use crate::resources;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::{Instance, InstanceRaw};

@@ -126,6 +126,19 @@ pub trait DrawModel<'model> {
         }
     }
 
+    fn draw_model_instanced_with_material(
+        &mut self,
+        model: &'model Model,
+        material: &'model Material,
+        instances: Range<u32>,
+        camera_bind_group: &'model wgpu::BindGroup,
+        light_bind_group: &'model wgpu::BindGroup,
+    ) {
+        for mesh in &model.meshes {
+            self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group, light_bind_group);
+        }
+    }
+
     #[inline]
     fn draw_mesh(
         &mut self,
