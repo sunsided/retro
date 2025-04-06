@@ -206,14 +206,14 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             let render_start = std::time::Instant::now();
             let state = render.state.as_ref().expect("State exists as per readiness check").lock();
             let frame = state
-                .surface
+                .surface()
                 .get_current_texture()
                 .inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
             let view = frame
                 .texture
                 .create_view(&Default::default());
             let encoder = state
-                .device
+                .device()
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Render Encoder"),
                 });
@@ -256,9 +256,9 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         if let Some(frame_state) = render.frame_state.take() {
             let command_buffer = frame_state.encoder.finish();
             let state = render.state.as_ref().expect("State exists").lock();
-            state.queue.submit(Some(command_buffer));
+            state.submit_to_queue(command_buffer);
             // Optionally poll
-            // state.device.poll(wgpu::Maintain::Poll);
+            // state.poll_device(wgpu::Maintain::Wait);
             frame_state.frame.present();
 
             let render_duration = frame_state.render_start.elapsed();

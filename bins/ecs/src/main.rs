@@ -5,9 +5,8 @@ use parking_lot::Mutex;
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, trace};
-use wgpu::{Adapter, Device, InstanceDescriptor, PresentMode, Queue};
 use winit::application::ApplicationHandler;
-use winit::dpi::{LogicalSize, PhysicalSize, Size};
+use winit::dpi::{LogicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
 use winit::window::{Fullscreen, Window, WindowId};
@@ -18,103 +17,12 @@ use winit::{
 use crate::engine::{MainWorld, SystemFactory, WorldCommand, WorldCommandReceiver, WorldCommandSender};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
+use crate::wgpu_state::WgpuState;
 
 mod engine;
 mod logging;
 mod phase_events;
-
-pub struct WgpuState {
-    _instance: wgpu::Instance,
-    surface: wgpu::Surface<'static>,
-    _adapter: Adapter,
-    device: Device,
-    queue: Queue,
-    surface_config: wgpu::SurfaceConfiguration,
-}
-
-impl WgpuState {
-    pub async fn new(window: Arc<Window>) -> WgpuState {
-        // https://github.com/rust-windowing/winit/discussions/3667#discussioncomment-9329312
-
-        // There's trouble with the Vulkan backend on NVIDIA + Wayland.
-        // If the application hangs after a couple of seconds, use `WGPU_BACKEND=gl`
-        let descriptor = InstanceDescriptor {
-            backends: wgpu::Backends::GL,
-            flags: Default::default(),
-            backend_options: Default::default(),
-        };
-        let instance = wgpu::Instance::new(&descriptor);
-
-        // TODO: See if we need to drop existing surfaces first?
-        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
-
-        let adapter = pollster::block_on(instance
-            .request_adapter(
-            &wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance, // or LowPower (e.g., iGPU)
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            },
-        ))
-            .unwrap();
-
-        let (device, queue) = pollster::block_on(adapter
-            .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("Device Descriptor"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
-                memory_hints: Default::default(),
-            },
-            None,
-        ))
-            .unwrap();
-
-        // Shader code in this tutorial assumes an sRGB surface texture. Using a different
-        // one will result in all the colors coming out darker. If you want to support non
-        // sRGB surfaces, you'll need to account for that when drawing to the frame.
-        let surface_caps = surface.get_capabilities(&adapter);
-        let surface_format = surface_caps.formats.iter()
-            .find(|f| f.is_srgb())
-            .copied()
-            .unwrap_or(surface_caps.formats[0]);
-        debug!("Using surface format {surface_format:?}");
-
-        let size = window.inner_size();
-        let surface_config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface_format,
-            width: size.width,
-            height: size.height,
-            present_mode: PresentMode::Fifo, // surface_caps.present_modes[0],
-            alpha_mode: surface_caps.alpha_modes[0],
-            view_formats: vec![],
-            desired_maximum_frame_latency: 2,
-        };
-
-        Self {
-            _instance: instance,
-            surface,
-            surface_config,
-            _adapter: adapter,
-            device,
-            queue
-        }
-    }
-
-    pub fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
-            debug!("Resizing window to {:?}", new_size);
-            self.surface_config.width = new_size.width;
-            self.surface_config.height = new_size.height;
-            self.surface.configure(&self.device, &self.surface_config);
-        }
-    }
-
-    pub fn draw(&mut self) {
-        trace!("Requesting draw from surface");
-    }
-}
+mod wgpu_state;
 
 struct App {
     window: Option<Arc<Window>>,
@@ -222,13 +130,9 @@ impl ApplicationHandler for App {
                 }
             }
 
-            // TODO: Allow external access to system data
             WindowEvent::RedrawRequested => {
                 trace!("Redraw requested");
-                if let Some(surface) = &mut self.state {
-                    self.ecs_world.apply_system_phase_render();
-                    surface.lock_arc().draw();
-                }
+                self.ecs_world.apply_system_phase_render();
             }
             _ => (),
         }
