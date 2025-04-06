@@ -193,10 +193,11 @@ impl ApplicationHandler for App {
     }
 
     fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
-        // Update the camera.
+        // Update the camera, light, etc.
         let state = &mut self.ecs_world.states.wgpu_render;
         if let Some(mut state) = state.state_mut() {
             state.update_camera_uniform(&self.camera_controller);
+            state.update_light();
         }
 
         // Update ECS.

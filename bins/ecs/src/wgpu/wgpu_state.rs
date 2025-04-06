@@ -38,6 +38,7 @@ use crate::camera_controller::CameraController;
 use crate::resources;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::{Instance, InstanceRaw};
+use crate::wgpu::light::LightUniform;
 use crate::wgpu::model::{Model, ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
 use crate::wgpu::TextureSampler;
@@ -63,6 +64,10 @@ pub struct WgpuState {
     pub(crate) instance_buffer: Buffer,
     pub depth_texture: Texture,
     pub obj_model: Model,
+    pub light_uniform: LightUniform,
+    pub light_buffer: Buffer,
+    pub light_bind_group: BindGroup,
+    pub light_render_pipeline: RenderPipeline,
 }
 
 impl WgpuState {
@@ -128,12 +133,6 @@ impl WgpuState {
         // Create Z-buffers.
         let depth_texture = Texture::depth_texture(&device, &surface_config, "depth_texture");
         let _depth_sampler = TextureSampler::depth_sampler(&device);
-
-        // TODO: Move shader to meaningful place
-        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: Some("Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/shader.wgsl").into()),
-        });
 
         // TODO: Refactor :)
         let texture_bind_group_layout =
@@ -247,118 +246,118 @@ impl WgpuState {
             }
         );
 
+        // TODO: Brutally refactor this
+        let light_uniform = LightUniform::new(
+            [2.0, 2.0, 2.0],
+            [1.0, 1.0, 1.0]);
+
+        // We'll want to update our lights position, so we use COPY_DST
+        let light_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Light VB"),
+                contents: bytemuck::cast_slice(&[light_uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+
+        let light_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }],
+                label: None,
+            });
+
+        let light_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &light_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: light_buffer.as_entire_binding(),
+            }],
+            label: None,
+        });
+
         // TODO: Refactor
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[
                     &texture_bind_group_layout, // `@group(0)` in the shader
-                    &camera_bind_group_layout   // `@group(1)` in the shader
+                    &camera_bind_group_layout,  // `@group(1)` in the shader
+                    &light_bind_group_layout,   // `@group(2)` in the shader
                 ],
                 push_constant_ranges: &[],
             });
 
-        // TODO: Refactor
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[
-                    ModelVertex::desc(),
-                    InstanceRaw::desc(),
-                ],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                targets: &[Some(wgpu::ColorTargetState { // Currently only one for the target surface.
-                    format: surface_format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
-                unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
-                conservative: false,
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // Less = front to back
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState {
-                count: 1, // Don't use multi-sampling.
-                mask: !0, // Use all samples.
-                alpha_to_coverage_enabled: false, // Anti-aliasing is currently not enabled.
-            },
-            multiview: None, // We're not using array textures.
-            cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
-        });
+        let shader = wgpu::ShaderModuleDescriptor {
+            label: Some("Normal Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/shader.wgsl").into()),
+        };
 
-        // TODO: Refactor ...
-        let colored_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Textured Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                buffers: &[
+        // TODO: Refactor
+        let render_pipeline = {
+            Self::create_render_pipeline(
+                "vs_main",
+                "fs_main",
+                &device,
+                &render_pipeline_layout,
+                surface_format,
+                Some(Texture::DEPTH_FORMAT),
+                &[
                     ModelVertex::desc(),
-                    InstanceRaw::desc(),
+                    InstanceRaw::desc()
                 ],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_textured_main"),
-                targets: &[Some(wgpu::ColorTargetState { // Currently only one for the target surface.
-                    format: surface_format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: wgpu::PipelineCompilationOptions::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: wgpu::PolygonMode::Fill,
-                // Requires Features::DEPTH_CLIP_CONTROL
-                unclipped_depth: false,
-                // Requires Features::CONSERVATIVE_RASTERIZATION
-                conservative: false,
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState {
-                count: 1, // Don't use multi-sampling.
-                mask: !0, // Use all samples.
-                alpha_to_coverage_enabled: false, // Anti-aliasing is currently not enabled.
-            },
-            multiview: None, // We're not using array textures.
-            cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
-        });
+                shader.clone(),
+                "Render Pipeline"
+            )
+        };
+
+        let textured_render_pipeline = {
+            Self::create_render_pipeline(
+                "vs_main",
+                "fs_textured_main",
+                &device,
+                &render_pipeline_layout,
+                surface_format,
+                Some(Texture::DEPTH_FORMAT),
+                &[
+                    ModelVertex::desc(),
+                    InstanceRaw::desc()
+                ],
+                shader,
+                "Textured Render Pipeline"
+            )
+        };
+
+        let light_render_pipeline = {
+            let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Light Pipeline Layout"),
+                bind_group_layouts: &[&camera_bind_group_layout, &light_bind_group_layout],
+                push_constant_ranges: &[],
+            });
+            let shader = wgpu::ShaderModuleDescriptor {
+                label: Some("Light Shader"),
+                source: wgpu::ShaderSource::Wgsl(include_str!("../shaders/light.wgsl").into()),
+            };
+            Self::create_render_pipeline(
+                "vs_main",
+                "fs_main",
+                &device,
+                &layout,
+                surface_format,
+                Some(Texture::DEPTH_FORMAT),
+                &[ModelVertex::desc()],
+                shader,
+                "Light Render Pipeline"
+            )
+        };
 
         Self {
             instance,
@@ -368,7 +367,8 @@ impl WgpuState {
             queue,
             render_pipeline_layout,
             render_pipeline,
-            colored_render_pipeline,
+            colored_render_pipeline: textured_render_pipeline,
+            light_render_pipeline,
             texture_bind_group_layout,
             linear_sampler: sampler,
             camera,
@@ -378,7 +378,10 @@ impl WgpuState {
             instances,
             instance_buffer,
             depth_texture,
-            obj_model
+            obj_model,
+            light_uniform,
+            light_buffer,
+            light_bind_group
         }
     }
 
@@ -441,6 +444,12 @@ impl WgpuState {
         &self.camera_bind_group
     }
 
+    /// Accesses the light bind group.
+    #[inline]
+    pub const fn light_bind_group(&self) -> &BindGroup {
+        &self.light_bind_group
+    }
+
     /// Submits a command buffer to the WGPU queue for execution.
     ///
     /// This function is used to send GPU commands for processing.
@@ -456,10 +465,21 @@ impl WgpuState {
     }
 
     /// Update the camera uniform buffer.
+    // TODO: Refactor
     pub fn update_camera_uniform(&mut self, controller: &CameraController) {
         controller.update_camera(&mut self.camera);
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
+    }
+
+    // TODO: Refactor
+    pub fn update_light(&mut self) {
+        let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
+        self.light_uniform.position =
+            (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(1.0))
+                * old_position)
+                .into();
+        self.queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
     }
 
     /// Polls the underlying device.
@@ -467,6 +487,70 @@ impl WgpuState {
     #[allow(dead_code)]
     pub fn poll_device(&mut self, maintain: wgpu::Maintain) -> MaintainResult {
         self.device.poll(maintain)
+    }
+
+    fn create_render_pipeline(
+        vs_main: &str,
+        fs_main: &str,
+        device: &Device,
+        layout: &PipelineLayout,
+        color_format: wgpu::TextureFormat,
+        depth_format: Option<wgpu::TextureFormat>,
+        vertex_layouts: &[wgpu::VertexBufferLayout],
+        shader: wgpu::ShaderModuleDescriptor,
+        label: &str,
+    ) -> RenderPipeline {
+        let shader = device.create_shader_module(shader);
+
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some(label),
+            layout: Some(layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some(vs_main),
+                buffers: vertex_layouts,
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some(fs_main),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: color_format,
+                    blend: Some(wgpu::BlendState {
+                        alpha: wgpu::BlendComponent::REPLACE,
+                        color: wgpu::BlendComponent::REPLACE,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: Some(wgpu::Face::Back),
+                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+                polygon_mode: wgpu::PolygonMode::Fill,
+                // Requires Features::DEPTH_CLIP_CONTROL
+                unclipped_depth: false,
+                // Requires Features::CONSERVATIVE_RASTERIZATION
+                conservative: false,
+            },
+            depth_stencil: depth_format.map(|format| wgpu::DepthStencilState {
+                format,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview: None,
+            cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
+        })
     }
 }
 

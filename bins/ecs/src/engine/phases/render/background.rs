@@ -52,6 +52,7 @@ use wgpu::{BindGroup, IndexFormat};
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::wgpu::model::DrawModel;
+use crate::wgpu::light::DrawLight;
 use crate::wgpu::RenderPipelineSelector;
 use crate::wgpu::texture::Texture;
 
@@ -127,7 +128,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
     fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
-        let Some(texture) = &self.texture else {
+        let Some(_texture) = &self.texture else {
             return;
         };
 
@@ -173,12 +174,21 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
                 timestamp_writes: None,
             });
 
-        render_pass.set_pipeline(state.render_pipeline(self.selector));
 
         // Enable the instance buffer.
         render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
         let num_instances = state.instances.len() as u32;
 
-        render_pass.draw_model_instanced(&state.obj_model, 0..num_instances, state.camera_bind_group());
+        // Render the light.
+        render_pass.set_pipeline(&state.light_render_pipeline);
+        render_pass.draw_light_model(
+            &state.obj_model,
+            state.camera_bind_group(),
+            state.light_bind_group(),
+        );
+
+        // Render the normal thing.
+        render_pass.set_pipeline(state.render_pipeline(self.selector));
+        render_pass.draw_model_instanced(&state.obj_model, 0..num_instances, state.camera_bind_group(), state.light_bind_group());
     }
 }
