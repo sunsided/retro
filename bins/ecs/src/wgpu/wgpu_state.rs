@@ -28,7 +28,7 @@
 
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{Buffer, BufferSlice, Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Surface, TextureUsages};
+use wgpu::{BindGroupLayout, Buffer, BufferSlice, Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Sampler, Surface, TextureUsages};
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -48,9 +48,10 @@ pub struct WgpuState {
     render_pipeline: RenderPipeline,
     colored_render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
-    pub vertex_buffer_length: usize,
-    pub index_buffer: Buffer,
-    pub index_buffer_length: usize,
+    vertex_buffer_length: usize,
+    index_buffer: Buffer,
+    index_buffer_length: usize,
+    pub texture_bind_group_layout: BindGroupLayout,
 }
 
 impl WgpuState {
@@ -235,6 +236,34 @@ impl WgpuState {
         );
         let index_buffer_length = Vertex::PENTAGON_INDICES.len();
 
+        // TODO: Refactor :)
+        let texture_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    // Binding for the texture
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT, // NONE, VERTEX, FRAGMENT or COMPUTE
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    // Binding for the texture sampler
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        // This should match the filterable field of the
+                        // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                ],
+                label: Some("texture_bind_group_layout"),
+            });
+
         Self {
             instance,
             surface,
@@ -248,6 +277,7 @@ impl WgpuState {
             vertex_buffer_length,
             index_buffer,
             index_buffer_length,
+            texture_bind_group_layout,
             linear_sampler: sampler
         }
     }
@@ -299,6 +329,18 @@ impl WgpuState {
     #[inline]
     pub fn index_buffer(&self) -> (BufferSlice<'_>, u32) {
         (self.index_buffer.slice(..), self.index_buffer_length as _)
+    }
+
+    /// Accesses the render pipeline layout.
+    #[inline]
+    pub const fn bind_group_layout(&self) -> &BindGroupLayout {
+        &self.texture_bind_group_layout
+    }
+
+    /// Accesses the linear texture sampler.
+    #[inline]
+    pub const fn linear_sampler(&self) -> &Sampler {
+        &self.linear_sampler.sampler
     }
 
     /// Submits a command buffer to the WGPU queue for execution.

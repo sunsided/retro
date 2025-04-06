@@ -67,8 +67,13 @@ impl App {
             let state = pollster::block_on(WgpuState::new(window.clone()));
 
             // Recreate the textures.
-            let _texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
+            let texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
                 .expect("Failed to load cover texture");
+
+            // TODO: Refactor
+            // The textures could be attributes on a `Renderable` component.
+            let system = self.ecs_world.systems.as_render_background_mut();
+            system.texture = Some(texture);
 
             // Set WGPU render state.
             self.state = Some(Arc::new(Mutex::new(state)));

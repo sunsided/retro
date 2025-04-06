@@ -43,13 +43,15 @@ use crate::wgpu::WgpuState;
 /// ## See also
 ///
 /// - [`TextureSampler`](crate::wgpu::texture_sampler::TextureSampler)
+#[derive(Debug)]
 pub struct Texture {
     /// The GPU texture resource that stores the image data.
     #[allow(unused)]
     pub texture: wgpu::Texture,
-
     /// A view into the texture, used for binding the texture as a resource in shaders.
     pub view: wgpu::TextureView,
+    /// The bind group
+    pub diffuse_bind_group: wgpu::BindGroup,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -81,6 +83,8 @@ impl Texture {
     /// - `bytes`: A byte array containing the raw image data to be decoded and uploaded.
     /// - `device`: A reference to the `wgpu::Device`, used to create GPU resources.
     /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
+    /// - `layout`: A reference to the `wgpu::BindGroupLayout`.
+    /// - `sampler`: A reference to the `wgpu::Sampler`.
     /// - `label`: A descriptive label for the texture, used for debugging purposes.
     ///
     /// # Returns
@@ -95,10 +99,12 @@ impl Texture {
         bytes: &[u8],
         device: &wgpu::Device,
         queue: &wgpu::Queue,
+        layout: &wgpu::BindGroupLayout,
+        sampler: &wgpu::Sampler,
         label: &str,
     ) -> Result<Self, TextureError> {
         let img = image::load_from_memory(bytes).map_err(TextureError::LoadFromBytes)?;
-        Ok(Self::from_image_with(device, queue, &img, Some(label)))
+        Ok(Self::from_image_with(device, queue, layout, sampler, &img, Some(label)))
     }
 
     /// Creates a texture from a decoded image.
@@ -111,6 +117,8 @@ impl Texture {
     ///
     /// - `device`: A reference to the `wgpu::Device`, used to create the GPU texture resource.
     /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
+    /// - `layout`: A reference to the `wgpu::BindGroupLayout`.
+    /// - `sampler`: A reference to the `wgpu::Sampler`.
     /// - `img`: A reference to the `DynamicImage` object to be converted into a GPU texture.
     /// - `label`: An optional label for the texture, useful for debugging purposes.
     ///
@@ -121,6 +129,8 @@ impl Texture {
     pub fn from_image_with(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
+        layout: &wgpu::BindGroupLayout,
+        sampler: &wgpu::Sampler,
         img: &image::DynamicImage,
         label: Option<&str>,
     ) -> Self {
@@ -139,8 +149,18 @@ impl Texture {
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
+                // Most images are stored using sRGB, so we need to reflect that here.
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
+                // COPY_DST means that we want to copy data to this texture
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                // This is the same as with the SurfaceConfig. It
+                // specifies what texture formats can be used to
+                // create TextureViews for this texture. The base
+                // texture format (Rgba8UnormSrgb in this case) is
+                // always supported. Note that using a different
+                // texture format is not supported on the WebGL2
+                // backend.
                 view_formats: &[],
             }
         );
@@ -163,45 +183,29 @@ impl Texture {
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-        Self { texture, view }
+        let diffuse_bind_group = device.create_bind_group(
+            &wgpu::BindGroupDescriptor {
+                layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(sampler),
+                    }
+                ],
+                label: Some("diffuse_bind_group"),
+            }
+        );
+
+        Self { texture, view, diffuse_bind_group }
     }
 }
 
 #[cfg(any(feature = "jpeg", feature = "png", feature = "webp"))]
 impl Texture {
-    /// Loads a texture from an image file and uploads it to the GPU.
-    ///
-    /// This function reads an image file from the specified path, decodes it into a `DynamicImage`,
-    /// and creates a `Texture` object on the GPU using the `from_image` method.
-    ///
-    /// # Parameters
-    ///
-    /// - `path`: The file path to the image file to be loaded.
-    /// - `device`: A reference to the `wgpu::Device`, used to create GPU resources.
-    /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
-    /// - `label`: An optional label for the texture, useful for debugging purposes.
-    ///
-    /// # Returns
-    ///
-    /// Returns a `Result` containing the created `Texture` object if successful, or a
-    /// `TextureError` if loading the image from the file fails.
-    ///
-    /// # Errors
-    ///
-    /// This function will return a `TextureError::LoadFromBytes` if loading or decoding the image fails.
-    pub fn from_file_with<P>(
-        path: P,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        label: Option<&str>,
-    ) -> Result<Self, TextureError>
-    where
-        P: AsRef<std::path::Path>,
-    {
-        let img = image::open(path).map_err(TextureError::LoadFromFile)?;
-        Ok(Self::from_image_with(device, queue, &img, label))
-    }
-
     /// Loads a texture from an image file and uploads it to the GPU using the provided `WgpuState`.
     ///
     /// This function simplifies texture creation by utilizing a `WgpuState` object, which manages the
@@ -233,7 +237,7 @@ impl Texture {
         P: AsRef<Path>,
     {
         let img = image::open(path).map_err(TextureError::LoadFromFile)?;
-        Ok(Self::from_image_with(state.device(), state.queue(), &img, label))
+        Ok(Self::from_image_with(state.device(), state.queue(), state.bind_group_layout(), state.linear_sampler(), &img, label))
     }
 }
 

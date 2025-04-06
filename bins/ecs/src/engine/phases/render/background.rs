@@ -52,6 +52,7 @@ use wgpu::IndexFormat;
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::wgpu::RenderPipelineSelector;
+use crate::wgpu::texture::Texture;
 
 /// Represents a background color with red, green, blue, and alpha components,
 /// used as part of the [`BackgroundColorComponent`].
@@ -101,7 +102,8 @@ impl BackgroundColorData {
 
 #[derive(Debug, Default)]
 pub struct RenderBackgroundSystemData {
-    pub selector: RenderPipelineSelector
+    pub selector: RenderPipelineSelector,
+    pub texture: Option<Texture>
 }
 
 impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
@@ -124,6 +126,10 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
     fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
+        let Some(texture) = &self.texture else {
+            return;
+        };
+
         let Some((state, frame_state)) = wgpu_render.states_mut() else {
             return;
         };
@@ -160,6 +166,9 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
             });
 
         render_pass.set_pipeline(state.render_pipeline(self.selector));
+
+        // Set the bind group for textures.
+        render_pass.set_bind_group(0, &texture.diffuse_bind_group, &[]);
 
         // Set the vertex buffer in buffer slot 0.
         let (buffer, _num_vertices) = state.vertex_buffer();
