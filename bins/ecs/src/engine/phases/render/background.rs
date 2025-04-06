@@ -179,8 +179,6 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
         let num_instances = state.instances.len() as u32;
 
-        let mesh = &state.obj_model.meshes[0];
-        let material = &state.obj_model.materials[mesh.material];
-        render_pass.draw_mesh_instanced(mesh, material, 0..num_instances, state.camera_bind_group());
+        render_pass.draw_model_instanced(&state.obj_model, 0..num_instances, state.camera_bind_group());
     }
 }
