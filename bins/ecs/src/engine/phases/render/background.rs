@@ -158,6 +158,9 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         render_pass.set_pipeline(state.render_pipeline());
 
         // TODO: Refactor this triangle drawing meaningfully.
+        // Draw _something_ with three vertices and one instance.
+        // This is where @builtin(vertex_index) comes from.
+        // The actual coordinates are calculated in the vertex shader.
         render_pass.draw(0..3, 0..1);
     }
 }
