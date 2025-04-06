@@ -160,10 +160,14 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
         render_pass.set_pipeline(state.render_pipeline(self.selector));
 
+        // Set the buffer in buffer slot 0.
+        let (buffer, num_vertices) = state.vertex_buffer();
+        render_pass.set_vertex_buffer(0, buffer);
+
         // TODO: Refactor this triangle drawing meaningfully.
         // Draw _something_ with three vertices and one instance.
         // This is where @builtin(vertex_index) comes from.
         // The actual coordinates are calculated in the vertex shader.
-        render_pass.draw(0..3, 0..1);
+        render_pass.draw(0..num_vertices, 0..1);
     }
 }

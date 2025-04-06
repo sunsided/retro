@@ -28,7 +28,7 @@
 
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{Buffer, Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Surface, TextureUsages};
+use wgpu::{Buffer, BufferSlice, Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Surface, TextureUsages};
 use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -48,6 +48,7 @@ pub struct WgpuState {
     render_pipeline: RenderPipeline,
     colored_render_pipeline: RenderPipeline,
     vertex_buffer: Buffer,
+    pub vertex_buffer_length: usize,
 }
 
 impl WgpuState {
@@ -131,7 +132,9 @@ impl WgpuState {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[], // Which types of vertices to pass. Will be added later.
+                buffers: &[
+                    Vertex::desc(),
+                ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -173,7 +176,9 @@ impl WgpuState {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[], // Which types of vertices to pass. Will be added later.
+                buffers: &[
+                    Vertex::desc(),
+                ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -216,6 +221,7 @@ impl WgpuState {
                 usage: wgpu::BufferUsages::VERTEX,
             }
         );
+        let vertex_buffer_length = Vertex::TRIANGLE_VERTICES.len();
 
         Self {
             instance,
@@ -227,6 +233,7 @@ impl WgpuState {
             render_pipeline,
             colored_render_pipeline,
             vertex_buffer,
+            vertex_buffer_length,
             linear_sampler: sampler
         }
     }
@@ -266,6 +273,12 @@ impl WgpuState {
             RenderPipelineSelector::Boring => &self.render_pipeline,
             RenderPipelineSelector::Colored => &self.colored_render_pipeline
         }
+    }
+
+    /// Provides access to the vertex buffer.
+    #[inline]
+    pub fn vertex_buffer(&self) -> (BufferSlice<'_>, u32) {
+        (self.vertex_buffer.slice(..), self.vertex_buffer_length as _)
     }
 
     /// Submits a command buffer to the WGPU queue for execution.
