@@ -18,7 +18,7 @@ use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::wgpu::{RenderPipelineSelector, WgpuState};
-use crate::wgpu::texture::CreateTexture;
+use crate::wgpu::texture::{CreateTexture, Texture};
 
 mod engine;
 mod logging;
@@ -72,11 +72,14 @@ impl App {
             self.state = None;
             let state = pollster::block_on(WgpuState::new(window.clone()));
 
+            // Create a fallback normal map.
+            let fallback_normals = state.fallback_normal_map();
+
             // Recreate the textures.
             let texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
                 .expect("Failed to load cover texture");
 
-            let bind_group = state.create_bind_group(&texture);
+            let bind_group = state.create_bind_group(&texture, &fallback_normals);
 
             // TODO: Refactor
             // The textures could be attributes on a `Renderable` component.

@@ -102,30 +102,26 @@ where P: AsRef<std::path::Path>
 
     let mut materials = Vec::new();
     for m in obj_materials.map_err(ModelLoadError::LoadMaterialError)? {
+        // Load the diffuse map
         let diffuse_texture = m.diffuse_texture.ok_or_else(|| ModelLoadError::MaterialWithoutTexture(m.name.clone()))?;
         let diffuse_texture = file_name.parent().unwrap_or_else(|| std::path::Path::new(".")).join(diffuse_texture);
         let diffuse_texture = load_texture(&diffuse_texture, device, queue)
             .inspect_err(|err| error!(%err, path = ?diffuse_texture, "Failed to load diffuse texture"))?;
-        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&sampler),
-                },
-            ],
-            label: None,
-        });
 
-        materials.push(Material {
-            name: m.name.into_boxed_str(),
+        // Load the normal map
+        let normal_texture = m.normal_texture.ok_or_else(|| ModelLoadError::MaterialWithoutTexture(m.name.clone()))?;
+        let normal_texture = file_name.parent().unwrap_or_else(|| std::path::Path::new(".")).join(normal_texture);
+        let normal_texture = load_texture(&normal_texture, device, queue)
+            .inspect_err(|err| error!(%err, path = ?normal_texture, "Failed to load diffuse texture"))?;
+
+        materials.push(Material::new(
+            &device,
+            &m.name,
             diffuse_texture,
-            bind_group,
-        })
+            normal_texture,
+            layout,
+            sampler
+        ));
     }
 
     let meshes = models

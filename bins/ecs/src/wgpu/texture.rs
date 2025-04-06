@@ -30,6 +30,7 @@
 
 use std::path::Path;
 use image::{GenericImageView, ImageError};
+use wgpu::{Device, Queue};
 use crate::wgpu::WgpuState;
 
 /// A struct representing a GPU texture along with its corresponding view.
@@ -62,6 +63,8 @@ pub enum TextureError {
 }
 
 pub trait CreateTexture {
+    fn fallback_normal_map(&self) -> Texture;
+
     fn texture_from_image<P>(
         &self,
         path: P,
@@ -70,7 +73,7 @@ pub trait CreateTexture {
     where P: AsRef<Path>;
 
     /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
-    fn create_bind_group(&self, texture: &Texture) -> wgpu::BindGroup;
+    fn create_bind_group(&self, texture: &Texture, normals: &Texture) -> wgpu::BindGroup;
 }
 
 impl Texture {
@@ -227,26 +230,100 @@ impl Texture {
 
         Self { texture, view }
     }
+
+    /// Creates a fallback normal map texture for cases where a normal map is missing.
+    ///
+    /// This function generates a small 1x1 GPU texture with a flat normal value
+    /// `(0.5, 0.5, 1.0, 1.0)` represented as `[128, 128, 255, 255]`. It is often used
+    /// when no normal map texture is provided for a material, ensuring consistency
+    /// in rendering pipelines.
+    ///
+    /// # Parameters
+    ///
+    /// - `device`: A reference to the `wgpu::Device`, used to create the GPU texture resource.
+    /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Texture` object containing the fallback normal map and its view, ready for use
+    /// in rendering and sampling operations.
+    pub fn fallback_normal_map(
+        device: &Device,
+        queue: &Queue,
+    ) -> Self {
+        let size = wgpu::Extent3d {
+            width: 1,
+            height: 1,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(
+            &wgpu::TextureDescriptor {
+                label: Some("fallback_normal_map"),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                // Use linear format for normal maps
+                format: wgpu::TextureFormat::Rgba8Unorm,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            }
+        );
+
+        // Flat normal: (0.5, 0.5, 1.0, 1.0) encoded as [128, 128, 255, 255]
+        let normal_pixel = [128u8, 128u8, 255u8, 255u8];
+
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &normal_pixel,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * 1),
+                rows_per_image: Some(1),
+            },
+            size,
+        );
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        Self { texture, view }
+    }
 }
 
 impl Texture {
     /// Create a [`BindGroup`](wgpu::BindGroup).
-    pub fn create_bind_group(&self, state: &WgpuState) -> wgpu::BindGroup {
-        self.create_bind_group_with(state.device(), state.bind_group_layout(), state.linear_sampler())
+    pub fn create_bind_group(&self, state: &WgpuState, normals: &Texture) -> wgpu::BindGroup {
+        self.create_bind_group_with(state.device(), state.bind_group_layout(), state.linear_sampler(), normals)
     }
 
     /// Create a [`BindGroup`](wgpu::BindGroup).
-    pub fn create_bind_group_with(&self, device: &wgpu::Device, layout: &wgpu::BindGroupLayout, sampler: &wgpu::Sampler) -> wgpu::BindGroup {
+    pub fn create_bind_group_with(&self, device: &Device, layout: &wgpu::BindGroupLayout, sampler: &wgpu::Sampler, normals: &Texture) -> wgpu::BindGroup {
         device.create_bind_group(
             &wgpu::BindGroupDescriptor {
                 layout,
                 entries: &[
+                    // Diffuse map
                     wgpu::BindGroupEntry {
                         binding: 0,
                         resource: wgpu::BindingResource::TextureView(&self.view),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
+                    // Normal map
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::TextureView(&normals.view),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
                         resource: wgpu::BindingResource::Sampler(&sampler),
                     }
                 ],
@@ -294,6 +371,10 @@ impl Texture {
 
 #[cfg(any(feature = "jpeg", feature = "png", feature = "webp"))]
 impl CreateTexture for WgpuState {
+    fn fallback_normal_map(&self) -> Texture {
+        Texture::fallback_normal_map(self.device(), self.queue())
+    }
+
     fn texture_from_image<P>(&self, path: P, label: Option<&str>) -> Result<Texture, TextureError>
     where
         P: AsRef<Path>
@@ -302,7 +383,7 @@ impl CreateTexture for WgpuState {
     }
 
     /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
-    fn create_bind_group(&self, texture: &Texture) -> wgpu::BindGroup {
-        texture.create_bind_group(self)
+    fn create_bind_group(&self, texture: &Texture, normals: &Texture) -> wgpu::BindGroup {
+        texture.create_bind_group(self, normals)
     }
 }

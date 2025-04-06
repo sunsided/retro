@@ -138,9 +138,9 @@ impl WgpuState {
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
-                    // Binding for the texture (`@binding(0)` in the shader)
+                    // Diffuse texture
                     wgpu::BindGroupLayoutEntry {
-                        binding: 0,
+                        binding: 0, // @binding(0)
                         visibility: wgpu::ShaderStages::FRAGMENT, // NONE, VERTEX, FRAGMENT or COMPUTE
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
@@ -149,12 +149,28 @@ impl WgpuState {
                         },
                         count: None,
                     },
-                    // Binding for the texture sampler (`@binding(1)` in the shader)
                     wgpu::BindGroupLayoutEntry {
-                        binding: 1,
+                        binding: 1, // @binding(1)
                         visibility: wgpu::ShaderStages::FRAGMENT,
                         // This should match the filterable field of the
                         // corresponding Texture entry above.
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
+                    // normal map
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 2, // @binding(2)
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3, // @binding(3)
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
