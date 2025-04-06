@@ -101,13 +101,14 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem>
+pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem>
 { }
 
 #[automatically_derived]
 impl<T> CreateSystems for T
 where
-    T: CreateSystem<PhysicsSystem>
+    T: CreateSystem<CameraSystem>
+     + CreateSystem<PhysicsSystem>
      + CreateSystem<BackgroundColorCycleSystem>
      + CreateSystem<RenderBackgroundSystem>
      + CreateSystem<RenderSystem>
@@ -322,6 +323,214 @@ pub trait SystemRenderPhaseEvents {
 
 /// A system operating on multiple [`Component`]s.
 ///
+/// The business logic is implemented via the [`ApplyCameraSystem`] trait.
+/// See also [`CameraData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+///
+/// ### Mutates
+/// 
+/// - [`CameraComponent`]
+/// - [`CameraFpsControllerComponent`]
+#[derive(Debug)]
+pub struct CameraSystem(CameraSystemData);
+
+/// Implements the business logic for the [`CameraSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyCameraSystem: System {
+    type Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `camera`: A mutable reference to the component of type [`CameraComponent`].
+    /// - `camera_fps_controller`: A mutable reference to the component of type [`CameraFpsControllerComponent`].
+    fn apply_single(
+        &mut self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+        camera: &mut CameraComponent,
+        camera_fps_controller: &mut CameraFpsControllerComponent,
+    );
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `camera`: A mutable slice of the components of type [`CameraComponent`].
+    /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
+    fn apply_many(
+        &mut self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+        cameras: &mut [CameraComponent],
+        camera_fps_controllers: &mut [CameraFpsControllerComponent],
+    ) {
+        let zipped_iter = cameras.iter_mut().zip(camera_fps_controllers.iter_mut());
+        for (camera, camera_fps_controller) in zipped_iter {
+            self.apply_single(
+                input,
+                active_camera,
+                camera,
+                camera_fps_controller,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl CameraSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+        camera: &mut CameraComponent,
+        camera_fps_controller: &mut CameraFpsControllerComponent,
+    ) {
+        ApplyCameraSystem::apply_single(
+            self,
+            input,
+            active_camera,
+            camera,
+            camera_fps_controller,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `camera`: A mutable slice of the components of type [`CameraComponent`].
+    /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
+    #[inline]
+    fn apply_many(
+        &mut self,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+        cameras: &mut [CameraComponent],
+        camera_fps_controllers: &mut [CameraFpsControllerComponent],
+    ) {
+        ApplyCameraSystem::apply_many(
+            self,
+            input,
+            active_camera,
+            cameras,
+            camera_fps_controllers,
+        );
+    }
+
+    /// Applies this system to the [`CameraArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_camera(
+        &mut self,
+        archetype: &mut CameraArchetype,
+        input: &InputState,
+        active_camera: &mut ActiveCameraState,
+    ) {
+        self.apply_many(
+            input,
+            active_camera,
+            &mut archetype.cameras,
+            &mut archetype.camera_fps_controllers,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for CameraSystem {
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(1).expect("A zero system ID was provided"));
+}
+
+impl PartialEq<SystemId> for CameraSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<CameraSystemData> for CameraSystem {
+    fn from(data: CameraSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for CameraSystem {
+    type Target = CameraSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for CameraSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
 /// The business logic is implemented via the [`ApplyPhysicsSystem`] trait.
 /// See also [`PhysicsData`] for the systems-specific data.
 ///
@@ -499,7 +708,7 @@ impl PhysicsSystem {
 
 #[automatically_derived]
 impl System for PhysicsSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(1).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for PhysicsSystem {
@@ -683,7 +892,7 @@ impl BackgroundColorCycleSystem {
 
 #[automatically_derived]
 impl System for BackgroundColorCycleSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for BackgroundColorCycleSystem {
@@ -867,7 +1076,7 @@ impl RenderBackgroundSystem {
 
 #[automatically_derived]
 impl System for RenderBackgroundSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(4).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderBackgroundSystem {
@@ -1093,7 +1302,7 @@ impl RenderSystem {
 
 #[automatically_derived]
 impl System for RenderSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(4).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(5).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderSystem {

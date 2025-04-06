@@ -47,13 +47,13 @@
 //! }
 //! ```
 
+use crate::wgpu::gpu_hardware::RenderPipelineSelector;
 use std::convert::Infallible;
 use wgpu::{BindGroup, IndexFormat};
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::light::DrawLight;
-use crate::wgpu::RenderPipelineSelector;
 use crate::wgpu::texture::Texture;
 
 /// Represents a background color with red, green, blue, and alpha components,
@@ -132,7 +132,11 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
             return;
         };
 
-        let Some((state, frame_state)) = wgpu_render.states_mut() else {
+        let Some(device) = wgpu_render.hardware.device() else {
+            return;
+        };
+
+        let Some(frame_state) = &mut wgpu_render.frame_state else {
             return;
         };
 
@@ -163,7 +167,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
                     })
                 ],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &state.depth_texture.view,
+                    view: &device.depths().screen.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.0),
                         store: wgpu::StoreOp::Store,
@@ -176,19 +180,19 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
 
         // Enable the instance buffer.
-        render_pass.set_vertex_buffer(1, state.instance_buffer.slice(..));
-        let num_instances = state.instances.len() as u32;
+        render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
+        let num_instances = device.buffers().instances.len() as u32;
 
         // Render the light.
-        render_pass.set_pipeline(&state.light_render_pipeline);
+        render_pass.set_pipeline(&device.pipelines().light);
         render_pass.draw_light_model(
-            &state.obj_model,
-            state.camera_bind_group(),
-            state.light_bind_group(),
+            &device.models().cube,
+            &device.bind_groups().camera,
+            &device.bind_groups().light_vb,
         );
 
         // Render the normal thing.
-        render_pass.set_pipeline(state.render_pipeline(self.selector));
-        render_pass.draw_model_instanced(&state.obj_model, 0..num_instances, state.camera_bind_group(), state.light_bind_group());
+        render_pass.set_pipeline(device.pipelines().render_pipeline(self.selector));
+        render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
     }
 }

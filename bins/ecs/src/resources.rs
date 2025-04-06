@@ -50,6 +50,7 @@ where P: AsRef<std::path::Path>
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum LoadTextureError {
     #[error(transparent)]
     TextureError(#[from] TextureError),
@@ -58,6 +59,7 @@ pub enum LoadTextureError {
 }
 
 #[derive(Debug, thiserror::Error)]
+#[allow(dead_code)]
 pub enum ModelLoadError {
     #[error("Failed to load model: {0}")]
     LoadModelError(tobj::LoadError),

@@ -20,6 +20,17 @@
 //! - **Error Handling**: Provides error enumeration (`WgpuReinitializeWindowError`)
 //!   for better handling of common errors during initialization or reinitialization.
 
+mod device_and_queue;
+mod surface_id;
+mod surface_wrapper;
+mod texture_samplers;
+mod depth_buffers;
+mod bind_group_layouts;
+mod render_pipelines;
+mod shaders;
+mod buffers;
+mod bind_groups;
+mod models;
 
 use std::fmt::Display;
 use std::sync::Arc;
@@ -29,6 +40,10 @@ use wgpu::{Adapter, Backends, Device, InstanceDescriptor, PresentMode, Queue, Re
 use wgpu::hal::DynSurface;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
+pub use crate::wgpu::gpu_hardware::device_and_queue::DeviceAndQueue;
+pub use crate::wgpu::gpu_hardware::surface_id::SurfaceId;
+pub use crate::wgpu::gpu_hardware::surface_wrapper::SurfaceWrapper;
+pub use crate::wgpu::gpu_hardware::render_pipelines::RenderPipelineSelector;
 
 #[derive(Debug, Default)]
 pub struct WgpuHardware {
@@ -36,73 +51,6 @@ pub struct WgpuHardware {
     surface: SurfaceWrapper,
     adapter: Option<Adapter>,
     device: Option<DeviceAndQueue>,
-}
-
-/// The ID of a WGPU surface.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SurfaceId(u64);
-
-impl SurfaceId {
-    /// Generates the next unique `SurfaceId`.
-    ///
-    /// This function uses an atomic counter to ensure that each generated
-    /// `SurfaceId` is unique across threads.
-    ///
-    /// # Returns
-    /// A new `SurfaceId` with a unique, incremented value.
-    pub fn next() -> Self {
-        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        SurfaceId(NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst))
-    }
-
-    /// Checks if the `SurfaceId` is uninitialized or has a default value.
-    ///
-    /// # Returns
-    /// - `true` if the `SurfaceId` is 0 (uninitialized), otherwise `false`.
-    pub fn is_uninitialized(&self) -> bool {
-        self.0 == 0
-    }
-}
-
-impl Display for SurfaceId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self.0, f)
-    }
-}
-
-/// A wrapper for a WGPU surface.
-#[derive(Debug, Default)]
-pub struct SurfaceWrapper {
-    id: SurfaceId,
-    surface: Option<Surface<'static>>,
-}
-
-impl SurfaceWrapper {
-    pub fn reset(&mut self) {
-        *self = Default::default()
-    }
-
-    pub const fn id(&self) -> SurfaceId {
-        self.id
-    }
-
-    pub const fn as_ref(&self) -> Option<&Surface<'static>> {
-        self.surface.as_ref()
-    }
-
-    pub const fn as_mut(&mut self) -> Option<&mut Surface<'static>> {
-        self.surface.as_mut()
-    }
-}
-
-impl From<Surface<'static>> for SurfaceWrapper {
-    fn from(value: Surface<'static>) -> Self {
-        Self {
-            id: SurfaceId::next(),
-            surface: Some(value),
-            ..Default::default()
-        }
-    }
 }
 
 impl WgpuHardware {
@@ -128,6 +76,22 @@ impl WgpuHardware {
         let instance = wgpu::Instance::new(&descriptor);
         WgpuHardware { instance, ..Default::default() }
     }
+
+    /// Get access to the device, if configured.
+    #[inline]
+    pub fn device(&self) -> Option<&DeviceAndQueue> {
+        self.device.as_ref()
+    }
+
+    #[inline]
+    pub const fn is_ready(&self) -> bool {
+        self.device.is_some()
+    }
+
+    #[inline]
+    pub const fn surface(&self) -> &SurfaceWrapper {
+        &self.surface
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -140,11 +104,14 @@ pub enum WgpuReinitializeWindowError {
     NoDevice(#[from] RequestDeviceError)
 }
 
-#[derive(Debug, AsRef)]
-pub struct DeviceAndQueue {
-    pub device: Device,
-    pub queue: Queue,
-    pub config: SurfaceConfiguration,
+#[derive(Debug, thiserror::Error)]
+pub enum WgpuResizeSurfaceError {
+    #[error("Invalid surface size")]
+    InvalidSize(PhysicalSize<u32>),
+    #[error("No surface available to resize")]
+    NoSurface,
+    #[error("No device available to resize the surface with")]
+    NoDevice
 }
 
 impl WgpuHardware {
@@ -172,11 +139,7 @@ impl WgpuHardware {
             let config = Self::get_surface_config(size, surface, &adapter);
 
             self.adapter = Some(adapter);
-            self.device = Some(DeviceAndQueue {
-                device,
-                queue,
-                config
-            });
+            self.device = Some(DeviceAndQueue::new(device, queue, config));
         } else {
             let Some(adapter) = self.adapter.as_mut() else {
                 unreachable!("The adapter is known to exist");
@@ -186,14 +149,31 @@ impl WgpuHardware {
                 unreachable!("Since the adapter existed, the surface also must exist");
             };
 
-            device.config = Self::get_surface_config(size, surface, &adapter);
+            device.set_config(Self::get_surface_config(size, surface, &adapter));
         }
+        Ok(())
+    }
+
+    pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
+        if new_size.width <= 0 || new_size.height <= 0 {
+            return Err(WgpuResizeSurfaceError::InvalidSize(new_size));
+        }
+
+        let Some(mut surface) = self.surface.as_mut() else {
+            return Err(WgpuResizeSurfaceError::NoSurface);
+        };
+
+        let Some(device) = self.device.as_mut() else {
+            return Err(WgpuResizeSurfaceError::NoDevice);
+        };
+
+        device.resize_surface(new_size, &mut surface);
         Ok(())
     }
 
     #[instrument(skip(self, surface))]
     fn request_adapter(&self, surface: &Surface) -> Result<Adapter, WgpuReinitializeWindowError> {
-        debug!(surface_id = %self.surface.id, "Requesting GPU adapter due to surface change");
+        debug!(surface_id = %self.surface.id(), "Requesting GPU adapter due to surface change");
         let adapter = pollster::block_on(self.instance
             .request_adapter(
                 &wgpu::RequestAdapterOptions {
@@ -203,14 +183,14 @@ impl WgpuHardware {
                 },
             ))
             .ok_or(WgpuReinitializeWindowError::NoAdapterFound)
-            .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id, "Failed to request adapter"))?;
+            .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id(), "Failed to request adapter"))?;
 
         Ok(adapter)
     }
 
     #[instrument(skip(self, adapter))]
     fn request_device(&self, adapter: &Adapter) -> Result<(Device, Queue), WgpuReinitializeWindowError> {
-        debug!(surface_id = %self.surface.id, "Requesting GPU device and queue due to surface change");
+        debug!(surface_id = %self.surface.id(), "Requesting GPU device and queue due to surface change");
         let (device, queue) = pollster::block_on(adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
@@ -221,7 +201,7 @@ impl WgpuHardware {
                 },
                 None,
             ))
-            .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id, "Failed to request device"))?;
+            .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id(), "Failed to request device"))?;
         Ok((device, queue))
     }
 

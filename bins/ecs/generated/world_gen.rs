@@ -162,6 +162,16 @@ impl<E, Q> World for MainWorld<E, Q> {
 /// The user states used in the world.
 #[derive(Debug, Default)]
 pub struct MainWorldStates {
+    /// The device input obtained from the window system.
+    ///
+    /// The state is used in the following systems:
+    /// - [`CameraSystem`]
+    pub input: InputState,
+    /// The uniforms of the active camera.
+    ///
+    /// The state is used in the following systems:
+    /// - [`CameraSystem`]
+    pub active_camera: ActiveCameraState,
     /// The WGPU render state; will be initialized in the Render phase hooks
     ///
     /// The state is used in the following systems:
@@ -173,6 +183,7 @@ pub struct MainWorldStates {
 /// The archetypes used in the world.
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
+    pub camera: CameraArchetype,
     pub particle: ParticleArchetype,
     pub player: PlayerArchetype,
     pub foreground_object: ForegroundObjectArchetype,
@@ -183,6 +194,7 @@ struct MainWorldArchetypes {
 /// The systems.
 #[derive(Debug)]
 pub struct MainWorldSystems {
+    camera: CameraSystem,
     physics: PhysicsSystem,
     render: RenderSystem,
     background_color_cycle: BackgroundColorCycleSystem,
@@ -190,6 +202,20 @@ pub struct MainWorldSystems {
 }
 
 impl MainWorldSystems {
+
+    /// Gives immutable access to the [`CameraSystemData`] of the [`CameraSystem`].
+    #[inline]
+    pub fn as_camera_ref(&self) -> &CameraSystemData {
+        use core::ops::Deref;
+        self.camera.deref()
+    }
+
+    /// Gives mutable access to the [`CameraSystemData`] of the [`CameraSystem`].
+    #[inline]
+    pub fn as_camera_mut(&mut self) -> &mut CameraSystemData {
+        use core::ops::DerefMut;
+        self.camera.deref_mut()
+    }
 
     /// Gives immutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
     #[inline]
@@ -245,6 +271,20 @@ impl MainWorldSystems {
     pub fn as_render_background_mut(&mut self) -> &mut RenderBackgroundSystemData {
         use core::ops::DerefMut;
         self.render_background.deref_mut()
+    }
+}
+
+impl AsRef<CameraSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &CameraSystemData {
+        self.as_camera_ref()
+    }
+}
+
+impl AsMut<CameraSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut CameraSystemData {
+        self.as_camera_mut()
     }
 }
 
@@ -305,6 +345,15 @@ impl AsMut<RenderBackgroundSystemData> for MainWorldSystems {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: CameraEntityData) -> EntityId {
+        self.spawn_camera(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<ParticleEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
@@ -360,6 +409,8 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new<S>(
         create_systems: &S,
+        input: InputState,
+        active_camera: ActiveCameraState,
         wgpu_render: WgpuRenderState,
         command_queue: Q) -> Self
     where
@@ -368,6 +419,8 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     {
         Self::new_with_events(
             create_systems,
+            input,
+            active_camera,
             wgpu_render,
             command_queue,
             NoOpPhaseEvents
@@ -380,11 +433,14 @@ impl<E, Q> MainWorld<E, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new_with_events<S>(
         create_systems: &S,
+        input: InputState,
+        active_camera: ActiveCameraState,
         wgpu_render: WgpuRenderState,
         command_queue: Q,
         phase_events: E) -> Self
     where
-        S: CreateSystem<PhysicsSystem>
+        S: CreateSystem<CameraSystem>
+         + CreateSystem<PhysicsSystem>
          + CreateSystem<RenderSystem>
          + CreateSystem<BackgroundColorCycleSystem>
          + CreateSystem<RenderBackgroundSystem>,
@@ -395,6 +451,7 @@ impl<E, Q> MainWorld<E, Q> {
         Self {
             archetypes: Default::default(),
             systems: MainWorldSystems {
+                camera: CreateSystem::<CameraSystem>::create(create_systems),
                 physics: CreateSystem::<PhysicsSystem>::create(create_systems),
                 render: CreateSystem::<RenderSystem>::create(create_systems),
                 background_color_cycle: CreateSystem::<BackgroundColorCycleSystem>::create(create_systems),
@@ -403,6 +460,8 @@ impl<E, Q> MainWorld<E, Q> {
             entity_locations: Default::default(),
             context,
             states: MainWorldStates {
+                input,
+                active_camera,
                 wgpu_render,
             },
             fixed_accumulators: Default::default(),
@@ -429,6 +488,42 @@ impl<E, Q> MainWorld<E, Q> {
     /// De-spawns an entity given by its [`EntityId`]. Returns an error if the entity was unknown in this world.
     pub fn despawn_by_id(&mut self, id: EntityId) -> Result<(), DespawnError> {
         self.handle_despawn_command(id)
+    }
+
+    /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
+    #[inline]
+    pub fn spawn_camera(
+        &mut self,
+        camera: CameraEntityData
+    ) -> EntityId {
+        self.spawn_camera_with(
+            camera.camera,
+            camera.camera_fps_controller,
+        )
+    }
+
+    /// Spawn a new `Camera` entity into the world.
+    pub fn spawn_camera_with(
+        &mut self,
+        camera: CameraComponent,
+        camera_fps_controller: CameraFpsControllerComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.camera
+            .spawn_with(
+                camera,
+                camera_fps_controller,
+                Registry(&mut self.entity_locations)
+            )
     }
 
     /// Spawn a new `Particle` entity into the world given its [`ParticleEntityData`].
@@ -733,7 +828,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_startup_without_events();
@@ -743,7 +838,7 @@ impl<E, Q> MainWorld<E, Q> {
             result,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -827,7 +922,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_fixed_update_without_events();
@@ -837,7 +932,7 @@ impl<E, Q> MainWorld<E, Q> {
             result,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -858,7 +953,7 @@ impl<E, Q> MainWorld<E, Q> {
         if is_ready && self.systems.physics.on_begin_phase(
                     &self.context,
                 )
-                .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_begin_phase returned an error"))
+                .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
             // Apply PhysicsSystem to ParticleArchetype
@@ -877,7 +972,7 @@ impl<E, Q> MainWorld<E, Q> {
             self.systems.physics.on_end_phase(
                 &self.context,
             )
-            .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_end_phase returned an error"))
+            .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -950,7 +1045,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_update_without_events();
@@ -960,7 +1055,7 @@ impl<E, Q> MainWorld<E, Q> {
             result,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -975,13 +1070,40 @@ impl<E, Q> MainWorld<E, Q> {
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
+        let is_ready = self.systems.camera.is_ready(
+               &self.states.input,
+               &mut self.states.active_camera,
+           );
+        if is_ready && self.systems.camera.on_begin_phase(
+                    &self.states.input,
+                    &mut self.states.active_camera,
+                )
+                .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply CameraSystem to CameraArchetype
+            self.systems.camera.apply_many(
+                &self.states.input,
+                &mut self.states.active_camera,
+                &mut self.archetypes.camera.cameras,
+                &mut self.archetypes.camera.camera_fps_controllers,
+            );
+
+            self.systems.camera.on_end_phase(
+                &self.states.input,
+                &mut self.states.active_camera,
+            )
+            .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 1 of 1
         let is_ready = self.systems.background_color_cycle.is_ready(
                &self.context,
            );
         if is_ready && self.systems.background_color_cycle.on_begin_phase(
                     &self.context,
                 )
-                .inspect_err(|error| tracing::error!(%error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
+                .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
             // Apply BackgroundColorCycleSystem to SceneBackgroundArchetype
@@ -993,7 +1115,7 @@ impl<E, Q> MainWorld<E, Q> {
             self.systems.background_color_cycle.on_end_phase(
                 &self.context,
             )
-            .inspect_err(|error| tracing::error!(%error, "BackgroundColorCycleSystem::on_end_phase returned an error"))
+            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -1067,7 +1189,7 @@ impl<E, Q> MainWorld<E, Q> {
             &self.context,
             &mut self.states.wgpu_render,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_render_without_events();
@@ -1078,7 +1200,7 @@ impl<E, Q> MainWorld<E, Q> {
             &self.context,
             &mut self.states.wgpu_render,
         )
-        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -1099,7 +1221,7 @@ impl<E, Q> MainWorld<E, Q> {
         if is_ready && self.systems.render_background.on_begin_phase(
                     &mut self.states.wgpu_render,
                 )
-                .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_begin_phase returned an error"))
+                .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
             // Apply RenderBackgroundSystem to SceneBackgroundArchetype
@@ -1111,7 +1233,7 @@ impl<E, Q> MainWorld<E, Q> {
             self.systems.render_background.on_end_phase(
                 &mut self.states.wgpu_render,
             )
-            .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_end_phase returned an error"))
+            .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 2 of 2
@@ -1121,7 +1243,7 @@ impl<E, Q> MainWorld<E, Q> {
         if is_ready && self.systems.render.on_begin_phase(
                     &mut self.states.wgpu_render,
                 )
-                .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
+                .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
             // Apply RenderSystem to ParticleArchetype
@@ -1148,7 +1270,7 @@ impl<E, Q> MainWorld<E, Q> {
             self.systems.render.on_end_phase(
                 &mut self.states.wgpu_render,
             )
-            .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
+            .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -1300,6 +1422,10 @@ impl<E, Q> MainWorld<E, Q> {
     fn handle_spawn_command(&mut self, data: ArchetypeEntityData) {
         match data {
             // Accept only archetypes known to the world
+            ArchetypeEntityData::Camera(data) => {
+                let id = self.spawn_camera(data);
+                tracing::trace!(%id, "Spawned Camera entity");
+            },
             ArchetypeEntityData::Particle(data) => {
                 let id = self.spawn_particle(data);
                 tracing::trace!(%id, "Spawned Particle entity");
@@ -1329,6 +1455,12 @@ impl<E, Q> MainWorld<E, Q> {
     fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
          if let Some(loc) = self.entity_locations.remove(&id) {
             let result = match loc.archetype {
+                CameraArchetype::ID => {
+                    self.archetypes
+                        .camera
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CameraArchetype::ID))?
+                }
                 ParticleArchetype::ID => {
                     self.archetypes
                         .particle

@@ -17,14 +17,17 @@ pub mod phases;
 mod main_world;
 mod command_queue;
 mod phase_events;
+mod input_state;
 
 pub use main_world::InitializeMainWorld;
 pub use command_queue::CommandQueue;
 pub use phase_events::PhaseEvents;
 use crate::engine::components::*;
 use crate::engine::phases::fixed_update::physics::PhysicsSystemData;
-use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
+use crate::engine::phases::update::{color_cycle::BackgroundColorCycleSystemData, camera::CameraSystemData};
 use crate::engine::phases::render::{RenderSystemData, WgpuRenderState, background::{BackgroundColorData, RenderBackgroundSystemData}};
+pub use crate::engine::input_state::InputState;
+use crate::engine::camera_fps_controller::CameraFpsControllerData;
 
 include!("../generated/components_gen.rs");
 include!("../generated/world_gen.rs");

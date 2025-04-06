@@ -31,6 +31,7 @@
 use std::path::Path;
 use image::{GenericImageView, ImageError};
 use wgpu::{Device, Queue, TextureFormat};
+use crate::wgpu::gpu_hardware::DeviceAndQueue;
 use crate::wgpu::WgpuState;
 
 /// A struct representing a GPU texture along with its corresponding view.
@@ -303,11 +304,6 @@ impl Texture {
 
 impl Texture {
     /// Create a [`BindGroup`](wgpu::BindGroup).
-    pub fn create_bind_group(&self, state: &WgpuState, normals: &Texture) -> wgpu::BindGroup {
-        self.create_bind_group_with(state.device(), state.bind_group_layout(), state.linear_sampler(), normals)
-    }
-
-    /// Create a [`BindGroup`](wgpu::BindGroup).
     pub fn create_bind_group_with(&self, device: &Device, layout: &wgpu::BindGroupLayout, sampler: &wgpu::Sampler, normals: &Texture) -> wgpu::BindGroup {
         device.create_bind_group(
             &wgpu::BindGroupDescriptor {
@@ -363,7 +359,7 @@ impl Texture {
     /// decoded properly.
     pub fn from_file<P>(
         path: P,
-        state: &WgpuState,
+        state: &DeviceAndQueue,
         ty: TextureType,
         label: Option<&str>,
     ) -> Result<Self, TextureError>
@@ -372,25 +368,6 @@ impl Texture {
     {
         let img = image::open(path).map_err(TextureError::LoadFromFile)?;
         Ok(Self::from_image_with(state.device(), state.queue(), &img, ty, label))
-    }
-}
-
-#[cfg(any(feature = "jpeg", feature = "png", feature = "webp"))]
-impl CreateTexture for WgpuState {
-    fn fallback_normal_map(&self) -> Texture {
-        Texture::fallback_normal_map(self.device(), self.queue())
-    }
-
-    fn texture_from_image<P>(&self, path: P, ty: TextureType, label: Option<&str>) -> Result<Texture, TextureError>
-    where
-        P: AsRef<Path>
-    {
-        Texture::from_file(path, self, ty, label)
-    }
-
-    /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
-    fn create_bind_group(&self, texture: &Texture, normals: &Texture) -> wgpu::BindGroup {
-        texture.create_bind_group(self, normals)
     }
 }
 

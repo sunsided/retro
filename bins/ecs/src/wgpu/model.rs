@@ -38,11 +38,13 @@ impl Vertex for ModelVertex {
     }
 }
 
+#[derive(Debug)]
 pub struct Model {
     pub meshes: Vec<Mesh>,
     pub materials: Vec<Material>,
 }
 
+#[derive(Debug)]
 pub struct Material {
     pub name: Box<str>,
     pub diffuse_texture: Texture,
@@ -50,6 +52,7 @@ pub struct Material {
     pub bind_group: wgpu::BindGroup,
 }
 
+#[derive(Debug)]
 pub struct Mesh {
     pub name: Box<str>,
     pub vertex_buffer: wgpu::Buffer,

@@ -5,6 +5,7 @@ use crate::engine::{BackgroundColorCycleSystem, CreateSystem, FrameContext, Phas
 use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
 
 pub mod color_cycle;
+pub mod camera;
 
 impl CreateSystem<BackgroundColorCycleSystem> for SystemFactory {
     fn create(&self) -> BackgroundColorCycleSystem {

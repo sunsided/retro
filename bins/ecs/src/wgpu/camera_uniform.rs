@@ -1,4 +1,4 @@
-use crate::camera::{Camera, Projection, OPENGL_TO_WGPU_MATRIX};
+use crate::camera::{Camera, Projection};
 
 // We need this for Rust to store our data correctly for the shaders
 #[repr(C)]

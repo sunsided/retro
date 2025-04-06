@@ -91,11 +91,12 @@ impl From<ArchetypeId> for u64 {
 impl core::fmt::Display for ArchetypeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self.0.get() {
-            1 => write!(f, "Particle (Archetype ID 1)"),
-            2 => write!(f, "Player (Archetype ID 2)"),
-            3 => write!(f, "ForegroundObject (Archetype ID 3)"),
-            4 => write!(f, "BackgroundObject (Archetype ID 4)"),
-            5 => write!(f, "SceneBackground (Archetype ID 5)"),
+            1 => write!(f, "Camera (Archetype ID 1)"),
+            2 => write!(f, "Particle (Archetype ID 2)"),
+            3 => write!(f, "Player (Archetype ID 3)"),
+            4 => write!(f, "ForegroundObject (Archetype ID 4)"),
+            5 => write!(f, "BackgroundObject (Archetype ID 5)"),
+            6 => write!(f, "SceneBackground (Archetype ID 6)"),
             id => write!(f, "Archetype ID {id}")
         }
     }
@@ -157,6 +158,8 @@ pub trait HasComponent<T: Component> {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntity {
+    /// An entity in the [`Camera`](CameraArchetype) archetype.
+    Camera(CameraEntity),
     /// A particle system particle.
     Particle(ParticleEntity),
     /// An entity in the [`Player`](PlayerArchetype) archetype.
@@ -173,6 +176,8 @@ pub enum ArchetypeEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntityData {
+    /// An entity in the [`Camera`](CameraArchetype) archetype.
+    Camera(CameraEntityData),
     /// A particle system particle.
     Particle(ParticleEntityData),
     /// An entity in the [`Player`](PlayerArchetype) archetype.
@@ -190,6 +195,7 @@ impl ArchetypeEntity {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntity`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::Camera(_) => CameraArchetype::ID,
             Self::Particle(_) => ParticleArchetype::ID,
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
@@ -204,12 +210,241 @@ impl ArchetypeEntityData {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntityData`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::Camera(_) => CameraArchetype::ID,
             Self::Particle(_) => ParticleArchetype::ID,
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
             Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
             Self::SceneBackground(_) => SceneBackgroundArchetype::ID,
         }
+    }
+}
+
+/// An archetype grouping entities with identical components.
+#[derive(Debug, Default, Clone)]
+pub struct CameraArchetype {
+    pub entities: Vec<EntityId>,
+    pub cameras: Vec<CameraComponent>,
+    pub camera_fps_controllers: Vec<CameraFpsControllerComponent>,
+}
+
+/// An entity of the [`CameraArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CameraEntity {
+    pub id: EntityId,
+    pub data: CameraEntityData,
+}
+
+/// An entity of the [`CameraArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CameraEntityData {
+    pub camera: CameraComponent,
+    pub camera_fps_controller: CameraFpsControllerComponent,
+}
+
+#[allow(dead_code)]
+impl HasComponent<CameraComponent> for CameraEntity {
+    #[inline]
+    fn get(&self) -> &CameraComponent {
+        &self.data.camera
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut CameraComponent {
+        &mut self.data.camera
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<CameraComponent> for CameraEntityData {
+    #[inline]
+    fn get(&self) -> &CameraComponent {
+        &self.camera
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut CameraComponent {
+        &mut self.camera
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<CameraFpsControllerComponent> for CameraEntity {
+    #[inline]
+    fn get(&self) -> &CameraFpsControllerComponent {
+        &self.data.camera_fps_controller
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut CameraFpsControllerComponent {
+        &mut self.data.camera_fps_controller
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<CameraFpsControllerComponent> for CameraEntityData {
+    #[inline]
+    fn get(&self) -> &CameraFpsControllerComponent {
+        &self.camera_fps_controller
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut CameraFpsControllerComponent {
+        &mut self.camera_fps_controller
+    }
+}
+impl CameraEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<CameraEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl core::ops::Deref for CameraEntity {
+    type Target = CameraEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl core::ops::DerefMut for CameraEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+#[allow(dead_code)]
+impl CameraArchetype {
+    /// The IDs of the components used by this archetype, in ascending order.
+    pub const COMPONENT_IDS: [ComponentId; 2] = [
+        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(2).expect("Invalid ID on ECS construction time"),
+    ];
+
+    /// Returns the number of entities in this archetype.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Indicates whether this archetype has no entities.
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Returns the number of components used by this archetype.
+    #[inline(always)]
+    pub const fn num_components(&self) -> usize {
+        2
+    }
+
+    /// Dynamically determines whether this archetype has a specific component.
+    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+        let id = id.as_u64();
+        id == 1 || id == 2 || false
+    }
+
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
+        &mut self,
+        camera: CameraComponent,
+        camera_fps_controller: CameraFpsControllerComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.cameras.push(camera);
+        self.camera_fps_controllers.push(camera_fps_controller);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.cameras.swap_remove(index);
+        self.camera_fps_controllers.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
+    }
+}
+
+
+#[automatically_derived]
+impl HasComponents<CameraComponent> for CameraArchetype {
+    /// Returns a slice of all [`CameraComponent`] component values.
+    fn get(&self) -> &[CameraComponent] {
+        self.cameras.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`CameraComponent`] component values.
+    fn get_mut(&mut self) -> &mut [CameraComponent] {
+        self.cameras.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<CameraFpsControllerComponent> for CameraArchetype {
+    /// Returns a slice of all [`CameraFpsControllerComponent`] component values.
+    fn get(&self) -> &[CameraFpsControllerComponent] {
+        self.camera_fps_controllers.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`CameraFpsControllerComponent`] component values.
+    fn get_mut(&mut self) -> &mut [CameraFpsControllerComponent] {
+        self.camera_fps_controllers.as_mut_slice()
+    }
+}
+
+
+#[automatically_derived]
+#[allow(dead_code)]
+impl Archetype for CameraArchetype {
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(1).expect("A zero archetype ID was provided"));
+
+    fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+}
+
+impl PartialEq<ArchetypeId> for CameraArchetype {
+    fn eq(&self, other: &ArchetypeId) -> bool {
+        Self::ID.eq(other)
     }
 }
 
@@ -318,8 +553,8 @@ impl core::ops::DerefMut for ParticleEntity {
 impl ParticleArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 2] = [
-        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(2).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(4).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -343,7 +578,7 @@ impl ParticleArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || id == 2 || false
+        id == 3 || id == 4 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -424,7 +659,7 @@ impl HasComponents<VelocityComponent> for ParticleArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for ParticleArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(1).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(2).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -574,9 +809,9 @@ impl core::ops::DerefMut for PlayerEntity {
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 3] = [
-        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(2).expect("Invalid ID on ECS construction time"),
         ComponentId::new(3).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(4).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -600,7 +835,7 @@ impl PlayerArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || id == 2 || id == 3 || false
+        id == 3 || id == 4 || id == 5 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -697,7 +932,7 @@ impl HasComponents<HealthComponent> for PlayerArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for PlayerArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(2).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -819,8 +1054,8 @@ impl core::ops::DerefMut for ForegroundObjectEntity {
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 2] = [
-        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(4).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(6).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -844,7 +1079,7 @@ impl ForegroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || id == 4 || false
+        id == 3 || id == 6 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -925,7 +1160,7 @@ impl HasComponents<ColliderComponent> for ForegroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for ForegroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(4).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1019,7 +1254,7 @@ impl core::ops::DerefMut for BackgroundObjectEntity {
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1043,7 +1278,7 @@ impl BackgroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || false
+        id == 3 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1108,7 +1343,7 @@ impl HasComponents<PositionComponent> for BackgroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for BackgroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(4).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(5).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1202,7 +1437,7 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(7).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1226,7 +1461,7 @@ impl SceneBackgroundArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 5 || false
+        id == 7 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1291,7 +1526,7 @@ impl HasComponents<BackgroundColorComponent> for SceneBackgroundArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for SceneBackgroundArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(5).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(6).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
         self.entities.len()

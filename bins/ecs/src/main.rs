@@ -1,3 +1,4 @@
+use crate::wgpu::gpu_hardware::RenderPipelineSelector;
 use crate::logging::setup_logging;
 use parking_lot::Mutex;
 use std::sync::Arc;
@@ -16,10 +17,11 @@ use winit::{
 use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
 use crate::camera::CameraController;
 use crate::cli::parse_arguments;
-use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
+use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
+use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
-use crate::wgpu::{RenderPipelineSelector, WgpuState};
+use crate::wgpu::WgpuState;
 use crate::wgpu::gpu_hardware::WgpuHardware;
 use crate::wgpu::texture::{CreateTexture, Texture, TextureType};
 
@@ -37,14 +39,15 @@ struct App {
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
     last_update: Instant,
     camera_controller: CameraController,
-    mouse_pressed: bool,
 }
 
 impl App {
     pub fn new(wgpu_hardware: WgpuHardware) -> Self {
         let events = PhaseEvents::default();
         let state = WgpuRenderState::default();
-        let mut world = MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
+        let input_state = InputState::default();
+        let active_camera = ActiveCameraState::default();
+        let mut world = MainWorld::new_with_events(&SystemFactory, input_state, active_camera, state, CommandQueue::new(), events);
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.initialize_entities();
 
@@ -55,7 +58,6 @@ impl App {
             last_update: Instant::now(),
             ecs_world: world,
             camera_controller: CameraController::new(4.0, 0.4),
-            mouse_pressed: false
         }
     }
 
@@ -106,9 +108,9 @@ impl App {
     }
 
     fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
-        if self.camera_controller.process_events(event.physical_key, event.state) {
+        if self.ecs_world.states.input.process_keys(event.physical_key, event.state) {
             return;
-        };
+        }
 
         match event.physical_key {
             PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
@@ -145,12 +147,15 @@ impl App {
 
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
         debug!("Window resized: {:?}", new_size);
+        self.ecs_world.states.wgpu_render.resize_surface(new_size)
+            .expect("Failed to resize window");
+
         let Some(state) = &mut self.state else {
             return;
         };
 
+        // TODO: Update the camera projection matrix.
         let mut state = state.lock_arc();
-        state.resize(new_size);
         state.projection.resize(new_size.width, new_size.height);
     }
 
@@ -167,7 +172,7 @@ impl App {
         debug!("Mouse button {:?} is {:?}", button, state);
         match button {
             MouseButton::Left => {
-                self.mouse_pressed = state == ElementState::Pressed;
+                self.ecs_world.states.input.set_lmb_pressed(state == ElementState::Pressed);
             }
             MouseButton::Right => {}
             MouseButton::Middle => {}
@@ -179,13 +184,13 @@ impl App {
 
     fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {
         debug!("Mouse wheel {:?}", delta);
-        self.camera_controller.process_scroll(&delta);
+        self.ecs_world.states.input.accumulate_mouse_scroll_delta(delta);
     }
 
     fn handle_cursor_moved_by_event(&mut self, position: (f64, f64)) {
         trace!("Cursor moved by: {:?}", position);
-        if self.mouse_pressed {
-            self.camera_controller.process_mouse(-position.0, -position.1);
+        if self.ecs_world.states.input.lmb_pressed() {
+            self.ecs_world.states.input.accumulate_mouse_move_delta(-position.0, -position.1);
         }
     }
 
@@ -265,6 +270,9 @@ impl ApplicationHandler for App {
         if let Some(window) = &self.window {
             window.request_redraw();
         }
+
+        // Reset the input.
+        self.ecs_world.states.input.reset();
     }
 }
 

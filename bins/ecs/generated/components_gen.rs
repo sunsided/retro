@@ -49,6 +49,168 @@ pub trait Component: 'static + Send + Sync {
 
 /// A component.
 ///
+/// See also [`CameraData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct CameraComponent(CameraData);
+
+#[allow(dead_code)]
+impl CameraComponent {
+    /// Creates a new [`CameraComponent`] instance from [`CameraData`].
+    pub const fn new(data: CameraData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`CameraData`].
+    pub const fn into_inner(self) -> CameraData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for CameraComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(1).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for CameraComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<CameraData> for CameraComponent {
+    fn from(data: CameraData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for CameraComponent {
+    type Target = CameraData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for CameraComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<CameraData> for CameraComponent {
+    fn as_ref(&self) -> &CameraData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<CameraData> for CameraComponent {
+    fn as_mut(&mut self) -> &mut CameraData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<CameraData> for CameraComponent {
+    fn borrow(&self) -> &CameraData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<CameraData> for CameraComponent {
+    fn borrow_mut(&mut self) -> &mut CameraData {
+        &mut self.0
+    }
+}
+
+/// A component.
+///
+/// See also [`CameraFpsControllerData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct CameraFpsControllerComponent(CameraFpsControllerData);
+
+#[allow(dead_code)]
+impl CameraFpsControllerComponent {
+    /// Creates a new [`CameraFpsControllerComponent`] instance from [`CameraFpsControllerData`].
+    pub const fn new(data: CameraFpsControllerData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`CameraFpsControllerData`].
+    pub const fn into_inner(self) -> CameraFpsControllerData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for CameraFpsControllerComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(2).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for CameraFpsControllerComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<CameraFpsControllerData> for CameraFpsControllerComponent {
+    fn from(data: CameraFpsControllerData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for CameraFpsControllerComponent {
+    type Target = CameraFpsControllerData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for CameraFpsControllerComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<CameraFpsControllerData> for CameraFpsControllerComponent {
+    fn as_ref(&self) -> &CameraFpsControllerData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<CameraFpsControllerData> for CameraFpsControllerComponent {
+    fn as_mut(&mut self) -> &mut CameraFpsControllerData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<CameraFpsControllerData> for CameraFpsControllerComponent {
+    fn borrow(&self) -> &CameraFpsControllerData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<CameraFpsControllerData> for CameraFpsControllerComponent {
+    fn borrow_mut(&mut self) -> &mut CameraFpsControllerData {
+        &mut self.0
+    }
+}
+
+/// A component.
+///
 /// See also [`PositionData`] for the actual data.
 #[derive(Debug, Clone)]
 pub struct PositionComponent(PositionData);
@@ -68,7 +230,7 @@ impl PositionComponent {
 
 #[automatically_derived]
 impl Component for PositionComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(1).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(3).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for PositionComponent {
@@ -149,7 +311,7 @@ impl VelocityComponent {
 
 #[automatically_derived]
 impl Component for VelocityComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(2).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(4).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for VelocityComponent {
@@ -230,7 +392,7 @@ impl HealthComponent {
 
 #[automatically_derived]
 impl Component for HealthComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(3).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(5).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for HealthComponent {
@@ -311,7 +473,7 @@ impl ColliderComponent {
 
 #[automatically_derived]
 impl Component for ColliderComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(4).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(6).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for ColliderComponent {
@@ -392,7 +554,7 @@ impl BackgroundColorComponent {
 
 #[automatically_derived]
 impl Component for BackgroundColorComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(5).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(7).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for BackgroundColorComponent {

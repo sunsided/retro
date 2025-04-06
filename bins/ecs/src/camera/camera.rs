@@ -1,11 +1,12 @@
 use cgmath::{InnerSpace, Matrix4, Point3, Rad, Vector3};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Camera {
     pub position: Point3<f32>,
     pub(crate) yaw: Rad<f32>,
     pub(crate) pitch: Rad<f32>,
 }
+
 impl Camera {
     pub fn new<
         V: Into<Point3<f32>>,

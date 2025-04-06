@@ -1,6 +1,7 @@
 use cgmath::{perspective, Matrix4, Rad};
 use crate::camera::OPENGL_TO_WGPU_MATRIX;
 
+#[derive(Debug, Clone)]
 pub struct Projection {
     aspect: f32,
     fovy: Rad<f32>,

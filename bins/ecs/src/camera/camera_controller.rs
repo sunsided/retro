@@ -1,14 +1,13 @@
 use std::f32::consts::FRAC_PI_2;
 use std::time::Duration;
 use cgmath::{InnerSpace, Rad, Vector3};
-use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use crate::camera::Camera;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CameraController {
     amount_left: f32,
     amount_right: f32,
@@ -76,19 +75,13 @@ impl CameraController {
     }
 
     pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64) {
+        todo!("apply mouse from input");
         self.rotate_horizontal = mouse_dx as f32;
         self.rotate_vertical = mouse_dy as f32;
     }
 
     pub fn process_scroll(&mut self, delta: &MouseScrollDelta) {
-        self.scroll = -match delta {
-            // I'm assuming a line is about 1 pixels
-            MouseScrollDelta::LineDelta(_, scroll) => scroll * 1.0,
-            MouseScrollDelta::PixelDelta(PhysicalPosition {
-                                             y: scroll,
-                                             ..
-                                         }) => *scroll as f32,
-        };
+        todo!("apply scroll from input")
     }
 
     pub(crate) fn update_camera(&mut self, camera: &mut Camera, dt: Duration) {

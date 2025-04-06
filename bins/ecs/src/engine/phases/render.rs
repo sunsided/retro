@@ -70,10 +70,11 @@ use std::sync::Arc;
 use parking_lot::lock_api::MutexGuard;
 use tracing::{error, trace};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
+use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
-use crate::wgpu::gpu_hardware::{WgpuHardware, WgpuReinitializeWindowError};
+use crate::wgpu::gpu_hardware::{WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 
 impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
     fn create(&self) -> RenderBackgroundSystem {
@@ -113,9 +114,10 @@ pub struct RenderSystemData;
 /// - [`ApplyRenderBackgroundSystem`]
 #[derive(Default)]
 pub struct WgpuRenderState {
+    /// The hardware abstraction (devices, queues, ...)
     hardware: WgpuHardware,
-
     /// The shared GPU state. Uses `Arc<Mutex<WgpuState>>` to allow shared access.
+    #[deprecated = "Use 'hardware' instead"]
     state: Option<Arc<Mutex<WgpuState>>>,
     /// The per-frame state, which contains details for the current frame.
     frame_state: Option<FrameState>,
@@ -132,16 +134,23 @@ impl WgpuRenderState {
         self.hardware.reinitialize_surface(window)
     }
 
+    #[inline]
+    pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
+        self.hardware.resize_surface(new_size)
+    }
+
     /// Sets the shared GPU state for the render system.
     ///
     /// # Parameters
     /// - `state`: An `Option` containing an `Arc<Mutex<WgpuState>>`. If `Some`,
     ///   it sets the GPU state; if `None`, it unsets the current state.
+    #[deprecated]
     pub fn set_state(&mut self, state: Option<Arc<Mutex<WgpuState>>>) {
         self.state = state;
     }
 
     /// Provides a mutable reference to the render state, if available.
+    #[deprecated]
     pub fn state_mut(&mut self) -> Option<ArcMutexGuard<RawMutex, WgpuState>> {
         let Some(state) = &mut self.state else {
             return None;
@@ -151,6 +160,7 @@ impl WgpuRenderState {
     }
 
     /// Provides a mutable reference to the render state and the frame state, if available.
+    #[deprecated]
     pub fn states_mut(&mut self) -> Option<(ArcMutexGuard<RawMutex, WgpuState>, &mut FrameState)> {
         let Some(state) = &mut self.state else {
             return None;
@@ -246,20 +256,22 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         // TODO: Have the application react to wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other by exiting
         // TODO: Have the application react to wgpu::SurfaceError::Timeout by hoping for thee best :)
 
-        if render.state.is_none() {
+        let Some(device) = render.hardware.device() else {
             return Ok(RenderReady::NotReady);
-        }
+        };
+
+        let Some(surface) = render.hardware.surface().as_ref() else {
+            return Ok(RenderReady::NotReady);
+        };
 
         self.start_timing();
         render.frame_state = {
             let render_start = std::time::Instant::now();
-            let state = render.state.as_ref().expect("State exists as per readiness check").lock();
 
             // The `get_current_texture` function will wait for the surface to provide a new
             // `SurfaceTexture` that we will render to. This can time out, particularly
             // on Vulkan/Wayland/NVIDIA setups. (In that case, use the GL backend, e.g. via `WGPU_BACKEND=gl`).
-            let frame = state
-                .surface()
+            let frame = surface
                 .get_current_texture()
                 .inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
 
@@ -271,7 +283,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             // We also create a CommandEncoder to create the actual commands to send to the GPU.
             // Most modern graphics frameworks expect commands to be stored in a command buffer
             // before being sent to the GPU.
-            let encoder = state
+            let encoder = device
                 .device()
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Render Encoder"),
@@ -316,10 +328,13 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             return Ok(());
         }
 
+        let Some(device) = render.hardware.device() else {
+            return Ok(());
+        };
+
         if let Some(frame_state) = render.frame_state.take() {
             let command_buffer = frame_state.encoder.finish();
-            let state = render.state.as_ref().expect("State exists").lock();
-            state.submit_to_queue(command_buffer);
+            device.submit_to_queue(command_buffer);
             // Optionally poll
             // state.poll_device(wgpu::Maintain::Wait);
             frame_state.frame.present();

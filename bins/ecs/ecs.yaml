@@ -3,6 +3,10 @@
 states:
   - name: WgpuRender
     description: The WGPU render state; will be initialized in the Render phase hooks
+  - name: ActiveCamera
+    description: The uniforms of the active camera.
+  - name: Input
+    description: The device input obtained from the window system.
 
 phases:
   - name: Startup
@@ -18,13 +22,29 @@ phases:
 worlds:
   - name: Main
     archetypes:
+      - Camera
       - Particle
       - Player
       - ForegroundObject
       - BackgroundObject
       - SceneBackground
 
+components:
+  - name: Camera
+  - name: CameraFpsController
+  - name: Position
+  - name: Velocity
+  - name: Health
+  - name: Collider
+  - name: BackgroundColor
+    description: The background color used for clearing the render buffer
+
 archetypes:
+  - name: Camera
+    components:
+      - Camera
+      - CameraFpsController
+
   - name: Particle
     description: A particle system particle.
     components:
@@ -51,15 +71,17 @@ archetypes:
     components:
       - BackgroundColor
 
-components:
-  - name: Position
-  - name: Velocity
-  - name: Health
-  - name: Collider
-  - name: BackgroundColor
-    description: The background color used for clearing the render buffer
-
 systems:
+  - name: Camera
+    phase: Update
+    states:
+      - use: Input
+      - use: ActiveCamera
+        write: true
+    outputs:
+      - Camera
+      - CameraFpsController
+
   - name: Physics
     phase: FixedUpdate
     context: true
