@@ -16,11 +16,11 @@ use winit::event::{KeyEvent, Modifiers, MouseButton};
 use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
-use crate::wgpu_state::WgpuState;
+use crate::wgpu::WgpuState;
 
 mod engine;
 mod logging;
-mod wgpu_state;
+mod wgpu;
 
 struct App {
     window: Option<Arc<Window>>,
