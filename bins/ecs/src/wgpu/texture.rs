@@ -28,7 +28,9 @@
 //! - [`image`](https://docs.rs/image) crate: Used for loading and decoding image files.
 //! - [`wgpu`](https://docs.rs/wgpu): A modern graphics API for GPU programming.
 
+use std::path::Path;
 use image::{GenericImageView, ImageError};
+use crate::wgpu::WgpuState;
 
 /// A struct representing a GPU texture along with its corresponding view.
 ///
@@ -58,6 +60,15 @@ pub enum TextureError {
     LoadFromFile(ImageError),
 }
 
+pub trait CreateTexture {
+    fn texture_from_image<P>(
+        &self,
+        path: P,
+        label: Option<&str>,
+    ) -> Result<Texture, TextureError>
+    where P: AsRef<Path>;
+}
+
 impl Texture {
     /// Creates a texture from a raw byte array representing an image.
     ///
@@ -67,9 +78,9 @@ impl Texture {
     ///
     /// # Parameters
     ///
+    /// - `bytes`: A byte array containing the raw image data to be decoded and uploaded.
     /// - `device`: A reference to the `wgpu::Device`, used to create GPU resources.
     /// - `queue`: A reference to the `wgpu::Queue`, used to upload texture data to the GPU.
-    /// - `bytes`: A byte array containing the raw image data to be decoded and uploaded.
     /// - `label`: A descriptive label for the texture, used for debugging purposes.
     ///
     /// # Returns
@@ -80,14 +91,14 @@ impl Texture {
     /// # Errors
     ///
     /// This function will return a `TextureError::LoadFromBytes` if the image decoding fails.
-    pub fn from_bytes(
+    pub fn from_bytes_with(
+        bytes: &[u8],
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        bytes: &[u8],
         label: &str,
     ) -> Result<Self, TextureError> {
         let img = image::load_from_memory(bytes).map_err(TextureError::LoadFromBytes)?;
-        Ok(Self::from_image(device, queue, &img, Some(label)))
+        Ok(Self::from_image_with(device, queue, &img, Some(label)))
     }
 
     /// Creates a texture from a decoded image.
@@ -107,7 +118,7 @@ impl Texture {
     ///
     /// Returns a newly created [`Texture`] object. This function does not fail since it assumes
     /// that the provided `DynamicImage` is valid and can be converted into a GPU-compatible format.
-    pub fn from_image(
+    pub fn from_image_with(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         img: &image::DynamicImage,
@@ -178,7 +189,7 @@ impl Texture {
     /// # Errors
     ///
     /// This function will return a `TextureError::LoadFromBytes` if loading or decoding the image fails.
-    pub fn from_file<P>(
+    pub fn from_file_with<P>(
         path: P,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
@@ -188,6 +199,50 @@ impl Texture {
         P: AsRef<std::path::Path>,
     {
         let img = image::open(path).map_err(TextureError::LoadFromFile)?;
-        Ok(Self::from_image(device, queue, &img, label))
+        Ok(Self::from_image_with(device, queue, &img, label))
+    }
+
+    /// Loads a texture from an image file and uploads it to the GPU using the provided `WgpuState`.
+    ///
+    /// This function simplifies texture creation by utilizing a `WgpuState` object, which manages the
+    /// `wgpu::Device` and `wgpu::Queue`. It reads an image file from the specified path, decodes it into
+    /// a `DynamicImage`, and creates a GPU texture.
+    ///
+    /// # Parameters
+    ///
+    /// - `path`: The file path to the image file to be loaded.
+    /// - `state`: A reference to the `WgpuState` object, which provides access to the `wgpu::Device` and
+    ///   `wgpu::Queue` required for texture creation and data uploading.
+    /// - `label`: An optional label added to the texture for easier debugging.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` with the created `Texture` object on success, or a `TextureError` if the
+    /// image could not be loaded or decoded.
+    ///
+    /// # Errors
+    ///
+    /// This function will return a `TextureError::LoadFromFile` if the image file could not be loaded or
+    /// decoded properly.
+    pub fn from_file<P>(
+        path: P,
+        state: &WgpuState,
+        label: Option<&str>,
+    ) -> Result<Self, TextureError>
+    where
+        P: AsRef<Path>,
+    {
+        let img = image::open(path).map_err(TextureError::LoadFromFile)?;
+        Ok(Self::from_image_with(state.device(), state.queue(), &img, label))
+    }
+}
+
+#[cfg(any(feature = "jpeg", feature = "png", feature = "webp"))]
+impl CreateTexture for WgpuState {
+    fn texture_from_image<P>(&self, path: P, label: Option<&str>) -> Result<Texture, TextureError>
+    where
+        P: AsRef<Path>
+    {
+        Texture::from_file(path, self, label)
     }
 }

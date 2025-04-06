@@ -17,6 +17,7 @@ use crate::engine::{CommandQueue, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::wgpu::WgpuState;
+use crate::wgpu::texture::CreateTexture;
 
 mod engine;
 mod logging;
@@ -63,12 +64,15 @@ impl App {
 
             // Drop any previous surfaces.
             self.state = None;
-
             let state = pollster::block_on(WgpuState::new(window.clone()));
-            self.state = Some(Arc::new(Mutex::new(state)));
+
+            // Recreate the textures.
+            let _texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
+                .expect("Failed to load cover texture");
 
             // Set WGPU render state.
-            self.ecs_world.states.wgpu_render.set_state(self.state.clone());
+            self.state = Some(Arc::new(Mutex::new(state)));
+            self.ecs_world.set_wgpu_state(self.state.clone());
         }
 
         self.last_update = Instant::now();

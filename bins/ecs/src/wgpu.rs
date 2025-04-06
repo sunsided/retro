@@ -1,5 +1,6 @@
 mod wgpu_state;
-mod texture;
+pub mod texture;
 mod texture_sampler;
 
 pub use wgpu_state::WgpuState;
+pub use texture_sampler::TextureSampler;
