@@ -37,6 +37,7 @@ use crate::camera::Camera;
 use crate::camera_controller::CameraController;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::{Instance, InstanceRaw};
+use crate::wgpu::texture::Texture;
 use crate::wgpu::TextureSampler;
 use crate::wgpu::vertex::Vertex;
 
@@ -66,6 +67,7 @@ pub struct WgpuState {
     camera_bind_group: BindGroup,
     pub(crate) instances: Vec<Instance>,
     pub(crate) instance_buffer: Buffer,
+    pub depth_texture: Texture,
 }
 
 impl WgpuState {
@@ -127,6 +129,10 @@ impl WgpuState {
         };
 
         let sampler = TextureSampler::with_clamp_to_edge_and_linear_filtering(&device);
+
+        // Create Z-buffers.
+        let depth_texture = Texture::depth_texture(&device, &surface_config, "depth_texture");
+        let _depth_sampler = TextureSampler::depth_sampler(&device);
 
         // TODO: Move shader to meaningful place
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -303,7 +309,13 @@ impl WgpuState {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // Stencil buffers are currently not implemented.
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less, // Less = front to back
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1, // Don't use multi-sampling.
                 mask: !0, // Use all samples.
@@ -315,7 +327,7 @@ impl WgpuState {
 
         // TODO: Refactor ...
         let colored_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("Render Pipeline"),
+            label: Some("Textured Render Pipeline"),
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -328,7 +340,7 @@ impl WgpuState {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: Some("fs_colored_main"),
+                entry_point: Some("fs_textured_main"),
                 targets: &[Some(wgpu::ColorTargetState { // Currently only one for the target surface.
                     format: surface_format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -348,7 +360,13 @@ impl WgpuState {
                 // Requires Features::CONSERVATIVE_RASTERIZATION
                 conservative: false,
             },
-            depth_stencil: None, // Stencil buffers are currently not implemented.
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1, // Don't use multi-sampling.
                 mask: !0, // Use all samples.
@@ -379,6 +397,7 @@ impl WgpuState {
             camera_bind_group,
             instances,
             instance_buffer,
+            depth_texture
         }
     }
 
@@ -388,6 +407,10 @@ impl WgpuState {
             self.surface_config.width = new_size.width;
             self.surface_config.height = new_size.height;
             self.surface.configure(&self.device, &self.surface_config);
+
+            // Update depth buffer.
+            self.depth_texture = Texture::depth_texture(&self.device, &self.surface_config, "depth_texture");
+
         }
     }
 

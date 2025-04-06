@@ -74,6 +74,51 @@ pub trait CreateTexture {
 }
 
 impl Texture {
+    pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+
+    /// Creates a depth texture for use in rendering pipelines.
+    ///
+    /// This function generates a GPU texture configured for depth buffering,
+    /// which is useful for managing object depth in 3D rendering. The resulting
+    /// texture can be used as both a render attachment and a shader resource.
+    ///
+    /// # Parameters
+    ///
+    /// - `device`: A reference to the `wgpu::Device` used to create the texture.
+    /// - `config`: A reference to the `wgpu::SurfaceConfiguration` that defines the
+    ///   dimensions of the texture.
+    /// - `label`: A descriptive label for the texture, used for debugging purposes.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Texture` object containing the created depth texture and its
+    /// corresponding view, ready for use in rendering.
+    ///
+    /// # See also
+    /// - [`TextureSampler::depth_sampler`](crate::wgpu::texture_sampler::TextureSampler::depth_sampler)
+    pub fn depth_texture(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, label: &str) -> Self {
+        let size = wgpu::Extent3d {
+            width: config.width.max(1),
+            height: config.height.max(1),
+            depth_or_array_layers: 1,
+        };
+        let desc = wgpu::TextureDescriptor {
+            label: Some(label),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: Self::DEPTH_FORMAT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        };
+        let texture = device.create_texture(&desc);
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        Self { texture, view }
+    }
+
     /// Creates a texture from a raw byte array representing an image.
     ///
     /// This function takes a byte slice containing the raw image data, decodes it into an image object,

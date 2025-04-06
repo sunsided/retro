@@ -88,6 +88,6 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 // The @location(0) bit tells WGPU to store the vec4 value returned
 // by this function in the first color target.
 @fragment
-fn fs_colored_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
     return textureSample(t_diffuse, s_diffuse, in.tex_coords);
 }

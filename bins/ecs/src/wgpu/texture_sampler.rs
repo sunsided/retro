@@ -47,4 +47,41 @@ impl TextureSampler {
             sampler,
         }
     }
+
+    /// Creates a sampler optimized for depth textures.
+    ///
+    /// This sampler uses the following settings:
+    /// - Address modes for U, V, and W are set to `ClampToEdge`.
+    /// - Both magnification and minification filters are set to `Linear`.
+    /// - Mipmap filter is set to `Nearest`.
+    /// - Comparison function is set to `LessEqual`.
+    /// - LOD (Level of Detail) clamping is set with a minimum of 0.0 and a maximum of 100.0.
+    ///
+    /// # Parameters
+    /// - `device`: The `wgpu::Device` used to create the sampler.
+    ///
+    /// # Returns
+    /// A new `TextureSampler` configured for depth textures.
+    ///
+    /// # See also
+    /// - [`Texture::depth_texture`](crate::wgpu::texture::Texture::depth_texture)
+    pub fn depth_sampler(device: &wgpu::Device) -> Self {
+        let sampler = device.create_sampler(
+            &wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Linear,
+                mipmap_filter: wgpu::FilterMode::Nearest,
+                compare: Some(wgpu::CompareFunction::LessEqual),
+                lod_min_clamp: 0.0,
+                lod_max_clamp: 100.0,
+                ..Default::default()
+            }
+        );
+        Self {
+            sampler,
+        }
+    }
 }
