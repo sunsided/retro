@@ -1,6 +1,5 @@
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
-use crossbeam_channel::TryRecvError;
 use parking_lot::Mutex;
 use std::sync::Arc;
 use std::time::Instant;
@@ -14,7 +13,7 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use crate::engine::{MainWorld, SystemFactory, WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crate::engine::{CommandQueue, MainWorld, SystemFactory};
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::wgpu_state::WgpuState;
@@ -195,36 +194,4 @@ fn main() -> eyre::Result<()> {
     */
 
     Ok(())
-}
-
-struct CommandQueue {
-    sender: crossbeam_channel::Sender<WorldCommand>,
-    receiver: crossbeam_channel::Receiver<WorldCommand>,
-}
-
-impl CommandQueue {
-    pub fn new() -> Self {
-        let (sender, receiver) = crossbeam_channel::unbounded();
-        Self { sender, receiver }
-    }
-}
-
-impl WorldCommandReceiver for CommandQueue {
-    type Error = TryRecvError;
-
-    fn recv(&self) -> Result<Option<WorldCommand>, Self::Error> {
-        match self.receiver.try_recv() {
-            Ok(cmd) => Ok(Some(cmd)),
-            Err(TryRecvError::Empty) => Ok(None),
-            Err(err) => Err(err),
-        }
-    }
-}
-
-impl WorldCommandSender for CommandQueue {
-    type Error = crossbeam_channel::SendError<WorldCommand>;
-
-    fn send(&self, command: WorldCommand) -> Result<(), Self::Error> {
-        self.sender.send(command)
-    }
 }
