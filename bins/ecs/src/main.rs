@@ -67,7 +67,7 @@ impl App {
             let state = pollster::block_on(WgpuState::new(window.clone()));
 
             // Recreate the textures.
-            let texture = state.texture_from_image("resources/textures/cover.webp", Some("cover.jpg"))
+            let texture = state.texture_from_image("resources/textures/rain-clouds.png", Some("cover.jpg"))
                 .expect("Failed to load cover texture");
 
             // TODO: Refactor
