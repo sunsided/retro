@@ -28,10 +28,12 @@
 
 use std::sync::Arc;
 use tracing::debug;
-use wgpu::{Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Surface, TextureUsages};
+use wgpu::{Buffer, Device, Instance, InstanceDescriptor, MaintainResult, PipelineLayout, PresentMode, Queue, RenderPipeline, Surface, TextureUsages};
+use wgpu::util::DeviceExt;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::wgpu::TextureSampler;
+use crate::wgpu::vertex::Vertex;
 
 #[allow(dead_code)]
 pub struct WgpuState {
@@ -45,6 +47,7 @@ pub struct WgpuState {
     render_pipeline_layout: PipelineLayout,
     render_pipeline: RenderPipeline,
     colored_render_pipeline: RenderPipeline,
+    vertex_buffer: Buffer,
 }
 
 impl WgpuState {
@@ -205,6 +208,15 @@ impl WgpuState {
             cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
         });
 
+        // TODO: Refactor!
+        let vertex_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&Vertex::TRIANGLE_VERTICES),
+                usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+
         Self {
             instance,
             surface,
@@ -214,6 +226,7 @@ impl WgpuState {
             render_pipeline_layout,
             render_pipeline,
             colored_render_pipeline,
+            vertex_buffer,
             linear_sampler: sampler
         }
     }
