@@ -1,8 +1,6 @@
-use crate::game::system::SystemFactory;
-use crate::game::world::{MainWorld, WgpuRenderState, WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crate::engine::system::SystemFactory;
 use crate::logging::setup_logging;
 use crate::phase_events::PhaseEvents;
-use crate::game::archetype::SceneBackgroundEntityData;
 use crossbeam_channel::TryRecvError;
 use parking_lot::Mutex;
 use std::sync::Arc;
@@ -18,9 +16,11 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use crate::game::system::rendering::background::BackgroundColorData;
+use crate::engine::{MainWorld, SceneBackgroundEntityData, WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crate::engine::system::rendering::background::BackgroundColorData;
+use crate::engine::system::rendering::WgpuRenderState;
 
-mod game;
+mod engine;
 mod logging;
 mod phase_events;
 

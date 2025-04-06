@@ -1,7 +1,3 @@
-use crate::game::system::rendering::background::BackgroundColorData;
-
-include!("../../generated/components_gen.rs");
-
 #[derive(Debug, Clone, Default)]
 pub struct PositionData {
     pub x: f32,

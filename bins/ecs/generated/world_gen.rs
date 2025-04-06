@@ -185,6 +185,7 @@ struct MainWorldArchetypes {
 pub struct MainWorldSystems {
     physics: PhysicsSystem,
     render: RenderSystem,
+    background_color_cycle: BackgroundColorCycleSystem,
     render_background: RenderBackgroundSystem,
 }
 
@@ -216,6 +217,20 @@ impl MainWorldSystems {
     pub fn as_render_mut(&mut self) -> &mut RenderSystemData {
         use core::ops::DerefMut;
         self.render.deref_mut()
+    }
+
+    /// Gives immutable access to the [`BackgroundColorCycleSystemData`] of the [`BackgroundColorCycleSystem`].
+    #[inline]
+    pub fn as_background_color_cycle_ref(&self) -> &BackgroundColorCycleSystemData {
+        use core::ops::Deref;
+        self.background_color_cycle.deref()
+    }
+
+    /// Gives mutable access to the [`BackgroundColorCycleSystemData`] of the [`BackgroundColorCycleSystem`].
+    #[inline]
+    pub fn as_background_color_cycle_mut(&mut self) -> &mut BackgroundColorCycleSystemData {
+        use core::ops::DerefMut;
+        self.background_color_cycle.deref_mut()
     }
 
     /// Gives immutable access to the [`RenderBackgroundSystemData`] of the [`RenderBackgroundSystem`].
@@ -258,6 +273,20 @@ impl AsMut<RenderSystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut RenderSystemData {
         self.as_render_mut()
+    }
+}
+
+impl AsRef<BackgroundColorCycleSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &BackgroundColorCycleSystemData {
+        self.as_background_color_cycle_ref()
+    }
+}
+
+impl AsMut<BackgroundColorCycleSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut BackgroundColorCycleSystemData {
+        self.as_background_color_cycle_mut()
     }
 }
 
@@ -365,6 +394,7 @@ impl<E, Q> MainWorld<E, Q> {
             systems: MainWorldSystems {
                 physics: create_systems.create_physics(),
                 render: create_systems.create_render(),
+                background_color_cycle: create_systems.create_background_color_cycle(),
                 render_background: create_systems.create_render_background(),
             },
             entity_locations: Default::default(),
@@ -831,18 +861,14 @@ impl<E, Q> MainWorld<E, Q> {
             // Apply PhysicsSystem to ParticleArchetype
             self.systems.physics.apply_many(
                 &self.context,
-                &self.archetypes.particle.entities,
                 &self.archetypes.particle.velocities,
                 &mut self.archetypes.particle.positions,
-                &self.command_queue
             );
             // Apply PhysicsSystem to PlayerArchetype
             self.systems.physics.apply_many(
                 &self.context,
-                &self.archetypes.player.entities,
                 &self.archetypes.player.velocities,
                 &mut self.archetypes.player.positions,
-                &self.command_queue
             );
 
             self.systems.physics.on_end_phase(
@@ -945,7 +971,28 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // no systems in this phase
+        // System group 1 of 1
+        let is_ready = self.systems.background_color_cycle.is_ready(
+               &self.context,
+           );
+        if is_ready && self.systems.background_color_cycle.on_begin_phase(
+                    &self.context,
+                )
+                .inspect_err(|error| tracing::error!(%error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply BackgroundColorCycleSystem to SceneBackgroundArchetype
+            self.systems.background_color_cycle.apply_many(
+                &self.context,
+                &mut self.archetypes.scene_background.background_colors,
+            );
+
+            self.systems.background_color_cycle.on_end_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "BackgroundColorCycleSystem::on_end_phase returned an error"))
+            .ok();
+        }
 
         // Process all commands.
         self.handle_commands();
@@ -975,7 +1022,8 @@ impl<E, Q> MainWorld<E, Q> {
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
-        // no systems in this phase
+        // Only one system in this phase; skip spawning thread.
+        self.apply_system_phase_update_without_events();
 
         SystemUpdatePhaseEvents::on_end_phase(
             &mut self.events,

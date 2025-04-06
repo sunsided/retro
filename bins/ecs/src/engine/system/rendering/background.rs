@@ -48,11 +48,11 @@
 //! ```
 
 use std::convert::Infallible;
-use crate::game::component::BackgroundColorComponent;
-use crate::game::system::{ApplyRenderBackgroundSystem, RenderBackgroundSystem};
-use crate::game::world::WgpuRenderState;
+use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
+use crate::engine::system::rendering::WgpuRenderState;
 
-/// Represents a background color with red, green, blue, and alpha components.
+/// Represents a background color with red, green, blue, and alpha components,
+/// used as part of the [`BackgroundColorComponent`].
 ///
 /// Each component is a floating-point value in the range [0.0, 1.0], where:
 /// - `r`: The red component

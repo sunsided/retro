@@ -69,9 +69,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tracing::{error, trace};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
-use crate::game::component::PositionComponent;
-use crate::game::system::{ApplyRenderSystem, RenderSystem, SystemRenderPhaseEvents};
-use crate::game::world::FrameContext;
+use crate::engine::{ApplyRenderSystem, FrameContext, PositionComponent, RenderSystem, SystemRenderPhaseEvents};
 use crate::phase_events::PhaseEvents;
 
 impl Default for RenderSystem {

@@ -1,8 +1,7 @@
 use std::convert::Infallible;
-use crate::game::system::{SystemFixedUpdatePhaseEvents, SystemStartupPhaseEvents, SystemUpdatePhaseEvents};
-use crate::game::world::FrameContext;
 use std::time::Instant;
 use tracing::trace;
+use crate::engine::{FrameContext, SystemFixedUpdatePhaseEvents, SystemStartupPhaseEvents, SystemUpdatePhaseEvents};
 
 #[derive(Debug)]
 pub struct PhaseEvents(Instant);

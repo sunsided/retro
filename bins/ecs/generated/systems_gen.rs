@@ -100,6 +100,9 @@ pub trait CreateSystems {
     /// Create an instance of type [`PhysicsSystem`].
     fn create_physics(&self) -> PhysicsSystem;
 
+    /// Create an instance of type [`BackgroundColorCycleSystem`].
+    fn create_background_color_cycle(&self) -> BackgroundColorCycleSystem;
+
     /// Create an instance of type [`RenderBackgroundSystem`].
     fn create_render_background(&self) -> RenderBackgroundSystem;
 
@@ -384,10 +387,8 @@ pub trait ApplyPhysicsSystem: System {
     fn apply_single(
         &mut self,
         context: &FrameContext,
-        entity: EntityId,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
-        commands: &impl WorldCommandSender
     );
 
     /// Applies the system's business logic to the given entity components.
@@ -402,21 +403,15 @@ pub trait ApplyPhysicsSystem: System {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        entities: &[EntityId],
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
-        commands: &impl WorldCommandSender
     ) {
-        let count = velocities.len();
-        debug_assert_eq!(entities.len(), count);
-        let zipped_iter = entities.iter().zip(velocities.iter().zip(positions.iter_mut()));
-        for (entity, (velocity, position)) in zipped_iter {
+        let zipped_iter = velocities.iter().zip(positions.iter_mut());
+        for (velocity, position) in zipped_iter {
             self.apply_single(
                 &context,
-                *entity,
                 velocity,
                 position,
-                commands
             );
         }
     }
@@ -429,18 +424,14 @@ impl PhysicsSystem {
     pub fn apply_single(
         &mut self,
         context: &FrameContext,
-        entity: EntityId,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
-        commands: &impl WorldCommandSender
     ) {
         ApplyPhysicsSystem::apply_single(
             self,
             context,
-            entity,
             velocity,
             position,
-            commands
         );
     }
 
@@ -457,18 +448,14 @@ impl PhysicsSystem {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        entities: &[EntityId],
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
-        commands: &impl WorldCommandSender
     ) {
         ApplyPhysicsSystem::apply_many(
             self,
             context,
-            entities,
             velocities,
             positions,
-            commands
         );
     }
 
@@ -479,14 +466,11 @@ impl PhysicsSystem {
         &mut self,
         archetype: &mut ParticleArchetype,
         context: &FrameContext,
-        commands: &impl WorldCommandSender
     ) {
         self.apply_many(
             &context,
-            &archetype.entities,
             &archetype.velocities,
             &mut archetype.positions,
-            commands
         );
     }
 
@@ -497,14 +481,11 @@ impl PhysicsSystem {
         &mut self,
         archetype: &mut PlayerArchetype,
         context: &FrameContext,
-        commands: &impl WorldCommandSender
     ) {
         self.apply_many(
             &context,
-            &archetype.entities,
             &archetype.velocities,
             &mut archetype.positions,
-            commands
         );
     }
 }
@@ -538,6 +519,190 @@ impl core::ops::Deref for PhysicsSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for PhysicsSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplyBackgroundColorCycleSystem`] trait.
+/// See also [`BackgroundColorCycleData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+///
+/// ### Mutates
+/// 
+/// - [`BackgroundColorComponent`]
+#[derive(Debug)]
+pub struct BackgroundColorCycleSystem(BackgroundColorCycleSystemData);
+
+/// Implements the business logic for the [`BackgroundColorCycleSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyBackgroundColorCycleSystem: System {
+    type Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        context: &FrameContext,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        context: &FrameContext,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `background_color`: A mutable reference to the component of type [`BackgroundColorComponent`].
+    fn apply_single(
+        &mut self,
+        context: &FrameContext,
+        background_color: &mut BackgroundColorComponent,
+    );
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `background_color`: A mutable slice of the components of type [`BackgroundColorComponent`].
+    fn apply_many(
+        &mut self,
+        context: &FrameContext,
+        background_colors: &mut [BackgroundColorComponent],
+    ) {
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            self.apply_single(
+                &context,
+                background_color,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl BackgroundColorCycleSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        context: &FrameContext,
+        background_color: &mut BackgroundColorComponent,
+    ) {
+        ApplyBackgroundColorCycleSystem::apply_single(
+            self,
+            context,
+            background_color,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `background_color`: A mutable slice of the components of type [`BackgroundColorComponent`].
+    #[inline]
+    fn apply_many(
+        &mut self,
+        context: &FrameContext,
+        background_colors: &mut [BackgroundColorComponent],
+    ) {
+        ApplyBackgroundColorCycleSystem::apply_many(
+            self,
+            context,
+            background_colors,
+        );
+    }
+
+    /// Applies this system to the [`SceneBackgroundArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_scene_background(
+        &mut self,
+        archetype: &mut SceneBackgroundArchetype,
+        context: &FrameContext,
+    ) {
+        self.apply_many(
+            &context,
+            &mut archetype.background_colors,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for BackgroundColorCycleSystem {
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
+}
+
+impl PartialEq<SystemId> for BackgroundColorCycleSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<BackgroundColorCycleSystemData> for BackgroundColorCycleSystem {
+    fn from(data: BackgroundColorCycleSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for BackgroundColorCycleSystem {
+    type Target = BackgroundColorCycleSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for BackgroundColorCycleSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -695,7 +860,7 @@ impl RenderBackgroundSystem {
 
 #[automatically_derived]
 impl System for RenderBackgroundSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderBackgroundSystem {
@@ -921,7 +1086,7 @@ impl RenderSystem {
 
 #[automatically_derived]
 impl System for RenderSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(4).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderSystem {
