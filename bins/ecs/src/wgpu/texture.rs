@@ -32,7 +32,7 @@ use std::path::Path;
 use image::{GenericImageView, ImageError};
 use wgpu::{Device, Queue, TextureFormat};
 use crate::resources;
-use crate::wgpu::gpu_hardware::DeviceAndQueue;
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 
 /// A struct representing a GPU texture along with its corresponding view.
 ///

@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::phases::render::frame_state::FrameState;
-use crate::wgpu::gpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
+use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 
 /// Represents the render state for the WGPU system.
 ///

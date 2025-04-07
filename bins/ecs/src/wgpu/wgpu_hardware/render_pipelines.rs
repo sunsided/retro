@@ -1,7 +1,7 @@
 use tracing::instrument;
 use wgpu::{Device, PipelineLayout, RenderPipeline, TextureFormat};
-use crate::wgpu::gpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::gpu_hardware::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
+use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::model::{ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;

@@ -4,4 +4,4 @@ pub mod camera_uniform;
 mod instance;
 pub mod model;
 pub mod light;
-pub mod gpu_hardware;
+pub mod wgpu_hardware;

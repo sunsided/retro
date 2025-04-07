@@ -77,7 +77,7 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
-use crate::wgpu::gpu_hardware::{WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
+use crate::wgpu::wgpu_hardware::{WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 pub use self::wgpu_render_state::WgpuRenderState;
 pub use self::frame_state::FrameState;
 

@@ -1,15 +1,15 @@
 use tracing::instrument;
 use wgpu::{Device, MaintainResult, Queue, Surface, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
-use crate::wgpu::gpu_hardware::depth_buffers::DepthBuffers;
-use crate::wgpu::gpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::gpu_hardware::bind_groups::BindGroups;
-use crate::wgpu::gpu_hardware::buffers::Buffers;
-use crate::wgpu::gpu_hardware::models::Models;
-use crate::wgpu::gpu_hardware::render_pipelines::RenderPipelines;
-use crate::wgpu::gpu_hardware::shaders::Shaders;
-use crate::wgpu::gpu_hardware::texture_samplers::TextureSamplers;
-use crate::wgpu::gpu_hardware::textures::Textures;
+use crate::wgpu::wgpu_hardware::depth_buffers::DepthBuffers;
+use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::bind_groups::BindGroups;
+use crate::wgpu::wgpu_hardware::buffers::Buffers;
+use crate::wgpu::wgpu_hardware::models::Models;
+use crate::wgpu::wgpu_hardware::render_pipelines::RenderPipelines;
+use crate::wgpu::wgpu_hardware::shaders::Shaders;
+use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
+use crate::wgpu::wgpu_hardware::textures::Textures;
 
 #[derive(Debug)]
 #[allow(dead_code)]

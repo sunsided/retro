@@ -1,5 +1,5 @@
 use wgpu::Surface;
-use crate::wgpu::gpu_hardware::SurfaceId;
+use crate::wgpu::wgpu_hardware::SurfaceId;
 
 /// A wrapper for a WGPU surface.
 #[derive(Debug, Default)]

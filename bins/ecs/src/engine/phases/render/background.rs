@@ -47,7 +47,7 @@
 //! }
 //! ```
 
-use crate::wgpu::gpu_hardware::RenderPipelineSelector;
+use crate::wgpu::wgpu_hardware::RenderPipelineSelector;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat};

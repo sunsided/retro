@@ -1,4 +1,4 @@
-use crate::wgpu::gpu_hardware::RenderPipelineSelector;
+use crate::wgpu::wgpu_hardware::RenderPipelineSelector;
 use crate::logging::setup_logging;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -21,7 +21,7 @@ use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
 use crate::fps_counter::FpsCounter;
-use crate::wgpu::gpu_hardware::WgpuHardware;
+use crate::wgpu::wgpu_hardware::WgpuHardware;
 
 mod engine;
 mod logging;

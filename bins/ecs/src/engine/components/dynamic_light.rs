@@ -1,6 +1,6 @@
 use cgmath::Rotation3;
 use crate::seconds::Seconds;
-use crate::wgpu::gpu_hardware::DeviceAndQueue;
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use crate::wgpu::light::LightUniform;
 
 #[derive(Debug, Clone)]

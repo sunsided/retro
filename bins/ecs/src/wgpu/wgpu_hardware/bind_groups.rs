@@ -1,9 +1,9 @@
 use tracing::instrument;
 use wgpu::{BindGroup, BindGroupLayout, Sampler, TextureView};
-use crate::wgpu::gpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::gpu_hardware::buffers::Buffers;
-use crate::wgpu::gpu_hardware::texture_samplers::TextureSamplers;
-use crate::wgpu::gpu_hardware::textures::Textures;
+use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::buffers::Buffers;
+use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
+use crate::wgpu::wgpu_hardware::textures::Textures;
 
 #[derive(Debug)]
 pub struct BindGroups {
