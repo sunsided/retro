@@ -11,7 +11,7 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
     type Error = Infallible;
 
     fn apply_many(&mut self, _context: &FrameContext, gpu: &WgpuRenderState, lights: &mut [DynamicLightComponent]) {
-        let Some(device) = gpu.hardware.device() else {
+        let Some(device) = gpu.hardware().device() else {
             warn!("Skipping light rendering because no device is set.");
             return;
         };

@@ -64,18 +64,22 @@
 pub mod background;
 pub mod camera_render;
 pub mod dynamic_light;
+mod wgpu_render_state;
+mod frame_state;
 
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use parking_lot::lock_api::MutexGuard;
-use tracing::{error, trace};
+use tracing::{error, trace, warn};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
 use crate::wgpu::gpu_hardware::{WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
+pub use self::wgpu_render_state::WgpuRenderState;
+pub use self::frame_state::FrameState;
 
 impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
     fn create(&self) -> RenderBackgroundSystem {
@@ -97,93 +101,6 @@ impl Default for RenderSystem {
 
 #[derive(Default, Debug)]
 pub struct RenderSystemData;
-
-/// Represents the render state for the WGPU system.
-///
-/// This structure holds the current state of the WGPU system, including the
-/// GPU state and per-frame data. It provides functionality for managing
-/// the WGPU backend and accessing mutable frame state.
-///
-/// # Fields
-/// - `state`: An optional shared GPU state wrapped in an `Arc<Mutex<WgpuState>>`.
-/// - `frame_state`: An optional per-frame state that includes frame-specific
-///   details such as the surface texture and command encoder.
-///
-/// # Uses
-/// See e.g.
-///
-/// - [`ApplyRenderBackgroundSystem`]
-#[derive(Default)]
-pub struct WgpuRenderState {
-    /// The hardware abstraction (devices, queues, ...)
-    hardware: WgpuHardware,
-    /// The per-frame state, which contains details for the current frame.
-    frame_state: Option<FrameState>,
-}
-
-impl WgpuRenderState {
-    #[inline]
-    pub fn set_hardware(&mut self, hardware: WgpuHardware) {
-        self.hardware = hardware;
-    }
-
-    #[inline]
-    pub fn reinitialize_surface(&mut self, window: Arc<Window>) -> Result<(), WgpuReinitializeWindowError> {
-        self.hardware.reinitialize_surface(window)
-    }
-
-    #[inline]
-    pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
-        self.hardware.resize_surface(new_size)
-    }
-
-    /// Gets the size of the configured surface.
-    pub fn surface_size(&self) -> Option<PhysicalSize<u32>> {
-        self.hardware.device().map(|dev| {
-            let widht = dev.config().width;
-            let height = dev.config().height;
-            PhysicalSize::new(widht, height)
-        })
-    }
-}
-
-impl Debug for WgpuRenderState {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.hardware.device().is_some() {
-            write!(f, "RenderSystemData")
-        } else {
-            write!(f, "RenderSystemData (uninitialized)")
-        }
-    }
-}
-
-/// Represents the state for a single rendering frame.
-///
-/// This struct contains resources specific to the current frame,
-/// such as the surface texture, the texture view for rendering,
-/// and the command encoder for issuing GPU commands.
-/// It also tracks the start time of the frame rendering process.
-///
-/// # Fields
-/// - `frame`: The surface texture for the current frame, which represents
-///   the frame buffer where rendering commands are drawn.
-/// - `view`: A `TextureView` created from the `frame`, used as the target
-///   for rendering operations.
-/// - `encoder`: A `CommandEncoder` that records all rendering and compute
-///   commands to be executed on the GPU for this frame.
-/// - `render_start`: The timestamp marking the start of the rendering for
-///   this frame, primarily used for performance measurement.
-///
-/// # Uses
-/// See e.g.
-///
-/// - [`ApplyRenderBackgroundSystem`]
-pub struct FrameState {
-    frame: SurfaceTexture,
-    pub view: TextureView,
-    pub encoder: CommandEncoder,
-    render_start: std::time::Instant,
-}
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderReady {
@@ -228,16 +145,16 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         // TODO: Have the application react to wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other by exiting
         // TODO: Have the application react to wgpu::SurfaceError::Timeout by hoping for thee best :)
 
-        let Some(device) = render.hardware.device() else {
+        let Some(device) = render.hardware().device() else {
             return Ok(RenderReady::NotReady);
         };
 
-        let Some(surface) = render.hardware.surface().as_ref() else {
+        let Some(surface) = render.hardware().surface().as_ref() else {
             return Ok(RenderReady::NotReady);
         };
 
         self.start_timing();
-        render.frame_state = {
+        render.set_frame_state({
             let render_start = std::time::Instant::now();
 
             // The `get_current_texture` function will wait for the surface to provide a new
@@ -261,13 +178,8 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                     label: Some("Render Encoder"),
                 });
 
-            Some(FrameState {
-                frame,
-                view,
-                encoder,
-                render_start,
-            })
-        };
+            Some(FrameState::new(frame, view, encoder, render_start))
+        });
         Ok(RenderReady::Ready)
     }
 
@@ -300,11 +212,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             return Ok(());
         }
 
-        let Some(device) = render.hardware.device() else {
-            return Ok(());
-        };
-
-        if let Some(frame_state) = render.frame_state.take() {
+        if let Ok((device, frame_state)) = render.finish_frame() {
             let command_buffer = frame_state.encoder.finish();
             device.submit_to_queue(command_buffer);
             // Optionally poll
@@ -314,6 +222,11 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             let render_duration = frame_state.render_start.elapsed();
             trace!(context.frame_number, "Rendered frame in {render_duration:?}");
         }
+        else {
+            warn!("Skipping background rendering because hardware or frame is not ready.");
+        };
+
+        // Trace the time of the phase itself.
         let elapsed = self.elapsed();
         trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemRenderPhaseEvents>::NAME);
         Ok(())
@@ -323,8 +236,9 @@ impl SystemRenderPhaseEvents for PhaseEvents {
 impl ApplyRenderSystem for RenderSystem {
     type Error = wgpu::SurfaceError;
 
+    #[inline]
     fn is_ready(&self, state: &mut WgpuRenderState) -> bool {
-        state.hardware.is_ready()
+        state.is_ready()
     }
 
     fn apply_single(

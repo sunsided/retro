@@ -61,7 +61,7 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
     /// - Updates the active camera's uniform data with its view and projection matrices.
     /// - Writes the updated camera uniform data to the GPU buffer for rendering.
     fn apply_many(&mut self, wgpu_render: &WgpuRenderState, active_camera: &mut ActiveCameraState, cameras: &[CameraComponent]) {
-        let Some(device) = wgpu_render.hardware.device() else {
+        let Some(device) = wgpu_render.hardware().device() else {
             warn!("Skipping camera rendering because no device is set.");
             return;
         };

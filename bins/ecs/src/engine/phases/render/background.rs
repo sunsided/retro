@@ -128,13 +128,8 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
     fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
-        let Some(device) = wgpu_render.hardware.device() else {
-            warn!("Skipping background rendering because no device is set.");
-            return;
-        };
-
-        let Some(frame_state) = &mut wgpu_render.frame_state else {
-            warn!("Skipping background rendering because frame state is not set.");
+        let Ok((device, frame_state)) = wgpu_render.for_rendering() else {
+            warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
 

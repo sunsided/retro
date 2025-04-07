@@ -77,7 +77,7 @@ impl WgpuHardware {
 
     /// Get access to the device, if configured.
     #[inline]
-    pub fn device(&self) -> Option<&DeviceAndQueue> {
+    pub const fn device(&self) -> Option<&DeviceAndQueue> {
         self.device.as_ref()
     }
 
@@ -90,6 +90,12 @@ impl WgpuHardware {
     #[inline]
     pub const fn surface(&self) -> &SurfaceWrapper {
         &self.surface
+    }
+
+    /// Indicates whether wireframe rendering is supported by the adapter.
+    #[inline]
+    pub fn wireframe_supported(&self) -> bool {
+        self.adapter.as_ref().map(|adapter| adapter.features().contains(wgpu::Features::POLYGON_MODE_LINE)).unwrap_or_default()
     }
 }
 
@@ -190,11 +196,21 @@ impl WgpuHardware {
     #[instrument(skip(self, adapter))]
     fn request_device(&self, adapter: &Adapter) -> Result<(Device, Queue), WgpuReinitializeWindowError> {
         debug!(surface_id = %self.surface.id(), "Requesting GPU device and queue due to surface change");
+
+        // Enable wireframe rendering support.
+        let mut required_features = wgpu::Features::empty();
+        if adapter.features().contains(wgpu::Features::POLYGON_MODE_LINE) {
+            debug!("Adapter supports wireframe rendering");
+            required_features |= wgpu::Features::POLYGON_MODE_LINE;
+        } else {
+            debug!("Adapter does not support wireframe rendering, falling back to empty feature set");
+        };
+
         let (device, queue) = pollster::block_on(adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: Some("Device Descriptor"),
-                    required_features: wgpu::Features::empty(),
+                    required_features,
                     required_limits: wgpu::Limits::default(),
                     memory_hints: Default::default(),
                 },

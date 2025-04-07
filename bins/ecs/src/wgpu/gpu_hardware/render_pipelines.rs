@@ -11,22 +11,29 @@ pub struct RenderPipelines {
     pub textured_render: RenderPipeline,
     pub flat_render: RenderPipeline,
     pub light: RenderPipeline,
+    pub wireframe_render: Option<RenderPipeline>,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum RenderPipelineSelector {
-    Boring,
+    /// The standard textured rendering pipeline.
     #[default]
-    Colored
+    Textured,
+    /// An untextured, solid-color rendering pipeline.
+    Boring,
+    /// Uses a wireframe rendering pipeline, if supported.
+    /// Falls back to [`Boring`](Self::Boring) otherwise.
+    Wireframe
 }
 
 impl RenderPipelines {
     /// Returns a reference to the render pipeline.
     #[inline]
-    pub const fn render_pipeline(&self, which: RenderPipelineSelector) -> &RenderPipeline {
+    pub fn render_pipeline(&self, which: RenderPipelineSelector) -> &RenderPipeline {
         match which {
+            RenderPipelineSelector::Textured => &self.textured_render,
             RenderPipelineSelector::Boring => &self.flat_render,
-            RenderPipelineSelector::Colored => &self.textured_render
+            RenderPipelineSelector::Wireframe => &self.wireframe_render.as_ref().unwrap_or(&self.flat_render),
         }
     }
 }
@@ -34,12 +41,15 @@ impl RenderPipelines {
 impl RenderPipelines {
     #[instrument(skip(device, bind_group_layouts, shaders))]
     pub fn create_from(device: &Device, bind_group_layouts: &BindGroupLayouts, surface_format: TextureFormat, shaders: &Shaders) -> Self {
-        let textured_render = Self::create_textured_render(&device, bind_group_layouts, surface_format, shaders);
-        let flat_render = Self::create_flat_render(&device, bind_group_layouts, surface_format, shaders);
+        let layout = Self::create_standard_render_layout(&device, bind_group_layouts);
+        let textured_render = Self::create_textured_render(&device, &layout, surface_format, shaders);
+        let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
+        let wireframe_render = Self::create_wireframe_render(&device, &layout, surface_format, shaders);
         let light = Self::create_light(&device, bind_group_layouts, surface_format, shaders);
         Self {
             textured_render,
             flat_render,
+            wireframe_render,
             light
         }
     }
@@ -66,22 +76,26 @@ impl RenderPipelines {
                 ModelVertex::desc(),
                 InstanceRaw::desc()
             ],
+            RenderMode::Filled,
             "light"
         )
     }
 
-    #[instrument(skip(device, bind_group_layouts, shaders))]
-    fn create_textured_render(device: &Device, bind_group_layouts: &BindGroupLayouts, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("textured_render"),
+    #[instrument(skip_all)]
+    fn create_standard_render_layout(device: &Device, bind_group_layouts: &BindGroupLayouts) -> PipelineLayout {
+        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("render_layout"),
             bind_group_layouts: &[
                 &bind_group_layouts.diffuse_and_normal, // `@group(0)` in the shader
                 &bind_group_layouts.camera_uniforms,    // `@group(1)` in the shader
                 &bind_group_layouts.lighting_uniforms,  // `@group(2)` in the shader
             ],
             push_constant_ranges: &[],
-        });
+        })
+    }
 
+    #[instrument(skip_all)]
+    fn create_textured_render(device: &Device, layout: &PipelineLayout, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
         Self::create_render_pipeline(
             shaders.render.vertex_shader(),
             shaders.render.textured_fragment_shader(),
@@ -93,22 +107,37 @@ impl RenderPipelines {
                 ModelVertex::desc(),
                 InstanceRaw::desc()
             ],
+            RenderMode::Filled,
             "textured_render"
         )
     }
 
-    #[instrument(skip(device, bind_group_layouts, shaders))]
-    fn create_flat_render(device: &Device, bind_group_layouts: &BindGroupLayouts, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("flat_render"),
-            bind_group_layouts: &[
-                &bind_group_layouts.diffuse_and_normal, // `@group(0)` in the shader
-                &bind_group_layouts.camera_uniforms,    // `@group(1)` in the shader
-                &bind_group_layouts.lighting_uniforms,  // `@group(2)` in the shader
-            ],
-            push_constant_ranges: &[],
-        });
+    #[instrument(skip_all)]
+    fn create_wireframe_render(device: &Device, layout: &PipelineLayout, surface_format: TextureFormat, shaders: &Shaders) -> Option<RenderPipeline> {
+        if !device.features().contains(wgpu::Features::POLYGON_MODE_LINE) {
+            return None;
+        }
 
+        let pipeline = Self::create_render_pipeline(
+            shaders.render.vertex_shader(),
+            shaders.render.flat_fragment_shader(),
+            &device,
+            &layout,
+            surface_format,
+            Some(Texture::DEPTH_FORMAT),
+            &[
+                ModelVertex::desc(),
+                InstanceRaw::desc()
+            ],
+            RenderMode::Wireframe,
+            "wireframe_render"
+        );
+
+        Some(pipeline)
+    }
+
+    #[instrument(skip_all)]
+    fn create_flat_render(device: &Device, layout: &PipelineLayout, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
         Self::create_render_pipeline(
             shaders.render.vertex_shader(),
             shaders.render.flat_fragment_shader(),
@@ -120,6 +149,7 @@ impl RenderPipelines {
                 ModelVertex::desc(),
                 InstanceRaw::desc()
             ],
+            RenderMode::Filled,
             "flat_render"
         )
     }
@@ -132,6 +162,7 @@ impl RenderPipelines {
         color_format: TextureFormat,
         depth_format: Option<TextureFormat>,
         vertex_layouts: &[wgpu::VertexBufferLayout],
+        render_mode: RenderMode,
         label: &str,
     ) -> RenderPipeline {
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -161,8 +192,8 @@ impl RenderPipelines {
                 strip_index_format: None,
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
-                // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
-                polygon_mode: wgpu::PolygonMode::Fill,
+                // These need to be requested explicitly on device request.
+                polygon_mode: render_mode.into(),
                 // Requires Features::DEPTH_CLIP_CONTROL
                 unclipped_depth: false,
                 // Requires Features::CONSERVATIVE_RASTERIZATION
@@ -183,5 +214,20 @@ impl RenderPipelines {
             multiview: None,
             cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
         })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RenderMode {
+    Filled,
+    Wireframe,
+}
+
+impl From<RenderMode> for wgpu::PolygonMode {
+    fn from(value: RenderMode) -> Self {
+        match value {
+            RenderMode::Filled => Self::Fill,
+            RenderMode::Wireframe => Self::Line
+        }
     }
 }

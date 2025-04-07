@@ -151,8 +151,16 @@ impl App {
                 {
                     let system = self.ecs_world.systems.as_render_background_mut();
                     system.selector = match system.selector {
-                        RenderPipelineSelector::Boring => RenderPipelineSelector::Colored,
-                        RenderPipelineSelector::Colored => RenderPipelineSelector::Boring
+                        RenderPipelineSelector::Textured => RenderPipelineSelector::Boring,
+                        RenderPipelineSelector::Boring => {
+                            // Skip wireframe if it's not supported by the GPU
+                            if self.ecs_world.states.wgpu_render.wireframe_supported() {
+                                RenderPipelineSelector::Wireframe
+                            } else {
+                                RenderPipelineSelector::Textured
+                            }
+                        },
+                        RenderPipelineSelector::Wireframe => RenderPipelineSelector::Textured,
                     };
                 }
             _ => {}
