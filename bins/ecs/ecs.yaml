@@ -1,0 +1,148 @@
+# TODO: Allow definition of custom commands to be emitted by systems
+
+states:
+  - name: WgpuRender
+    description: The WGPU render state; will be initialized in the Render phase hooks
+  - name: ActiveCamera
+    description: The uniforms of the active camera.
+  - name: Input
+    description: The device input obtained from the window system.
+
+phases:
+  - name: Startup
+  - name: FixedUpdate
+    fixed: 60Hz
+  - name: Update
+  - name: Render
+    manual: true
+    states:
+      - use: WgpuRender
+        write: true
+
+worlds:
+  - name: Main
+    archetypes:
+      - Camera
+      - Particle
+      - Player
+      - ForegroundObject
+      - BackgroundObject
+      - SceneBackground
+      - DynamicLight
+
+components:
+  - name: Camera
+  - name: CameraFpsController
+  - name: Position
+  - name: Velocity
+  - name: Health
+  - name: Collider
+  - name: Color
+  - name: BackgroundColor
+    description: The background color used for clearing the render buffer
+  - name: DynamicLight
+    description: A marker component for light entities
+
+archetypes:
+  - name: Camera
+    components:
+      - Camera
+      - CameraFpsController
+
+  - name: DynamicLight
+    components:
+      - DynamicLight
+      - Color
+      - Position
+
+  - name: Particle
+    description: A particle system particle.
+    components:
+      - Position
+      - Velocity
+
+  - name: Player
+    components:
+      - Position
+      - Velocity
+      - Health
+
+  - name: ForegroundObject
+    components:
+      - Position
+      - Collider
+
+  - name: BackgroundObject
+    components:
+      - Position
+
+  - name: SceneBackground
+    description: The scene background.
+    components:
+      - BackgroundColor
+
+systems:
+  - name: Camera
+    phase: Update
+    states:
+      - use: Input
+      - use: WgpuRender  # for the screen size
+    outputs:
+      - Camera
+      - CameraFpsController
+
+  - name: CameraRender
+    phase: Render
+    states:
+      - use: WgpuRender
+      - use: ActiveCamera
+        write: true
+    inputs:
+      - Camera
+
+  - name: DynamicLight
+    context: true
+    phase: Render
+    states:
+      - use: WgpuRender
+    inputs:
+      - Color
+    outputs:
+      - DynamicLight
+
+  - name: Physics
+    phase: FixedUpdate
+    context: true
+    # entities: true
+    # commands: true
+    inputs:
+      - Velocity
+    outputs:
+      - Position
+
+  - name: BackgroundColorCycle
+    phase: Update
+    context: true
+    outputs:
+      - BackgroundColor
+
+  - name: RenderBackground
+    phase: Render
+    inputs:
+      - BackgroundColor
+    states:
+      - use: WgpuRender
+        write: true
+
+  - name: Render
+    phase: Render
+    run_after:
+      - RenderBackground
+    inputs:
+      - Position
+    states:
+      - use: WgpuRender
+        write: true
+
+# TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.
+# TODO: Generate a function that loops all archetypes matching the signature of a given system

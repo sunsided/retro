@@ -1,27 +1,29 @@
 //! # Triple Buffering Crate
 //!
-//! This crate provides a utility for implementing triple buffering or more generalized
-//! multi-buffering patterns. It includes the [`TripleBuffer`] type alias built on top of
-//! the generic [`MultiBuffer`] struct, allowing developers to create and manage buffers
-//! designed for concurrent or time-sensitive workloads.
+//! This crate provides utilities for implementing triple buffering and generalized
+//! multi-buffering patterns. It includes the [`TripleBuffer`] type alias, built on top of
+//! the generic [`MultiBuffer`] struct, enabling developers to create and manage buffers
+//! designed for high-performance, concurrent, or time-sensitive workloads.
 //!
-//! The primary purpose of this crate is to enable safe, lock-free access to the latest
-//! data in one buffer while allowing modifications in other buffers. This pattern is
-//! commonly used in applications like video processing, gaming, or other scenarios
-//! that demand a balance of performance and data synchronization.
+//! The primary purpose of this crate is to facilitate safe, lock-free access to the latest
+//! data in one buffer while enabling concurrent modifications in other buffers. Each buffer
+//! is associated with a version tag (`BufferTag`), which helps track updates and ensures
+//! consumers can identify the most recent data or detect stale reads.
 //!
 //! ## Main Features
 //!
-//! - **`TripleBuffer<T>`**: A convenience alias for three buffers (standard triple buffering).
-//! - **Generic Multi-buffering**: `MultiBuffer<T, SIZE>` supports any number of buffers via constant generics.
-//! - Lock-free concurrency: Ensures safe access without blocking threads.
-//! - Convenience methods for buffer access, mutation, and updating the `latest` pointer.
+//! - **`TripleBuffer<T>`**: A convenient alias for three buffers (standard triple buffering).
+//! - **Generic Multi-buffering**: `MultiBuffer<T, SIZE>` supports any number of buffers
+//!   through constant generics.
+//! - **Buffer tags for tracking updates**: Each buffer has a version tag to help identify the latest state.
+//! - **Lock-free concurrency**: Allows safe access without blocking threads.
+//! - **Convenience methods**: Intuitive API for buffer access, mutation, and publishing updated buffers.
 //!
 //! ## Examples
 //!
 //! ### TripleBuffer Example
 //!
-//! The following example demonstrates how to use a `TripleBuffer`:
+//! The following example demonstrates how to use a `TripleBuffer` in typical scenarios:
 //!
 //! ```rust
 //! use multibuffer::TripleBuffer;
@@ -33,41 +35,47 @@
 //!     // Modify a specific buffer (index 1).
 //!     *buffer.get_mut(1) = 42;
 //!
-//!     // Publish the updated buffer (index 1).
-//!     buffer.publish(1);
+//!     // Publish the updated buffer (index 1) with a version tag of 1.
+//!     buffer.publish(1, 1);
 //!
-//!     // Access the latest published buffer.
-//!     assert_eq!(*buffer.get_latest(), 42);
-//!     
-//!     // Further modifications and publishing.
+//!     // Access the latest published buffer and its tag.
+//!     let (latest, tag) = buffer.get_latest();
+//!     assert_eq!(*latest, 42);
+//!     assert_eq!(tag, 1);
+//!
+//!     // Perform further modifications and publishing.
 //!     *buffer.get_mut(2) = 100;
-//!     buffer.publish(2);
-//!     assert_eq!(*buffer.get_latest(), 100);
+//!     buffer.publish(2, 2);
+//!     let (latest, tag) = buffer.get_latest();
+//!     assert_eq!(*latest, 100);
+//!     assert_eq!(tag, 2);
 //! }
 //! ```
 //!
 //! ## Implementation Details
 //!
-//! - The [`MultiBuffer`] struct stores an internal array of buffers, fence markers, and exposes
-//!   methods for interaction. Buffers are allocated using [`UnsafeCell`] for efficient mutable
-//!   access without synchronization primitives.
-//! - The `Sync` implementation leverages careful safety design to allow multi-threaded use
-//!   while adhering to Rust's safety guarantees. The buffers must not be simultaneously accessed
-//!   in unsafe ways outside the provided API.
+//! - The [`MultiBuffer`] struct maintains an internal array of buffers, version tags, and
+//!   a fence pointer to track the latest published buffer.
+//! - Buffers are allocated using [`UnsafeCell`] to allow efficient mutable access without requiring
+//!   synchronization primitives.
+//! - The version tags (`BufferTag`) are updated on publishing and help consumers confirm
+//!   they are reading the most up-to-date data.
+//! - The `Sync` implementation is designed with precautions to ensure safe multi-threaded usage,
+//!   as long as the user adheres to the safety rules outlined in the API documentation.
 //!
 //! ## Notes
 //!
-//! - The correctness of this implementation depends on the user following the API's
-//!   safety rules—`get_latest` and `get_mut` methods should never be misused concurrently
-//!   in order to prevent undefined behavior.
-//! - As of now, the crate relies on constant generics (`const SIZE: usize`) for specifying
-//!   buffer sizes, which requires a fixed buffer count at compile-time.
+//! - Correctness of the implementation depends on the user following the API's safety guidelines.
+//!   Specifically, concurrent misuse of the `get_latest` and `get_mut` methods may result in
+//!   undefined behavior.
+//! - The crate relies on Rust's constant generics (`const SIZE: usize`) to specify the number of
+//!   buffers, which needs to be determined at compile-time.
 
 #![allow(unsafe_code)]
 
 use std::cell::UnsafeCell;
 use std::mem::MaybeUninit;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
 /// A type alias for a triple buffer, which is a specialized form of the [`MultiBuffer`] struct
 /// with a fixed size of three buffers. This is commonly used for triple buffering scenarios.
@@ -78,12 +86,24 @@ pub type TripleBuffer<T> = MultiBuffer<T, 3>;
 /// This is used to identify a specific buffer in a multi-buffering structure.
 pub type BufferIndex = usize;
 
+/// A type alias for the version tag of a buffer.
+///
+/// Each buffer in the multi-buffering structure is associated with a `BufferTag`
+/// (type alias for `u64`), which tracks the version or state of the buffer.
+/// This tag helps consumers determine if a buffer contains updated or stale data.
+pub type BufferTag = u64;
+
 /// A generic multi-buffering structure designed for lock-free concurrency, supporting a
-/// configurable number of buffers.
+/// configurable number of buffers, each tagged with a version number for tracking updates.
 ///
 /// # Type Parameters
 /// - `T`: The type of data stored in each buffer.
 /// - `SIZE`: The number of buffers in the structure, which is fixed at compile time.
+///
+/// # Structure
+/// - Each buffer has an associated tag (`u64`) to track its version or state. This allows
+///   consumers to determine if a specific buffer contains newer data.
+/// - An internal fence pointer is used to indicate the latest published buffer.
 ///
 /// # Safety
 /// - The buffers are wrapped in [`UnsafeCell`] to allow efficient mutable access without
@@ -91,8 +111,14 @@ pub type BufferIndex = usize;
 /// - The implementation assumes the user correctly follows the API's safety guarantees to
 ///   avoid undefined behavior, especially when using methods like `get_mut` and `publish`
 ///   in a concurrent environment.
+/// - Correct use of the API ensures that data remains consistent and race conditions are avoided.
+///
+/// # Usage
+/// This structure is particularly useful in scenarios requiring efficient lock-free
+/// communication of data across threads, such as real-time processing or streaming.
 pub struct MultiBuffer<T, const SIZE: usize> {
     buffers: [UnsafeCell<T>; SIZE],
+    tags: [AtomicU64; SIZE],
     fence: AtomicUsize,
 }
 
@@ -138,6 +164,7 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
 
         MultiBuffer {
             buffers,
+            tags: [const { AtomicU64::new(0) }; SIZE],
             fence: AtomicUsize::new(0),
         }
     }
@@ -145,18 +172,24 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     /// Retrieves a reference to the latest published buffer.
     ///
     /// # Returns
-    /// A reference to the data in the buffer that was most recently published.
+    /// A reference to the data in the buffer that was most recently published,
+    /// along with its associated version tag.
     ///
     /// # Safety
     /// - The method assumes that the underlying concurrency rules are correctly followed
     ///   and guarantees a consistent snapshot of the latest buffer.
+    /// - The version tag provides a mechanism to track updates and ensure consumers
+    ///   can identify if they are working with the most recent data or detect
+    ///   stale reads.
     /// - This method uses `UnsafeCell` dereferencing internally, which is safe as long as
     ///   only one thread is modifying the buffer while others are reading it.
     #[inline]
     #[must_use]
-    pub fn get_latest(&self) -> &T {
+    pub fn get_latest(&self) -> (&T, BufferTag) {
         let idx = self.fence.load(Ordering::Acquire) % SIZE;
-        unsafe { &*self.buffers[idx].get() }
+        let tag = self.tags[idx].load(Ordering::Acquire);
+        let value = unsafe { &*self.buffers[idx].get() };
+        (value, tag)
     }
 
     /// Retrieves a mutable reference to a specific buffer by its index.
@@ -178,19 +211,25 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
         unsafe { &mut *self.buffers[index % SIZE].get() }
     }
 
-    /// Publishes a specific buffer by updating the internal fence.
+    /// Publishes a specific buffer by updating the internal fence and its version tag.
     ///
     /// # Parameters
     /// - `index`: The index of the buffer to publish.
+    /// - `version`: The version tag to assign to the buffer being published.
     ///
     /// # Safety
-    /// - The caller should ensure that the buffer being published has completed any
-    ///   modifications, and is in a valid state before publishing.
-    /// - This method uses ordering guarantees (`Acquire` and `Release`) to ensure that
-    ///   the changes to the buffer are visible to other threads that subsequently read it.
+    /// - The caller must ensure that the buffer being published is fully modified
+    ///   and in a valid state before calling this method.
+    /// - This method uses memory ordering guarantees (`Release`) to ensure that
+    ///   the changes made to the buffer are visible to other threads before the publish
+    ///   operation completes.
+    /// - It is the caller's responsibility to prevent data races by adhering to proper
+    ///   concurrent usage patterns.
     #[inline]
-    pub fn publish(&self, index: BufferIndex) {
-        self.fence.store(index % SIZE, Ordering::Release);
+    pub fn publish(&self, index: BufferIndex, version: BufferTag) {
+        let index = index % SIZE;
+        self.tags[index].store(version, Ordering::Release);
+        self.fence.store(index, Ordering::Release);
     }
 }
 
@@ -206,32 +245,40 @@ mod tests {
         // Test the initial size of the buffer
         assert_eq!(buffer.len(), 3);
 
-        // Verify the latest buffer returns the initial value
-        assert_eq!(*buffer.get_latest(), 0);
+        // Verify the latest buffer returns the initial value and its tag
+        let (latest, tag) = buffer.get_latest();
+        assert_eq!(*latest, 0);
+        assert_eq!(tag, 0);
 
         // Modify a specific buffer
         *buffer.get_mut(1) = 42;
 
-        // Publish the updated buffer (index 1)
-        buffer.publish(1);
+        // Publish the updated buffer (index 1) with a version tag
+        buffer.publish(1, 1);
 
-        // Verify the latest buffer is now the updated one
-        assert_eq!(*buffer.get_latest(), 42);
+        // Verify the latest buffer is now the updated one with the correct tag
+        let (latest, tag) = buffer.get_latest();
+        assert_eq!(*latest, 42);
+        assert_eq!(tag, 1);
 
         // Modify another specific buffer
         *buffer.get_mut(2) = 100;
 
-        // Publish the updated buffer (index 2)
-        buffer.publish(2);
+        // Publish the updated buffer (index 2) with a new version tag
+        buffer.publish(2, 2);
 
-        // Verify the latest buffer is now the second updated one
-        assert_eq!(*buffer.get_latest(), 100);
+        // Verify the latest buffer is now the second updated one with the correct tag
+        let (latest, tag) = buffer.get_latest();
+        assert_eq!(*latest, 100);
+        assert_eq!(tag, 2);
 
         // Modify and publish a buffer with wrapping around indices (e.g., index 4 maps to 1)
         *buffer.get_mut(4) = 7;
-        buffer.publish(4);
+        buffer.publish(4, 3);
 
-        // The latest buffer should now be the one at index 1 (mod TRIPLE)
-        assert_eq!(*buffer.get_latest(), 7);
+        // The latest buffer should now be the one at index 1 (mod TRIPLE) with the correct tag
+        let (latest, tag) = buffer.get_latest();
+        assert_eq!(*latest, 7);
+        assert_eq!(tag, 3);
     }
 }

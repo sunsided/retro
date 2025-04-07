@@ -53,3 +53,7 @@ doc: docs
 
 [private]
 open-docs: docs
+
+# Emits the MIRI code of an application into the `target/debug/deps` directory.
+emit-mir *ARGS="--release":
+    RUSTFLAGS="--emit mir" cargo build {{ ARGS }}
