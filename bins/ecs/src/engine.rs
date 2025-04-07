@@ -17,7 +17,7 @@ pub mod phases;
 mod main_world;
 mod command_queue;
 mod phase_events;
-mod input_state;
+pub mod input_state;
 
 pub use main_world::InitializeMainWorld;
 pub use command_queue::CommandQueue;

@@ -4,16 +4,16 @@ use winit::keyboard::{KeyCode, PhysicalKey};
 
 #[derive(Debug, Default)]
 pub struct InputState {
-    lmb_pressed: KeyState,
-    mouse_move_dx: f32,
-    mouse_move_dy: f32,
-    mouse_scroll_delta: f32,
-    key_forward: KeyState,
-    key_backward: KeyState,
-    key_left: KeyState,
-    key_right: KeyState,
-    key_up: KeyState,
-    key_down: KeyState
+    pub lmb_pressed: KeyState,
+    pub mouse_move_dx: f32,
+    pub mouse_move_dy: f32,
+    pub mouse_scroll_delta: f32,
+    pub key_forward: KeyState,
+    pub key_backward: KeyState,
+    pub key_left: KeyState,
+    pub key_right: KeyState,
+    pub key_up: KeyState,
+    pub key_down: KeyState
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]

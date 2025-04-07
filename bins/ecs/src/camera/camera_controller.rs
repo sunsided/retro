@@ -3,6 +3,8 @@ use cgmath::{InnerSpace, Rad, Vector3};
 use winit::event::{ElementState, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use crate::camera::Camera;
+use crate::engine::input_state::KeyState;
+use crate::engine::InputState;
 use crate::seconds::Seconds;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
@@ -22,6 +24,20 @@ pub struct CameraController {
     sensitivity: f32,
 }
 
+trait ToAmount {
+    fn to_amount(&self) -> f32;
+}
+
+impl ToAmount for KeyState {
+    #[inline]
+    fn to_amount(&self) -> f32 {
+        match self {
+            Self::Pressed => 1.0,
+            Self::Released => 0.0,
+        }
+    }
+}
+
 impl CameraController {
     pub fn new(speed: f32, sensitivity: f32) -> Self {
         Self {
@@ -39,49 +55,16 @@ impl CameraController {
         }
     }
 
-    pub fn process_keys(&mut self, key: PhysicalKey, state: ElementState) -> bool {
-        let PhysicalKey::Code(keycode) = key else {
-            return false;
-        };
-
-        let amount = if state == ElementState::Pressed { 1.0 } else { 0.0 };
-        match keycode {
-            KeyCode::KeyW | KeyCode::ArrowUp => {
-                self.amount_forward = amount;
-                true
-            }
-            KeyCode::KeyS | KeyCode::ArrowDown => {
-                self.amount_backward = amount;
-                true
-            }
-            KeyCode::KeyA | KeyCode::ArrowLeft => {
-                self.amount_left = amount;
-                true
-            }
-            KeyCode::KeyD | KeyCode::ArrowRight => {
-                self.amount_right = amount;
-                true
-            }
-            KeyCode::Space => {
-                self.amount_up = amount;
-                true
-            }
-            KeyCode::ShiftLeft => {
-                self.amount_down = amount;
-                true
-            }
-            _ => false,
-        }
-    }
-
-    pub fn process_mouse(&mut self, mouse_dx: f64, mouse_dy: f64) {
-        todo!("apply mouse from input");
-        self.rotate_horizontal = mouse_dx as f32;
-        self.rotate_vertical = mouse_dy as f32;
-    }
-
-    pub fn process_scroll(&mut self, delta: &MouseScrollDelta) {
-        todo!("apply scroll from input")
+    pub fn process_input(&mut self, input: &InputState) {
+        self.amount_forward = input.key_forward.to_amount();
+        self.amount_backward = input.key_backward.to_amount();
+        self.amount_left = input.key_left.to_amount();
+        self.amount_right = input.key_right.to_amount();
+        self.amount_up = input.key_up.to_amount();
+        self.amount_down = input.key_down.to_amount();
+        self.scroll = input.mouse_scroll_delta;
+        self.rotate_horizontal = input.mouse_move_dx;
+        self.rotate_vertical = input.mouse_move_dy;
     }
 
     pub(crate) fn update_camera(&mut self, camera: &mut Camera, dt: Seconds) {
