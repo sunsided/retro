@@ -3,7 +3,7 @@ use crate::logging::setup_logging;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use ::wgpu::Backends;
-use tracing::{debug, trace};
+use tracing::{debug, error, info, trace};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event_loop::ActiveEventLoop;
@@ -14,6 +14,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
+use winit::monitor::MonitorHandle;
 use crate::cli::parse_arguments;
 use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::components::ActiveCameraState;
@@ -41,6 +42,7 @@ struct App {
     last_fps_output: Instant,
     frame_duration: Duration,
     next_frame_time: Instant,
+    target_fps: f32,
 }
 
 impl App {
@@ -53,10 +55,6 @@ impl App {
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.create_initial_entities();
 
-        let target_fps = 60;
-        let frame_duration = Duration::from_secs_f32(1.0 / target_fps as f32);
-        let next_frame_time = Instant::now() + frame_duration;
-
         Self {
             window: None,
             modifiers: Default::default(),
@@ -65,13 +63,22 @@ impl App {
             render_fps: FpsCounter::new(0.1),
             render_max_fps: FpsCounter::new(0.1),
             last_fps_output: Instant::now(),
-            frame_duration,
-            next_frame_time
+            target_fps: 60.0,
+            frame_duration: Default::default(),
+            next_frame_time: Instant::now(),
         }
+    }
+
+    fn update_frame_duration(&mut self, frame_duration: Duration) {
+        self.target_fps = frame_duration.as_secs_f32().recip();
+        self.frame_duration = frame_duration;
     }
 
     fn reinitialize_window(&mut self, active_event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
+            // Initialize if missing.
+            self.update_frame_duration(Duration::from_secs_f32(self.target_fps.recip()));
+
             let attributes = Window::default_attributes()
                 .with_title("Retro 2000")
                 .with_inner_size(LogicalSize::new(1024.0, 640.0))
@@ -82,8 +89,18 @@ impl App {
                     .create_window(attributes)
                     .expect("Failed to create window"),
             );
-            self.window = Some(window.clone());
 
+            if let Some(mHz) = window.current_monitor().and_then(|monitor: MonitorHandle| monitor.refresh_rate_millihertz()) {
+                let hz = (mHz as f64) * 0.001;
+                let refresh_duration = Duration::from_secs_f64(hz.recip());
+                info!("Display refresh rate: {:.2} Hz, frame duration: {:?}", hz, refresh_duration);
+                self.update_frame_duration(refresh_duration);
+            } else {
+                error!("Failed to obtain display refresh rate, using default frame duration");
+                self.update_frame_duration(Duration::from_secs_f32(60.0_f32.recip()));
+            }
+
+            self.window = Some(window.clone());
             self.ecs_world.states.wgpu_render.reinitialize_surface(window.clone())
                 .expect("Failed to reinitialize window");
         }

@@ -34,8 +34,8 @@ mod models;
 mod textures;
 
 use std::sync::Arc;
-use tracing::{debug, instrument, warn};
-use wgpu::{Adapter, Backends, Device, InstanceDescriptor, PresentMode, Queue, RequestDeviceError, Surface, SurfaceConfiguration, TextureUsages};
+use tracing::{debug, info, instrument, warn};
+use wgpu::{Adapter, Backends, Device, DeviceType, InstanceDescriptor, PresentMode, Queue, RequestDeviceError, Surface, SurfaceConfiguration, TextureUsages};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 pub use crate::wgpu::gpu_hardware::device_and_queue::DeviceAndQueue;
@@ -189,6 +189,15 @@ impl WgpuHardware {
             ))
             .ok_or(WgpuReinitializeWindowError::NoAdapterFound)
             .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id(), "Failed to request adapter"))?;
+
+        let info = adapter.get_info();
+        match info.device_type {
+            DeviceType::Other => warn!("Adapter is of unsupported type: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
+            DeviceType::IntegratedGpu => info!("Running on an integrated GPU: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
+            DeviceType::DiscreteGpu => info!("Running on a discrete GPU: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
+            DeviceType::VirtualGpu => info!("Running on a virtual GPU: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
+            DeviceType::Cpu => warn!("Running using software renderer: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
+        }
 
         Ok(adapter)
     }

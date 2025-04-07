@@ -4,10 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["jpeg", "png", "webp"]
+default = ["jpeg", "png", "webp", "no-tracing"]
 jpeg = ["image/jpeg"]
 png = ["image/png"]
 webp = ["image/webp"]
+no-tracing = ["tracing/max_level_debug"]
 
 [dependencies]
 bytemuck = "1.22.0"

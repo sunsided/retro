@@ -17,7 +17,7 @@ pub fn parse_arguments() -> ArgMatches {
                 .short('b')
                 .long("backend")
                 .value_hint(ValueHint::Other)
-                .default_value("gl")
+                .default_value("auto")
                 .env("WGPU_BACKEND")
                 .value_parser(BackendValueParser)
         )
