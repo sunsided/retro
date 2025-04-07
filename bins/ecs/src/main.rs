@@ -1,7 +1,7 @@
 use crate::wgpu::gpu_hardware::RenderPipelineSelector;
 use crate::logging::setup_logging;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use ::wgpu::Backends;
 use tracing::{debug, trace};
 use winit::application::ApplicationHandler;
@@ -19,6 +19,7 @@ use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFact
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
+use crate::fps_counter::FpsCounter;
 use crate::wgpu::gpu_hardware::WgpuHardware;
 
 mod engine;
@@ -28,12 +29,18 @@ mod camera;
 mod resources;
 mod cli;
 mod seconds;
+mod fps_counter;
 
 struct App {
     window: Option<Arc<Window>>,
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
-    last_update: Instant
+    last_update: Instant,
+    render_fps: FpsCounter,
+    render_max_fps: FpsCounter,
+    last_fps_output: Instant,
+    frame_duration: Duration,
+    next_frame_time: Instant,
 }
 
 impl App {
@@ -46,11 +53,20 @@ impl App {
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.create_initial_entities();
 
+        let target_fps = 4;
+        let frame_duration = Duration::from_secs_f32(1.0 / target_fps as f32);
+        let mut next_frame_time = Instant::now() + frame_duration;
+
         Self {
             window: None,
             modifiers: Default::default(),
             last_update: Instant::now(),
-            ecs_world: world
+            ecs_world: world,
+            render_fps: FpsCounter::new(0.1),
+            render_max_fps: FpsCounter::new(0.1),
+            last_fps_output: Instant::now(),
+            frame_duration,
+            next_frame_time
         }
     }
 
@@ -80,11 +96,6 @@ impl App {
         debug!("Window resized: {:?}", new_size);
         self.ecs_world.states.wgpu_render.resize_surface(new_size)
             .expect("Failed to resize window");
-    }
-
-    fn handle_redraw_event(&mut self) {
-        trace!("Redraw requested");
-        self.ecs_world.apply_system_phase_render();
     }
 
     fn handle_key_modifiers_event(&mut self, new_modifiers: Modifiers) {
@@ -166,6 +177,48 @@ impl App {
             _ => {}
         }
     }
+
+    /// Run a game loop iteration without calling the Render phase.
+    /// See [`run_render_phase`](Self::run_render_phase).
+    fn run_system_phases_without_render(&mut self) {
+        // Update ECS.
+        self.ecs_world.apply_system_phases();
+
+        // Render only when the scheduled time has been reached.
+        let now = Instant::now();
+        if now >= self.next_frame_time {
+            if let Some(window) = &self.window {
+                window.request_redraw();
+            }
+
+            // Update next_frame_time; catch up if we're behind.
+            self.next_frame_time += self.frame_duration;
+            while Instant::now() >= self.next_frame_time {
+                self.next_frame_time += self.frame_duration;
+            }
+        }
+
+        // Reset the input.
+        self.ecs_world.states.input.reset();
+    }
+
+    /// Runs only the render phase.
+    fn run_render_phase(&mut self) {
+        let fps = self.render_fps.update_with(self.last_update);
+        self.last_update = Instant::now();
+
+        trace!(%fps, "Redraw requested");
+        let render_start = Instant::now();
+        self.ecs_world.apply_system_phase_render();
+        let max_fps = self.render_max_fps.update_with(render_start);
+
+        if self.last_fps_output.elapsed().as_secs() > 1 {
+            self.last_fps_output = Instant::now();
+            debug!(%fps, %max_fps, "Render FPS");
+        }
+
+        self.next_frame_time = Instant::now() + self.frame_duration;
+    }
 }
 
 impl ApplicationHandler for App {
@@ -215,23 +268,14 @@ impl ApplicationHandler for App {
                 self.handle_resize_event(new_size);
             }
             WindowEvent::RedrawRequested => {
-                self.handle_redraw_event();
+                self.run_render_phase();
             }
             _ => (),
         }
     }
 
     fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
-        // Update ECS.
-        self.ecs_world.apply_system_phases();
-
-        // Request a redraw each cycle.
-        if let Some(window) = &self.window {
-            window.request_redraw();
-        }
-
-        // Reset the input.
-        self.ecs_world.states.input.reset();
+        self.run_system_phases_without_render();
     }
 }
 

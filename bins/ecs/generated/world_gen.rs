@@ -148,6 +148,8 @@ pub struct MainWorld<E, Q> {
     context: FrameContext,
     /// The fixed-time accumulators.
     fixed_accumulators: FixedAccumulators,
+    /// The phase delta times.
+    delta_timers: DeltaTimers,
     /// The system phase events
     events: E,
     /// User-specific data.
@@ -540,6 +542,7 @@ impl<E, Q> MainWorld<E, Q> {
                 active_camera,
             },
             fixed_accumulators: Default::default(),
+            delta_timers: DeltaTimers::default(),
             events: phase_events,
             command_queue
         }
@@ -833,6 +836,82 @@ impl<E, Q> MainWorld<E, Q> {
         self.context.last_frame_start = self.context.current_frame_start;
     }
 
+    /// Runs a per-frame update of the frame context at the start of a frame.
+    fn on_begin_startup_phase(&mut self) {
+        let now = std::time::Instant::now();
+        let previous = self.delta_timers.previous_startup_start;
+        self.delta_timers.current_startup_start = now;
+        self.context.current_frame_start = now;
+        self.context.last_frame_start = previous;
+        if self.context.frame_number == 0 {
+            self.context.delta_time_secs = 0.0;
+        } else {
+            self.context.delta_time_secs = (now - previous).as_secs_f32();
+        }
+    }
+
+    /// Runs a per-frame update of the frame context at the end of a frame.
+    fn on_end_startup_phase(&mut self) {
+        self.delta_timers.previous_startup_start = self.delta_timers.current_startup_start;
+    }
+
+    /// Runs a per-frame update of the frame context at the start of a frame.
+    fn on_begin_fixed_update_phase(&mut self) {
+        let now = std::time::Instant::now();
+        let previous = self.delta_timers.previous_fixed_update_start;
+        self.delta_timers.current_fixed_update_start = now;
+        self.context.current_frame_start = now;
+        self.context.last_frame_start = previous;
+        if self.context.frame_number == 0 {
+            self.context.delta_time_secs = 0.0;
+        } else {
+            self.context.delta_time_secs = (now - previous).as_secs_f32();
+        }
+    }
+
+    /// Runs a per-frame update of the frame context at the end of a frame.
+    fn on_end_fixed_update_phase(&mut self) {
+        self.delta_timers.previous_fixed_update_start = self.delta_timers.current_fixed_update_start;
+    }
+
+    /// Runs a per-frame update of the frame context at the start of a frame.
+    fn on_begin_update_phase(&mut self) {
+        let now = std::time::Instant::now();
+        let previous = self.delta_timers.previous_update_start;
+        self.delta_timers.current_update_start = now;
+        self.context.current_frame_start = now;
+        self.context.last_frame_start = previous;
+        if self.context.frame_number == 0 {
+            self.context.delta_time_secs = 0.0;
+        } else {
+            self.context.delta_time_secs = (now - previous).as_secs_f32();
+        }
+    }
+
+    /// Runs a per-frame update of the frame context at the end of a frame.
+    fn on_end_update_phase(&mut self) {
+        self.delta_timers.previous_update_start = self.delta_timers.current_update_start;
+    }
+
+    /// Runs a per-frame update of the frame context at the start of a frame.
+    fn on_begin_render_phase(&mut self) {
+        let now = std::time::Instant::now();
+        let previous = self.delta_timers.previous_render_start;
+        self.delta_timers.current_render_start = now;
+        self.context.current_frame_start = now;
+        self.context.last_frame_start = previous;
+        if self.context.frame_number == 0 {
+            self.context.delta_time_secs = 0.0;
+        } else {
+            self.context.delta_time_secs = (now - previous).as_secs_f32();
+        }
+    }
+
+    /// Runs a per-frame update of the frame context at the end of a frame.
+    fn on_end_render_phase(&mut self) {
+        self.delta_timers.previous_render_start = self.delta_timers.current_render_start;
+    }
+
     /// Apply all system phases sequentially.
     ///
     /// This method executes all system phases in sequence.
@@ -938,6 +1017,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_startup_phase();
         let result = SystemStartupPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -957,6 +1037,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_startup_phase();
     }
 
     /// Execute system phase `Startup` without calling events. See [`apply_system_phase_startup`](Self::apply_system_phase_startup).
@@ -990,6 +1071,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_startup_phase();
         let result = SystemStartupPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1008,6 +1090,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_startup_phase();
     }
 
     /// Execute system phase `FixedUpdate`
@@ -1032,6 +1115,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_fixed_update_phase();
         let result = SystemFixedUpdatePhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1051,6 +1135,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_fixed_update_phase();
     }
 
     /// Execute system phase `FixedUpdate` without calling events. See [`apply_system_phase_fixed_update`](Self::apply_system_phase_fixed_update).
@@ -1112,6 +1197,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_fixed_update_phase();
         let result = SystemFixedUpdatePhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1131,6 +1217,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_fixed_update_phase();
     }
 
     /// Execute system phase `Update`
@@ -1155,6 +1242,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_update_phase();
         let result = SystemUpdatePhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1174,6 +1262,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_update_phase();
     }
 
     /// Execute system phase `Update` without calling events. See [`apply_system_phase_update`](Self::apply_system_phase_update).
@@ -1259,6 +1348,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_update_phase();
         let result = SystemUpdatePhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1278,6 +1368,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_update_phase();
     }
 
     /// Execute system phase `Render`
@@ -1302,6 +1393,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_render_phase();
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1323,6 +1415,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_render_phase();
     }
 
     /// Execute system phase `Render` without calling events. See [`apply_system_phase_render`](Self::apply_system_phase_render).
@@ -1472,6 +1565,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
+        self.on_begin_render_phase();
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
@@ -1640,6 +1734,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         // Process all commands.
         self.handle_commands();
+        self.on_end_render_phase();
     }
 
     /// Handles all queued commands.
@@ -1770,6 +1865,42 @@ impl<E, Q> MainWorld<E, Q> {
 struct FixedAccumulators {
     /// The time accumulator for the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
     fixed_update: f32,
+}
+/// Delta time trackers for all phases.
+#[derive(Debug, Clone)]
+struct DeltaTimers {
+    /// The current start time for the [`Startup`](StartupPhase) phase.
+    current_startup_start: std::time::Instant,
+    /// The previous start time for the [`Startup`](StartupPhase) phase.
+    previous_startup_start: std::time::Instant,
+    /// The current start time for the [`FixedUpdate`](FixedUpdatePhase) phase.
+    current_fixed_update_start: std::time::Instant,
+    /// The previous start time for the [`FixedUpdate`](FixedUpdatePhase) phase.
+    previous_fixed_update_start: std::time::Instant,
+    /// The current start time for the [`Update`](UpdatePhase) phase.
+    current_update_start: std::time::Instant,
+    /// The previous start time for the [`Update`](UpdatePhase) phase.
+    previous_update_start: std::time::Instant,
+    /// The current start time for the [`Render`](RenderPhase) phase.
+    current_render_start: std::time::Instant,
+    /// The previous start time for the [`Render`](RenderPhase) phase.
+    previous_render_start: std::time::Instant,
+}
+
+impl Default for DeltaTimers {
+    fn default() -> Self {
+        let now = std::time::Instant::now();
+        Self {
+            current_startup_start: now,
+            previous_startup_start: now,
+            current_fixed_update_start: now,
+            previous_fixed_update_start: now,
+            current_update_start: now,
+            previous_update_start: now,
+            current_render_start: now,
+            previous_render_start: now,
+        }
+    }
 }
 
 #[derive(Debug)]
