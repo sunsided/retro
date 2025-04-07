@@ -24,12 +24,14 @@ impl LightUniform {
 }
 
 pub trait DrawLight<'model> {
+    #[allow(dead_code)]
     fn draw_light_mesh(
         &mut self,
         mesh: &'model Mesh,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     );
+
     fn draw_light_mesh_instanced(
         &mut self,
         mesh: &'model Mesh,

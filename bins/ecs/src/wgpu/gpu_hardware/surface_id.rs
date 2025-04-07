@@ -21,6 +21,7 @@ impl SurfaceId {
     ///
     /// # Returns
     /// - `true` if the `SurfaceId` is 0 (uninitialized), otherwise `false`.
+    #[allow(dead_code)]
     pub fn is_uninitialized(&self) -> bool {
         self.0 == 0
     }

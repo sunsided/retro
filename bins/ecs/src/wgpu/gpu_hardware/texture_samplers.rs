@@ -6,6 +6,7 @@ pub struct TextureSamplers {
     /// Sampler for linear, wrapping texture samples.
     pub linear: TextureSampler,
     /// Sampler for depth textures.
+    #[allow(dead_code)]
     pub depth: TextureSampler,
 }
 

@@ -59,6 +59,7 @@ impl CameraBuffer {
     }
 
     #[inline]
+    #[allow(dead_code)]
     pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
         self.buffer.slice(bounds)
     }
@@ -93,6 +94,7 @@ impl LightBuffer {
 
     /// Update the buffer on device with a new [`LightUniform`].
     #[inline]
+    #[allow(dead_code)]
     pub fn send_to_device(&mut self, queue: &Queue, uniform: LightUniform) {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
@@ -103,6 +105,7 @@ impl LightBuffer {
     }
 
     #[inline]
+    #[allow(dead_code)]
     pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
         self.buffer.slice(bounds)
     }
@@ -164,13 +167,8 @@ impl InstanceBuffer {
         self.num_instances as usize
     }
 
-    /// Update the light vertex buffer with a new uniform.
     #[inline]
-    pub fn update(&mut self, queue: &Queue, uniform: LightUniform) {
-        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
-    }
-
-    #[inline]
+    #[allow(dead_code)]
     pub fn as_entire_binding(&self) -> BindingResource<'_> {
         self.buffer.as_entire_binding()
     }

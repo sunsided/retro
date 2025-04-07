@@ -45,6 +45,7 @@ pub struct Model {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Material {
     pub name: Box<str>,
     pub diffuse_texture: Texture,
@@ -53,6 +54,7 @@ pub struct Material {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Mesh {
     pub name: Box<str>,
     pub vertex_buffer: wgpu::Buffer,
@@ -107,6 +109,7 @@ impl Material {
 
 pub trait DrawModel<'model> {
     #[inline]
+    #[allow(dead_code)]
     fn draw_model(
         &mut self,
         model: &'model Model,
@@ -129,6 +132,7 @@ pub trait DrawModel<'model> {
         }
     }
 
+    #[allow(dead_code)]
     fn draw_model_instanced_with_material(
         &mut self,
         model: &'model Model,
@@ -143,6 +147,7 @@ pub trait DrawModel<'model> {
     }
 
     #[inline]
+    #[allow(dead_code)]
     fn draw_mesh(
         &mut self,
         mesh: &'model Mesh,

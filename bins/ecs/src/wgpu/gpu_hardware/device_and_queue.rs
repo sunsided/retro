@@ -31,14 +31,14 @@ pub struct DeviceAndQueue {
 impl DeviceAndQueue {
     pub(super) fn new(device: Device, queue: Queue, config: SurfaceConfiguration) -> DeviceAndQueue {
         let samplers = TextureSamplers::create_from(&device);
+        let textures = Textures::create_from(&device, &queue);
         let buffers = Buffers::create_from(&device);
         let depths = DepthBuffers::create_from(&device, &config);
         let shaders = Shaders::create_from(&device);
         let bind_group_layouts = BindGroupLayouts::create_from(&device);
-        let bind_groups = BindGroups::create_from(&device, &bind_group_layouts, &buffers);
+        let bind_groups = BindGroups::create_from(&device, &bind_group_layouts, &buffers, &textures, &samplers);
         let pipelines = RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
-        let textures = Textures::create_from(&device, &queue);
         Self {
             device,
             queue,
@@ -107,6 +107,7 @@ impl DeviceAndQueue {
         &self.config
     }
 
+    #[allow(dead_code)]
     pub const fn samplers(&self) -> &TextureSamplers {
         &self.samplers
     }

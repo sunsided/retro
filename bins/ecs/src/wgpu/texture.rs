@@ -287,37 +287,6 @@ impl Texture {
     }
 }
 
-impl Texture {
-    /// Create a [`BindGroup`](wgpu::BindGroup).
-    pub fn create_bind_group_with(&self, device: &Device, layout: &wgpu::BindGroupLayout, sampler: &wgpu::Sampler, normals: &Texture) -> wgpu::BindGroup {
-        device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout,
-                entries: &[
-                    // Diffuse map
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&self.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    },
-                    // Normal map
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::TextureView(&normals.view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: wgpu::BindingResource::Sampler(&sampler),
-                    }
-                ],
-                label: Some("diffuse_bind_group"),
-            })
-    }
-}
-
 #[cfg(any(feature = "jpeg", feature = "png", feature = "webp"))]
 impl Texture {
     /// Loads a texture from an image file and uploads it to the GPU using the provided `WgpuState`.
@@ -342,6 +311,7 @@ impl Texture {
     ///
     /// This function will return a `TextureError::LoadFromFile` if the image file could not be loaded or
     /// decoded properly.
+    #[allow(dead_code)]
     pub fn from_file<P>(
         path: P,
         state: &DeviceAndQueue,
