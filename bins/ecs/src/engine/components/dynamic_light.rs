@@ -1,4 +1,5 @@
 use cgmath::Rotation3;
+use crate::seconds::Seconds;
 use crate::wgpu::gpu_hardware::DeviceAndQueue;
 use crate::wgpu::light::LightUniform;
 
@@ -19,11 +20,13 @@ impl Default for DynamicLightData {
 }
 
 impl DynamicLightData {
-    pub fn update_position(&mut self) {
-        // TODO: Take delta time
+    pub fn update_position(&mut self, delta_time: Seconds) {
+        let rotation_speed = 60.0; // desired degrees per second
+        let angle = delta_time.as_secs_f32() * rotation_speed;
+
         let old_position: cgmath::Vector3<_> = self.uniform.position.into();
         self.uniform.position =
-            (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(1.0))
+            (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(angle))
                 * old_position)
                 .into();
     }
