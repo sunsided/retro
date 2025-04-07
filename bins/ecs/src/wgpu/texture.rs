@@ -66,7 +66,9 @@ pub enum TextureError {
 impl Texture {
     pub const VGA_WIDTH: u32 = 320;
     pub const VGA_HEIGHT: u32 = 200;
+    #[allow(dead_code)]
     pub const VGA_BYTES_PER_PIXEL: u32 = 4; // 32 bpp (RGBA)
+    #[allow(dead_code)]
     pub const VGA_BUFFER_SIZE: usize = (Self::VGA_WIDTH * Self::VGA_HEIGHT * Self::VGA_BYTES_PER_PIXEL) as usize;
 
     pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;

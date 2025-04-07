@@ -20,7 +20,7 @@ impl BindGroups {
         let camera = Self::create_camera(device, layouts, buffers);
         let light_vb = Self::create_light(device, layouts, buffers);
         let cover_tex = Self::create_cover(device, layouts, textures, samplers);
-        let vga_fullscreen = Self::create_vga_fullscreen(device, layouts, textures, samplers);
+        let vga_fullscreen = Self::create_vga_fullscreen(device, layouts, textures, samplers, buffers);
         Self {
             camera,
             light_vb,
@@ -92,17 +92,21 @@ impl BindGroups {
     }
 
     #[instrument(skip_all)]
-    fn create_vga_fullscreen(device: &wgpu::Device, layouts: &BindGroupLayouts, textures: &Textures, samplers: &TextureSamplers) -> BindGroup {
+    fn create_vga_fullscreen(device: &wgpu::Device, layouts: &BindGroupLayouts, textures: &Textures, samplers: &TextureSamplers, buffers: &Buffers) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("vga_fullscreen"),
             layout: &layouts.vga_fullscreen,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&textures.vga_offscreen.view),
+                    resource: buffers.retro_uniform.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&textures.vga_offscreen.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
                     resource: wgpu::BindingResource::Sampler(&samplers.retro_sampler),
                 },
             ],

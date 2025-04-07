@@ -133,9 +133,20 @@ impl BindGroupLayouts {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("vga_fullscreen"),
             entries: &[
-                // Binding 0 = texture
+                // Binding 0: the uniform
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+                // Binding 1 = texture
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
@@ -144,9 +155,9 @@ impl BindGroupLayouts {
                     },
                     count: None,
                 },
-                // Binding 1 = sampler
+                // Binding 2 = sampler
                 wgpu::BindGroupLayoutEntry {
-                    binding: 1,
+                    binding: 2,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,

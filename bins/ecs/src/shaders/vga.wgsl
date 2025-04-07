@@ -1,47 +1,73 @@
-// Vertex shader
+// Vertex Shader
+
+struct RetroUniform {
+    window_aspect: f32,
+    retro_aspect: f32,
+};
+
+@group(0) @binding(0)
+var<uniform> aspect: RetroUniform;
+
+@group(0) @binding(1)
+var myTexture: texture_2d<f32>;
+
+@group(0) @binding(2)
+var mySampler: sampler;
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv: vec2<f32>,
 };
 
-// A single big triangle, generated entirely in the vertex shader.
+// Generate a single big triangle. We'll scale it to maintain the retro aspect ratio.
 @vertex
 fn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {
     var out: VertexOutput;
 
-    // Three positions, each in clip space. This covers more than [-1..1]^2 so it fills the screen.
-    var positions = array<vec2<f32>, 3>(
+    // A "fullscreen" triangle that covers more than [-1..1].
+    var base_positions = array<vec2<f32>, 3>(
         vec2(-1.0, -1.0),
         vec2( 3.0, -1.0),
         vec2(-1.0,  3.0),
     );
 
-    // Matching UVs. You can map [0..1] fully, or go beyond to do fancy scrolling or letterboxing.
-    var uvs = array<vec2<f32>, 3>(
+    // We'll map these positions to [0..1] UV, slightly beyond 1 so we can clamp in the fragment.
+    var base_uv = array<vec2<f32>, 3>(
         vec2(0.0, 1.0),
         vec2(2.0, 1.0),
         vec2(0.0, -1.0),
     );
 
-    out.clip_position = vec4<f32>(positions[i], 0.0, 1.0);
-    out.uv = uvs[i];
+    let pos = base_positions[i];
+    let uv  = base_uv[i];
+
+    // Determine how to scale to preserve 320:200 = 1.6 in a window_aspect of, say, 3.555
+    var scale = vec2<f32>(1.0, 1.0);
+    if aspect.window_aspect > aspect.retro_aspect {
+        // Window is "too wide" => scale X
+        scale.x = aspect.retro_aspect / aspect.window_aspect;
+    } else {
+        // Window is narrower => scale Y
+        scale.y = aspect.window_aspect / aspect.retro_aspect;
+    }
+
+    // Scale the triangle so it doesn't fill horizontally if the aspect ratio is too wide.
+    let scaled_pos = pos * scale;
+
+    out.clip_position = vec4<f32>(scaled_pos, 0.0, 1.0);
+    out.uv = uv;
     return out;
 }
 
 // Fragment shader
 
-@group(0) @binding(0)
-var myTexture: texture_2d<f32>;
-
-@group(0) @binding(1)
-var mySampler: sampler;
-
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // Example: sample the texture with nearest or linear filter, etc.
-    // If your UV coordinates go out of [0..1], you can clamp or return black.
+    // If outside [0..1], return black
+    if (in.uv.x < 0.0 || in.uv.x > 1.0 || in.uv.y < 0.0 || in.uv.y > 1.0) {
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    }
 
-    let color = textureSample(myTexture, mySampler, in.uv);
-    return color;
+    // Otherwise sample the retro texture
+    return textureSample(myTexture, mySampler, in.uv);
 }

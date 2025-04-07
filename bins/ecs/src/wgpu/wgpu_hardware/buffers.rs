@@ -6,12 +6,14 @@ use wgpu::util::DeviceExt;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::Instance;
 use crate::wgpu::light::LightUniform;
+use crate::wgpu::retro_uniform::RetroUniform;
 
 #[derive(Debug)]
 pub struct Buffers {
     pub camera: CameraBuffer,
     pub light_vb: LightBuffer,
-    pub instances: InstanceBuffer
+    pub instances: InstanceBuffer,
+    pub retro_uniform: RetroUniformBuffer,
 }
 
 impl Buffers {
@@ -20,10 +22,12 @@ impl Buffers {
         let camera = CameraBuffer::create(device);
         let light_vb = LightBuffer::create(device);
         let instances = InstanceBuffer::create(device);
+        let retro_uniform = RetroUniformBuffer::create(device);
         Self {
             camera,
             light_vb,
-            instances
+            instances,
+            retro_uniform
         }
     }
 }
@@ -176,5 +180,49 @@ impl InstanceBuffer {
     #[inline]
     pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
         self.buffer.slice(bounds)
+    }
+}
+
+#[derive(Debug)]
+pub struct RetroUniformBuffer {
+    buffer: Buffer,
+}
+
+impl RetroUniformBuffer {
+    #[instrument(skip(device))]
+    fn create(device: &wgpu::Device) -> Self {
+        let light_uniform = RetroUniform::default();
+        let buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("retro_uniform"),
+                contents: bytemuck::cast_slice(&[light_uniform]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+        Self { buffer }
+    }
+
+    /// Update the buffer on device with a new [`RetroUniform`].
+    #[inline]
+    #[allow(dead_code)]
+    pub fn send_to_device(&self, queue: &Queue, uniform: RetroUniform) {
+        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
+    }
+
+    #[inline]
+    pub fn as_entire_binding(&self) -> BindingResource<'_> {
+        self.buffer.as_entire_binding()
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
+        self.buffer.slice(bounds)
+    }
+}
+
+impl AsRef<Buffer> for RetroUniformBuffer {
+    fn as_ref(&self) -> &Buffer {
+        &self.buffer
     }
 }

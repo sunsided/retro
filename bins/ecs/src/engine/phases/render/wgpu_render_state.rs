@@ -1,9 +1,12 @@
+use std::cell::Cell;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use tracing::{debug, instrument};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::phases::render::frame_state::FrameState;
+use crate::wgpu::retro_uniform::RetroUniform;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 
 /// Represents the render state for the WGPU system.
@@ -27,6 +30,14 @@ pub struct WgpuRenderState {
     hardware: WgpuHardware,
     /// The per-frame state, which contains details for the current frame.
     frame_state: Option<FrameState>,
+    /// Retro rendering state
+    retro: Retro
+}
+
+#[derive(Default)]
+pub struct Retro {
+    pub uniform: RetroUniform,
+    pub uploaded: AtomicBool
 }
 
 impl WgpuRenderState {
@@ -82,11 +93,17 @@ impl WgpuRenderState {
 
     #[inline]
     pub fn reinitialize_surface(&mut self, window: Arc<Window>) -> Result<(), WgpuReinitializeWindowError> {
+        self.retro.uniform.resize_surface(window.inner_size());
+        self.retro.uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
+
         self.hardware.reinitialize_surface(window)
     }
 
     #[inline]
     pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
+        self.retro.uniform.resize_surface(new_size);
+        self.retro.uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
+
         self.hardware.resize_surface(new_size)
     }
 
@@ -103,6 +120,22 @@ impl WgpuRenderState {
     #[inline]
     pub fn wireframe_supported(&self) -> bool {
         self.hardware.wireframe_supported()
+    }
+
+    /// Updates the retro uniform on the GPU.
+    // TODO: Refactor
+    pub fn update_retro_uniform(&self) {
+        // Set the flag to uploaded; if it was already uploaded, return.
+        if self.retro.uploaded.swap(true, std::sync::atomic::Ordering::Relaxed) {
+            return;
+        }
+
+        let Some(device) = self.hardware.device() else {
+            return;
+        };
+
+        debug!("Updating retro uniform");
+        device.buffers().retro_uniform.send_to_device(device.queue(), self.retro.uniform);
     }
 }
 

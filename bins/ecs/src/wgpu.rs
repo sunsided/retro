@@ -5,3 +5,4 @@ mod instance;
 pub mod model;
 pub mod light;
 pub mod wgpu_hardware;
+pub mod retro_uniform;
