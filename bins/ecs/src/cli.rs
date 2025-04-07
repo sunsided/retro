@@ -54,7 +54,7 @@ impl clap::builder::TypedValueParser for BackendValueParser {
         Some(Box::new([
             PossibleValue::new("gl"),
             PossibleValue::new("vulkan"),
-            PossibleValue::new("dx"),
+            PossibleValue::new("dx12"),
             PossibleValue::new("metal")
         ].into_iter()))
     }
