@@ -103,7 +103,7 @@ impl App {
     }
 
     fn handle_mouse_input_event(&mut self, state: ElementState, button: MouseButton) {
-        debug!("Mouse button {:?} is {:?}", button, state);
+        trace!("Mouse button {:?} is {:?}", button, state);
         match button {
             MouseButton::Left => {
                 self.ecs_world.states.input.next().set_lmb_pressed(state == ElementState::Pressed);
@@ -117,12 +117,11 @@ impl App {
     }
 
     fn handle_cursor_moved_to_event(&mut self, position: PhysicalPosition<f64>) {
-        debug!("Cursor moved to: {:?}", position);
+        trace!("Cursor moved to: {:?}", position);
     }
 
-
     fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {
-        debug!("Mouse wheel {:?}", delta);
+        trace!("Mouse wheel {:?}", delta);
         self.ecs_world.states.input.next().accumulate_mouse_scroll_delta(delta);
     }
 
