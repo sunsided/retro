@@ -752,6 +752,7 @@ impl core::ops::DerefMut for CameraRenderSystem {
 ///
 /// ### Reads
 /// 
+/// - [`ColorComponent`]
 ///
 /// ### Mutates
 /// 
@@ -813,6 +814,7 @@ pub trait ApplyDynamicLightSystem: System {
     ///
     /// ### Reads
     /// 
+    /// - `color`: A reference to the input component of type [`ColorComponent`].
     ///
     /// ### Mutates
     /// 
@@ -822,6 +824,7 @@ pub trait ApplyDynamicLightSystem: System {
         &mut self,
         context: &FrameContext,
         wgpu_render: &WgpuRenderState,
+        color: &ColorComponent,
         dynamic_light: &mut DynamicLightComponent,
     ) {
          // intentionally left blank
@@ -831,6 +834,7 @@ pub trait ApplyDynamicLightSystem: System {
     ///
     /// ### Reads
     /// 
+    /// - `color`: A slice of the input components of type [`ColorComponent`].
     ///
     /// ### Mutates
     /// 
@@ -839,13 +843,15 @@ pub trait ApplyDynamicLightSystem: System {
         &mut self,
         context: &FrameContext,
         wgpu_render: &WgpuRenderState,
+        colors: &[ColorComponent],
         dynamic_lights: &mut [DynamicLightComponent],
     ) {
-        let zipped_iter = dynamic_lights;
-        for dynamic_light in zipped_iter {
+        let zipped_iter = colors.iter().zip(dynamic_lights.iter_mut());
+        for (color, dynamic_light) in zipped_iter {
             self.apply_single(
                 &context,
                 wgpu_render,
+                color,
                 dynamic_light,
             );
         }
@@ -860,12 +866,14 @@ impl DynamicLightSystem {
         &mut self,
         context: &FrameContext,
         wgpu_render: &WgpuRenderState,
+        color: &ColorComponent,
         dynamic_light: &mut DynamicLightComponent,
     ) {
         ApplyDynamicLightSystem::apply_single(
             self,
             context,
             wgpu_render,
+            color,
             dynamic_light,
         );
     }
@@ -874,6 +882,7 @@ impl DynamicLightSystem {
     ///
     /// ### Reads
     /// 
+    /// - `color`: A slice of the input components of type [`ColorComponent`].
     ///
     /// ### Mutates
     /// 
@@ -883,12 +892,14 @@ impl DynamicLightSystem {
         &mut self,
         context: &FrameContext,
         wgpu_render: &WgpuRenderState,
+        colors: &[ColorComponent],
         dynamic_lights: &mut [DynamicLightComponent],
     ) {
         ApplyDynamicLightSystem::apply_many(
             self,
             context,
             wgpu_render,
+            colors,
             dynamic_lights,
         );
     }
@@ -905,6 +916,7 @@ impl DynamicLightSystem {
         self.apply_many(
             &context,
             wgpu_render,
+            &archetype.colors,
             &mut archetype.dynamic_lights,
         );
     }

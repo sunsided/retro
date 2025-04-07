@@ -106,6 +106,8 @@ systems:
     phase: Render
     states:
       - use: WgpuRender
+    inputs:
+      - Color
     outputs:
       - DynamicLight
 

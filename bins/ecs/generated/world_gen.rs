@@ -1438,6 +1438,7 @@ impl<E, Q> MainWorld<E, Q> {
             self.systems.dynamic_light.apply_many(
                 &self.context,
                 &self.states.wgpu_render,
+                &self.archetypes.dynamic_light.colors,
                 &mut self.archetypes.dynamic_light.dynamic_lights,
             );
 
@@ -1606,6 +1607,7 @@ impl<E, Q> MainWorld<E, Q> {
                         self.systems.dynamic_light.apply_many(
                             &self.context,
                             &self.states.wgpu_render,
+                            &self.archetypes.dynamic_light.colors,
                             &mut self.archetypes.dynamic_light.dynamic_lights,
                         );
                     });

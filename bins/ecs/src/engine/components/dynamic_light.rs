@@ -20,6 +20,12 @@ impl Default for DynamicLightData {
 }
 
 impl DynamicLightData {
+    pub fn update_color(&mut self, r: f32, g: f32, b: f32) {
+        self.uniform.color[0] = r;
+        self.uniform.color[1] = g;
+        self.uniform.color[2] = b;
+    }
+
     pub fn update_position(&mut self, delta_time: Seconds) {
         let rotation_speed = 60.0; // desired degrees per second
         let angle = delta_time.as_secs_f32() * rotation_speed;

@@ -29,8 +29,8 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             dynamic_light: DynamicLightComponent(DynamicLightData::default()),
             color: ColorComponent(ColorData {
                 r: 1.0,
-                g: 1.0,
-                b: 1.0,
+                g: 0.84,
+                b: 0.7,
                 a: 1.0,
             }),
             position: PositionComponent(PositionData {
