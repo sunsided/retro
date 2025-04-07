@@ -146,7 +146,7 @@ impl App {
                         }
                     }
                 }
-            PhysicalKey::Code(KeyCode::Space)
+            PhysicalKey::Code(KeyCode::F1)
             if event.state == ElementState::Pressed =>
                 {
                     let system = self.ecs_world.systems.as_render_background_mut();
