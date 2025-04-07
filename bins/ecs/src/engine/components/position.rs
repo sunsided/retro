@@ -7,6 +7,12 @@ pub struct PositionData {
     pub z: f32,
 }
 
+impl PositionData {
+    pub const fn as_vector3(&self) -> Vector3<f32> {
+        Vector3::new(self.x, self.y, self.z)
+    }
+}
+
 impl From<Vector3<f32>> for PositionData {
     #[inline]
     fn from(value: Vector3<f32>) -> Self {
@@ -21,6 +27,6 @@ impl From<Vector3<f32>> for PositionData {
 impl From<PositionData> for Vector3<f32> {
     #[inline]
     fn from(value: PositionData) -> Self {
-        Vector3::new(value.x, value.y, value.z)
+        value.as_vector3()
     }
 }

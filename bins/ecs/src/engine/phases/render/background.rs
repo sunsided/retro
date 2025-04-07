@@ -146,7 +146,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
             // Enable the instance buffer.
             render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
-            let num_instances = device.buffers().instances.len() as u32;
+            // let num_instances = device.buffers().instances.len() as u32;
 
             // Render the light.
             render_pass.set_pipeline(&device.pipelines().light);
@@ -157,9 +157,11 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
             );
 
             // Render the normal thing.
-            render_pass.set_pipeline(device.pipelines().render_pipeline(self.selector));
-            render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
+            // render_pass.set_pipeline(device.pipelines().render_pipeline(self.selector)); // TODO: The selector should be part of the wgpu_renderer
+            // render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
         }
+
+        // TODO: Move this to the end of the render pipeline
 
         // Second pass: Presenting the VGA offscreen buffer to screen.
         if retro_enabled {
