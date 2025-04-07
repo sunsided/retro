@@ -1,10 +1,30 @@
+//! This module defines the `CameraUniform` struct, which is used for managing
+//! and passing camera-related data to GPU shaders in a graphics rendering pipeline.
+//!
+//! The `CameraUniform` struct contains two main components:
+//! - `view_position`: The position of the camera in world space, which includes a padding
+//!   component to ensure proper memory alignment for GPU usage.
+//! - `view_proj`: A combined view and projection matrix, used to transform
+//!   world space coordinates into screen space coordinates for rendering.
+//!
+//! The `CameraUniform` provides helper methods to initialize itself (`new`) and
+//! update its values (`update_view_proj`) based on the current camera position
+//! and projection parameters. The module relies on external crates like `cgmath` for matrix
+//! operations and `bytemuck` for efficient memory representation.
+
 use crate::camera::{Camera, Projection};
 
-// We need this for Rust to store our data correctly for the shaders
+/// A uniform buffer structure for passing camera data to shaders.
+/// This contains the camera's position in world space as well as
+/// the combined view and projection matrix.
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraUniform {
+    /// The position of the camera in world space, with an additional
+    /// padding component to align the size to 16 bytes.
     view_position: [f32; 4],
+    /// The combined view and projection matrix, used for transforming
+    /// world space coordinates into screen space.
     view_proj: [[f32; 4]; 4],
 }
 
@@ -17,8 +37,19 @@ impl CameraUniform {
         }
     }
 
+    /// Updates the `CameraUniform`'s data with the current camera position and view-projection matrix.
+    ///
+    /// This method takes a `Camera` and a `Projection` as inputs to calculate and update:
+    /// - `view_position`: The homogeneous coordinates of the camera's position in world space,
+    ///   padded to align properly for GPU usage.
+    /// - `view_proj`: The combined view and projection matrix, used to transform world space
+    ///   coordinates into screen space.
+    ///
+    /// # Parameters
+    /// - `camera`: A reference to the `Camera` object, which provides the position and view matrix.
+    /// - `projection`: A reference to the `Projection` object, which provides the projection matrix.
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
         self.view_position = camera.position.to_homogeneous().into();
-        self.view_proj = (projection.calc_matrix() * camera.calc_matrix()).into();
+        self.view_proj = (projection.calc_matrix() * camera.calc_rh_look_to()).into();
     }
 }

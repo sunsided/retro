@@ -51,7 +51,7 @@ impl InputState {
         *self = Self::default();
     }
 
-    pub const fn lmb_pressed(&mut self) -> bool {
+    pub fn lmb_pressed(&mut self) -> bool {
         self.lmb_pressed.is_pressed()
     }
 

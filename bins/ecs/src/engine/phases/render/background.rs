@@ -49,6 +49,7 @@
 
 use crate::wgpu::gpu_hardware::RenderPipelineSelector;
 use std::convert::Infallible;
+use tracing::warn;
 use wgpu::{BindGroup, IndexFormat};
 use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, RenderBackgroundSystem};
 use crate::engine::phases::render::WgpuRenderState;
@@ -128,15 +129,13 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
     fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
-        let Some(_texture) = &self.texture else {
-            return;
-        };
-
         let Some(device) = wgpu_render.hardware.device() else {
+            warn!("Skipping background rendering because no device is set.");
             return;
         };
 
         let Some(frame_state) = &mut wgpu_render.frame_state else {
+            warn!("Skipping background rendering because frame state is not set.");
             return;
         };
 

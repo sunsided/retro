@@ -62,6 +62,8 @@
 //! - [`SystemRenderPhaseEvents`]: Trait showing integration with phase-based systems.
 
 pub mod background;
+pub mod camera_render;
+pub mod dynamic_light;
 
 use crate::WgpuState;
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
@@ -137,6 +139,15 @@ impl WgpuRenderState {
     #[inline]
     pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
         self.hardware.resize_surface(new_size)
+    }
+
+    /// Gets the size of the configured surface.
+    pub fn surface_size(&self) -> Option<PhysicalSize<u32>> {
+        self.hardware.device().map(|dev| {
+            let widht = dev.config().width;
+            let height = dev.config().height;
+            PhysicalSize::new(widht, height)
+        })
     }
 
     /// Sets the shared GPU state for the render system.

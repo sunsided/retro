@@ -31,6 +31,7 @@ mod wgpu;
 mod camera;
 mod resources;
 mod cli;
+mod seconds;
 
 struct App {
     window: Option<Arc<Window>>,
@@ -44,12 +45,12 @@ struct App {
 impl App {
     pub fn new(wgpu_hardware: WgpuHardware) -> Self {
         let events = PhaseEvents::default();
-        let state = WgpuRenderState::default();
+        let wgpu_state = WgpuRenderState::default();
         let input_state = InputState::default();
         let active_camera = ActiveCameraState::default();
-        let mut world = MainWorld::new_with_events(&SystemFactory, input_state, active_camera, state, CommandQueue::new(), events);
+        let mut world = MainWorld::new_with_events(&SystemFactory, input_state, wgpu_state, active_camera, CommandQueue::new(), events);
         world.states.wgpu_render.set_hardware(wgpu_hardware);
-        world.initialize_entities();
+        world.create_initial_entities();
 
         Self {
             window: None,
@@ -149,14 +150,6 @@ impl App {
         debug!("Window resized: {:?}", new_size);
         self.ecs_world.states.wgpu_render.resize_surface(new_size)
             .expect("Failed to resize window");
-
-        let Some(state) = &mut self.state else {
-            return;
-        };
-
-        // TODO: Update the camera projection matrix.
-        let mut state = state.lock_arc();
-        state.projection.resize(new_size.width, new_size.height);
     }
 
     fn handle_redraw_event(&mut self) {
@@ -253,16 +246,6 @@ impl ApplicationHandler for App {
     }
 
     fn about_to_wait(&mut self, _active_event_loop: &ActiveEventLoop) {
-        let dt = self.last_update.elapsed();
-        self.last_update = Instant::now();
-
-        // Update the camera, light, etc.
-        let state = &mut self.ecs_world.states.wgpu_render;
-        if let Some(mut state) = state.state_mut() {
-            state.update_camera_uniform(&mut self.camera_controller, dt);
-            state.update_light();
-        }
-
         // Update ECS.
         self.ecs_world.apply_system_phases();
 

@@ -64,6 +64,12 @@ impl CameraBuffer {
     }
 }
 
+impl AsRef<Buffer> for CameraBuffer {
+    fn as_ref(&self) -> &Buffer {
+        &self.buffer
+    }
+}
+
 #[derive(Debug)]
 pub struct LightBuffer {
     buffer: Buffer,
@@ -99,6 +105,12 @@ impl LightBuffer {
     #[inline]
     pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
         self.buffer.slice(bounds)
+    }
+}
+
+impl AsRef<Buffer> for LightBuffer {
+    fn as_ref(&self) -> &Buffer {
+        &self.buffer
     }
 }
 

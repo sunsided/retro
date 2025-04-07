@@ -533,6 +533,87 @@ impl core::borrow::BorrowMut<ColliderData> for ColliderComponent {
     }
 }
 
+/// A component.
+///
+/// See also [`ColorData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct ColorComponent(ColorData);
+
+#[allow(dead_code)]
+impl ColorComponent {
+    /// Creates a new [`ColorComponent`] instance from [`ColorData`].
+    pub const fn new(data: ColorData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`ColorData`].
+    pub const fn into_inner(self) -> ColorData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for ColorComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(7).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for ColorComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<ColorData> for ColorComponent {
+    fn from(data: ColorData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for ColorComponent {
+    type Target = ColorData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for ColorComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<ColorData> for ColorComponent {
+    fn as_ref(&self) -> &ColorData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<ColorData> for ColorComponent {
+    fn as_mut(&mut self) -> &mut ColorData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<ColorData> for ColorComponent {
+    fn borrow(&self) -> &ColorData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<ColorData> for ColorComponent {
+    fn borrow_mut(&mut self) -> &mut ColorData {
+        &mut self.0
+    }
+}
+
 /// The background color used for clearing the render buffer
 ///
 /// See also [`BackgroundColorData`] for the actual data.
@@ -554,7 +635,7 @@ impl BackgroundColorComponent {
 
 #[automatically_derived]
 impl Component for BackgroundColorComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(7).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(8).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for BackgroundColorComponent {
@@ -610,6 +691,87 @@ impl core::borrow::Borrow<BackgroundColorData> for BackgroundColorComponent {
 #[automatically_derived]
 impl core::borrow::BorrowMut<BackgroundColorData> for BackgroundColorComponent {
     fn borrow_mut(&mut self) -> &mut BackgroundColorData {
+        &mut self.0
+    }
+}
+
+/// A marker component for light entities
+///
+/// See also [`DynamicLightData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct DynamicLightComponent(DynamicLightData);
+
+#[allow(dead_code)]
+impl DynamicLightComponent {
+    /// Creates a new [`DynamicLightComponent`] instance from [`DynamicLightData`].
+    pub const fn new(data: DynamicLightData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`DynamicLightData`].
+    pub const fn into_inner(self) -> DynamicLightData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for DynamicLightComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(9).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for DynamicLightComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<DynamicLightData> for DynamicLightComponent {
+    fn from(data: DynamicLightData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for DynamicLightComponent {
+    type Target = DynamicLightData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for DynamicLightComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<DynamicLightData> for DynamicLightComponent {
+    fn as_ref(&self) -> &DynamicLightData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<DynamicLightData> for DynamicLightComponent {
+    fn as_mut(&mut self) -> &mut DynamicLightData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<DynamicLightData> for DynamicLightComponent {
+    fn borrow(&self) -> &DynamicLightData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<DynamicLightData> for DynamicLightComponent {
+    fn borrow_mut(&mut self) -> &mut DynamicLightData {
         &mut self.0
     }
 }

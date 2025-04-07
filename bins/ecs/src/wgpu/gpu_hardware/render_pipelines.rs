@@ -13,7 +13,6 @@ pub struct RenderPipelines {
     pub light: RenderPipeline,
 }
 
-
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum RenderPipelineSelector {
     Boring,
@@ -57,8 +56,8 @@ impl RenderPipelines {
         });
 
         Self::create_render_pipeline(
-            shaders.render.vertex_shader(),
-            shaders.render.textured_fragment_shader(),
+            shaders.light.vertex_shader(),
+            shaders.light.fragment_shader(),
             &device,
             &layout,
             surface_format,

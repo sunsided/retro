@@ -28,6 +28,7 @@ worlds:
       - ForegroundObject
       - BackgroundObject
       - SceneBackground
+      - DynamicLight
 
 components:
   - name: Camera
@@ -36,14 +37,23 @@ components:
   - name: Velocity
   - name: Health
   - name: Collider
+  - name: Color
   - name: BackgroundColor
     description: The background color used for clearing the render buffer
+  - name: DynamicLight
+    description: A marker component for light entities
 
 archetypes:
   - name: Camera
     components:
       - Camera
       - CameraFpsController
+
+  - name: DynamicLight
+    components:
+      - DynamicLight
+      - Color
+      - Position
 
   - name: Particle
     description: A particle system particle.
@@ -74,13 +84,32 @@ archetypes:
 systems:
   - name: Camera
     phase: Update
+    context: true
     states:
       - use: Input
+      - use: WgpuRender  # for the screen size
       - use: ActiveCamera
         write: true
     outputs:
       - Camera
       - CameraFpsController
+
+  - name: CameraRender
+    phase: Render
+    states:
+      - use: WgpuRender
+      - use: ActiveCamera
+        write: true
+    inputs:
+      - Camera
+
+  - name: DynamicLight
+    context: true
+    phase: Render
+    states:
+      - use: WgpuRender
+    outputs:
+      - DynamicLight
 
   - name: Physics
     phase: FixedUpdate

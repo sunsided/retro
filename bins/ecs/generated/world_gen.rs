@@ -167,23 +167,28 @@ pub struct MainWorldStates {
     /// The state is used in the following systems:
     /// - [`CameraSystem`]
     pub input: InputState,
+    /// The WGPU render state; will be initialized in the Render phase hooks
+    ///
+    /// The state is used in the following systems:
+    /// - [`CameraSystem`]
+    /// - [`CameraRenderSystem`]
+    /// - [`DynamicLightSystem`]
+    /// - [`RenderBackgroundSystem`]
+    /// - [`RenderSystem`]
+    pub wgpu_render: WgpuRenderState,
     /// The uniforms of the active camera.
     ///
     /// The state is used in the following systems:
     /// - [`CameraSystem`]
+    /// - [`CameraRenderSystem`]
     pub active_camera: ActiveCameraState,
-    /// The WGPU render state; will be initialized in the Render phase hooks
-    ///
-    /// The state is used in the following systems:
-    /// - [`RenderBackgroundSystem`]
-    /// - [`RenderSystem`]
-    pub wgpu_render: WgpuRenderState,
 }
 
 /// The archetypes used in the world.
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
     pub camera: CameraArchetype,
+    pub dynamic_light: DynamicLightArchetype,
     pub particle: ParticleArchetype,
     pub player: PlayerArchetype,
     pub foreground_object: ForegroundObjectArchetype,
@@ -195,8 +200,10 @@ struct MainWorldArchetypes {
 #[derive(Debug)]
 pub struct MainWorldSystems {
     camera: CameraSystem,
-    physics: PhysicsSystem,
+    camera_render: CameraRenderSystem,
+    dynamic_light: DynamicLightSystem,
     render: RenderSystem,
+    physics: PhysicsSystem,
     background_color_cycle: BackgroundColorCycleSystem,
     render_background: RenderBackgroundSystem,
 }
@@ -217,18 +224,32 @@ impl MainWorldSystems {
         self.camera.deref_mut()
     }
 
-    /// Gives immutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
+    /// Gives immutable access to the [`CameraRenderSystemData`] of the [`CameraRenderSystem`].
     #[inline]
-    pub fn as_physics_ref(&self) -> &PhysicsSystemData {
+    pub fn as_camera_render_ref(&self) -> &CameraRenderSystemData {
         use core::ops::Deref;
-        self.physics.deref()
+        self.camera_render.deref()
     }
 
-    /// Gives mutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
+    /// Gives mutable access to the [`CameraRenderSystemData`] of the [`CameraRenderSystem`].
     #[inline]
-    pub fn as_physics_mut(&mut self) -> &mut PhysicsSystemData {
+    pub fn as_camera_render_mut(&mut self) -> &mut CameraRenderSystemData {
         use core::ops::DerefMut;
-        self.physics.deref_mut()
+        self.camera_render.deref_mut()
+    }
+
+    /// Gives immutable access to the [`DynamicLightSystemData`] of the [`DynamicLightSystem`].
+    #[inline]
+    pub fn as_dynamic_light_ref(&self) -> &DynamicLightSystemData {
+        use core::ops::Deref;
+        self.dynamic_light.deref()
+    }
+
+    /// Gives mutable access to the [`DynamicLightSystemData`] of the [`DynamicLightSystem`].
+    #[inline]
+    pub fn as_dynamic_light_mut(&mut self) -> &mut DynamicLightSystemData {
+        use core::ops::DerefMut;
+        self.dynamic_light.deref_mut()
     }
 
     /// Gives immutable access to the [`RenderSystemData`] of the [`RenderSystem`].
@@ -243,6 +264,20 @@ impl MainWorldSystems {
     pub fn as_render_mut(&mut self) -> &mut RenderSystemData {
         use core::ops::DerefMut;
         self.render.deref_mut()
+    }
+
+    /// Gives immutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
+    #[inline]
+    pub fn as_physics_ref(&self) -> &PhysicsSystemData {
+        use core::ops::Deref;
+        self.physics.deref()
+    }
+
+    /// Gives mutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
+    #[inline]
+    pub fn as_physics_mut(&mut self) -> &mut PhysicsSystemData {
+        use core::ops::DerefMut;
+        self.physics.deref_mut()
     }
 
     /// Gives immutable access to the [`BackgroundColorCycleSystemData`] of the [`BackgroundColorCycleSystem`].
@@ -288,17 +323,31 @@ impl AsMut<CameraSystemData> for MainWorldSystems {
     }
 }
 
-impl AsRef<PhysicsSystemData> for MainWorldSystems {
+impl AsRef<CameraRenderSystemData> for MainWorldSystems {
     #[inline]
-    fn as_ref(&self) -> &PhysicsSystemData {
-        self.as_physics_ref()
+    fn as_ref(&self) -> &CameraRenderSystemData {
+        self.as_camera_render_ref()
     }
 }
 
-impl AsMut<PhysicsSystemData> for MainWorldSystems {
+impl AsMut<CameraRenderSystemData> for MainWorldSystems {
     #[inline]
-    fn as_mut(&mut self) -> &mut PhysicsSystemData {
-        self.as_physics_mut()
+    fn as_mut(&mut self) -> &mut CameraRenderSystemData {
+        self.as_camera_render_mut()
+    }
+}
+
+impl AsRef<DynamicLightSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &DynamicLightSystemData {
+        self.as_dynamic_light_ref()
+    }
+}
+
+impl AsMut<DynamicLightSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut DynamicLightSystemData {
+        self.as_dynamic_light_mut()
     }
 }
 
@@ -313,6 +362,20 @@ impl AsMut<RenderSystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut RenderSystemData {
         self.as_render_mut()
+    }
+}
+
+impl AsRef<PhysicsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &PhysicsSystemData {
+        self.as_physics_ref()
+    }
+}
+
+impl AsMut<PhysicsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut PhysicsSystemData {
+        self.as_physics_mut()
     }
 }
 
@@ -350,6 +413,15 @@ impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
     #[inline]
     fn spawn(&mut self, data: CameraEntityData) -> EntityId {
         self.spawn_camera(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<DynamicLightEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: DynamicLightEntityData) -> EntityId {
+        self.spawn_dynamic_light(data)
     }
 }
 
@@ -410,8 +482,8 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     pub fn new<S>(
         create_systems: &S,
         input: InputState,
-        active_camera: ActiveCameraState,
         wgpu_render: WgpuRenderState,
+        active_camera: ActiveCameraState,
         command_queue: Q) -> Self
     where
         S: CreateSystems,
@@ -420,8 +492,8 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
         Self::new_with_events(
             create_systems,
             input,
-            active_camera,
             wgpu_render,
+            active_camera,
             command_queue,
             NoOpPhaseEvents
         )
@@ -434,14 +506,16 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn new_with_events<S>(
         create_systems: &S,
         input: InputState,
-        active_camera: ActiveCameraState,
         wgpu_render: WgpuRenderState,
+        active_camera: ActiveCameraState,
         command_queue: Q,
         phase_events: E) -> Self
     where
         S: CreateSystem<CameraSystem>
-         + CreateSystem<PhysicsSystem>
+         + CreateSystem<CameraRenderSystem>
+         + CreateSystem<DynamicLightSystem>
          + CreateSystem<RenderSystem>
+         + CreateSystem<PhysicsSystem>
          + CreateSystem<BackgroundColorCycleSystem>
          + CreateSystem<RenderBackgroundSystem>,
         E: SystemPhaseEvents,
@@ -452,8 +526,10 @@ impl<E, Q> MainWorld<E, Q> {
             archetypes: Default::default(),
             systems: MainWorldSystems {
                 camera: CreateSystem::<CameraSystem>::create(create_systems),
-                physics: CreateSystem::<PhysicsSystem>::create(create_systems),
+                camera_render: CreateSystem::<CameraRenderSystem>::create(create_systems),
+                dynamic_light: CreateSystem::<DynamicLightSystem>::create(create_systems),
                 render: CreateSystem::<RenderSystem>::create(create_systems),
+                physics: CreateSystem::<PhysicsSystem>::create(create_systems),
                 background_color_cycle: CreateSystem::<BackgroundColorCycleSystem>::create(create_systems),
                 render_background: CreateSystem::<RenderBackgroundSystem>::create(create_systems),
             },
@@ -461,8 +537,8 @@ impl<E, Q> MainWorld<E, Q> {
             context,
             states: MainWorldStates {
                 input,
-                active_camera,
                 wgpu_render,
+                active_camera,
             },
             fixed_accumulators: Default::default(),
             events: phase_events,
@@ -522,6 +598,45 @@ impl<E, Q> MainWorld<E, Q> {
             .spawn_with(
                 camera,
                 camera_fps_controller,
+                Registry(&mut self.entity_locations)
+            )
+    }
+
+    /// Spawn a new `DynamicLight` entity into the world given its [`DynamicLightEntityData`].
+    #[inline]
+    pub fn spawn_dynamic_light(
+        &mut self,
+        dynamic_light: DynamicLightEntityData
+    ) -> EntityId {
+        self.spawn_dynamic_light_with(
+            dynamic_light.dynamic_light,
+            dynamic_light.color,
+            dynamic_light.position,
+        )
+    }
+
+    /// Spawn a new `DynamicLight` entity into the world.
+    pub fn spawn_dynamic_light_with(
+        &mut self,
+        dynamic_light: DynamicLightComponent,
+        color: ColorComponent,
+        position: PositionComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.dynamic_light
+            .spawn_with(
+                dynamic_light,
+                color,
+                position,
                 Registry(&mut self.entity_locations)
             )
     }
@@ -828,7 +943,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_startup_without_events();
@@ -838,7 +953,7 @@ impl<E, Q> MainWorld<E, Q> {
             result,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -922,7 +1037,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_fixed_update_without_events();
@@ -932,7 +1047,7 @@ impl<E, Q> MainWorld<E, Q> {
             result,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -1045,7 +1160,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_update_without_events();
@@ -1055,7 +1170,7 @@ impl<E, Q> MainWorld<E, Q> {
             result,
             &self.context,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -1071,11 +1186,15 @@ impl<E, Q> MainWorld<E, Q> {
     {
         // System group 1 of 1
         let is_ready = self.systems.camera.is_ready(
+               &self.context,
                &self.states.input,
+               &self.states.wgpu_render,
                &mut self.states.active_camera,
            );
         if is_ready && self.systems.camera.on_begin_phase(
+                    &self.context,
                     &self.states.input,
+                    &self.states.wgpu_render,
                     &mut self.states.active_camera,
                 )
                 .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
@@ -1083,14 +1202,18 @@ impl<E, Q> MainWorld<E, Q> {
         {
             // Apply CameraSystem to CameraArchetype
             self.systems.camera.apply_many(
+                &self.context,
                 &self.states.input,
+                &self.states.wgpu_render,
                 &mut self.states.active_camera,
                 &mut self.archetypes.camera.cameras,
                 &mut self.archetypes.camera.camera_fps_controllers,
             );
 
             self.systems.camera.on_end_phase(
+                &self.context,
                 &self.states.input,
+                &self.states.wgpu_render,
                 &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_end_phase returned an error"))
@@ -1189,7 +1312,7 @@ impl<E, Q> MainWorld<E, Q> {
             &self.context,
             &mut self.states.wgpu_render,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase begin events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
 
         self.apply_system_phase_render_without_events();
@@ -1200,7 +1323,7 @@ impl<E, Q> MainWorld<E, Q> {
             &self.context,
             &mut self.states.wgpu_render,
         )
-        .inspect_err(|error| tracing::error!(?error, "Failed to handle phase end events"))
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
 
         // Process all commands.
@@ -1214,7 +1337,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 2
+        // System group 1 of 3
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1236,7 +1359,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 2
+        // System group 2 of 3
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1246,6 +1369,11 @@ impl<E, Q> MainWorld<E, Q> {
                 .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
+            // Apply RenderSystem to DynamicLightArchetype
+            self.systems.render.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.dynamic_light.positions,
+            );
             // Apply RenderSystem to ParticleArchetype
             self.systems.render.apply_many(
                 &mut self.states.wgpu_render,
@@ -1271,6 +1399,58 @@ impl<E, Q> MainWorld<E, Q> {
                 &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 3 of 3
+        let is_ready = self.systems.camera_render.is_ready(
+               &self.states.wgpu_render,
+               &mut self.states.active_camera,
+           );
+        if is_ready && self.systems.camera_render.on_begin_phase(
+                    &self.states.wgpu_render,
+                    &mut self.states.active_camera,
+                )
+                .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply CameraRenderSystem to CameraArchetype
+            self.systems.camera_render.apply_many(
+                &self.states.wgpu_render,
+                &mut self.states.active_camera,
+                &self.archetypes.camera.cameras,
+            );
+
+            self.systems.camera_render.on_end_phase(
+                &self.states.wgpu_render,
+                &mut self.states.active_camera,
+            )
+            .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 3 of 3
+        let is_ready = self.systems.dynamic_light.is_ready(
+               &self.context,
+               &self.states.wgpu_render,
+           );
+        if is_ready && self.systems.dynamic_light.on_begin_phase(
+                    &self.context,
+                    &self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply DynamicLightSystem to DynamicLightArchetype
+            self.systems.dynamic_light.apply_many(
+                &self.context,
+                &self.states.wgpu_render,
+                &mut self.archetypes.dynamic_light.dynamic_lights,
+            );
+
+            self.systems.dynamic_light.on_end_phase(
+                &self.context,
+                &self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -1352,6 +1532,11 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_ready {
                     s.spawn(|_| {
+                        // Apply RenderSystem to DynamicLightArchetype
+                        self.systems.render.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.dynamic_light.positions,
+                        );
                         // Apply RenderSystem to ParticleArchetype
                         self.systems.render.apply_many(
                             &mut self.states.wgpu_render,
@@ -1381,6 +1566,70 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 3
+        let is_camera_render_ready = self.systems.camera_render.is_ready(
+               &self.states.wgpu_render,
+               &mut self.states.active_camera,
+           );
+        let is_camera_render_ready = is_camera_render_ready &
+            self.systems.camera_render.on_begin_phase(
+                &self.states.wgpu_render,
+                &mut self.states.active_camera,
+            )
+            .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_begin_phase returned an error"))
+            .is_ok();
+        let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
+               &self.context,
+               &self.states.wgpu_render,
+           );
+        let is_dynamic_light_ready = is_dynamic_light_ready &
+            self.systems.dynamic_light.on_begin_phase(
+                &self.context,
+                &self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_camera_render_ready {
+                    s.spawn(|_| {
+                        // Apply CameraRenderSystem to CameraArchetype
+                        self.systems.camera_render.apply_many(
+                            &self.states.wgpu_render,
+                            &mut self.states.active_camera,
+                            &self.archetypes.camera.cameras,
+                        );
+                    });
+                }
+                if is_dynamic_light_ready {
+                    s.spawn(|_| {
+                        // Apply DynamicLightSystem to DynamicLightArchetype
+                        self.systems.dynamic_light.apply_many(
+                            &self.context,
+                            &self.states.wgpu_render,
+                            &mut self.archetypes.dynamic_light.dynamic_lights,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.camera_render.on_end_phase(
+            &self.states.wgpu_render,
+            &mut self.states.active_camera,
+        )
+        .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_end_phase returned an error"))
+        .ok();
+
+        self.systems.dynamic_light.on_end_phase(
+            &self.context,
+            &self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
         SystemRenderPhaseEvents::on_end_phase(
@@ -1426,6 +1675,10 @@ impl<E, Q> MainWorld<E, Q> {
                 let id = self.spawn_camera(data);
                 tracing::trace!(%id, "Spawned Camera entity");
             },
+            ArchetypeEntityData::DynamicLight(data) => {
+                let id = self.spawn_dynamic_light(data);
+                tracing::trace!(%id, "Spawned DynamicLight entity");
+            },
             ArchetypeEntityData::Particle(data) => {
                 let id = self.spawn_particle(data);
                 tracing::trace!(%id, "Spawned Particle entity");
@@ -1460,6 +1713,12 @@ impl<E, Q> MainWorld<E, Q> {
                         .camera
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CameraArchetype::ID))?
+                }
+                DynamicLightArchetype::ID => {
+                    self.archetypes
+                        .dynamic_light
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, DynamicLightArchetype::ID))?
                 }
                 ParticleArchetype::ID => {
                     self.archetypes

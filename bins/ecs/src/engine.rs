@@ -25,7 +25,12 @@ pub use phase_events::PhaseEvents;
 use crate::engine::components::*;
 use crate::engine::phases::fixed_update::physics::PhysicsSystemData;
 use crate::engine::phases::update::{color_cycle::BackgroundColorCycleSystemData, camera::CameraSystemData};
-use crate::engine::phases::render::{RenderSystemData, WgpuRenderState, background::{BackgroundColorData, RenderBackgroundSystemData}};
+use crate::engine::phases::render::{
+    RenderSystemData, WgpuRenderState,
+    background::{BackgroundColorData, RenderBackgroundSystemData},
+    camera_render::CameraRenderSystemData,
+    dynamic_light::DynamicLightSystemData,
+};
 pub use crate::engine::input_state::InputState;
 use crate::engine::camera_fps_controller::CameraFpsControllerData;
 

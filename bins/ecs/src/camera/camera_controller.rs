@@ -1,9 +1,9 @@
 use std::f32::consts::FRAC_PI_2;
-use std::time::Duration;
 use cgmath::{InnerSpace, Rad, Vector3};
 use winit::event::{ElementState, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use crate::camera::Camera;
+use crate::seconds::Seconds;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
 
@@ -39,7 +39,7 @@ impl CameraController {
         }
     }
 
-    pub fn process_events(&mut self, key: PhysicalKey, state: ElementState) -> bool {
+    pub fn process_keys(&mut self, key: PhysicalKey, state: ElementState) -> bool {
         let PhysicalKey::Code(keycode) = key else {
             return false;
         };
@@ -84,7 +84,7 @@ impl CameraController {
         todo!("apply scroll from input")
     }
 
-    pub(crate) fn update_camera(&mut self, camera: &mut Camera, dt: Duration) {
+    pub(crate) fn update_camera(&mut self, camera: &mut Camera, dt: Seconds) {
         let dt = dt.as_secs_f32();
 
         // Move forward/backward and left/right

@@ -26,11 +26,8 @@
 //!
 //! For more details about the underlying WebGPU API, see the [wgpu documentation](https://docs.rs/wgpu).
 
-use cgmath::prelude::*;
 use std::sync::Arc;
-use std::time::Duration;
 use winit::window::Window;
-use crate::camera::CameraController;
 use crate::wgpu::light::LightUniform;
 
 #[allow(dead_code)]
@@ -48,23 +45,5 @@ impl WgpuState {
         }
     }
 
-    /*
-    /// Update the camera uniform buffer.
-    // TODO: Refactor
-    pub fn update_camera_uniform(&mut self, controller: &mut CameraController, dt: Duration) {
-        controller.update_camera(&mut self.camera, dt);
-        self.camera_uniform.update_view_proj(&self.camera, &self.projection);
-        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
-    }
 
-    // TODO: Refactor
-    pub fn update_light(&mut self) {
-        let old_position: cgmath::Vector3<_> = self.light_uniform.position.into();
-        self.light_uniform.position =
-            (cgmath::Quaternion::from_axis_angle((0.0, 1.0, 0.0).into(), cgmath::Deg(1.0))
-                * old_position)
-                .into();
-        self.queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(&[self.light_uniform]));
-    }
-     */
 }
