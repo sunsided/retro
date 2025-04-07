@@ -292,6 +292,87 @@ impl core::borrow::BorrowMut<PositionData> for PositionComponent {
 
 /// A component.
 ///
+/// See also [`TransformData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct TransformComponent(TransformData);
+
+#[allow(dead_code)]
+impl TransformComponent {
+    /// Creates a new [`TransformComponent`] instance from [`TransformData`].
+    pub const fn new(data: TransformData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`TransformData`].
+    pub const fn into_inner(self) -> TransformData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for TransformComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(4).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for TransformComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<TransformData> for TransformComponent {
+    fn from(data: TransformData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for TransformComponent {
+    type Target = TransformData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for TransformComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<TransformData> for TransformComponent {
+    fn as_ref(&self) -> &TransformData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<TransformData> for TransformComponent {
+    fn as_mut(&mut self) -> &mut TransformData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<TransformData> for TransformComponent {
+    fn borrow(&self) -> &TransformData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<TransformData> for TransformComponent {
+    fn borrow_mut(&mut self) -> &mut TransformData {
+        &mut self.0
+    }
+}
+
+/// A component.
+///
 /// See also [`VelocityData`] for the actual data.
 #[derive(Debug, Clone)]
 pub struct VelocityComponent(VelocityData);
@@ -311,7 +392,7 @@ impl VelocityComponent {
 
 #[automatically_derived]
 impl Component for VelocityComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(4).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(5).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for VelocityComponent {
@@ -392,7 +473,7 @@ impl HealthComponent {
 
 #[automatically_derived]
 impl Component for HealthComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(5).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(6).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for HealthComponent {
@@ -473,7 +554,7 @@ impl ColliderComponent {
 
 #[automatically_derived]
 impl Component for ColliderComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(6).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(7).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for ColliderComponent {
@@ -535,6 +616,87 @@ impl core::borrow::BorrowMut<ColliderData> for ColliderComponent {
 
 /// A component.
 ///
+/// See also [`ModelData`] for the actual data.
+#[derive(Debug, Clone)]
+pub struct ModelComponent(ModelData);
+
+#[allow(dead_code)]
+impl ModelComponent {
+    /// Creates a new [`ModelComponent`] instance from [`ModelData`].
+    pub const fn new(data: ModelData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`ModelData`].
+    pub const fn into_inner(self) -> ModelData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for ModelComponent {
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(8).expect("A zero component ID was provided"));
+}
+
+impl PartialEq<ComponentId> for ModelComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<ModelData> for ModelComponent {
+    fn from(data: ModelData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for ModelComponent {
+    type Target = ModelData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for ModelComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<ModelData> for ModelComponent {
+    fn as_ref(&self) -> &ModelData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<ModelData> for ModelComponent {
+    fn as_mut(&mut self) -> &mut ModelData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<ModelData> for ModelComponent {
+    fn borrow(&self) -> &ModelData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<ModelData> for ModelComponent {
+    fn borrow_mut(&mut self) -> &mut ModelData {
+        &mut self.0
+    }
+}
+
+/// A component.
+///
 /// See also [`ColorData`] for the actual data.
 #[derive(Debug, Clone)]
 pub struct ColorComponent(ColorData);
@@ -554,7 +716,7 @@ impl ColorComponent {
 
 #[automatically_derived]
 impl Component for ColorComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(7).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(9).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for ColorComponent {
@@ -635,7 +797,7 @@ impl BackgroundColorComponent {
 
 #[automatically_derived]
 impl Component for BackgroundColorComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(8).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(10).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for BackgroundColorComponent {
@@ -716,7 +878,7 @@ impl DynamicLightComponent {
 
 #[automatically_derived]
 impl Component for DynamicLightComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(9).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(11).expect("A zero component ID was provided"));
 }
 
 impl PartialEq<ComponentId> for DynamicLightComponent {

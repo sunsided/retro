@@ -66,7 +66,9 @@ pub mod camera_render;
 pub mod dynamic_light;
 mod wgpu_render_state;
 mod frame_state;
+mod render;
 
+use crate::engine::ModelComponent;
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
@@ -75,7 +77,7 @@ use tracing::{error, trace, warn};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents};
+use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents, TransformComponent};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
 use crate::wgpu::wgpu_hardware::{WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 pub use self::wgpu_render_state::WgpuRenderState;
@@ -233,22 +235,5 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         let elapsed = self.elapsed();
         trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemRenderPhaseEvents>::NAME);
         Ok(())
-    }
-}
-
-impl ApplyRenderSystem for RenderSystem {
-    type Error = wgpu::SurfaceError;
-
-    #[inline]
-    fn is_ready(&self, state: &mut WgpuRenderState) -> bool {
-        state.is_ready()
-    }
-
-    fn apply_single(
-        &mut self,
-        _state: &mut WgpuRenderState,
-        position: &PositionComponent,
-    ) {
-        trace!("Rendering position: {:?}", position);
     }
 }

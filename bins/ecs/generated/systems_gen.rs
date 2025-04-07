@@ -1093,12 +1093,12 @@ impl PhysicsSystem {
         );
     }
 
-    /// Applies this system to the [`ParticleArchetype`].
+    /// Applies this system to the [`CubeArchetype`].
     #[inline]
     #[deprecated]
-    fn apply_to_particle(
+    fn apply_to_cube(
         &mut self,
-        archetype: &mut ParticleArchetype,
+        archetype: &mut CubeArchetype,
         context: &FrameContext,
     ) {
         self.apply_many(
@@ -1540,6 +1540,8 @@ impl core::ops::DerefMut for RenderBackgroundSystem {
 /// ### Reads
 /// 
 /// - [`PositionComponent`]
+/// - [`TransformComponent`]
+/// - [`ModelComponent`]
 ///
 /// ### Mutates
 /// 
@@ -1598,6 +1600,8 @@ pub trait ApplyRenderSystem: System {
     /// ### Reads
     /// 
     /// - `position`: A reference to the input component of type [`PositionComponent`].
+    /// - `transform`: A reference to the input component of type [`TransformComponent`].
+    /// - `model`: A reference to the input component of type [`ModelComponent`].
     ///
     /// ### Mutates
     /// 
@@ -1606,6 +1610,8 @@ pub trait ApplyRenderSystem: System {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         position: &PositionComponent,
+        transform: &TransformComponent,
+        model: &ModelComponent,
     ) {
          // intentionally left blank
      }
@@ -1615,6 +1621,8 @@ pub trait ApplyRenderSystem: System {
     /// ### Reads
     /// 
     /// - `position`: A slice of the input components of type [`PositionComponent`].
+    /// - `transform`: A slice of the input components of type [`TransformComponent`].
+    /// - `model`: A slice of the input components of type [`ModelComponent`].
     ///
     /// ### Mutates
     /// 
@@ -1622,12 +1630,16 @@ pub trait ApplyRenderSystem: System {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         positions: &[PositionComponent],
+        transforms: &[TransformComponent],
+        models: &[ModelComponent],
     ) {
-        let zipped_iter = positions;
-        for position in zipped_iter {
+        let zipped_iter = positions.iter().zip(transforms.iter().zip(models.iter()));
+        for (position, (transform, model)) in zipped_iter {
             self.apply_single(
                 wgpu_render,
                 position,
+                transform,
+                model,
             );
         }
     }
@@ -1641,11 +1653,15 @@ impl RenderSystem {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         position: &PositionComponent,
+        transform: &TransformComponent,
+        model: &ModelComponent,
     ) {
         ApplyRenderSystem::apply_single(
             self,
             wgpu_render,
             position,
+            transform,
+            model,
         );
     }
 
@@ -1654,6 +1670,8 @@ impl RenderSystem {
     /// ### Reads
     /// 
     /// - `position`: A slice of the input components of type [`PositionComponent`].
+    /// - `transform`: A slice of the input components of type [`TransformComponent`].
+    /// - `model`: A slice of the input components of type [`ModelComponent`].
     ///
     /// ### Mutates
     /// 
@@ -1662,81 +1680,31 @@ impl RenderSystem {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         positions: &[PositionComponent],
+        transforms: &[TransformComponent],
+        models: &[ModelComponent],
     ) {
         ApplyRenderSystem::apply_many(
             self,
             wgpu_render,
             positions,
+            transforms,
+            models,
         );
     }
 
-    /// Applies this system to the [`DynamicLightArchetype`].
+    /// Applies this system to the [`CubeArchetype`].
     #[inline]
     #[deprecated]
-    fn apply_to_dynamic_light(
+    fn apply_to_cube(
         &mut self,
-        archetype: &mut DynamicLightArchetype,
+        archetype: &mut CubeArchetype,
         wgpu_render: &mut WgpuRenderState,
     ) {
         self.apply_many(
             wgpu_render,
             &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`ParticleArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_particle(
-        &mut self,
-        archetype: &mut ParticleArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`PlayerArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_player(
-        &mut self,
-        archetype: &mut PlayerArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`ForegroundObjectArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_foreground_object(
-        &mut self,
-        archetype: &mut ForegroundObjectArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`BackgroundObjectArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_background_object(
-        &mut self,
-        archetype: &mut BackgroundObjectArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
+            &archetype.transforms,
+            &archetype.models,
         );
     }
 }

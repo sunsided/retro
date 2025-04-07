@@ -93,7 +93,7 @@ impl core::fmt::Display for ArchetypeId {
         match self.0.get() {
             1 => write!(f, "Camera (Archetype ID 1)"),
             2 => write!(f, "DynamicLight (Archetype ID 2)"),
-            3 => write!(f, "Particle (Archetype ID 3)"),
+            3 => write!(f, "Cube (Archetype ID 3)"),
             4 => write!(f, "Player (Archetype ID 4)"),
             5 => write!(f, "ForegroundObject (Archetype ID 5)"),
             6 => write!(f, "BackgroundObject (Archetype ID 6)"),
@@ -163,8 +163,8 @@ pub enum ArchetypeEntity {
     Camera(CameraEntity),
     /// An entity in the [`DynamicLight`](DynamicLightArchetype) archetype.
     DynamicLight(DynamicLightEntity),
-    /// A particle system particle.
-    Particle(ParticleEntity),
+    /// A marching cube :)
+    Cube(CubeEntity),
     /// An entity in the [`Player`](PlayerArchetype) archetype.
     Player(PlayerEntity),
     /// An entity in the [`ForegroundObject`](ForegroundObjectArchetype) archetype.
@@ -183,8 +183,8 @@ pub enum ArchetypeEntityData {
     Camera(CameraEntityData),
     /// An entity in the [`DynamicLight`](DynamicLightArchetype) archetype.
     DynamicLight(DynamicLightEntityData),
-    /// A particle system particle.
-    Particle(ParticleEntityData),
+    /// A marching cube :)
+    Cube(CubeEntityData),
     /// An entity in the [`Player`](PlayerArchetype) archetype.
     Player(PlayerEntityData),
     /// An entity in the [`ForegroundObject`](ForegroundObjectArchetype) archetype.
@@ -202,7 +202,7 @@ impl ArchetypeEntity {
         match self {
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
-            Self::Particle(_) => ParticleArchetype::ID,
+            Self::Cube(_) => CubeArchetype::ID,
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
             Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
@@ -218,7 +218,7 @@ impl ArchetypeEntityData {
         match self {
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
-            Self::Particle(_) => ParticleArchetype::ID,
+            Self::Cube(_) => CubeArchetype::ID,
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
             Self::BackgroundObject(_) => BackgroundObjectArchetype::ID,
@@ -589,8 +589,8 @@ impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 3] = [
         ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(7).expect("Invalid ID on ECS construction time"),
         ComponentId::new(9).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(11).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -614,7 +614,7 @@ impl DynamicLightArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 7 || id == 9 || false
+        id == 3 || id == 9 || id == 11 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -728,32 +728,36 @@ impl PartialEq<ArchetypeId> for DynamicLightArchetype {
     }
 }
 
-/// A particle system particle.
+/// A marching cube :)
 #[derive(Debug, Default, Clone)]
-pub struct ParticleArchetype {
+pub struct CubeArchetype {
     pub entities: Vec<EntityId>,
     pub positions: Vec<PositionComponent>,
     pub velocities: Vec<VelocityComponent>,
+    pub transforms: Vec<TransformComponent>,
+    pub models: Vec<ModelComponent>,
 }
 
-/// An entity of the [`ParticleArchetype`].
+/// An entity of the [`CubeArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct ParticleEntity {
+pub struct CubeEntity {
     pub id: EntityId,
-    pub data: ParticleEntityData,
+    pub data: CubeEntityData,
 }
 
-/// An entity of the [`ParticleArchetype`].
+/// An entity of the [`CubeArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct ParticleEntityData {
+pub struct CubeEntityData {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
+    pub transform: TransformComponent,
+    pub model: ModelComponent,
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for ParticleEntity {
+impl HasComponent<PositionComponent> for CubeEntity {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.data.position
@@ -766,7 +770,7 @@ impl HasComponent<PositionComponent> for ParticleEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for ParticleEntityData {
+impl HasComponent<PositionComponent> for CubeEntityData {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -779,7 +783,7 @@ impl HasComponent<PositionComponent> for ParticleEntityData {
 }
 
 #[allow(dead_code)]
-impl HasComponent<VelocityComponent> for ParticleEntity {
+impl HasComponent<VelocityComponent> for CubeEntity {
     #[inline]
     fn get(&self) -> &VelocityComponent {
         &self.data.velocity
@@ -792,7 +796,7 @@ impl HasComponent<VelocityComponent> for ParticleEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<VelocityComponent> for ParticleEntityData {
+impl HasComponent<VelocityComponent> for CubeEntityData {
     #[inline]
     fn get(&self) -> &VelocityComponent {
         &self.velocity
@@ -803,38 +807,92 @@ impl HasComponent<VelocityComponent> for ParticleEntityData {
         &mut self.velocity
     }
 }
-impl ParticleEntityData {
+
+#[allow(dead_code)]
+impl HasComponent<TransformComponent> for CubeEntity {
+    #[inline]
+    fn get(&self) -> &TransformComponent {
+        &self.data.transform
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut TransformComponent {
+        &mut self.data.transform
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<TransformComponent> for CubeEntityData {
+    #[inline]
+    fn get(&self) -> &TransformComponent {
+        &self.transform
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut TransformComponent {
+        &mut self.transform
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<ModelComponent> for CubeEntity {
+    #[inline]
+    fn get(&self) -> &ModelComponent {
+        &self.data.model
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut ModelComponent {
+        &mut self.data.model
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<ModelComponent> for CubeEntityData {
+    #[inline]
+    fn get(&self) -> &ModelComponent {
+        &self.model
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut ModelComponent {
+        &mut self.model
+    }
+}
+impl CubeEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
     pub fn spawn_into<W>(self, world: &mut W) -> EntityId
     where
-        W: Spawn<ParticleEntityData>
+        W: Spawn<CubeEntityData>
     {
         world.spawn(self)
     }
 }
 
-impl core::ops::Deref for ParticleEntity {
-    type Target = ParticleEntityData;
+impl core::ops::Deref for CubeEntity {
+    type Target = CubeEntityData;
 
     fn deref(&self) -> &Self::Target {
         &self.data
     }
 }
 
-impl core::ops::DerefMut for ParticleEntity {
+impl core::ops::DerefMut for CubeEntity {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.data
     }
 }
 
 #[allow(dead_code)]
-impl ParticleArchetype {
+impl CubeArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 2] = [
+    pub const COMPONENT_IDS: [ComponentId; 4] = [
         ComponentId::new(3).expect("Invalid ID on ECS construction time"),
         ComponentId::new(4).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(8).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -852,13 +910,13 @@ impl ParticleArchetype {
     /// Returns the number of components used by this archetype.
     #[inline(always)]
     pub const fn num_components(&self) -> usize {
-        2
+        4
     }
 
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 4 || false
+        id == 3 || id == 4 || id == 5 || id == 8 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -867,6 +925,8 @@ impl ParticleArchetype {
         &mut self,
         position: PositionComponent,
         velocity: VelocityComponent,
+        transform: TransformComponent,
+        model: ModelComponent,
         mut world_registry: R
     ) -> EntityId
     where
@@ -874,6 +934,8 @@ impl ParticleArchetype {
     {
         self.positions.push(position);
         self.velocities.push(velocity);
+        self.transforms.push(transform);
+        self.models.push(model);
 
         let entity_id = EntityId::new();
 
@@ -899,6 +961,8 @@ impl ParticleArchetype {
         self.entities.swap_remove(index);
         self.positions.swap_remove(index);
         self.velocities.swap_remove(index);
+        self.transforms.swap_remove(index);
+        self.models.swap_remove(index);
         if self.entities.is_empty() {
             Ok(None)
         }
@@ -910,7 +974,7 @@ impl ParticleArchetype {
 
 
 #[automatically_derived]
-impl HasComponents<PositionComponent> for ParticleArchetype {
+impl HasComponents<PositionComponent> for CubeArchetype {
     /// Returns a slice of all [`PositionComponent`] component values.
     fn get(&self) -> &[PositionComponent] {
         self.positions.as_slice()
@@ -923,7 +987,7 @@ impl HasComponents<PositionComponent> for ParticleArchetype {
 }
 
 #[automatically_derived]
-impl HasComponents<VelocityComponent> for ParticleArchetype {
+impl HasComponents<VelocityComponent> for CubeArchetype {
     /// Returns a slice of all [`VelocityComponent`] component values.
     fn get(&self) -> &[VelocityComponent] {
         self.velocities.as_slice()
@@ -935,10 +999,36 @@ impl HasComponents<VelocityComponent> for ParticleArchetype {
     }
 }
 
+#[automatically_derived]
+impl HasComponents<TransformComponent> for CubeArchetype {
+    /// Returns a slice of all [`TransformComponent`] component values.
+    fn get(&self) -> &[TransformComponent] {
+        self.transforms.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`TransformComponent`] component values.
+    fn get_mut(&mut self) -> &mut [TransformComponent] {
+        self.transforms.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<ModelComponent> for CubeArchetype {
+    /// Returns a slice of all [`ModelComponent`] component values.
+    fn get(&self) -> &[ModelComponent] {
+        self.models.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`ModelComponent`] component values.
+    fn get_mut(&mut self) -> &mut [ModelComponent] {
+        self.models.as_mut_slice()
+    }
+}
+
 
 #[automatically_derived]
 #[allow(dead_code)]
-impl Archetype for ParticleArchetype {
+impl Archetype for CubeArchetype {
     const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
 
     fn len(&self) -> usize {
@@ -950,7 +1040,7 @@ impl Archetype for ParticleArchetype {
     }
 }
 
-impl PartialEq<ArchetypeId> for ParticleArchetype {
+impl PartialEq<ArchetypeId> for CubeArchetype {
     fn eq(&self, other: &ArchetypeId) -> bool {
         Self::ID.eq(other)
     }
@@ -1090,8 +1180,8 @@ impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 3] = [
         ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(4).expect("Invalid ID on ECS construction time"),
         ComponentId::new(5).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(6).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1115,7 +1205,7 @@ impl PlayerArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 4 || id == 5 || false
+        id == 3 || id == 5 || id == 6 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1335,7 +1425,7 @@ impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 2] = [
         ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(6).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(7).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1359,7 +1449,7 @@ impl ForegroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 6 || false
+        id == 3 || id == 7 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1717,7 +1807,7 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(8).expect("Invalid ID on ECS construction time"),
+        ComponentId::new(10).expect("Invalid ID on ECS construction time"),
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1741,7 +1831,7 @@ impl SceneBackgroundArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || false
+        id == 10 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
