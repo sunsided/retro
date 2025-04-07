@@ -169,7 +169,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
             pass.set_bind_group(0, &device.bind_groups().vga_fullscreen, &[]);
 
             // Draw exactly 3 vertices – no vertex buffer
-            pass.draw(0..3, 0..1);
+            pass.draw(0..6, 0..1);
         }
     }
 }

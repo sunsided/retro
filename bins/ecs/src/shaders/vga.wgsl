@@ -24,18 +24,25 @@ struct VertexOutput {
 fn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {
     var out: VertexOutput;
 
-    // A "fullscreen" triangle that covers more than [-1..1].
-    var base_positions = array<vec2<f32>, 3>(
+    // Positions in clip space:
+    var base_positions = array<vec2<f32>, 6>(
         vec2(-1.0, -1.0),
-        vec2( 3.0, -1.0),
-        vec2(-1.0,  3.0),
+        vec2( 1.0, -1.0),
+        vec2( 1.0,  1.0),
+        vec2(-1.0, -1.0),
+        vec2( 1.0,  1.0),
+        vec2(-1.0,  1.0),
     );
 
-    // We'll map these positions to [0..1] UV, slightly beyond 1 so we can clamp in the fragment.
-    var base_uv = array<vec2<f32>, 3>(
+    // Matching UVs that can go beyond [0..1] if you want the clamp/fade logic:
+    // Typically you'd just do [0,1], [1,1], [1,0] etc.
+    var base_uv = array<vec2<f32>, 6>(
         vec2(0.0, 1.0),
-        vec2(2.0, 1.0),
-        vec2(0.0, -1.0),
+        vec2(1.0, 1.0),
+        vec2(1.0, 0.0),
+        vec2(0.0, 1.0),
+        vec2(1.0, 0.0),
+        vec2(0.0, 0.0),
     );
 
     let pos = base_positions[i];
