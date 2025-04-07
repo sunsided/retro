@@ -29,7 +29,10 @@ impl ApplyCameraSystem for CameraSystem {
 
         // Update the aspect ratio given the render surface size.
         if let Some(size) = wgpu_render.surface_size() {
-            camera.projection.resize(size.width, size.height);
+
+            // TODO: During VGA rendering, the aspect ratio must be clipped to the VGA ratio (1.6:1).
+            camera.projection.resize(1024, 640);
+            // camera.projection.resize(size.width, size.height);
         }
     }
 }
