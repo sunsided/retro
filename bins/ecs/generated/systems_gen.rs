@@ -354,7 +354,6 @@ pub trait ApplyCameraSystem: System {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
     ) -> bool {
         true
     }
@@ -370,7 +369,6 @@ pub trait ApplyCameraSystem: System {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -386,7 +384,6 @@ pub trait ApplyCameraSystem: System {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -403,12 +400,12 @@ pub trait ApplyCameraSystem: System {
     /// 
     /// - `camera`: A mutable reference to the component of type [`CameraComponent`].
     /// - `camera_fps_controller`: A mutable reference to the component of type [`CameraFpsControllerComponent`].
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
         camera: &mut CameraComponent,
         camera_fps_controller: &mut CameraFpsControllerComponent,
     ) {
@@ -429,7 +426,6 @@ pub trait ApplyCameraSystem: System {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
         cameras: &mut [CameraComponent],
         camera_fps_controllers: &mut [CameraFpsControllerComponent],
     ) {
@@ -439,7 +435,6 @@ pub trait ApplyCameraSystem: System {
                 &context,
                 input,
                 wgpu_render,
-                active_camera,
                 camera,
                 camera_fps_controller,
             );
@@ -456,7 +451,6 @@ impl CameraSystem {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
         camera: &mut CameraComponent,
         camera_fps_controller: &mut CameraFpsControllerComponent,
     ) {
@@ -465,7 +459,6 @@ impl CameraSystem {
             context,
             input,
             wgpu_render,
-            active_camera,
             camera,
             camera_fps_controller,
         );
@@ -486,7 +479,6 @@ impl CameraSystem {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
         cameras: &mut [CameraComponent],
         camera_fps_controllers: &mut [CameraFpsControllerComponent],
     ) {
@@ -495,7 +487,6 @@ impl CameraSystem {
             context,
             input,
             wgpu_render,
-            active_camera,
             cameras,
             camera_fps_controllers,
         );
@@ -510,13 +501,11 @@ impl CameraSystem {
         context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
     ) {
         self.apply_many(
             &context,
             input,
             wgpu_render,
-            active_camera,
             &mut archetype.cameras,
             &mut archetype.camera_fps_controllers,
         );
@@ -629,6 +618,7 @@ pub trait ApplyCameraRenderSystem: System {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         wgpu_render: &WgpuRenderState,
@@ -827,6 +817,7 @@ pub trait ApplyDynamicLightSystem: System {
     /// ### Mutates
     /// 
     /// - `dynamic_light`: A mutable reference to the component of type [`DynamicLightComponent`].
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         context: &FrameContext,
@@ -1024,6 +1015,7 @@ pub trait ApplyPhysicsSystem: System {
     /// ### Mutates
     /// 
     /// - `position`: A mutable reference to the component of type [`PositionComponent`].
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         context: &FrameContext,
@@ -1235,6 +1227,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
     /// ### Mutates
     /// 
     /// - `background_color`: A mutable reference to the component of type [`BackgroundColorComponent`].
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         context: &FrameContext,
@@ -1421,6 +1414,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         wgpu_render: &mut WgpuRenderState,
@@ -1607,6 +1601,7 @@ pub trait ApplyRenderSystem: System {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_variables)]
     fn apply_single(
         &mut self,
         wgpu_render: &mut WgpuRenderState,

@@ -74,7 +74,7 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
 
         // This only needs to be done during the render phase unless we use the camera for clip testing in software.
         active_camera.uniform.update_view_proj(&camera.camera, &camera.projection);
-        device.queue().write_buffer(device.buffers().camera.as_ref(), 0, bytemuck::cast_slice(&[active_camera.uniform]));
+        device.buffers().camera.send_to_device(&device.queue(), active_camera.uniform);
     }
 }
 

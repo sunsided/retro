@@ -1,9 +1,5 @@
 use tracing::instrument;
-use wgpu::{Device, PipelineLayout, RenderPipeline, ShaderModule, TextureFormat};
-use crate::wgpu::gpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::instance::InstanceRaw;
-use crate::wgpu::model::{ModelVertex, Vertex};
-use crate::wgpu::texture::Texture;
+use wgpu::{Device, ShaderModule};
 
 #[derive(Debug)]
 pub struct Shaders {

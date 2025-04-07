@@ -1,4 +1,3 @@
-use derive_more::AsRef;
 use tracing::instrument;
 use wgpu::{Device, MaintainResult, Queue, Surface, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
@@ -10,8 +9,10 @@ use crate::wgpu::gpu_hardware::models::Models;
 use crate::wgpu::gpu_hardware::render_pipelines::RenderPipelines;
 use crate::wgpu::gpu_hardware::shaders::Shaders;
 use crate::wgpu::gpu_hardware::texture_samplers::TextureSamplers;
+use crate::wgpu::gpu_hardware::textures::Textures;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct DeviceAndQueue {
     device: Device,
     queue: Queue,
@@ -23,7 +24,8 @@ pub struct DeviceAndQueue {
     bind_groups: BindGroups,
     pipelines: RenderPipelines,
     shaders: Shaders,
-    models: Models
+    models: Models,
+    textures: Textures,
 }
 
 impl DeviceAndQueue {
@@ -36,6 +38,7 @@ impl DeviceAndQueue {
         let bind_groups = BindGroups::create_from(&device, &bind_group_layouts, &buffers);
         let pipelines = RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
+        let textures = Textures::create_from(&device, &queue);
         Self {
             device,
             queue,
@@ -47,7 +50,8 @@ impl DeviceAndQueue {
             bind_groups,
             pipelines,
             shaders,
-            models
+            models,
+            textures
         }
     }
 

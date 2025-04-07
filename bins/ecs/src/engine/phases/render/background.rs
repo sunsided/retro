@@ -106,7 +106,6 @@ impl BackgroundColorData {
 #[derive(Debug, Default)]
 pub struct RenderBackgroundSystemData {
     pub selector: RenderPipelineSelector,
-    pub texture: Option<BindGroup>
 }
 
 impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {

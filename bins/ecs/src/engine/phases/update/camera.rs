@@ -11,7 +11,7 @@ pub struct CameraSystemData;
 impl ApplyCameraSystem for CameraSystem {
     type Error = Infallible;
 
-    fn apply_many(&mut self, context: &FrameContext, input: &InputState, wgpu_render: &WgpuRenderState, active_camera: &mut ActiveCameraState, cameras: &mut [CameraComponent], controllers: &mut [CameraFpsControllerComponent]) {
+    fn apply_many(&mut self, context: &FrameContext, input: &InputState, wgpu_render: &WgpuRenderState, cameras: &mut [CameraComponent], controllers: &mut [CameraFpsControllerComponent]) {
         // We only update the active camera. It could be interesting to use the cameras for presence
         // detection and even though they're not currently used for rendering, they might trigger
         // some events. Just thinking out loud!

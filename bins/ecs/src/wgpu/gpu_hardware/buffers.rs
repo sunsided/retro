@@ -36,7 +36,7 @@ pub struct CameraBuffer {
 impl CameraBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
-        let mut camera_uniform = CameraUniform::new();
+        let camera_uniform = CameraUniform::new();
         let buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("camera_buffer"),
@@ -47,9 +47,9 @@ impl CameraBuffer {
         Self { buffer }
     }
 
-    /// Update the camera buffer with a new uniform.
+    /// Update the buffer on device with a new [`CameraUniform`].
     #[inline]
-    pub fn update(&mut self, queue: &Queue, uniform: CameraUniform) {
+    pub fn send_to_device(&self, queue: &Queue, uniform: CameraUniform) {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
 
@@ -91,9 +91,9 @@ impl LightBuffer {
         Self { buffer }
     }
 
-    /// Update the light vertex buffer with a new uniform.
+    /// Update the buffer on device with a new [`LightUniform`].
     #[inline]
-    pub fn update(&mut self, queue: &Queue, uniform: LightUniform) {
+    pub fn send_to_device(&mut self, queue: &Queue, uniform: LightUniform) {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
 

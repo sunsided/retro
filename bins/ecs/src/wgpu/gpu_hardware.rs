@@ -31,13 +31,11 @@ mod shaders;
 mod buffers;
 mod bind_groups;
 mod models;
+mod textures;
 
-use std::fmt::Display;
 use std::sync::Arc;
-use derive_more::AsRef;
 use tracing::{debug, instrument, warn};
-use wgpu::{Adapter, Backends, Device, InstanceDescriptor, PresentMode, Queue, RequestDeviceError, Surface, SurfaceCapabilities, SurfaceConfiguration, TextureUsages};
-use wgpu::hal::DynSurface;
+use wgpu::{Adapter, Backends, Device, InstanceDescriptor, PresentMode, Queue, RequestDeviceError, Surface, SurfaceConfiguration, TextureUsages};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 pub use crate::wgpu::gpu_hardware::device_and_queue::DeviceAndQueue;
@@ -84,6 +82,7 @@ impl WgpuHardware {
     }
 
     #[inline]
+    #[allow(dead_code)]
     pub const fn is_ready(&self) -> bool {
         self.device.is_some()
     }
@@ -129,7 +128,7 @@ impl WgpuHardware {
         };
 
         // If we already have an adapter, and it is compatible with the new surface, skip creation.
-        let mut surface_caps = self.adapter.as_ref()
+        let surface_caps = self.adapter.as_ref()
             .map(|adapter| surface.get_capabilities(&adapter))
             .unwrap_or_default();
         let recreate_device = surface_caps.formats.is_empty();

@@ -31,8 +31,8 @@
 use std::path::Path;
 use image::{GenericImageView, ImageError};
 use wgpu::{Device, Queue, TextureFormat};
+use crate::resources;
 use crate::wgpu::gpu_hardware::DeviceAndQueue;
-use crate::wgpu::WgpuState;
 
 /// A struct representing a GPU texture along with its corresponding view.
 ///
@@ -63,23 +63,8 @@ pub enum TextureError {
     LoadFromFile(ImageError),
 }
 
-pub trait CreateTexture {
-    fn fallback_normal_map(&self) -> Texture;
-
-    fn texture_from_image<P>(
-        &self,
-        path: P,
-        ty: TextureType,
-        label: Option<&str>,
-    ) -> Result<Texture, TextureError>
-    where P: AsRef<Path>;
-
-    /// Create a [`BindGroup`](wgpu::BindGroup) from a [`Texture`].
-    fn create_bind_group(&self, texture: &Texture, normals: &Texture) -> wgpu::BindGroup;
-}
-
 impl Texture {
-    pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+    pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     /// Creates a depth texture for use in rendering pipelines.
     ///
@@ -366,8 +351,43 @@ impl Texture {
     where
         P: AsRef<Path>,
     {
-        let img = image::open(path).map_err(TextureError::LoadFromFile)?;
-        Ok(Self::from_image_with(state.device(), state.queue(), &img, ty, label))
+        Self::from_file_with(path, state.device(), state.queue(), ty, label)
+    }
+
+    /// Loads a texture from an image file and uploads it to the GPU using the provided `WgpuState`.
+    ///
+    /// This function simplifies texture creation by utilizing a `WgpuState` object, which manages the
+    /// `wgpu::Device` and `wgpu::Queue`. It reads an image file from the specified path, decodes it into
+    /// a `DynamicImage`, and creates a GPU texture.
+    ///
+    /// # Parameters
+    ///
+    /// - `path`: The file path to the image file to be loaded.
+    /// - `device`: The `wgpu::Device` required for texture creation and data uploading.
+    /// - `queue`: The `wgpu::Queue` required for texture creation and data uploading.
+    /// - `label`: An optional label added to the texture for easier debugging.
+    ///
+    /// # Returns
+    ///
+    /// Returns a `Result` with the created `Texture` object on success, or a `TextureError` if the
+    /// image could not be loaded or decoded.
+    ///
+    /// # Errors
+    ///
+    /// This function will return a `TextureError::LoadFromFile` if the image file could not be loaded or
+    /// decoded properly.
+    pub fn from_file_with<P>(
+        path: P,
+        device: &Device,
+        queue: &Queue,
+        ty: TextureType,
+        label: Option<&str>,
+    ) -> Result<Self, TextureError>
+    where
+        P: AsRef<Path>,
+    {
+        let img = resources::load_image(path).map_err(TextureError::LoadFromFile)?;
+        Ok(Self::from_image_with(device, queue, &img, ty, label))
     }
 }
 

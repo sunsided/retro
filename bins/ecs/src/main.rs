@@ -1,9 +1,8 @@
 use crate::wgpu::gpu_hardware::RenderPipelineSelector;
 use crate::logging::setup_logging;
-use parking_lot::Mutex;
 use std::sync::Arc;
 use std::time::Instant;
-use ::wgpu::{Backends, InstanceDescriptor};
+use ::wgpu::Backends;
 use tracing::{debug, trace};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -15,15 +14,12 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
 };
 use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
-use crate::camera::CameraController;
 use crate::cli::parse_arguments;
 use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::InitializeMainWorld;
-use crate::wgpu::WgpuState;
 use crate::wgpu::gpu_hardware::WgpuHardware;
-use crate::wgpu::texture::{CreateTexture, Texture, TextureType};
 
 mod engine;
 mod logging;
@@ -35,30 +31,26 @@ mod seconds;
 
 struct App {
     window: Option<Arc<Window>>,
-    state: Option<Arc<Mutex<WgpuState>>>,
     modifiers: ModifiersState,
     ecs_world: MainWorld<PhaseEvents, CommandQueue>,
-    last_update: Instant,
-    camera_controller: CameraController,
+    last_update: Instant
 }
 
 impl App {
     pub fn new(wgpu_hardware: WgpuHardware) -> Self {
         let events = PhaseEvents::default();
-        let wgpu_state = WgpuRenderState::default();
+        let render_state = WgpuRenderState::default();
         let input_state = InputState::default();
         let active_camera = ActiveCameraState::default();
-        let mut world = MainWorld::new_with_events(&SystemFactory, input_state, wgpu_state, active_camera, CommandQueue::new(), events);
+        let mut world = MainWorld::new_with_events(&SystemFactory, input_state, render_state, active_camera, CommandQueue::new(), events);
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.create_initial_entities();
 
         Self {
             window: None,
-            state: None,
             modifiers: Default::default(),
             last_update: Instant::now(),
-            ecs_world: world,
-            camera_controller: CameraController::new(4.0, 0.4),
+            ecs_world: world
         }
     }
 
@@ -173,7 +165,7 @@ impl ApplicationHandler for App {
         self.reinitialize_window(active_event_loop);
     }
 
-    fn device_event(&mut self, event_loop: &ActiveEventLoop, device_id: DeviceId, event: DeviceEvent) {
+    fn device_event(&mut self, _event_loop: &ActiveEventLoop, _device_id: DeviceId, event: DeviceEvent) {
         match event {
             DeviceEvent::Added => {}
             DeviceEvent::Removed => {}

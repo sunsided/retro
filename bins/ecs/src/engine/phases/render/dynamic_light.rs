@@ -10,13 +10,15 @@ pub struct DynamicLightSystemData;
 impl ApplyDynamicLightSystem for DynamicLightSystem {
     type Error = Infallible;
 
-    fn apply_many(&mut self, context: &FrameContext, gpu: &WgpuRenderState, lights: &mut [DynamicLightComponent]) {
+    fn apply_many(&mut self, _context: &FrameContext, gpu: &WgpuRenderState, lights: &mut [DynamicLightComponent]) {
         let Some(device) = gpu.hardware.device() else {
             warn!("Skipping light rendering because no device is set.");
             return;
         };
 
         for light in lights {
+            // TODO: Update position using relative time
+            // TODO: Update Light using its specified color
             light.update_position();
             light.write_to_buffer(&device);
         }

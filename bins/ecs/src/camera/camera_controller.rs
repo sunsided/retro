@@ -1,7 +1,5 @@
 use std::f32::consts::FRAC_PI_2;
 use cgmath::{InnerSpace, Rad, Vector3};
-use winit::event::{ElementState, MouseScrollDelta};
-use winit::keyboard::{KeyCode, PhysicalKey};
 use crate::camera::Camera;
 use crate::engine::input_state::KeyState;
 use crate::engine::InputState;

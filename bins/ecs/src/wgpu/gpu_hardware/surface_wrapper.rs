@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use wgpu::Surface;
 use crate::wgpu::gpu_hardware::SurfaceId;
 

@@ -65,7 +65,6 @@ pub mod background;
 pub mod camera_render;
 pub mod dynamic_light;
 
-use crate::WgpuState;
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
@@ -118,9 +117,6 @@ pub struct RenderSystemData;
 pub struct WgpuRenderState {
     /// The hardware abstraction (devices, queues, ...)
     hardware: WgpuHardware,
-    /// The shared GPU state. Uses `Arc<Mutex<WgpuState>>` to allow shared access.
-    #[deprecated = "Use 'hardware' instead"]
-    state: Option<Arc<Mutex<WgpuState>>>,
     /// The per-frame state, which contains details for the current frame.
     frame_state: Option<FrameState>,
 }
@@ -149,46 +145,11 @@ impl WgpuRenderState {
             PhysicalSize::new(widht, height)
         })
     }
-
-    /// Sets the shared GPU state for the render system.
-    ///
-    /// # Parameters
-    /// - `state`: An `Option` containing an `Arc<Mutex<WgpuState>>`. If `Some`,
-    ///   it sets the GPU state; if `None`, it unsets the current state.
-    #[deprecated]
-    pub fn set_state(&mut self, state: Option<Arc<Mutex<WgpuState>>>) {
-        self.state = state;
-    }
-
-    /// Provides a mutable reference to the render state, if available.
-    #[deprecated]
-    pub fn state_mut(&mut self) -> Option<ArcMutexGuard<RawMutex, WgpuState>> {
-        let Some(state) = &mut self.state else {
-            return None;
-        };
-
-        Some(state.lock_arc())
-    }
-
-    /// Provides a mutable reference to the render state and the frame state, if available.
-    #[deprecated]
-    pub fn states_mut(&mut self) -> Option<(ArcMutexGuard<RawMutex, WgpuState>, &mut FrameState)> {
-        let Some(state) = &mut self.state else {
-            return None;
-        };
-
-        let Some(frame_state) = &mut self.frame_state else {
-            return None;
-        };
-
-        let state = state.lock_arc();
-        Some((state, frame_state))
-    }
 }
 
 impl Debug for WgpuRenderState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.state.is_some() {
+        if self.hardware.device().is_some() {
             write!(f, "RenderSystemData")
         } else {
             write!(f, "RenderSystemData (uninitialized)")
@@ -363,7 +324,7 @@ impl ApplyRenderSystem for RenderSystem {
     type Error = wgpu::SurfaceError;
 
     fn is_ready(&self, state: &mut WgpuRenderState) -> bool {
-        state.state.is_some()
+        state.hardware.is_ready()
     }
 
     fn apply_single(
@@ -372,9 +333,5 @@ impl ApplyRenderSystem for RenderSystem {
         position: &PositionComponent,
     ) {
         trace!("Rendering position: {:?}", position);
-
-        todo!()
-        // let frame = surface.get_current_texture().expect("Failed to acquire frame");
-        // let view = frame.texture.create_view(&Default::default());
     }
 }

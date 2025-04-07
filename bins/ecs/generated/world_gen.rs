@@ -179,7 +179,6 @@ pub struct MainWorldStates {
     /// The uniforms of the active camera.
     ///
     /// The state is used in the following systems:
-    /// - [`CameraSystem`]
     /// - [`CameraRenderSystem`]
     pub active_camera: ActiveCameraState,
 }
@@ -1189,13 +1188,11 @@ impl<E, Q> MainWorld<E, Q> {
                &self.context,
                &self.states.input,
                &self.states.wgpu_render,
-               &mut self.states.active_camera,
            );
         if is_ready && self.systems.camera.on_begin_phase(
                     &self.context,
                     &self.states.input,
                     &self.states.wgpu_render,
-                    &mut self.states.active_camera,
                 )
                 .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
                 .is_ok()
@@ -1205,7 +1202,6 @@ impl<E, Q> MainWorld<E, Q> {
                 &self.context,
                 &self.states.input,
                 &self.states.wgpu_render,
-                &mut self.states.active_camera,
                 &mut self.archetypes.camera.cameras,
                 &mut self.archetypes.camera.camera_fps_controllers,
             );
@@ -1214,7 +1210,6 @@ impl<E, Q> MainWorld<E, Q> {
                 &self.context,
                 &self.states.input,
                 &self.states.wgpu_render,
-                &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_end_phase returned an error"))
             .ok();

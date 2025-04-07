@@ -1,5 +1,5 @@
 use tracing::instrument;
-use crate::wgpu::TextureSampler;
+use crate::wgpu::texture_sampler::TextureSampler;
 
 #[derive(Debug)]
 pub struct TextureSamplers {

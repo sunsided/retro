@@ -1,5 +1,6 @@
 use std::io;
 use std::io::{BufReader, Cursor, Read};
+use image::DynamicImage;
 use tobj::LoadError;
 use tracing::error;
 use wgpu::util::DeviceExt;
@@ -20,7 +21,7 @@ where
     Ok(contents)
 }
 
-pub fn load_binary<P>(file_name: P) -> std::io::Result<Vec<u8>>
+pub fn load_binary<P>(file_name: P) -> io::Result<Vec<u8>>
 where
     P: AsRef<std::path::Path>,
 {
@@ -32,6 +33,17 @@ where
     let mut contents = Vec::new();
     file.read_to_end(&mut contents)?;
     Ok(contents)
+}
+
+pub fn load_image<P>(file_name: P) -> image::ImageResult<DynamicImage>
+where
+    P: AsRef<std::path::Path>,
+{
+    // TODO: Use proper path resolution.
+    let path = std::path::Path::new(env!("OUT_DIR"))
+        .join("resources")
+        .join(file_name);
+    image::open(path)
 }
 
 pub fn load_texture<P>(
@@ -225,7 +237,7 @@ where P: AsRef<std::path::Path>
             // Average the tangents/bitangents
             for (i, n) in triangles_included.into_iter().enumerate() {
                 let denom = 1.0 / n as f32;
-                let mut v = &mut vertices[i];
+                let v = &mut vertices[i];
                 v.tangent = (cgmath::Vector3::from(v.tangent) * denom).into();
                 v.bitangent = (cgmath::Vector3::from(v.bitangent) * denom).into();
             }

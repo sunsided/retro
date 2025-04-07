@@ -1,6 +1,5 @@
 use tracing::instrument;
 use wgpu::BindGroupLayout;
-use crate::wgpu::TextureSampler;
 
 #[derive(Debug)]
 pub struct BindGroupLayouts {

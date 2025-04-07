@@ -4,15 +4,11 @@ use crate::camera::Projection;
 use crate::engine::{CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent, DynamicLightComponent, DynamicLightEntityData, MainWorld, PositionComponent, SceneBackgroundEntityData};
 use crate::engine::components::{CameraData, ColorData, DynamicLightData, PositionData};
 use crate::engine::phases::render::background::BackgroundColorData;
-use crate::wgpu::WgpuState;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
     /// [`SceneBackgroundArchetype`](crate::engine::SceneBackgroundArchetype), and more.
     fn create_initial_entities(&mut self);
-
-    /// Sets the [`WgpuState`].
-    fn set_wgpu_state(&mut self, state: Option<Arc<Mutex<WgpuState>>>);
 }
 
 impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
@@ -43,9 +39,5 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 z: 2.0,
             }),
         });
-    }
-
-    fn set_wgpu_state(&mut self, state: Option<Arc<Mutex<WgpuState>>>) {
-        self.states.wgpu_render.set_state(state);
     }
 }

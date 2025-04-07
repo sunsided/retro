@@ -88,8 +88,6 @@ systems:
     states:
       - use: Input
       - use: WgpuRender  # for the screen size
-      - use: ActiveCamera
-        write: true
     outputs:
       - Camera
       - CameraFpsController

@@ -1,10 +1,7 @@
 use tracing::instrument;
-use wgpu::{BindGroup, Buffer, Queue};
-use wgpu::util::DeviceExt;
-use crate::wgpu::camera_uniform::CameraUniform;
+use wgpu::BindGroup;
 use crate::wgpu::gpu_hardware::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::gpu_hardware::buffers::Buffers;
-use crate::wgpu::light::LightUniform;
 
 #[derive(Debug)]
 pub struct BindGroups {
