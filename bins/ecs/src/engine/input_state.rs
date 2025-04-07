@@ -48,7 +48,10 @@ impl From<ElementState> for KeyState {
 
 impl InputState {
     pub fn reset(&mut self) {
-        *self = Self::default();
+        // Keep all persistent state like key presses but reset deltas.
+        self.mouse_move_dx = 0.0;
+        self.mouse_move_dy = 0.0;
+        self.mouse_scroll_delta = 0.0;
     }
 
     pub fn lmb_pressed(&mut self) -> bool {

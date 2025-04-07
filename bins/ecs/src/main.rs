@@ -78,72 +78,10 @@ impl App {
 
             self.ecs_world.states.wgpu_render.reinitialize_surface(window.clone())
                 .expect("Failed to reinitialize window");
-
-            /*
-            // Drop any previous surfaces.
-            self.state = None;
-            let state = pollster::block_on(WgpuState::new(window.clone()));
-
-            // Create a fallback normal map.
-            let fallback_normals = state.fallback_normal_map();
-
-            // Recreate the textures.
-            let texture = state.texture_from_image("resources/textures/cover.webp", TextureType::Diffuse, Some("cover.jpg"))
-                .expect("Failed to load cover texture");
-
-            let bind_group = state.create_bind_group(&texture, &fallback_normals);
-
-            // TODO: Refactor
-            // The textures could be attributes on a `Renderable` component.
-            let system = self.ecs_world.systems.as_render_background_mut();
-            system.texture = Some(bind_group);
-
-            // Set WGPU render state.
-            self.state = Some(Arc::new(Mutex::new(state)));
-            self.ecs_world.set_wgpu_state(self.state.clone());
-            */
         }
 
         self.last_update = Instant::now();
         self.ecs_world.reset_frame_context();
-    }
-
-    fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
-        if self.ecs_world.states.input.process_keys(event.physical_key, event.state) {
-            return;
-        }
-
-        match event.physical_key {
-            PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
-                active_event_loop.exit();
-            }
-            PhysicalKey::Code(KeyCode::Enter)
-            if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
-                {
-                    // Toggle fullscreen mode.
-                    if let Some(window) = &self.window {
-                        if window.fullscreen().is_some() {
-                            window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
-                                1024.0, 640.0,
-                            ))));
-                            window.set_fullscreen(None);
-                        } else {
-                            window.set_max_inner_size::<Size>(None);
-                            window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                        }
-                    }
-                }
-            PhysicalKey::Code(KeyCode::Space)
-            if event.state == ElementState::Pressed =>
-                {
-                    let system = self.ecs_world.systems.as_render_background_mut();
-                    system.selector = match system.selector {
-                        RenderPipelineSelector::Boring => RenderPipelineSelector::Colored,
-                        RenderPipelineSelector::Colored => RenderPipelineSelector::Boring
-                    };
-                }
-            _ => {}
-        }
     }
 
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
@@ -189,6 +127,44 @@ impl App {
 
     fn handle_cursor_moved_to_event(&mut self, position: PhysicalPosition<f64>) {
         debug!("Cursor moved to: {:?}", position);
+    }
+
+    fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
+        if self.ecs_world.states.input.process_keys(event.physical_key, event.state) {
+            return;
+        }
+
+        match event.physical_key {
+            PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
+                active_event_loop.exit();
+            }
+            PhysicalKey::Code(KeyCode::Enter)
+            if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
+                {
+                    // Toggle fullscreen mode.
+                    if let Some(window) = &self.window {
+                        if window.fullscreen().is_some() {
+                            window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
+                                1024.0, 640.0,
+                            ))));
+                            window.set_fullscreen(None);
+                        } else {
+                            window.set_max_inner_size::<Size>(None);
+                            window.set_fullscreen(Some(Fullscreen::Borderless(None)));
+                        }
+                    }
+                }
+            PhysicalKey::Code(KeyCode::Space)
+            if event.state == ElementState::Pressed =>
+                {
+                    let system = self.ecs_world.systems.as_render_background_mut();
+                    system.selector = match system.selector {
+                        RenderPipelineSelector::Boring => RenderPipelineSelector::Colored,
+                        RenderPipelineSelector::Colored => RenderPipelineSelector::Boring
+                    };
+                }
+            _ => {}
+        }
     }
 }
 
