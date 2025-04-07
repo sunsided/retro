@@ -36,8 +36,9 @@ pub struct WgpuRenderState {
 
 #[derive(Default)]
 pub struct Retro {
-    pub uniform: RetroUniform,
-    pub uploaded: AtomicBool
+    enabled: bool,
+    uniform: RetroUniform,
+    uniform_uploaded: AtomicBool
 }
 
 impl WgpuRenderState {
@@ -94,7 +95,7 @@ impl WgpuRenderState {
     #[inline]
     pub fn reinitialize_surface(&mut self, window: Arc<Window>) -> Result<(), WgpuReinitializeWindowError> {
         self.retro.uniform.resize_surface(window.inner_size());
-        self.retro.uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.retro.uniform_uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
 
         self.hardware.reinitialize_surface(window)
     }
@@ -102,7 +103,7 @@ impl WgpuRenderState {
     #[inline]
     pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
         self.retro.uniform.resize_surface(new_size);
-        self.retro.uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.retro.uniform_uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
 
         self.hardware.resize_surface(new_size)
     }
@@ -126,7 +127,7 @@ impl WgpuRenderState {
     // TODO: Refactor
     pub fn update_retro_uniform(&self) {
         // Set the flag to uploaded; if it was already uploaded, return.
-        if self.retro.uploaded.swap(true, std::sync::atomic::Ordering::Relaxed) {
+        if self.retro.uniform_uploaded.swap(true, std::sync::atomic::Ordering::Relaxed) {
             return;
         }
 
@@ -136,6 +137,17 @@ impl WgpuRenderState {
 
         debug!("Updating retro uniform");
         device.buffers().retro_uniform.send_to_device(device.queue(), self.retro.uniform);
+    }
+
+    /// Toggles retro rendering state.
+    #[inline]
+    pub fn set_retro_enabled(&mut self, enabled: bool) {
+        self.retro.enabled = enabled;
+    }
+
+    /// Gets retro rendering state.
+    pub const fn retro_enabled(&self) -> bool {
+        self.retro.enabled
     }
 }
 

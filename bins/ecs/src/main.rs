@@ -172,6 +172,8 @@ impl App {
                         }
                     }
                 }
+
+            // Toggle shading mode
             PhysicalKey::Code(KeyCode::F1)
             if event.state == ElementState::Pressed =>
                 {
@@ -188,6 +190,14 @@ impl App {
                         },
                         RenderPipelineSelector::Wireframe => RenderPipelineSelector::Textured,
                     };
+                }
+
+            // Toggle retro mode
+            PhysicalKey::Code(KeyCode::F2)
+            if event.state == ElementState::Pressed =>
+                {
+                    let retro_enabled = self.ecs_world.states.wgpu_render.retro_enabled();
+                    self.ecs_world.states.wgpu_render.set_retro_enabled(!retro_enabled);
                 }
             _ => {}
         }

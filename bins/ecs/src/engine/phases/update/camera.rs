@@ -6,6 +6,7 @@ use crate::engine::components::ActiveCameraState;
 use crate::engine::input_state::InputState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::seconds::Seconds;
+use crate::wgpu::texture::Texture;
 
 #[derive(Debug)]
 pub struct CameraSystemData;
@@ -29,10 +30,13 @@ impl ApplyCameraSystem for CameraSystem {
 
         // Update the aspect ratio given the render surface size.
         if let Some(size) = wgpu_render.surface_size() {
-
-            // TODO: During VGA rendering, the aspect ratio must be clipped to the VGA ratio (1.6:1).
-            camera.projection.resize(1024, 640);
-            // camera.projection.resize(size.width, size.height);
+            if wgpu_render.retro_enabled() {
+                // During VGA rendering, the aspect ratio must be clipped to the VGA ratio (1.6:1).
+                camera.projection.resize(Texture::VGA_WIDTH, Texture::VGA_HEIGHT);
+            }
+            else {
+                camera.projection.resize(size.width, size.height);
+            }
         }
     }
 }
