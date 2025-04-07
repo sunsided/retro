@@ -90,8 +90,8 @@ impl App {
                     .expect("Failed to create window"),
             );
 
-            if let Some(mHz) = window.current_monitor().and_then(|monitor: MonitorHandle| monitor.refresh_rate_millihertz()) {
-                let hz = (mHz as f64) * 0.001;
+            if let Some(millihertz) = window.current_monitor().and_then(|monitor: MonitorHandle| monitor.refresh_rate_millihertz()) {
+                let hz = (millihertz as f64) * 0.001;
                 let refresh_duration = Duration::from_secs_f64(hz.recip());
                 info!("Display refresh rate: {:.2} Hz, frame duration: {:?}", hz, refresh_duration);
                 self.update_frame_duration(refresh_duration);
@@ -132,7 +132,7 @@ impl App {
         }
     }
 
-    fn handle_cursor_moved_to_event(&mut self, position: PhysicalPosition<f64>) {
+    fn handle_cursor_moved_to_event(&mut self, _position: PhysicalPosition<f64>) {
         // nothing here.
     }
 
