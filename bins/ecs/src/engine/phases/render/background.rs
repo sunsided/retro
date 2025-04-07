@@ -133,6 +133,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
             return;
         };
 
+        /* TODO: Original render pass.
         let mut render_pass = frame_state
             .encoder
             .begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -170,22 +171,83 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
+        */
 
+        {
+            let vga_offscreen = &device.textures().vga_offscreen.view;
+            let vga_depth = &device.depths().vga_offscreen.view;
+            let mut render_pass = frame_state
+                .encoder
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("VGA Render Pass"),
+                    color_attachments: &[
+                        Some(wgpu::RenderPassColorAttachment {
+                            view: &vga_offscreen,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })
+                    ],
+                    depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                        view: &vga_depth,
+                        depth_ops: Some(wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(1.0),
+                            store: wgpu::StoreOp::Store,
+                        }),
+                        stencil_ops: None,
+                    }),
+                    occlusion_query_set: None,
+                    timestamp_writes: None,
+                });
 
-        // Enable the instance buffer.
-        render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
-        let num_instances = device.buffers().instances.len() as u32;
+            // Enable the instance buffer.
+            render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
+            let num_instances = device.buffers().instances.len() as u32;
 
-        // Render the light.
-        render_pass.set_pipeline(&device.pipelines().light);
-        render_pass.draw_light_model(
-            &device.models().cube,
-            &device.bind_groups().camera,
-            &device.bind_groups().light_vb,
-        );
+            // Render the light.
+            render_pass.set_pipeline(&device.pipelines().light);
+            render_pass.draw_light_model(
+                &device.models().cube,
+                &device.bind_groups().camera,
+                &device.bind_groups().light_vb,
+            );
 
-        // Render the normal thing.
-        render_pass.set_pipeline(device.pipelines().render_pipeline(self.selector));
-        render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
+            // Render the normal thing.
+            render_pass.set_pipeline(device.pipelines().render_pipeline(self.selector));
+            render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
+        }
+
+        // Second pass: Presenting the VGA offscreen buffer to screen.
+        {
+            let mut pass = frame_state
+                .encoder
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("VGA Render Pass"),
+                    color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                        view: &frame_state.view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.0,
+                                g: 0.0,
+                                b: 0.0,
+                                a: 1.0,
+                            }),
+                            store: wgpu::StoreOp::Store,
+                        },
+                    })],
+                    depth_stencil_attachment: None,
+                    timestamp_writes: None,
+                    occlusion_query_set: None,
+                });
+
+            pass.set_pipeline(&device.pipelines().vga_fullscreen);
+            pass.set_bind_group(0, &device.bind_groups().vga_fullscreen, &[]);
+
+            // Draw exactly 3 vertices – no vertex buffer
+            pass.draw(0..3, 0..1);
+        }
     }
 }

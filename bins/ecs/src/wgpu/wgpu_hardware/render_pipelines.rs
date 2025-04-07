@@ -12,6 +12,7 @@ pub struct RenderPipelines {
     pub flat_render: RenderPipeline,
     pub light: RenderPipeline,
     pub wireframe_render: Option<RenderPipeline>,
+    pub vga_fullscreen: RenderPipeline,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -46,12 +47,55 @@ impl RenderPipelines {
         let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
         let wireframe_render = Self::create_wireframe_render(&device, &layout, surface_format, shaders);
         let light = Self::create_light(&device, bind_group_layouts, surface_format, shaders);
+        let vga_fullscreen = Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
         Self {
             textured_render,
             flat_render,
             wireframe_render,
-            light
+            light,
+            vga_fullscreen
         }
+    }
+
+    #[instrument(skip(device, bind_group_layouts, shaders))]
+    fn create_vga_fullscreen(device: &Device, bind_group_layouts: &BindGroupLayouts, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
+        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("vga_fullscreen"),
+            bind_group_layouts: &[&bind_group_layouts.vga_fullscreen],
+            push_constant_ranges: &[],
+        });
+
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("vga_fullscreen"),
+            layout: Some(&layout),
+            vertex: wgpu::VertexState {
+                module: shaders.vga.vertex_shader().module(),
+                entry_point: shaders.vga.vertex_shader().entry_point(),
+                buffers: &[], // No vertex buffer needed
+                compilation_options: Default::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: shaders.vga.fragment_shader().module(),
+                entry_point: shaders.vga.fragment_shader().entry_point(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState {
+                        alpha: wgpu::BlendComponent::REPLACE,
+                        color: wgpu::BlendComponent::REPLACE,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        })
     }
 
     #[instrument(skip(device, bind_group_layouts, shaders))]

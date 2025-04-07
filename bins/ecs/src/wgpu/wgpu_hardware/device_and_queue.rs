@@ -31,7 +31,7 @@ pub struct DeviceAndQueue {
 impl DeviceAndQueue {
     pub(super) fn new(device: Device, queue: Queue, config: SurfaceConfiguration) -> DeviceAndQueue {
         let samplers = TextureSamplers::create_from(&device);
-        let textures = Textures::create_from(&device, &queue);
+        let textures = Textures::create_from(&device, &queue, config.format);
         let buffers = Buffers::create_from(&device);
         let depths = DepthBuffers::create_from(&device, &config);
         let shaders = Shaders::create_from(&device);
@@ -130,5 +130,9 @@ impl DeviceAndQueue {
 
     pub const fn bind_groups(&self) -> &BindGroups {
         &self.bind_groups
+    }
+
+    pub const fn textures(&self) -> &Textures {
+        &self.textures
     }
 }

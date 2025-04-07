@@ -64,6 +64,11 @@ pub enum TextureError {
 }
 
 impl Texture {
+    pub const VGA_WIDTH: u32 = 320;
+    pub const VGA_HEIGHT: u32 = 200;
+    pub const VGA_BYTES_PER_PIXEL: u32 = 4; // 32 bpp (RGBA)
+    pub const VGA_BUFFER_SIZE: usize = (Self::VGA_WIDTH * Self::VGA_HEIGHT * Self::VGA_BYTES_PER_PIXEL) as usize;
+
     pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
     /// Creates a depth texture for use in rendering pipelines.
@@ -99,8 +104,7 @@ impl Texture {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: Self::DEPTH_FORMAT,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::TEXTURE_BINDING,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
             view_formats: &[],
         };
         let texture = device.create_texture(&desc);
