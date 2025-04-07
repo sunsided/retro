@@ -3,7 +3,7 @@ use cgmath::{InnerSpace, Rotation3, Zero};
 use parking_lot::Mutex;
 use crate::camera::Projection;
 use crate::engine::{CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent, CubeEntityData, DynamicLightComponent, DynamicLightEntityData, MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData, TransformComponent, VelocityComponent};
-use crate::engine::components::{CameraData, ColorData, DynamicLightData, PositionData};
+use crate::engine::components::{CameraData, ColorData, DynamicLightData, PositionData, VelocityData};
 use crate::engine::phases::render::background::BackgroundColorData;
 
 pub trait InitializeMainWorld {
@@ -59,7 +59,11 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
 
                 self.spawn_cube(CubeEntityData {
                     position: PositionComponent(position.into()),
-                    velocity: VelocityComponent(Default::default()),
+                    velocity: VelocityComponent(VelocityData {
+                        x: 0.0,
+                        y: 0.0, // try another value
+                        z: 0.0,
+                    }),
                     transform: TransformComponent(rotation.into()),
                     model: ModelComponent(Default::default()),
                 });
