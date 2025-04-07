@@ -54,6 +54,7 @@ impl CameraController {
     }
 
     pub fn process_input(&mut self, input: &InputState) {
+        let input = input.current();
         self.amount_forward = input.key_forward.to_amount();
         self.amount_backward = input.key_backward.to_amount();
         self.amount_left = input.key_left.to_amount();

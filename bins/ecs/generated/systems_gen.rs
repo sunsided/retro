@@ -351,7 +351,6 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
     ) -> bool {
@@ -366,7 +365,6 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
@@ -381,7 +379,6 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
@@ -403,7 +400,6 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
         camera: &mut CameraComponent,
@@ -423,7 +419,6 @@ pub trait ApplyCameraSystem: System {
     /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
     fn apply_many(
         &mut self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
         cameras: &mut [CameraComponent],
@@ -432,7 +427,6 @@ pub trait ApplyCameraSystem: System {
         let zipped_iter = cameras.iter_mut().zip(camera_fps_controllers.iter_mut());
         for (camera, camera_fps_controller) in zipped_iter {
             self.apply_single(
-                &context,
                 input,
                 wgpu_render,
                 camera,
@@ -448,7 +442,6 @@ impl CameraSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
         camera: &mut CameraComponent,
@@ -456,7 +449,6 @@ impl CameraSystem {
     ) {
         ApplyCameraSystem::apply_single(
             self,
-            context,
             input,
             wgpu_render,
             camera,
@@ -476,7 +468,6 @@ impl CameraSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
         cameras: &mut [CameraComponent],
@@ -484,7 +475,6 @@ impl CameraSystem {
     ) {
         ApplyCameraSystem::apply_many(
             self,
-            context,
             input,
             wgpu_render,
             cameras,
@@ -498,12 +488,10 @@ impl CameraSystem {
     fn apply_to_camera(
         &mut self,
         archetype: &mut CameraArchetype,
-        context: &FrameContext,
         input: &InputState,
         wgpu_render: &WgpuRenderState,
     ) {
         self.apply_many(
-            &context,
             input,
             wgpu_render,
             &mut archetype.cameras,

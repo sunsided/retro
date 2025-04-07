@@ -1274,12 +1274,10 @@ impl<E, Q> MainWorld<E, Q> {
     {
         // System group 1 of 1
         let is_ready = self.systems.camera.is_ready(
-               &self.context,
                &self.states.input,
                &self.states.wgpu_render,
            );
         if is_ready && self.systems.camera.on_begin_phase(
-                    &self.context,
                     &self.states.input,
                     &self.states.wgpu_render,
                 )
@@ -1288,7 +1286,6 @@ impl<E, Q> MainWorld<E, Q> {
         {
             // Apply CameraSystem to CameraArchetype
             self.systems.camera.apply_many(
-                &self.context,
                 &self.states.input,
                 &self.states.wgpu_render,
                 &mut self.archetypes.camera.cameras,
@@ -1296,7 +1293,6 @@ impl<E, Q> MainWorld<E, Q> {
             );
 
             self.systems.camera.on_end_phase(
-                &self.context,
                 &self.states.input,
                 &self.states.wgpu_render,
             )

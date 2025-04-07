@@ -19,7 +19,6 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
 
         for (light, color) in lights.iter_mut().zip(colors) {
             // TODO: Move this to the update phase
-            debug!("Frame delta time: {:?}", Duration::from_secs_f32(context.delta_time_secs));
             light.update_position(context.delta_time_secs.into());
             light.update_color(color.r, color.g, color.b);
 

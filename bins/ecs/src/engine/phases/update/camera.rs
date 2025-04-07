@@ -1,4 +1,6 @@
 use std::convert::Infallible;
+use std::time::Duration;
+use tracing::debug;
 use crate::engine::{ApplyCameraSystem, CameraComponent, CameraFpsControllerComponent, CameraSystem, CreateSystem, FrameContext, SystemFactory};
 use crate::engine::components::ActiveCameraState;
 use crate::engine::input_state::InputState;
@@ -11,7 +13,7 @@ pub struct CameraSystemData;
 impl ApplyCameraSystem for CameraSystem {
     type Error = Infallible;
 
-    fn apply_many(&mut self, context: &FrameContext, input: &InputState, wgpu_render: &WgpuRenderState, cameras: &mut [CameraComponent], controllers: &mut [CameraFpsControllerComponent]) {
+    fn apply_many(&mut self, input: &InputState, wgpu_render: &WgpuRenderState, cameras: &mut [CameraComponent], controllers: &mut [CameraFpsControllerComponent]) {
         // We only update the active camera. It could be interesting to use the cameras for presence
         // detection and even though they're not currently used for rendering, they might trigger
         // some events. Just thinking out loud!
@@ -20,7 +22,7 @@ impl ApplyCameraSystem for CameraSystem {
         };
 
         controller.controller.process_input(input);
-        controller.controller.update_camera(&mut camera.camera, Seconds::new(context.delta_time_secs));
+        controller.controller.update_camera(&mut camera.camera, input.delta());
         if camera.fixed_size {
             return;
         }

@@ -84,7 +84,6 @@ archetypes:
 systems:
   - name: Camera
     phase: Update
-    context: true
     states:
       - use: Input
       - use: WgpuRender  # for the screen size

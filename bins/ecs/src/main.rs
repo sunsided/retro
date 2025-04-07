@@ -53,9 +53,9 @@ impl App {
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.create_initial_entities();
 
-        let target_fps = 4;
+        let target_fps = 60;
         let frame_duration = Duration::from_secs_f32(1.0 / target_fps as f32);
-        let mut next_frame_time = Instant::now() + frame_duration;
+        let next_frame_time = Instant::now() + frame_duration;
 
         Self {
             window: None,
@@ -106,7 +106,7 @@ impl App {
         debug!("Mouse button {:?} is {:?}", button, state);
         match button {
             MouseButton::Left => {
-                self.ecs_world.states.input.set_lmb_pressed(state == ElementState::Pressed);
+                self.ecs_world.states.input.next().set_lmb_pressed(state == ElementState::Pressed);
             }
             MouseButton::Right => {}
             MouseButton::Middle => {}
@@ -116,24 +116,26 @@ impl App {
         }
     }
 
-    fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {
-        debug!("Mouse wheel {:?}", delta);
-        self.ecs_world.states.input.accumulate_mouse_scroll_delta(delta);
-    }
-
-    fn handle_cursor_moved_by_event(&mut self, position: (f64, f64)) {
-        trace!("Cursor moved by: {:?}", position);
-        if self.ecs_world.states.input.lmb_pressed() {
-            self.ecs_world.states.input.accumulate_mouse_move_delta(-position.0, -position.1);
-        }
-    }
-
     fn handle_cursor_moved_to_event(&mut self, position: PhysicalPosition<f64>) {
         debug!("Cursor moved to: {:?}", position);
     }
 
+
+    fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {
+        debug!("Mouse wheel {:?}", delta);
+        self.ecs_world.states.input.next().accumulate_mouse_scroll_delta(delta);
+    }
+
+    fn handle_cursor_moved_by_event(&mut self, position: (f64, f64)) {
+        trace!("Cursor moved by: {:?}", position);
+        let input = self.ecs_world.states.input.next();
+        if input.lmb_pressed() {
+            input.accumulate_mouse_move_delta(-position.0, -position.1);
+        }
+    }
+
     fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
-        if self.ecs_world.states.input.process_keys(event.physical_key, event.state) {
+        if self.ecs_world.states.input.next().process_keys(event.physical_key, event.state) {
             return;
         }
 
@@ -184,6 +186,10 @@ impl App {
         // Update ECS.
         self.ecs_world.apply_system_phases();
 
+        // Reset the input.
+        self.ecs_world.states.input.reset_current_deltas();
+        self.ecs_world.states.input.maybe_swap();
+
         // Render only when the scheduled time has been reached.
         let now = Instant::now();
         if now >= self.next_frame_time {
@@ -197,9 +203,6 @@ impl App {
                 self.next_frame_time += self.frame_duration;
             }
         }
-
-        // Reset the input.
-        self.ecs_world.states.input.reset();
     }
 
     /// Runs only the render phase.

@@ -1,9 +1,35 @@
+use std::time::Instant;
+use tracing::debug;
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
+use crate::seconds::Seconds;
 
-#[derive(Debug, Default)]
+/// The sample rate of the input.
+const SWAP_RATE_HZ: f32 = 120.0;
+const SWAP_RATE_SECONDS: f32 = 1.0 / SWAP_RATE_HZ;
+
+
+#[derive(Debug)]
 pub struct InputState {
+    last_swap: Instant,
+    next: InputStateBuffer,
+    current: InputStateBuffer,
+}
+
+impl Default for InputState {
+    fn default() -> Self {
+        Self {
+            last_swap: Instant::now(),
+            next: InputStateBuffer::default(),
+            current: InputStateBuffer::default(),
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct InputStateBuffer {
+    pub accumulation_delta: Seconds,
     pub lmb_pressed: KeyState,
     pub mouse_move_dx: f32,
     pub mouse_move_dy: f32,
@@ -21,6 +47,43 @@ pub enum KeyState {
     #[default]
     Released,
     Pressed,
+}
+
+impl InputState {
+    pub fn reset_current_deltas(&mut self) {
+        self.current.reset();
+    }
+
+    pub fn maybe_swap(&mut self) {
+        let elapsed = self.last_swap.elapsed().as_secs_f32();
+        if elapsed < SWAP_RATE_SECONDS {
+            return;
+        }
+
+        // Record the swapping time to restart tracking.
+        self.last_swap = Instant::now();
+
+        // Swap staging buffer with presented view.
+        self.current = self.next.clone();
+
+        // Ensure that the presented view sees the elapsed input time.
+        self.current.accumulation_delta = Seconds::new(elapsed);
+
+        // Reset the staging buffer.
+        self.next.reset();
+    }
+
+    pub const fn delta(&self) -> Seconds {
+        self.current.accumulation_delta
+    }
+
+    pub const fn current(&self) -> &InputStateBuffer {
+        &self.current
+    }
+
+    pub const fn next(&mut self) -> &mut InputStateBuffer {
+        &mut self.next
+    }
 }
 
 impl KeyState {
@@ -46,9 +109,10 @@ impl From<ElementState> for KeyState {
         }
     }}
 
-impl InputState {
-    pub fn reset(&mut self) {
+impl InputStateBuffer {
+    fn reset(&mut self) {
         // Keep all persistent state like key presses but reset deltas.
+        self.accumulation_delta = Seconds::new(0.0);
         self.mouse_move_dx = 0.0;
         self.mouse_move_dy = 0.0;
         self.mouse_scroll_delta = 0.0;
