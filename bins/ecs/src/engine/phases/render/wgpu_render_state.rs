@@ -58,6 +58,9 @@ impl WgpuRenderState {
     pub fn set_frame_state(&mut self, frame_state: Option<FrameState>) {
         self.frame_state = frame_state;
     }
+    pub const fn pipeline_selector(&self) -> RenderPipelineSelector {
+        self.pipeline_selector
+    }
 
     /// Toggles the render pipeline selector.
     pub fn toggle_pipeline_selector(&mut self) {

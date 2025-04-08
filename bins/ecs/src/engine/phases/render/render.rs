@@ -24,7 +24,7 @@ impl ApplyRenderSystem for RenderSystem {
             return;
         };
 
-        let mut render_pass = frame_state.passes.render_pass();
+        let mut render_pass = frame_state.render_pass(&device);
 
         // Enable the instance buffer.
         render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
@@ -41,7 +41,6 @@ impl ApplyRenderSystem for RenderSystem {
             // Render, then clear the local buffer.
             if instance_buf.len() >= max_instances {
                 let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
-                render_pass.set_pipeline(device.pipelines().render_pipeline(RenderPipelineSelector::Textured));
                 render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
                 instance_buf.clear();
             }
@@ -50,7 +49,6 @@ impl ApplyRenderSystem for RenderSystem {
         // Render the rest.
         if instance_buf.len() > 0 {
             let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
-            render_pass.set_pipeline(device.pipelines().render_pipeline(RenderPipelineSelector::Textured));
             render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
         }
     }

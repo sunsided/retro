@@ -181,7 +181,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                 });
 
             let passes = RenderPasses::new(&device, render.retro_enabled(), encoder, frame, screen_texture);
-            Some(FrameState::new(passes, render_start))
+            Some(FrameState::new(passes, render_start, render.pipeline_selector()))
         });
         Ok(RenderReady::Ready)
     }
