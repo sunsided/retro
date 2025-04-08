@@ -1,10 +1,25 @@
 use tracing::{debug, trace, warn};
 use wgpu::{RenderPass, TextureView};
-use crate::engine::{ApplyRenderSystem, BackgroundColorComponent, ModelComponent, PositionComponent, RenderBackgroundSystem, RenderSystem, TransformComponent};
+use crate::engine::{ApplyRenderSystem, BackgroundColorComponent, CreateSystem, ModelComponent, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, TransformComponent};
 use crate::engine::phases::render::{FrameState, WgpuRenderState};
 use crate::wgpu::instance::Instance;
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+
+#[derive(Default, Debug)]
+pub struct RenderSystemData;
+
+impl CreateSystem<RenderSystem> for SystemFactory {
+    fn create(&self) -> RenderSystem {
+        RenderSystem::default()
+    }
+}
+
+impl Default for RenderSystem {
+    fn default() -> Self {
+        Self(RenderSystemData::default())
+    }
+}
 
 impl ApplyRenderSystem for RenderSystem {
     type Error = wgpu::SurfaceError;

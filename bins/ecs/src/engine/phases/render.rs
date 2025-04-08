@@ -66,7 +66,7 @@ pub mod camera_render;
 pub mod dynamic_light;
 mod wgpu_render_state;
 mod frame_state;
-mod render;
+pub mod render;
 pub mod vga_blit;
 
 use crate::engine::{BackgroundColorComponent, ModelComponent};
@@ -85,21 +85,6 @@ use crate::wgpu::render_passes::RenderPasses;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 pub use self::wgpu_render_state::WgpuRenderState;
 pub use self::frame_state::FrameState;
-
-impl CreateSystem<RenderSystem> for SystemFactory {
-    fn create(&self) -> RenderSystem {
-        RenderSystem::default()
-    }
-}
-
-impl Default for RenderSystem {
-    fn default() -> Self {
-        Self(RenderSystemData::default())
-    }
-}
-
-#[derive(Default, Debug)]
-pub struct RenderSystemData;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderReady {

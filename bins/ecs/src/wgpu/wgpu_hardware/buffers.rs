@@ -123,14 +123,14 @@ impl AsRef<Buffer> for LightBuffer {
 #[derive(Debug)]
 pub struct InstanceBuffer {
     buffer: Buffer,
-    pub num_instances: u32,
+    num_instances: u32,
 }
 
 impl InstanceBuffer {
     // NOTE: Make sure that if you add new instances to the Vec, you recreate the
     //       instance_buffer as well as camera_bind_group. Otherwise, your new instances
     //       won't show up correctly.
-    const NUM_INSTANCES_PER_ROW: u32 = 10;
+    pub const NUM_INSTANCES_PER_ROW: u32 = 10;
 
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
