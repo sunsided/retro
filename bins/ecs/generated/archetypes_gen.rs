@@ -2555,8 +2555,11 @@ pub trait GetEntityRef {
     where
         Self: 'archetype;
 
-    #[allow(clippy::needless_lifetimes)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>>;
+
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype>;
 }
 
 impl core::ops::Index<usize> for CameraArchetype {
@@ -2640,10 +2643,28 @@ pub trait FrontloadEntities:
         // TODO: Measure; might be overkill for small numbers
         indices_to_frontload.sort_unstable();
 
+        self.frontload_indices_sorted(entity_lookup, indices_to_frontload, previous_frontload_pivot)
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    fn frontload_indices_sorted<I>(
+        &mut self,
+        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
         let mut frontload_target_idx = previous_frontload_pivot.unwrap_or_default();
         let mut swaps_made = Vec::new();
 
-        for current_idx in indices_to_frontload {
+        for &current_idx in indices_to_frontload.as_ref() {
             // If already frontloaded, skip
             if current_idx < frontload_target_idx {
                 continue;
@@ -2680,6 +2701,11 @@ pub trait FrontloadEntities:
         frontload_target_idx
     }
 
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[doc(hidden)]
     fn swap_entities(&mut self, current_idx: usize, new_idx: usize);
 }
 
@@ -2695,10 +2721,10 @@ pub trait FrontloadEntitiesScan:
     fn frontload_scan<F>(
         &mut self,
         entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
-        should_frontload: F,
+        mut should_frontload: F,
     ) -> usize
     where
-        for<'archetype> F: Fn(&<Self as GetEntityRef>::EntityRef<'archetype>) -> bool,
+        for<'archetype> F: FnMut(&<Self as GetEntityRef>::EntityRef<'archetype>) -> bool,
     {
         let mut left = 0;
         let mut right = self.len().wrapping_sub(1);
@@ -2707,7 +2733,7 @@ pub trait FrontloadEntitiesScan:
         loop {
             // Move left pointer forward until an invalid entry is found
             while left <= right {
-                let reference = self.get_at(left).unwrap();
+                let reference = unsafe { self.get_at_unchecked(left) };
                 if should_frontload(&reference) {
                     left += 1;
                 } else {
@@ -2717,7 +2743,7 @@ pub trait FrontloadEntitiesScan:
 
             // Move right pointer backward until a valid entry is found
             while left <= right {
-                let reference = self.get_at(right).unwrap();
+                let reference = unsafe { self.get_at_unchecked(right) };
                 if !should_frontload(&reference) {
                     right = right.wrapping_sub(1);
                 } else {
@@ -2752,11 +2778,133 @@ pub trait FrontloadEntitiesScan:
     }
 }
 
+impl GetEntityRef for CameraArchetype {
+    type EntityRef<'archetype> = CameraEntityRef<'archetype>;
+
+    /// See [`CameraArchetype::get_at`](CameraArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`CameraArchetype::get_at_unchecked`](CameraArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for DynamicLightArchetype {
+    type EntityRef<'archetype> = DynamicLightEntityRef<'archetype>;
+
+    /// See [`DynamicLightArchetype::get_at`](DynamicLightArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`DynamicLightArchetype::get_at_unchecked`](DynamicLightArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for CubeArchetype {
+    type EntityRef<'archetype> = CubeEntityRef<'archetype>;
+
+    /// See [`CubeArchetype::get_at`](CubeArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`CubeArchetype::get_at_unchecked`](CubeArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for PlayerArchetype {
+    type EntityRef<'archetype> = PlayerEntityRef<'archetype>;
+
+    /// See [`PlayerArchetype::get_at`](PlayerArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`PlayerArchetype::get_at_unchecked`](PlayerArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for ForegroundObjectArchetype {
+    type EntityRef<'archetype> = ForegroundObjectEntityRef<'archetype>;
+
+    /// See [`ForegroundObjectArchetype::get_at`](ForegroundObjectArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`ForegroundObjectArchetype::get_at_unchecked`](ForegroundObjectArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for BackgroundObjectArchetype {
+    type EntityRef<'archetype> = BackgroundObjectEntityRef<'archetype>;
+
+    /// See [`BackgroundObjectArchetype::get_at`](BackgroundObjectArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`BackgroundObjectArchetype::get_at_unchecked`](BackgroundObjectArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for SceneBackgroundArchetype {
+    type EntityRef<'archetype> = SceneBackgroundEntityRef<'archetype>;
+
+    /// See [`SceneBackgroundArchetype::get_at`](SceneBackgroundArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`SceneBackgroundArchetype::get_at_unchecked`](SceneBackgroundArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
 impl FrontloadEntities for CameraArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2766,23 +2914,9 @@ impl FrontloadEntities for CameraArchetype {
     }
 }
 
-impl GetEntityRef for CameraArchetype {
-    type EntityRef<'archetype> = CameraEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for CameraArchetype {
-}
+impl FrontloadEntitiesScan for CameraArchetype { }
 
 impl FrontloadEntities for DynamicLightArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2793,23 +2927,9 @@ impl FrontloadEntities for DynamicLightArchetype {
     }
 }
 
-impl GetEntityRef for DynamicLightArchetype {
-    type EntityRef<'archetype> = DynamicLightEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for DynamicLightArchetype {
-}
+impl FrontloadEntitiesScan for DynamicLightArchetype { }
 
 impl FrontloadEntities for CubeArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2821,23 +2941,9 @@ impl FrontloadEntities for CubeArchetype {
     }
 }
 
-impl GetEntityRef for CubeArchetype {
-    type EntityRef<'archetype> = CubeEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for CubeArchetype {
-}
+impl FrontloadEntitiesScan for CubeArchetype { }
 
 impl FrontloadEntities for PlayerArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2848,23 +2954,9 @@ impl FrontloadEntities for PlayerArchetype {
     }
 }
 
-impl GetEntityRef for PlayerArchetype {
-    type EntityRef<'archetype> = PlayerEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for PlayerArchetype {
-}
+impl FrontloadEntitiesScan for PlayerArchetype { }
 
 impl FrontloadEntities for ForegroundObjectArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2874,23 +2966,9 @@ impl FrontloadEntities for ForegroundObjectArchetype {
     }
 }
 
-impl GetEntityRef for ForegroundObjectArchetype {
-    type EntityRef<'archetype> = ForegroundObjectEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for ForegroundObjectArchetype {
-}
+impl FrontloadEntitiesScan for ForegroundObjectArchetype { }
 
 impl FrontloadEntities for BackgroundObjectArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2899,23 +2977,9 @@ impl FrontloadEntities for BackgroundObjectArchetype {
     }
 }
 
-impl GetEntityRef for BackgroundObjectArchetype {
-    type EntityRef<'archetype> = BackgroundObjectEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for BackgroundObjectArchetype {
-}
+impl FrontloadEntitiesScan for BackgroundObjectArchetype { }
 
 impl FrontloadEntities for SceneBackgroundArchetype {
-    /// Swaps two entities in the archetype.
-    ///
-    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
-    /// such as updating the world's entity location map.
     #[inline(always)]
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
@@ -2924,14 +2988,4 @@ impl FrontloadEntities for SceneBackgroundArchetype {
     }
 }
 
-impl GetEntityRef for SceneBackgroundArchetype {
-    type EntityRef<'archetype> = SceneBackgroundEntityRef<'archetype>;
-
-    #[allow(clippy::needless_lifetimes)]
-    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
-    }
-}
-
-impl FrontloadEntitiesScan for SceneBackgroundArchetype {
-}
+impl FrontloadEntitiesScan for SceneBackgroundArchetype { }
