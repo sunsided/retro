@@ -37,7 +37,7 @@ impl DeviceAndQueue {
         let depths = DepthBuffers::create_from(&device, &config);
         let shaders = Shaders::create_from(&device);
         let bind_group_layouts = BindGroupLayouts::create_from(&device);
-        let bind_groups = BindGroups::create_from(&device, &bind_group_layouts, &buffers, &textures, &samplers);
+        let bind_groups = BindGroups::create_from(&device, &bind_group_layouts, &buffers, &textures, &samplers, &depths);
         let pipelines = RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
         Self {

@@ -174,6 +174,17 @@ impl BindGroupLayouts {
                     },
                     count: None,
                 },
+                // Binding 4 = depth buffer
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Depth
+                    },
+                    count: None,
+                },
             ],
         })
     }

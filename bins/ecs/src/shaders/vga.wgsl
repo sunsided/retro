@@ -17,6 +17,9 @@ var s_color: sampler;
 @group(0) @binding(3)
 var t_entity: texture_2d<u32>;
 
+@group(0) @binding(4)
+var t_depth: texture_depth_2d;
+
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv: vec2<f32>,
@@ -91,32 +94,53 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
 
-    // Get texture dimensions & calculate a pixel’s UV size
     let texSize: vec2<f32> = vec2<f32>(textureDimensions(t_color, 0));
     let pixelSize: vec2<f32> = 1.0 / texSize;
 
     // Sample the main color from the retro texture
     let centerColor = textureSample(t_color, s_color, in.uv);
 
-    // Calculate integer pixel coordinates for textureLoad
+    // Compute integer pixel coordinates
     let pixelCoord: vec2<i32> = vec2<i32>(in.uv * texSize);
 
-    // Sample entity IDs from the entity texture using textureLoad
+    // Sample entity IDs from the entity texture
     let centerEntity: u32 = textureLoad(t_entity, pixelCoord, 0).r;
     let leftEntity:   u32 = textureLoad(t_entity, pixelCoord - vec2<i32>(1, 0), 0).r;
     let rightEntity:  u32 = textureLoad(t_entity, pixelCoord + vec2<i32>(1, 0), 0).r;
     let upEntity:     u32 = textureLoad(t_entity, pixelCoord - vec2<i32>(0, 1), 0).r;
     let downEntity:   u32 = textureLoad(t_entity, pixelCoord + vec2<i32>(0, 1), 0).r;
 
-    // If any neighbor has a different entity ID, consider this pixel an edge -> draw black
-    if (centerEntity != leftEntity ||
-        centerEntity != rightEntity ||
-        centerEntity != upEntity ||
-        centerEntity != downEntity) {
-            return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    // Sample depth values from the depth texture
+    let centerDepth: f32 = textureLoad(t_depth, pixelCoord, 0);
+    let leftDepth:   f32 = textureLoad(t_depth, pixelCoord - vec2<i32>(1, 0), 0);
+    let rightDepth:  f32 = textureLoad(t_depth, pixelCoord + vec2<i32>(1, 0), 0);
+    let upDepth:     f32 = textureLoad(t_depth, pixelCoord - vec2<i32>(0, 1), 0);
+    let downDepth:   f32 = textureLoad(t_depth, pixelCoord + vec2<i32>(0, 1), 0);
+
+    // Threshold for depth differences
+    let depthThreshold: f32 = 0.05;
+    // Blending factor for edges (0.0 means no edge, 1.0 means pure black outline)
+    let edgeBlendFactor: f32 = 1.0;
+
+    // Determine if edge condition is met (entity difference and similar depth)
+    var isEdge: bool = false;
+    if (centerEntity != leftEntity && abs(centerDepth - leftDepth) < depthThreshold) {
+        isEdge = true;
+    } else if (centerEntity != rightEntity && abs(centerDepth - rightDepth) < depthThreshold) {
+        isEdge = true;
+    } else if (centerEntity != upEntity && abs(centerDepth - upDepth) < depthThreshold) {
+        isEdge = true;
+    } else if (centerEntity != downEntity && abs(centerDepth - downDepth) < depthThreshold) {
+        isEdge = true;
     }
 
-    // Otherwise, output the original color
+    // If edge detected, blend object color with black; otherwise return object color.
+    if (isEdge) {
+        let blendedColor = centerColor * (1.0 - edgeBlendFactor) +
+                           vec4<f32>(0.0, 0.0, 0.0, centerColor.a) * edgeBlendFactor;
+        return blendedColor;
+    }
+
     return centerColor;
 }
 
