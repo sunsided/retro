@@ -49,6 +49,15 @@ include!("../generated/archetypes_gen.rs");
 /// Implements [`CreateSystems`].
 pub struct SystemFactory;
 
+impl<E, Q> MainWorld<E, Q> {
+    pub fn test_frontload(&mut self) -> usize {
+        self.archetypes.cube.frontload_entities(&mut self.entity_locations, |entity| {
+            entity.position.x > 7.0 &&
+                entity.position.z > 9.0
+        })
+    }
+}
+
 impl CubeArchetype {
     /// Frontloads entities satisfying `should_frontload`.
     /// Returns the number of entities frontloaded.

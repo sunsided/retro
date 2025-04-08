@@ -54,6 +54,9 @@ impl App {
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.create_initial_entities();
 
+        let count = world.test_frontload();
+        debug!("{count}");
+
         Self {
             window: None,
             modifiers: Default::default(),
