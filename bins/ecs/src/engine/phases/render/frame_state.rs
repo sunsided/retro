@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use std::sync::atomic::AtomicU32;
 use std::time::{Duration, Instant};
 use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
 use crate::wgpu::render_passes::RenderPasses;
@@ -27,14 +29,16 @@ pub struct FrameState {
     pub passes: RenderPasses,
     pub render_start: Instant,
     pub render_pipeline_selector: RenderPipelineSelector,
+    per_frame_entities: FrameEntityIds
 }
 
 impl FrameState {
-    pub const fn new(passes: RenderPasses, render_start: Instant, render_pipeline_selector: RenderPipelineSelector) -> Self {
+    pub fn new(passes: RenderPasses, render_start: Instant, render_pipeline_selector: RenderPipelineSelector) -> Self {
         Self {
             passes,
             render_start,
-            render_pipeline_selector
+            render_pipeline_selector,
+            per_frame_entities: FrameEntityIds::new(),
         }
     }
 
@@ -42,5 +46,26 @@ impl FrameState {
         let mut pass = self.passes.render_pass();
         device.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
         pass
+    }
+
+    #[inline]
+    pub fn per_frame_entity_ids(&self) -> FrameEntityIds {
+        self.per_frame_entities.clone()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FrameEntityIds(Arc<AtomicU32>);
+
+impl FrameEntityIds {
+    #[inline]
+    fn new() -> Self {
+        Self(Arc::new(AtomicU32::new(0)))
+    }
+
+    /// Obtains the next entity ID for the frame.
+    #[inline]
+    pub fn next(&self) -> u32 {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
     }
 }

@@ -1,15 +1,7 @@
 pub struct Instance {
     pub position: cgmath::Vector3<f32>,
     pub rotation: cgmath::Quaternion<f32>,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct InstanceRaw {
-    model: [[f32; 4]; 4],
-
-    // Rotation component of a transformation matrix used to rotate normals.
-    normal: [[f32; 3]; 3],
+    pub entity_id: u32
 }
 
 impl Instance {
@@ -18,8 +10,21 @@ impl Instance {
         InstanceRaw {
             model: model.into(),
             normal: cgmath::Matrix3::from(self.rotation).into(),
+            entity_id: self.entity_id,
         }
     }
+}
+
+/// The raw instance passed to the [`InstanceBuffer`](crate::wgpu::wgpu_hardware::InstanceBuffer)
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct InstanceRaw {
+    model: [[f32; 4]; 4],
+
+    // Rotation component of a transformation matrix used to rotate normals.
+    normal: [[f32; 3]; 3],
+
+    entity_id: u32,
 }
 
 impl InstanceRaw {
@@ -74,6 +79,13 @@ impl InstanceRaw {
                     offset: mem::size_of::<[f32; 22]>() as wgpu::BufferAddress,
                     shader_location: 11,
                     format: wgpu::VertexFormat::Float32x3,
+                },
+
+                // per-frame entity ID
+                wgpu::VertexAttribute {
+                    offset: mem::size_of::<[f32; 25]>() as wgpu::BufferAddress,
+                    shader_location: 12,
+                    format: wgpu::VertexFormat::Uint32,
                 },
             ],
         }
