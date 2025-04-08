@@ -68,18 +68,20 @@ mod wgpu_render_state;
 mod frame_state;
 mod render;
 
-use crate::engine::ModelComponent;
+use crate::engine::{BackgroundColorComponent, ModelComponent};
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use parking_lot::lock_api::MutexGuard;
 use tracing::{error, trace, warn};
-use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
+use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
+use wgpu::hal::empty::Encoder;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents, TransformComponent};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
-use crate::wgpu::wgpu_hardware::{WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
+use crate::wgpu::render_passes::RenderPasses;
+use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 pub use self::wgpu_render_state::WgpuRenderState;
 pub use self::frame_state::FrameState;
 
@@ -170,7 +172,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                 .inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
 
             // Create a `TextureView` to control how we interact with the render texture.
-            let view = frame
+            let screen_texture = frame
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default());
 
@@ -183,7 +185,8 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                     label: Some("Render Encoder"),
                 });
 
-            Some(FrameState::new(frame, view, encoder, render_start))
+            let passes = RenderPasses::new(&device, render.retro_enabled(), encoder, frame, screen_texture);
+            Some(FrameState::new(passes, render_start))
         });
         Ok(RenderReady::Ready)
     }
@@ -218,12 +221,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         }
 
         if let Ok((device, frame_state)) = render.finish_frame() {
-            let command_buffer = frame_state.encoder.finish();
-            device.submit_to_queue(command_buffer);
-            // Optionally poll
-            // state.poll_device(wgpu::Maintain::Wait);
-            frame_state.frame.present();
-
+            frame_state.passes.finish_and_present(device);
             let render_duration = frame_state.render_start.elapsed();
             trace!(context.frame_number, "Rendered frame in {render_duration:?}");
         }
@@ -237,3 +235,4 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         Ok(())
     }
 }
+

@@ -136,13 +136,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
 
         // First pass (or single pass, depending on mode)
         {
-            let vga_offscreen = &device.textures().vga_offscreen.view;
-            let vga_depth = &device.depths().vga_offscreen.view;
-            let mut render_pass = if retro_enabled {
-                Self::retro_first_pass(frame_state, &background_color, &vga_offscreen, &vga_depth)
-            } else {
-                Self::quality_single_pass(frame_state, &background_color, &device)
-            };
+            let mut render_pass = frame_state.passes.clear_background_pass(&background_color);
 
             // Enable the instance buffer.
             render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
@@ -164,108 +158,12 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         // TODO: Move this to the end of the render pipeline
 
         // Second pass: Presenting the VGA offscreen buffer to screen.
-        if retro_enabled {
-            let mut pass = Self::retro_second_pass(frame_state);
-
+        if let Some(mut pass) = frame_state.passes.final_pass(&background_color) {
             pass.set_pipeline(&device.pipelines().vga_fullscreen);
             pass.set_bind_group(0, &device.bind_groups().vga_fullscreen, &[]);
 
             // Draw exactly 3 vertices – no vertex buffer
             pass.draw(0..6, 0..1);
         }
-    }
-}
-
-impl RenderBackgroundSystem {
-    fn quality_single_pass<'pass>(frame_state: &'pass mut FrameState, background_color: &'pass BackgroundColorComponent, device: &'pass DeviceAndQueue) -> RenderPass<'pass> {
-        frame_state
-            .encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Clear Background Render Pass"),
-                // NOTE: The color_attachments field is a "sparse" array. This allows you to use a
-                //       pipeline that expects multiple render targets and only supplies the ones you care about.
-                color_attachments: &[
-                    // This is what @location(0) in the fragment shader targets
-                    Some(wgpu::RenderPassColorAttachment {
-                        view: &frame_state.view,
-                        // The resolve_target is the texture that will receive the resolved output.
-                        // This will be the same as view unless multisampling is enabled.
-                        // We don't need to specify this, so we leave it as None.
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            // The `load` field tells wgpu how to handle colors stored from the
-                            // previous frame. Currently, we are clearing the screen with a color.
-                            load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
-                            // The `store` field tells wgpu whether we want to store the rendered
-                            // results to the Texture behind our TextureView (in this case, it's
-                            // the SurfaceTexture). We use StoreOp::Store as we do want to store
-                            // our render results.
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &device.depths().screen.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            })
-    }
-
-    fn retro_first_pass<'pass>(frame_state: &'pass mut FrameState, background_color: &'pass BackgroundColorComponent, vga_offscreen: &'pass TextureView, vga_depth: &'pass TextureView) -> RenderPass<'pass> {
-        frame_state
-            .encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("VGA Render Pass"),
-                color_attachments: &[
-                    Some(wgpu::RenderPassColorAttachment {
-                        view: &vga_offscreen,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &vga_depth,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(1.0),
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            })
-    }
-
-    fn retro_second_pass(frame_state: &mut FrameState) -> RenderPass {
-        frame_state
-            .encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("VGA Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &frame_state.view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        }),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            })
     }
 }

@@ -1,5 +1,6 @@
 use std::time::{Duration, Instant};
 use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
+use crate::wgpu::render_passes::RenderPasses;
 
 /// Represents the state for a single rendering frame.
 ///
@@ -23,18 +24,14 @@ use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
 ///
 /// - [`ApplyRenderBackgroundSystem`]
 pub struct FrameState {
-    pub frame: SurfaceTexture,
-    pub view: TextureView,
-    pub encoder: CommandEncoder,
+    pub passes: RenderPasses,
     pub render_start: Instant,
 }
 
 impl FrameState {
-    pub const fn new(frame: SurfaceTexture, view: TextureView, encoder: CommandEncoder, render_start: Instant) -> Self {
+    pub const fn new(passes: RenderPasses, render_start: Instant) -> Self {
         Self {
-            frame,
-            view,
-            encoder,
+            passes,
             render_start
         }
     }

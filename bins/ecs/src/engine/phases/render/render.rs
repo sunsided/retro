@@ -29,19 +29,12 @@ impl ApplyRenderSystem for RenderSystem {
             return;
         }
 
-        let retro_enabled = wgpu_render.retro_enabled();
         let Ok((device, frame_state)) = wgpu_render.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
 
-        let vga_offscreen = &device.textures().vga_offscreen.view;
-        let vga_depth = &device.depths().vga_offscreen.view;
-        let mut render_pass = if retro_enabled {
-            Self::retro_first_pass(frame_state, &vga_offscreen, &vga_depth)
-        } else {
-            Self::quality_single_pass(frame_state, &device)
-        };
+        let mut render_pass = frame_state.passes.render_pass();
 
         // Enable the instance buffer.
         render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
@@ -70,63 +63,5 @@ impl ApplyRenderSystem for RenderSystem {
             render_pass.set_pipeline(device.pipelines().render_pipeline(RenderPipelineSelector::Textured));
             render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
         }
-    }
-}
-
-impl RenderSystem {
-    fn quality_single_pass<'pass>(frame_state: &'pass mut FrameState, device: &'pass DeviceAndQueue) -> RenderPass<'pass> {
-        frame_state
-            .encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Cube Render Pass"),
-                color_attachments: &[
-                    Some(wgpu::RenderPassColorAttachment {
-                        view: &frame_state.view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &device.depths().screen.view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            })
-    }
-
-    fn retro_first_pass<'pass>(frame_state: &'pass mut FrameState, vga_offscreen: &'pass TextureView, vga_depth: &'pass TextureView) -> RenderPass<'pass> {
-        frame_state
-            .encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("VGA Render Pass"),
-                color_attachments: &[
-                    Some(wgpu::RenderPassColorAttachment {
-                        view: &vga_offscreen,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: wgpu::LoadOp::Load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    })
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &vga_depth,
-                    depth_ops: Some(wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
-                }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            })
     }
 }
