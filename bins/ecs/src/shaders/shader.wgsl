@@ -102,7 +102,7 @@ var s_normal: sampler;
 // The @location(0) bit tells WGPU to store the vec4 value returned
 // by this function in the first color target.
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_flat_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let object_color = vec4<f32>(0.3, 0.2, 0.1, 1.0);
     let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
 
@@ -155,4 +155,24 @@ fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
     return vec4<f32>(result, object_color.a);
+}
+
+// Fragment shader for flat-shading each instance.
+@fragment
+fn fs_instance_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let color = randomColorFromID(in.entity_id);
+    return vec4<f32>(color, 1.0);
+}
+
+// Helper: Generate a pseudo-random value from the entity ID using an offset.
+fn randomValue(id: u32, offset: f32) -> f32 {
+    return fract(sin(f32(id) + offset) * 43758.5453);
+}
+
+// Generate a color vector by computing a different random value for each channel.
+fn randomColorFromID(id: u32) -> vec3<f32> {
+    let r = randomValue(id, 1.0);
+    let g = randomValue(id, 2.0);
+    let b = randomValue(id, 3.0);
+    return vec3<f32>(r, g, b);
 }

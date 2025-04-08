@@ -10,6 +10,7 @@ use crate::wgpu::texture::Texture;
 pub struct RenderPipelines {
     pub textured_render: RenderPipeline,
     pub flat_render: RenderPipeline,
+    pub flat_entity_render: RenderPipeline,
     pub light: RenderPipeline,
     pub wireframe_render: Option<RenderPipeline>,
     pub vga_fullscreen: RenderPipeline,
@@ -24,7 +25,9 @@ pub enum RenderPipelineSelector {
     Boring,
     /// Uses a wireframe rendering pipeline, if supported.
     /// Falls back to [`Boring`](Self::Boring) otherwise.
-    Wireframe
+    Wireframe,
+    /// Flat-shade each distinct entity.
+    Entity
 }
 
 impl RenderPipelines {
@@ -35,6 +38,7 @@ impl RenderPipelines {
             RenderPipelineSelector::Textured => &self.textured_render,
             RenderPipelineSelector::Boring => &self.flat_render,
             RenderPipelineSelector::Wireframe => &self.wireframe_render.as_ref().unwrap_or(&self.flat_render),
+            RenderPipelineSelector::Entity => &self.flat_entity_render,
         }
     }
 }
@@ -45,12 +49,14 @@ impl RenderPipelines {
         let layout = Self::create_standard_render_layout(&device, bind_group_layouts);
         let textured_render = Self::create_textured_render(&device, &layout, surface_format, shaders);
         let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
+        let flat_entity_render = Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
         let wireframe_render = Self::create_wireframe_render(&device, &layout, surface_format, shaders);
         let light = Self::create_light(&device, bind_group_layouts, surface_format, shaders);
         let vga_fullscreen = Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
         Self {
             textured_render,
             flat_render,
+            flat_entity_render,
             wireframe_render,
             light,
             vga_fullscreen
@@ -194,6 +200,24 @@ impl RenderPipelines {
             ],
             RenderMode::Filled,
             "flat_render"
+        )
+    }
+
+    #[instrument(skip_all)]
+    fn create_flat_entity_render(device: &Device, layout: &PipelineLayout, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
+        Self::create_render_pipeline(
+            shaders.render.vertex_shader(),
+            shaders.render.instance_fragment_shader(),
+            &device,
+            &layout,
+            surface_format,
+            Some(Texture::DEPTH_FORMAT),
+            &[
+                ModelVertex::desc(),
+                InstanceRaw::desc()
+            ],
+            RenderMode::Filled,
+            "flat_entity_render"
         )
     }
 

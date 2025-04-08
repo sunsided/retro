@@ -77,7 +77,14 @@ impl RenderShaderModule {
 
     pub fn flat_fragment_shader(&self) -> FragmentShaderRef {
         FragmentShaderRef {
-            entry_point: "fs_main",
+            entry_point: "fs_flat_main",
+            module: &self.0,
+        }
+    }
+
+    pub fn instance_fragment_shader(&self) -> FragmentShaderRef {
+        FragmentShaderRef {
+            entry_point: "fs_instance_main",
             module: &self.0,
         }
     }
