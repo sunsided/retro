@@ -101,7 +101,7 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem> + CreateSystem<VgaBlitSystem>
+pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
 { }
 
 #[automatically_derived]
@@ -109,11 +109,11 @@ impl<T> CreateSystems for T
 where
     T: CreateSystem<CameraSystem>
      + CreateSystem<CameraRenderSystem>
-     + CreateSystem<DynamicLightSystem>
      + CreateSystem<PhysicsSystem>
      + CreateSystem<BackgroundColorCycleSystem>
      + CreateSystem<RenderBackgroundSystem>
      + CreateSystem<RenderSystem>
+     + CreateSystem<DynamicLightSystem>
      + CreateSystem<VgaBlitSystem>
 {
 }
@@ -736,217 +736,6 @@ impl core::ops::DerefMut for CameraRenderSystem {
 
 /// A system operating on multiple [`Component`]s.
 ///
-/// The business logic is implemented via the [`ApplyDynamicLightSystem`] trait.
-/// See also [`DynamicLightData`] for the systems-specific data.
-///
-/// ### Reads
-/// 
-/// - [`ColorComponent`]
-///
-/// ### Mutates
-/// 
-/// - [`DynamicLightComponent`]
-#[derive(Debug)]
-pub struct DynamicLightSystem(DynamicLightSystemData);
-
-/// Implements the business logic for the [`DynamicLightSystem`] system.
-#[allow(dead_code)]
-pub trait ApplyDynamicLightSystem: System {
-    type Error: core::error::Error;
-
-    /// Indicates whether this system is ready for action.
-    ///
-    /// Always called once per phase before all other functions of this system. If it returns
-    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
-    #[inline]
-    #[allow(unused_variables)]
-    fn is_ready(
-        &self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-    ) -> bool {
-        true
-    }
-
-    /// Executed at the beginning of the phase (for this system).
-    ///
-    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
-    /// function was executed.
-    #[inline]
-    #[allow(unused_variables)]
-    fn on_begin_phase(
-        &mut self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    /// Executed at the end of the phase (for this system).
-    ///
-    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
-    /// function is executed.
-    #[inline]
-    #[allow(unused_variables)]
-    fn on_end_phase(
-        &mut self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    /// Applies the system's business logic to the given entity components.
-    ///
-    /// ### Performance Considerations
-    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
-    ///
-    /// ### Reads
-    /// 
-    /// - `color`: A reference to the input component of type [`ColorComponent`].
-    ///
-    /// ### Mutates
-    /// 
-    /// - `dynamic_light`: A mutable reference to the component of type [`DynamicLightComponent`].
-    #[allow(unused_variables)]
-    fn apply_single(
-        &mut self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-        color: &ColorComponent,
-        dynamic_light: &mut DynamicLightComponent,
-    ) {
-         // intentionally left blank
-     }
-
-    /// Applies the system's business logic to the given entity components.
-    ///
-    /// ### Reads
-    /// 
-    /// - `color`: A slice of the input components of type [`ColorComponent`].
-    ///
-    /// ### Mutates
-    /// 
-    /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
-    fn apply_many(
-        &mut self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-        colors: &[ColorComponent],
-        dynamic_lights: &mut [DynamicLightComponent],
-    ) {
-        let zipped_iter = colors.iter().zip(dynamic_lights.iter_mut());
-        for (color, dynamic_light) in zipped_iter {
-            self.apply_single(
-                &context,
-                wgpu_render,
-                color,
-                dynamic_light,
-            );
-        }
-    }
-}
-
-#[allow(dead_code)]
-impl DynamicLightSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
-        &mut self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-        color: &ColorComponent,
-        dynamic_light: &mut DynamicLightComponent,
-    ) {
-        ApplyDynamicLightSystem::apply_single(
-            self,
-            context,
-            wgpu_render,
-            color,
-            dynamic_light,
-        );
-    }
-
-    /// Applies the system's business logic to the given entity components.
-    ///
-    /// ### Reads
-    /// 
-    /// - `color`: A slice of the input components of type [`ColorComponent`].
-    ///
-    /// ### Mutates
-    /// 
-    /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
-    #[inline]
-    fn apply_many(
-        &mut self,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-        colors: &[ColorComponent],
-        dynamic_lights: &mut [DynamicLightComponent],
-    ) {
-        ApplyDynamicLightSystem::apply_many(
-            self,
-            context,
-            wgpu_render,
-            colors,
-            dynamic_lights,
-        );
-    }
-
-    /// Applies this system to the [`DynamicLightArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_dynamic_light(
-        &mut self,
-        archetype: &mut DynamicLightArchetype,
-        context: &FrameContext,
-        wgpu_render: &WgpuRenderState,
-    ) {
-        self.apply_many(
-            &context,
-            wgpu_render,
-            &archetype.colors,
-            &mut archetype.dynamic_lights,
-        );
-    }
-}
-
-#[automatically_derived]
-impl System for DynamicLightSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
-}
-
-impl PartialEq<SystemId> for DynamicLightSystem {
-    fn eq(&self, other: &SystemId) -> bool {
-        Self::ID.eq(other)
-    }
-}
-
-#[automatically_derived]
-impl From<DynamicLightSystemData> for DynamicLightSystem {
-    fn from(data: DynamicLightSystemData) -> Self {
-        Self(data)
-    }
-}
-
-#[automatically_derived]
-impl core::ops::Deref for DynamicLightSystem {
-    type Target = DynamicLightSystemData;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[automatically_derived]
-impl core::ops::DerefMut for DynamicLightSystem {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-/// A system operating on multiple [`Component`]s.
-///
 /// The business logic is implemented via the [`ApplyPhysicsSystem`] trait.
 /// See also [`PhysicsData`] for the systems-specific data.
 ///
@@ -1127,7 +916,7 @@ impl PhysicsSystem {
 
 #[automatically_derived]
 impl System for PhysicsSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(4).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for PhysicsSystem {
@@ -1314,7 +1103,7 @@ impl BackgroundColorCycleSystem {
 
 #[automatically_derived]
 impl System for BackgroundColorCycleSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(5).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(4).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for BackgroundColorCycleSystem {
@@ -1501,7 +1290,7 @@ impl RenderBackgroundSystem {
 
 #[automatically_derived]
 impl System for RenderBackgroundSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(6).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(5).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderBackgroundSystem {
@@ -1712,7 +1501,7 @@ impl RenderSystem {
 
 #[automatically_derived]
 impl System for RenderSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(7).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(6).expect("A zero system ID was provided"));
 }
 
 impl PartialEq<SystemId> for RenderSystem {
@@ -1739,6 +1528,217 @@ impl core::ops::Deref for RenderSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for RenderSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplyDynamicLightSystem`] trait.
+/// See also [`DynamicLightData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`ColorComponent`]
+///
+/// ### Mutates
+/// 
+/// - [`DynamicLightComponent`]
+#[derive(Debug)]
+pub struct DynamicLightSystem(DynamicLightSystemData);
+
+/// Implements the business logic for the [`DynamicLightSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyDynamicLightSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `color`: A reference to the input component of type [`ColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `dynamic_light`: A mutable reference to the component of type [`DynamicLightComponent`].
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+        color: &ColorComponent,
+        dynamic_light: &mut DynamicLightComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `color`: A slice of the input components of type [`ColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
+    fn apply_many(
+        &mut self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+        colors: &[ColorComponent],
+        dynamic_lights: &mut [DynamicLightComponent],
+    ) {
+        let zipped_iter = colors.iter().zip(dynamic_lights.iter_mut());
+        for (color, dynamic_light) in zipped_iter {
+            self.apply_single(
+                &context,
+                wgpu_render,
+                color,
+                dynamic_light,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl DynamicLightSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+        color: &ColorComponent,
+        dynamic_light: &mut DynamicLightComponent,
+    ) {
+        ApplyDynamicLightSystem::apply_single(
+            self,
+            context,
+            wgpu_render,
+            color,
+            dynamic_light,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `color`: A slice of the input components of type [`ColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
+    #[inline]
+    fn apply_many(
+        &mut self,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+        colors: &[ColorComponent],
+        dynamic_lights: &mut [DynamicLightComponent],
+    ) {
+        ApplyDynamicLightSystem::apply_many(
+            self,
+            context,
+            wgpu_render,
+            colors,
+            dynamic_lights,
+        );
+    }
+
+    /// Applies this system to the [`DynamicLightArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_dynamic_light(
+        &mut self,
+        archetype: &mut DynamicLightArchetype,
+        context: &FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+    ) {
+        self.apply_many(
+            &context,
+            wgpu_render,
+            &archetype.colors,
+            &mut archetype.dynamic_lights,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for DynamicLightSystem {
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(7).expect("A zero system ID was provided"));
+}
+
+impl PartialEq<SystemId> for DynamicLightSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<DynamicLightSystemData> for DynamicLightSystem {
+    fn from(data: DynamicLightSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for DynamicLightSystem {
+    type Target = DynamicLightSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for DynamicLightSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

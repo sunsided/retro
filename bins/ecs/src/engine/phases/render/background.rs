@@ -119,24 +119,13 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     ///
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
-    fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
-        let Ok((device, frame_state)) = wgpu_render.for_rendering() else {
+    fn apply_single(&mut self, gpu: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
+        let Ok((_device, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
 
         // Clear the background
-        {
-            let mut render_pass = frame_state.passes.clear_background_pass(&background_color);
-
-            // Render the light.
-            // TODO: Move the light rendering to another system
-            render_pass.set_pipeline(&device.pipelines().light);
-            render_pass.draw_light_model(
-                &device.models().cube,
-                &device.bind_groups().camera_uniform,
-                &device.bind_groups().light_uniforms,
-            );
-        }
+        let _ = frame_state.passes.clear_background_pass(&background_color);
     }
 }
