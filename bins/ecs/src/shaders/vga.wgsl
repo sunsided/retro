@@ -89,21 +89,16 @@ fn fs_not_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    // Discard if UV is out of bounds
+    // Out-of-bound check
     if (in.uv.x < 0.0 || in.uv.x > 1.0 || in.uv.y < 0.0 || in.uv.y > 1.0) {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
 
     let texSize: vec2<f32> = vec2<f32>(textureDimensions(t_color, 0));
-    let pixelSize: vec2<f32> = 1.0 / texSize;
-
-    // Sample the main color from the retro texture
     let centerColor = textureSample(t_color, s_color, in.uv);
-
-    // Compute integer pixel coordinates
     let pixelCoord: vec2<i32> = vec2<i32>(in.uv * texSize);
 
-    // Sample entity IDs from the entity texture
+    // Sample entity IDs
     let centerEntity: u32 = textureLoad(t_entity, pixelCoord, 0).r;
     let leftEntity:   u32 = textureLoad(t_entity, pixelCoord - vec2<i32>(1, 0), 0).r;
     let rightEntity:  u32 = textureLoad(t_entity, pixelCoord + vec2<i32>(1, 0), 0).r;
@@ -117,28 +112,32 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let upDepth:     f32 = textureLoad(t_depth, pixelCoord - vec2<i32>(0, 1), 0);
     let downDepth:   f32 = textureLoad(t_depth, pixelCoord + vec2<i32>(0, 1), 0);
 
-    // Threshold for depth differences
+    // Define a threshold for depth differences
     let depthThreshold: f32 = 0.05;
-    // Blending factor for edges (0.0 means no edge, 1.0 means pure black outline)
-    let edgeBlendFactor: f32 = 1.0;
 
-    // Determine if edge condition is met (entity difference and similar depth)
-    var isEdge: bool = false;
+    // Detect if any neighbor has a different entity id and similar depth
+    var edgeDetected: bool = false;
     if (centerEntity != leftEntity && abs(centerDepth - leftDepth) < depthThreshold) {
-        isEdge = true;
-    } else if (centerEntity != rightEntity && abs(centerDepth - rightDepth) < depthThreshold) {
-        isEdge = true;
-    } else if (centerEntity != upEntity && abs(centerDepth - upDepth) < depthThreshold) {
-        isEdge = true;
-    } else if (centerEntity != downEntity && abs(centerDepth - downDepth) < depthThreshold) {
-        isEdge = true;
+        edgeDetected = true;
+    }
+    if (centerEntity != rightEntity && abs(centerDepth - rightDepth) < depthThreshold) {
+        edgeDetected = true;
+    }
+    if (centerEntity != upEntity && abs(centerDepth - upDepth) < depthThreshold) {
+        edgeDetected = true;
+    }
+    if (centerEntity != downEntity && abs(centerDepth - downDepth) < depthThreshold) {
+        edgeDetected = true;
     }
 
-    // If edge detected, blend object color with black; otherwise return object color.
-    if (isEdge) {
-        let blendedColor = centerColor * (1.0 - edgeBlendFactor) +
-                           vec4<f32>(0.0, 0.0, 0.0, centerColor.a) * edgeBlendFactor;
-        return blendedColor;
+    // Define an edge blend factor for darkening.
+    // 0.0 means no darkening; 1.0 would be completely dark.
+    let edgeBlendFactor: f32 = 0.8;
+
+    // If an edge is detected, blend the center color with a darker version of itself.
+    if (edgeDetected) {
+        let darkColor = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+        return mix(centerColor, darkColor, edgeBlendFactor);
     }
 
     return centerColor;
