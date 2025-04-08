@@ -111,7 +111,7 @@ impl BindGroups {
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: wgpu::BindingResource::TextureView(&textures.frame_entity_id.view),
+                    resource: wgpu::BindingResource::TextureView(&textures.vga_frame_entity_id.view),
                 },
             ],
         })

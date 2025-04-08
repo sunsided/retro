@@ -121,6 +121,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc()
@@ -151,6 +152,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -173,6 +175,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            false,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -193,6 +196,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            false,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -211,6 +215,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            false,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -227,11 +232,33 @@ impl RenderPipelines {
         device: &Device,
         layout: &PipelineLayout,
         color_format: TextureFormat,
+        write_entity_ids: bool,
         depth_format: Option<TextureFormat>,
         vertex_layouts: &[wgpu::VertexBufferLayout],
         render_mode: RenderMode,
         label: &str,
     ) -> RenderPipeline {
+        // Render to a texture.
+        let texture_target = Some(wgpu::ColorTargetState {
+            format: color_format,
+            blend: Some(wgpu::BlendState {
+                alpha: wgpu::BlendComponent::REPLACE,
+                color: wgpu::BlendComponent::REPLACE,
+            }),
+            write_mask: wgpu::ColorWrites::ALL,
+        });
+
+        // Render to an entity ID target
+        let entity_id_target = if write_entity_ids {
+            Some(wgpu::ColorTargetState {
+                format: TextureFormat::R32Uint, // entity ID target
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })
+        } else {
+            None
+        };
+
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(label),
             layout: Some(layout),
@@ -244,14 +271,10 @@ impl RenderPipelines {
             fragment: Some(wgpu::FragmentState {
                 module: fragment.module(),
                 entry_point: fragment.entry_point(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: color_format,
-                    blend: Some(wgpu::BlendState {
-                        alpha: wgpu::BlendComponent::REPLACE,
-                        color: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
+                targets: &[
+                    texture_target,
+                    entity_id_target,
+                ],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {

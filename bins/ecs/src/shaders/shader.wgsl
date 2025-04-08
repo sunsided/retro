@@ -137,10 +137,8 @@ fn fs_flat_main(in: VertexOutput) -> FragmentOutput {
     return out;
 }
 
-// The @location(0) bit tells WGPU to store the vec4 value returned
-// by this function in the first color target.
 @fragment
-fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_textured_main(in: VertexOutput) -> FragmentOutput {
     let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
     let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
 
@@ -163,7 +161,11 @@ fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let specular_color = specular_strength * light.color;
 
     let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
-    return vec4<f32>(result, object_color.a);
+
+    var out: FragmentOutput;
+    out.color = vec4<f32>(result, object_color.a);
+    out.entity_id = in.entity_id;
+    return out;
 }
 
 // Fragment shader for flat-shading each instance.

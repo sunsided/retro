@@ -11,6 +11,8 @@ pub struct RenderPasses {
     vga_depth_view: TextureView,
     retro_enabled: bool,
     surface_depth_view: TextureView,
+    surface_frame_entity_id_view: TextureView,
+    vga_frame_entity_id_view: TextureView,
 }
 
 impl Deref for RenderPasses {
@@ -30,6 +32,8 @@ impl DerefMut for RenderPasses {
 impl RenderPasses {
     pub fn new(device: &DeviceAndQueue, retro_enabled: bool, encoder: CommandEncoder, surface_tex: SurfaceTexture, surface_view: TextureView) -> Self {
         let surface_depth_view = device.depths().screen.view.clone();
+        let surface_frame_entity_id_view = device.textures().surface_frame_entity_id.view.clone();
+        let vga_frame_entity_id_view = device.textures().vga_frame_entity_id.view.clone();
         let vga_offscreen_view = device.textures().vga_offscreen.view.clone();
         let vga_depth_view = device.depths().vga_offscreen.view.clone();
 
@@ -38,6 +42,8 @@ impl RenderPasses {
             surface_tex,
             surface_view,
             surface_depth_view,
+            surface_frame_entity_id_view,
+            vga_frame_entity_id_view,
             vga_offscreen_view,
             vga_depth_view,
             retro_enabled,
@@ -79,6 +85,7 @@ impl RenderPasses {
             &mut self.encoder,
             Some(background_color),
             &self.surface_view,
+            Some(&self.surface_frame_entity_id_view),
             &self.surface_depth_view,
             "clear_background"
         )
@@ -89,6 +96,7 @@ impl RenderPasses {
             &mut self.encoder,
             Some(background_color),
             &self.vga_offscreen_view,
+            Some(&self.vga_frame_entity_id_view),
             &self.vga_depth_view,
             "vga_first_pass")
     }
@@ -98,6 +106,7 @@ impl RenderPasses {
             &mut self.encoder,
             None,
             &self.surface_view,
+            Some(&self.surface_frame_entity_id_view),
             &self.surface_depth_view,
             "quality_render"
         )
@@ -108,11 +117,12 @@ impl RenderPasses {
             &mut self.encoder,
             None,
             &self.vga_offscreen_view,
+            Some(&self.vga_frame_entity_id_view),
             &self.vga_depth_view,
             "vga_render")
     }
 
-    fn create_render_pass<'encoder>(encoder: &'encoder mut CommandEncoder, background_color: Option<&BackgroundColorComponent>, tex_view: &TextureView, depth_view: &TextureView, label: &'static str) -> RenderPass<'encoder> {
+    fn create_render_pass<'encoder>(encoder: &'encoder mut CommandEncoder, background_color: Option<&BackgroundColorComponent>, tex_view: &TextureView, entity_view: Option<&TextureView>, depth_view: &TextureView, label: &'static str) -> RenderPass<'encoder> {
         let tex_load = if let Some(background_color) = background_color {
             wgpu::LoadOp::Clear(background_color.as_wgpu_color())
         } else {
@@ -125,6 +135,17 @@ impl RenderPasses {
             wgpu::LoadOp::Load
         };
 
+        let entity_id_attachment = entity_view.map(|view| {
+            wgpu::RenderPassColorAttachment {
+                view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: tex_load,
+                    store: wgpu::StoreOp::Store,
+                },
+            }
+        });
+
         encoder
             .begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some(label),
@@ -136,7 +157,8 @@ impl RenderPasses {
                             load: tex_load,
                             store: wgpu::StoreOp::Store,
                         },
-                    })
+                    }),
+                    entity_id_attachment
                 ],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: depth_view,

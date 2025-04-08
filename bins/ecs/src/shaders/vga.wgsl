@@ -9,10 +9,10 @@ struct RetroUniform {
 var<uniform> aspect: RetroUniform;
 
 @group(0) @binding(1)
-var myTexture: texture_2d<f32>;
+var t_color: texture_2d<f32>;
 
 @group(0) @binding(2)
-var mySampler: sampler;
+var s_color: sampler;
 
 @group(0) @binding(3)
 var t_entity: texture_2d<u32>;
@@ -72,14 +72,52 @@ fn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {
 // Fragment shader
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_not_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // If outside [0..1], return black
     if (in.uv.x < 0.0 || in.uv.x > 1.0 || in.uv.y < 0.0 || in.uv.y > 1.0) {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
     }
 
     // Otherwise sample the retro texture
-    return textureSample(myTexture, mySampler, in.uv);
+    return textureSample(t_color, s_color, in.uv);
+}
+
+// Entity-aware edge-preserving
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    // Discard if UV is out of bounds
+    if (in.uv.x < 0.0 || in.uv.x > 1.0 || in.uv.y < 0.0 || in.uv.y > 1.0) {
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    }
+
+    // Get texture dimensions & calculate a pixel’s UV size
+    let texSize: vec2<f32> = vec2<f32>(textureDimensions(t_color, 0));
+    let pixelSize: vec2<f32> = 1.0 / texSize;
+
+    // Sample the main color from the retro texture
+    let centerColor = textureSample(t_color, s_color, in.uv);
+
+    // Calculate integer pixel coordinates for textureLoad
+    let pixelCoord: vec2<i32> = vec2<i32>(in.uv * texSize);
+
+    // Sample entity IDs from the entity texture using textureLoad
+    let centerEntity: u32 = textureLoad(t_entity, pixelCoord, 0).r;
+    let leftEntity:   u32 = textureLoad(t_entity, pixelCoord - vec2<i32>(1, 0), 0).r;
+    let rightEntity:  u32 = textureLoad(t_entity, pixelCoord + vec2<i32>(1, 0), 0).r;
+    let upEntity:     u32 = textureLoad(t_entity, pixelCoord - vec2<i32>(0, 1), 0).r;
+    let downEntity:   u32 = textureLoad(t_entity, pixelCoord + vec2<i32>(0, 1), 0).r;
+
+    // If any neighbor has a different entity ID, consider this pixel an edge -> draw black
+    if (centerEntity != leftEntity ||
+        centerEntity != rightEntity ||
+        centerEntity != upEntity ||
+        centerEntity != downEntity) {
+            return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    }
+
+    // Otherwise, output the original color
+    return centerColor;
 }
 
 // Edge-preserving fragment shader
@@ -96,15 +134,15 @@ fn fs_edge_preserving_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     // Determine texel size from the retro texture dimensions
-    let texSize: vec2<f32> = vec2<f32>(textureDimensions(myTexture, 0));
+    let texSize: vec2<f32> = vec2<f32>(textureDimensions(t_color, 0));
     let pixelSize: vec2<f32> = 1.0 / texSize;
 
     // Sample the center and immediate neighbors
-    let center = textureSample(myTexture, mySampler, in.uv);
-    let left   = textureSample(myTexture, mySampler, in.uv - vec2(pixelSize.x, 0.0));
-    let right  = textureSample(myTexture, mySampler, in.uv + vec2(pixelSize.x, 0.0));
-    let up     = textureSample(myTexture, mySampler, in.uv - vec2(0.0, pixelSize.y));
-    let down   = textureSample(myTexture, mySampler, in.uv + vec2(0.0, pixelSize.y));
+    let center = textureSample(t_color, s_color, in.uv);
+    let left   = textureSample(t_color, s_color, in.uv - vec2(pixelSize.x, 0.0));
+    let right  = textureSample(t_color, s_color, in.uv + vec2(pixelSize.x, 0.0));
+    let up     = textureSample(t_color, s_color, in.uv - vec2(0.0, pixelSize.y));
+    let down   = textureSample(t_color, s_color, in.uv + vec2(0.0, pixelSize.y));
 
     let lumCenter = luminance(center);
     let lumLeft   = luminance(left);
