@@ -55,24 +55,69 @@ impl core::fmt::Display for EntityId {
 
 /// The ID of an [`Archetype`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct ArchetypeId(core::num::NonZeroU64);
+#[repr(u32)]
+pub enum ArchetypeId {
+    /// The [`Camera`](CameraArchetype) archetype.
+    Camera = 1,
+    /// The [`DynamicLight`](DynamicLightArchetype) archetype.
+    DynamicLight = 2,
+    /// A marching cube :)
+    ///
+    /// For details, see the [`CubeArchetype`](CubeArchetype) Struct.
+    Cube = 3,
+    /// The [`Player`](PlayerArchetype) archetype.
+    Player = 4,
+    /// The [`ForegroundObject`](ForegroundObjectArchetype) archetype.
+    ForegroundObject = 5,
+    /// The [`BackgroundObject`](BackgroundObjectArchetype) archetype.
+    BackgroundObject = 6,
+    /// The scene background.
+    ///
+    /// For details, see the [`SceneBackgroundArchetype`](SceneBackgroundArchetype) Struct.
+    SceneBackground = 7,
+}
+
+impl ArchetypeId {
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Camera`](ArchetypeId::Camera) archetype.
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::DynamicLight`](ArchetypeId::DynamicLight) archetype.
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Cube`](ArchetypeId::Cube) archetype.
+    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Player`](ArchetypeId::Player) archetype.
+    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::ForegroundObject`](ArchetypeId::ForegroundObject) archetype.
+    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::BackgroundObject`](ArchetypeId::BackgroundObject) archetype.
+    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::SceneBackground`](ArchetypeId::SceneBackground) archetype.
+    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+}
 
 #[allow(dead_code)]
 impl ArchetypeId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
+        match self {
+            Self::Camera => Self::CAMERA_ID_VALUE,
+            Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
+            Self::Cube => Self::CUBE_ID_VALUE,
+            Self::Player => Self::PLAYER_ID_VALUE,
+            Self::ForegroundObject => Self::FOREGROUND_OBJECT_ID_VALUE,
+            Self::BackgroundObject => Self::BACKGROUND_OBJECT_ID_VALUE,
+            Self::SceneBackground => Self::SCENE_BACKGROUND_ID_VALUE,
+        }
     }
 
     /// Returns this ID as a `u64` value.
     pub const fn as_u64(&self) -> u64 {
-            self.0.get()
+        self.as_nonzero_u64().get()
     }
 }
 
 impl core::hash::Hash for ArchetypeId {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
+        self.as_u64().hash(state);
     }
 }
 
@@ -90,15 +135,14 @@ impl From<ArchetypeId> for u64 {
 
 impl core::fmt::Display for ArchetypeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        match self.0.get() {
-            1 => write!(f, "Camera (Archetype ID 1)"),
-            2 => write!(f, "DynamicLight (Archetype ID 2)"),
-            3 => write!(f, "Cube (Archetype ID 3)"),
-            4 => write!(f, "Player (Archetype ID 4)"),
-            5 => write!(f, "ForegroundObject (Archetype ID 5)"),
-            6 => write!(f, "BackgroundObject (Archetype ID 6)"),
-            7 => write!(f, "SceneBackground (Archetype ID 7)"),
-            id => write!(f, "Archetype ID {id}")
+        match self {
+            Self::Camera => write!(f, "Camera (ID 1)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 2)"),
+            Self::Cube => write!(f, "Cube (ID 3)"),
+            Self::Player => write!(f, "Player (ID 4)"),
+            Self::ForegroundObject => write!(f, "ForegroundObject (ID 5)"),
+            Self::BackgroundObject => write!(f, "BackgroundObject (ID 6)"),
+            Self::SceneBackground => write!(f, "SceneBackground (ID 7)"),
         }
     }
 }
@@ -125,6 +169,13 @@ pub trait Spawn<E> {
 pub trait Archetype: 'static + Send + Sync {
     /// The ID of this archetype.
     const ID: ArchetypeId;
+
+    /// The ID of this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    fn id(&self) -> ArchetypeId {
+        Self::ID
+    }
 
     /// Returns the number of entities in this archetype.
     fn len(&self) -> usize;
@@ -227,6 +278,19 @@ impl ArchetypeEntityData {
     }
 }
 
+/// A container for an entity with its associated data.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EntityWithIdAndData<Data: EntityData> {
+    pub id: EntityId,
+    pub data: Data,
+}
+
+/// Marker trait for entity data.
+pub trait EntityData {
+    const ARCHETYPE_ID: ArchetypeId;
+}
+
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct CameraArchetype {
@@ -236,12 +300,7 @@ pub struct CameraArchetype {
 }
 
 /// An entity of the [`CameraArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct CameraEntity {
-    pub id: EntityId,
-    pub data: CameraEntityData,
-}
+pub type CameraEntity = EntityWithIdAndData<CameraEntityData>;
 
 /// An entity of the [`CameraArchetype`].
 #[derive(Debug, Clone)]
@@ -249,6 +308,98 @@ pub struct CameraEntity {
 pub struct CameraEntityData {
     pub camera: CameraComponent,
     pub camera_fps_controller: CameraFpsControllerComponent,
+}
+
+impl EntityData for CameraEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CameraArchetype::ID;
+}
+
+/// A reference to an entity of the [`CameraArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CameraEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub camera: &'archetype CameraComponent,
+    pub camera_fps_controller: &'archetype CameraFpsControllerComponent,
+}
+
+/// A mutable reference to an entity of the [`CameraArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct CameraEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub camera: &'archetype mut CameraComponent,
+    pub camera_fps_controller: &'archetype mut CameraFpsControllerComponent,
+}
+
+/// An iterator for entities in the [`CameraArchetype`].
+pub struct CameraEntityIterator<'archetype> {
+    archetype: &'archetype CameraArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> CameraEntityIterator<'archetype> {
+    fn new(archetype: &'archetype CameraArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for CameraEntityIterator<'archetype> {
+    type Item = CameraEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl CameraArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> CameraEntityIterator {
+        CameraEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<CameraEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> CameraEntityRef {
+        CameraEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            camera: self.cameras.get_unchecked(index),
+            camera_fps_controller: self.camera_fps_controllers.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
+        CameraEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            camera: self.cameras.get_unchecked_mut(index),
+            camera_fps_controller: self.camera_fps_controllers.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -331,9 +482,9 @@ impl core::ops::DerefMut for CameraEntity {
 #[allow(dead_code)]
 impl CameraArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 2] = [
-        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(2).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 2] = [
+        ComponentId::COMPONENT_1,
+        ComponentId::COMPONENT_2,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -438,7 +589,7 @@ impl HasComponents<CameraFpsControllerComponent> for CameraArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for CameraArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(1).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::Camera;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -465,12 +616,7 @@ pub struct DynamicLightArchetype {
 }
 
 /// An entity of the [`DynamicLightArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct DynamicLightEntity {
-    pub id: EntityId,
-    pub data: DynamicLightEntityData,
-}
+pub type DynamicLightEntity = EntityWithIdAndData<DynamicLightEntityData>;
 
 /// An entity of the [`DynamicLightArchetype`].
 #[derive(Debug, Clone)]
@@ -479,6 +625,102 @@ pub struct DynamicLightEntityData {
     pub dynamic_light: DynamicLightComponent,
     pub color: ColorComponent,
     pub position: PositionComponent,
+}
+
+impl EntityData for DynamicLightEntityData {
+    const ARCHETYPE_ID: ArchetypeId = DynamicLightArchetype::ID;
+}
+
+/// A reference to an entity of the [`DynamicLightArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DynamicLightEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub dynamic_light: &'archetype DynamicLightComponent,
+    pub color: &'archetype ColorComponent,
+    pub position: &'archetype PositionComponent,
+}
+
+/// A mutable reference to an entity of the [`DynamicLightArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct DynamicLightEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub dynamic_light: &'archetype mut DynamicLightComponent,
+    pub color: &'archetype mut ColorComponent,
+    pub position: &'archetype mut PositionComponent,
+}
+
+/// An iterator for entities in the [`DynamicLightArchetype`].
+pub struct DynamicLightEntityIterator<'archetype> {
+    archetype: &'archetype DynamicLightArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> DynamicLightEntityIterator<'archetype> {
+    fn new(archetype: &'archetype DynamicLightArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for DynamicLightEntityIterator<'archetype> {
+    type Item = DynamicLightEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl DynamicLightArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> DynamicLightEntityIterator {
+        DynamicLightEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
+        DynamicLightEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            dynamic_light: self.dynamic_lights.get_unchecked(index),
+            color: self.colors.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
+        DynamicLightEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            dynamic_light: self.dynamic_lights.get_unchecked_mut(index),
+            color: self.colors.get_unchecked_mut(index),
+            position: self.positions.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -587,10 +829,10 @@ impl core::ops::DerefMut for DynamicLightEntity {
 #[allow(dead_code)]
 impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 3] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(9).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(11).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 3] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_11,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -711,7 +953,7 @@ impl HasComponents<PositionComponent> for DynamicLightArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for DynamicLightArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(2).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::DynamicLight;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -739,12 +981,7 @@ pub struct CubeArchetype {
 }
 
 /// An entity of the [`CubeArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct CubeEntity {
-    pub id: EntityId,
-    pub data: CubeEntityData,
-}
+pub type CubeEntity = EntityWithIdAndData<CubeEntityData>;
 
 /// An entity of the [`CubeArchetype`].
 #[derive(Debug, Clone)]
@@ -754,6 +991,106 @@ pub struct CubeEntityData {
     pub velocity: VelocityComponent,
     pub transform: TransformComponent,
     pub model: ModelComponent,
+}
+
+impl EntityData for CubeEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CubeArchetype::ID;
+}
+
+/// A reference to an entity of the [`CubeArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CubeEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+    pub velocity: &'archetype VelocityComponent,
+    pub transform: &'archetype TransformComponent,
+    pub model: &'archetype ModelComponent,
+}
+
+/// A mutable reference to an entity of the [`CubeArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct CubeEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+    pub velocity: &'archetype mut VelocityComponent,
+    pub transform: &'archetype mut TransformComponent,
+    pub model: &'archetype mut ModelComponent,
+}
+
+/// An iterator for entities in the [`CubeArchetype`].
+pub struct CubeEntityIterator<'archetype> {
+    archetype: &'archetype CubeArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> CubeEntityIterator<'archetype> {
+    fn new(archetype: &'archetype CubeArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for CubeEntityIterator<'archetype> {
+    type Item = CubeEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl CubeArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> CubeEntityIterator {
+        CubeEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<CubeEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> CubeEntityRef {
+        CubeEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+            velocity: self.velocities.get_unchecked(index),
+            transform: self.transforms.get_unchecked(index),
+            model: self.models.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
+        CubeEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+            velocity: self.velocities.get_unchecked_mut(index),
+            transform: self.transforms.get_unchecked_mut(index),
+            model: self.models.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -888,11 +1225,11 @@ impl core::ops::DerefMut for CubeEntity {
 #[allow(dead_code)]
 impl CubeArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 4] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(4).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(8).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 4] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_4,
+        ComponentId::COMPONENT_5,
+        ComponentId::COMPONENT_8,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1029,7 +1366,7 @@ impl HasComponents<ModelComponent> for CubeArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for CubeArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::Cube;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1056,12 +1393,7 @@ pub struct PlayerArchetype {
 }
 
 /// An entity of the [`PlayerArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct PlayerEntity {
-    pub id: EntityId,
-    pub data: PlayerEntityData,
-}
+pub type PlayerEntity = EntityWithIdAndData<PlayerEntityData>;
 
 /// An entity of the [`PlayerArchetype`].
 #[derive(Debug, Clone)]
@@ -1070,6 +1402,102 @@ pub struct PlayerEntityData {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
     pub health: HealthComponent,
+}
+
+impl EntityData for PlayerEntityData {
+    const ARCHETYPE_ID: ArchetypeId = PlayerArchetype::ID;
+}
+
+/// A reference to an entity of the [`PlayerArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PlayerEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+    pub velocity: &'archetype VelocityComponent,
+    pub health: &'archetype HealthComponent,
+}
+
+/// A mutable reference to an entity of the [`PlayerArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct PlayerEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+    pub velocity: &'archetype mut VelocityComponent,
+    pub health: &'archetype mut HealthComponent,
+}
+
+/// An iterator for entities in the [`PlayerArchetype`].
+pub struct PlayerEntityIterator<'archetype> {
+    archetype: &'archetype PlayerArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> PlayerEntityIterator<'archetype> {
+    fn new(archetype: &'archetype PlayerArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for PlayerEntityIterator<'archetype> {
+    type Item = PlayerEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl PlayerArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> PlayerEntityIterator {
+        PlayerEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<PlayerEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> PlayerEntityRef {
+        PlayerEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+            velocity: self.velocities.get_unchecked(index),
+            health: self.healths.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
+        PlayerEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+            velocity: self.velocities.get_unchecked_mut(index),
+            health: self.healths.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1178,10 +1606,10 @@ impl core::ops::DerefMut for PlayerEntity {
 #[allow(dead_code)]
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 3] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(6).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 3] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_5,
+        ComponentId::COMPONENT_6,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1302,7 +1730,7 @@ impl HasComponents<HealthComponent> for PlayerArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for PlayerArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(4).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::Player;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1328,12 +1756,7 @@ pub struct ForegroundObjectArchetype {
 }
 
 /// An entity of the [`ForegroundObjectArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct ForegroundObjectEntity {
-    pub id: EntityId,
-    pub data: ForegroundObjectEntityData,
-}
+pub type ForegroundObjectEntity = EntityWithIdAndData<ForegroundObjectEntityData>;
 
 /// An entity of the [`ForegroundObjectArchetype`].
 #[derive(Debug, Clone)]
@@ -1341,6 +1764,98 @@ pub struct ForegroundObjectEntity {
 pub struct ForegroundObjectEntityData {
     pub position: PositionComponent,
     pub collider: ColliderComponent,
+}
+
+impl EntityData for ForegroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = ForegroundObjectArchetype::ID;
+}
+
+/// A reference to an entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+    pub collider: &'archetype ColliderComponent,
+}
+
+/// A mutable reference to an entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+    pub collider: &'archetype mut ColliderComponent,
+}
+
+/// An iterator for entities in the [`ForegroundObjectArchetype`].
+pub struct ForegroundObjectEntityIterator<'archetype> {
+    archetype: &'archetype ForegroundObjectArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> ForegroundObjectEntityIterator<'archetype> {
+    fn new(archetype: &'archetype ForegroundObjectArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for ForegroundObjectEntityIterator<'archetype> {
+    type Item = ForegroundObjectEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl ForegroundObjectArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> ForegroundObjectEntityIterator {
+        ForegroundObjectEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
+        ForegroundObjectEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+            collider: self.colliders.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
+        ForegroundObjectEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+            collider: self.colliders.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1423,9 +1938,9 @@ impl core::ops::DerefMut for ForegroundObjectEntity {
 #[allow(dead_code)]
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 2] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(7).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 2] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_7,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1530,7 +2045,7 @@ impl HasComponents<ColliderComponent> for ForegroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for ForegroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(5).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::ForegroundObject;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1555,18 +2070,101 @@ pub struct BackgroundObjectArchetype {
 }
 
 /// An entity of the [`BackgroundObjectArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct BackgroundObjectEntity {
-    pub id: EntityId,
-    pub data: BackgroundObjectEntityData,
-}
+pub type BackgroundObjectEntity = EntityWithIdAndData<BackgroundObjectEntityData>;
 
 /// An entity of the [`BackgroundObjectArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityData {
     pub position: PositionComponent,
+}
+
+impl EntityData for BackgroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = BackgroundObjectArchetype::ID;
+}
+
+/// A reference to an entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+}
+
+/// A mutable reference to an entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+}
+
+/// An iterator for entities in the [`BackgroundObjectArchetype`].
+pub struct BackgroundObjectEntityIterator<'archetype> {
+    archetype: &'archetype BackgroundObjectArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> BackgroundObjectEntityIterator<'archetype> {
+    fn new(archetype: &'archetype BackgroundObjectArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for BackgroundObjectEntityIterator<'archetype> {
+    type Item = BackgroundObjectEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl BackgroundObjectArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> BackgroundObjectEntityIterator {
+        BackgroundObjectEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
+        BackgroundObjectEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
+        BackgroundObjectEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1623,8 +2221,8 @@ impl core::ops::DerefMut for BackgroundObjectEntity {
 #[allow(dead_code)]
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 1] = [
+        ComponentId::COMPONENT_3,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1713,7 +2311,7 @@ impl HasComponents<PositionComponent> for BackgroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for BackgroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(6).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::BackgroundObject;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1738,18 +2336,101 @@ pub struct SceneBackgroundArchetype {
 }
 
 /// An entity of the [`SceneBackgroundArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct SceneBackgroundEntity {
-    pub id: EntityId,
-    pub data: SceneBackgroundEntityData,
-}
+pub type SceneBackgroundEntity = EntityWithIdAndData<SceneBackgroundEntityData>;
 
 /// An entity of the [`SceneBackgroundArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct SceneBackgroundEntityData {
     pub background_color: BackgroundColorComponent,
+}
+
+impl EntityData for SceneBackgroundEntityData {
+    const ARCHETYPE_ID: ArchetypeId = SceneBackgroundArchetype::ID;
+}
+
+/// A reference to an entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub background_color: &'archetype BackgroundColorComponent,
+}
+
+/// A mutable reference to an entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub background_color: &'archetype mut BackgroundColorComponent,
+}
+
+/// An iterator for entities in the [`SceneBackgroundArchetype`].
+pub struct SceneBackgroundEntityIterator<'archetype> {
+    archetype: &'archetype SceneBackgroundArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> SceneBackgroundEntityIterator<'archetype> {
+    fn new(archetype: &'archetype SceneBackgroundArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for SceneBackgroundEntityIterator<'archetype> {
+    type Item = SceneBackgroundEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl SceneBackgroundArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> SceneBackgroundEntityIterator {
+        SceneBackgroundEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
+        SceneBackgroundEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            background_color: self.background_colors.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
+        SceneBackgroundEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            background_color: self.background_colors.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1806,8 +2487,8 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 #[allow(dead_code)]
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(10).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 1] = [
+        ComponentId::COMPONENT_10,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1896,7 +2577,7 @@ impl HasComponents<BackgroundColorComponent> for SceneBackgroundArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for SceneBackgroundArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(7).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::SceneBackground;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1912,3 +2593,443 @@ impl PartialEq<ArchetypeId> for SceneBackgroundArchetype {
         Self::ID.eq(other)
     }
 }
+
+pub trait GetEntityRef {
+    type EntityRef<'archetype>
+    where
+        Self: 'archetype;
+
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>>;
+
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype>;
+}
+
+impl core::ops::Index<usize> for CameraArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for DynamicLightArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for CubeArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for PlayerArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for ForegroundObjectArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for BackgroundObjectArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for SceneBackgroundArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+#[allow(dead_code)]
+pub trait FrontloadEntities:
+    Archetype
+    + core::ops::Index<usize, Output = EntityId>
+{
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    fn frontload(
+        &mut self,
+        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        // Collect and filter valid indices
+        let mut indices_to_frontload: Vec<usize> = entities_to_frontload
+            .iter()
+            .filter_map(|id| entity_lookup.get(id))
+            .filter(|id| id.archetype == Self::ID)
+            .map(|id| id.index)
+            .collect();
+
+        // Sort indices to achieve linear access patterns
+        // TODO: Measure; might be overkill for small numbers
+        indices_to_frontload.sort_unstable();
+
+        self.frontload_by_indices_sorted(entity_lookup, indices_to_frontload, previous_frontload_pivot)
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    fn frontload_by_indices_sorted<I>(
+        &mut self,
+        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        let mut frontload_target_idx = previous_frontload_pivot.unwrap_or_default();
+        let mut swaps_made = Vec::new();
+
+        for &current_idx in indices_to_frontload.as_ref() {
+            // If already frontloaded, skip
+            if current_idx < frontload_target_idx {
+                continue;
+            }
+
+            // If entity is exactly where it should be, no swap needed
+            if current_idx == frontload_target_idx {
+                frontload_target_idx += 1;
+                continue;
+            }
+
+            // Swap the entity into the target frontload position
+            self.swap_entities(current_idx, frontload_target_idx);
+
+            // Track swapped entity IDs for lookup update
+            let swapped_entity_id = self[current_idx];
+            let frontloaded_entity_id = self[frontload_target_idx];
+
+            swaps_made.push((frontloaded_entity_id, frontload_target_idx));
+            swaps_made.push((swapped_entity_id, current_idx));
+
+            frontload_target_idx += 1;
+        }
+
+        // Update only swapped entity positions in the lookup map
+        for (eid, index) in swaps_made {
+            let reference = EntityArchetypeRef {
+                archetype: Self::ID,
+                index
+            };
+            entity_lookup.insert(eid, reference);
+        }
+
+        frontload_target_idx
+    }
+
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[doc(hidden)]
+    fn swap_entities(&mut self, current_idx: usize, new_idx: usize);
+}
+
+#[allow(dead_code)]
+pub trait FrontloadEntitiesScan:
+    Archetype
+    + FrontloadEntities
+    + GetEntityRef
+    + core::ops::Index<usize, Output = EntityId>
+{
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    fn frontload_scan<F>(
+        &mut self,
+        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        mut should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&<Self as GetEntityRef>::EntityRef<'archetype>) -> bool,
+    {
+        let mut left = 0;
+        let mut right = self.len().wrapping_sub(1);
+        let mut swaps_made = Vec::new();
+
+        loop {
+            // Move left pointer forward until an invalid entry is found
+            while left <= right {
+                let reference = unsafe { self.get_at_unchecked(left) };
+                if should_frontload(&reference) {
+                    left += 1;
+                } else {
+                    break;
+                }
+            }
+
+            // Move right pointer backward until a valid entry is found
+            while left <= right {
+                let reference = unsafe { self.get_at_unchecked(right) };
+                if !should_frontload(&reference) {
+                    right = right.wrapping_sub(1);
+                } else {
+                    break;
+                }
+            }
+
+            if left >= right {
+                break;
+            }
+
+            // Swap entities and record swapped indices
+            self.swap_entities(left, right);
+            swaps_made.push((left, self[left]));
+            swaps_made.push((right, self[right]));
+
+            left += 1;
+            right = right.wrapping_sub(1);
+        }
+
+        // Only update indices for swapped entities
+        for (index, entity_id) in swaps_made {
+            let reference = EntityArchetypeRef {
+                archetype: Self::ID,
+                index,
+            };
+            entity_lookup.insert(entity_id, reference);
+        }
+
+        // At this point, `left` indicates how many entities are valid (frontloaded)
+        left
+    }
+}
+
+impl GetEntityRef for CameraArchetype {
+    type EntityRef<'archetype> = CameraEntityRef<'archetype>;
+
+    /// See [`CameraArchetype::get_at`](CameraArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`CameraArchetype::get_at_unchecked`](CameraArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for DynamicLightArchetype {
+    type EntityRef<'archetype> = DynamicLightEntityRef<'archetype>;
+
+    /// See [`DynamicLightArchetype::get_at`](DynamicLightArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`DynamicLightArchetype::get_at_unchecked`](DynamicLightArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for CubeArchetype {
+    type EntityRef<'archetype> = CubeEntityRef<'archetype>;
+
+    /// See [`CubeArchetype::get_at`](CubeArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`CubeArchetype::get_at_unchecked`](CubeArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for PlayerArchetype {
+    type EntityRef<'archetype> = PlayerEntityRef<'archetype>;
+
+    /// See [`PlayerArchetype::get_at`](PlayerArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`PlayerArchetype::get_at_unchecked`](PlayerArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for ForegroundObjectArchetype {
+    type EntityRef<'archetype> = ForegroundObjectEntityRef<'archetype>;
+
+    /// See [`ForegroundObjectArchetype::get_at`](ForegroundObjectArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`ForegroundObjectArchetype::get_at_unchecked`](ForegroundObjectArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for BackgroundObjectArchetype {
+    type EntityRef<'archetype> = BackgroundObjectEntityRef<'archetype>;
+
+    /// See [`BackgroundObjectArchetype::get_at`](BackgroundObjectArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`BackgroundObjectArchetype::get_at_unchecked`](BackgroundObjectArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl GetEntityRef for SceneBackgroundArchetype {
+    type EntityRef<'archetype> = SceneBackgroundEntityRef<'archetype>;
+
+    /// See [`SceneBackgroundArchetype::get_at`](SceneBackgroundArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`SceneBackgroundArchetype::get_at_unchecked`](SceneBackgroundArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
+impl FrontloadEntities for CameraArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.cameras.swap(first, second);
+        self.camera_fps_controllers.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for CameraArchetype { }
+
+impl FrontloadEntities for DynamicLightArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.dynamic_lights.swap(first, second);
+        self.colors.swap(first, second);
+        self.positions.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for DynamicLightArchetype { }
+
+impl FrontloadEntities for CubeArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+        self.velocities.swap(first, second);
+        self.transforms.swap(first, second);
+        self.models.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for CubeArchetype { }
+
+impl FrontloadEntities for PlayerArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+        self.velocities.swap(first, second);
+        self.healths.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for PlayerArchetype { }
+
+impl FrontloadEntities for ForegroundObjectArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+        self.colliders.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for ForegroundObjectArchetype { }
+
+impl FrontloadEntities for BackgroundObjectArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for BackgroundObjectArchetype { }
+
+impl FrontloadEntities for SceneBackgroundArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.background_colors.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for SceneBackgroundArchetype { }

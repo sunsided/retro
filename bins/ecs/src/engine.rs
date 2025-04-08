@@ -12,29 +12,34 @@
 
 #![allow(unused_imports)]
 
-pub mod components;
-pub mod phases;
-mod main_world;
 mod command_queue;
-mod phase_events;
+pub mod components;
 pub mod input_state;
+mod main_world;
+mod phase_events;
+pub mod phases;
 
-pub use main_world::InitializeMainWorld;
-pub use command_queue::CommandQueue;
-pub use phase_events::PhaseEvents;
+use crate::engine::camera_fps_controller::CameraFpsControllerData;
 use crate::engine::components::*;
+pub use crate::engine::input_state::InputState;
 use crate::engine::phases::fixed_update::physics::PhysicsSystemData;
-use crate::engine::phases::update::{color_cycle::BackgroundColorCycleSystemData, camera::CameraSystemData};
 use crate::engine::phases::render::{
-    WgpuRenderState,
-    render::RenderSystemData,
     background::{BackgroundColorData, RenderBackgroundSystemData},
-    vga_blit::VgaBlitSystemData,
     camera_render::CameraRenderSystemData,
     dynamic_light::DynamicLightSystemData,
+    render::RenderSystemData,
+    vga_blit::VgaBlitSystemData,
+    WgpuRenderState,
 };
-pub use crate::engine::input_state::InputState;
-use crate::engine::camera_fps_controller::CameraFpsControllerData;
+use crate::engine::phases::update::{
+    camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData,
+};
+pub use command_queue::CommandQueue;
+pub use main_world::InitializeMainWorld;
+pub use phase_events::PhaseEvents;
+
+/// The hash map used for entity lookups.
+type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
 
 include!("../generated/components_gen.rs");
 include!("../generated/world_gen.rs");

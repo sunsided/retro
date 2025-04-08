@@ -1,35 +1,35 @@
+use crate::cli::parse_arguments;
+use crate::engine::components::ActiveCameraState;
+use crate::engine::phases::render::WgpuRenderState;
+use crate::engine::InitializeMainWorld;
+use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
+use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
+use crate::wgpu::wgpu_hardware::WgpuHardware;
+use ::wgpu::Backends;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use ::wgpu::Backends;
 use tracing::{debug, error, info, trace};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
+use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
 use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
+use winit::monitor::MonitorHandle;
 use winit::window::{Fullscreen, Window, WindowId};
 use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
-use winit::monitor::MonitorHandle;
-use crate::cli::parse_arguments;
-use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
-use crate::engine::components::ActiveCameraState;
-use crate::engine::phases::render::WgpuRenderState;
-use crate::engine::InitializeMainWorld;
-use crate::fps_counter::FpsCounter;
-use crate::wgpu::wgpu_hardware::WgpuHardware;
 
-mod engine;
-mod logging;
-mod wgpu;
 mod camera;
-mod resources;
 mod cli;
-mod seconds;
+mod engine;
 mod fps_counter;
+mod logging;
+mod resources;
+mod seconds;
+mod wgpu;
 
 struct App {
     window: Option<Arc<Window>>,
@@ -50,9 +50,20 @@ impl App {
         let render_state = WgpuRenderState::default();
         let input_state = InputState::default();
         let active_camera = ActiveCameraState::default();
-        let mut world = MainWorld::new_with_events(&SystemFactory, input_state, render_state, active_camera, CommandQueue::new(), events);
+        let mut world = MainWorld::new_with_events(
+            &SystemFactory,
+            input_state,
+            render_state,
+            active_camera,
+            CommandQueue::new(),
+            events,
+        );
         world.states.wgpu_render.set_hardware(wgpu_hardware);
         world.create_initial_entities();
+
+        let count = world
+            .frontload_cubes_by_scan(|entity| entity.position.x > 7.0 && entity.position.z > 9.0);
+        debug!("{count}");
 
         Self {
             window: None,
@@ -89,10 +100,16 @@ impl App {
                     .expect("Failed to create window"),
             );
 
-            if let Some(millihertz) = window.current_monitor().and_then(|monitor: MonitorHandle| monitor.refresh_rate_millihertz()) {
+            if let Some(millihertz) = window
+                .current_monitor()
+                .and_then(|monitor: MonitorHandle| monitor.refresh_rate_millihertz())
+            {
                 let hz = (millihertz as f64) * 0.001;
                 let refresh_duration = Duration::from_secs_f64(hz.recip());
-                info!("Display refresh rate: {:.2} Hz, frame duration: {:?}", hz, refresh_duration);
+                info!(
+                    "Display refresh rate: {:.2} Hz, frame duration: {:?}",
+                    hz, refresh_duration
+                );
                 self.update_frame_duration(refresh_duration);
             } else {
                 error!("Failed to obtain display refresh rate, using default frame duration");
@@ -100,7 +117,10 @@ impl App {
             }
 
             self.window = Some(window.clone());
-            self.ecs_world.states.wgpu_render.reinitialize_surface(window.clone())
+            self.ecs_world
+                .states
+                .wgpu_render
+                .reinitialize_surface(window.clone())
                 .expect("Failed to reinitialize window");
         }
 
@@ -110,7 +130,10 @@ impl App {
 
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
         debug!("Window resized: {:?}", new_size);
-        self.ecs_world.states.wgpu_render.resize_surface(new_size)
+        self.ecs_world
+            .states
+            .wgpu_render
+            .resize_surface(new_size)
             .expect("Failed to resize window");
     }
 
@@ -121,7 +144,11 @@ impl App {
     fn handle_mouse_input_event(&mut self, state: ElementState, button: MouseButton) {
         match button {
             MouseButton::Left => {
-                self.ecs_world.states.input.next().set_lmb_pressed(state == ElementState::Pressed);
+                self.ecs_world
+                    .states
+                    .input
+                    .next()
+                    .set_lmb_pressed(state == ElementState::Pressed);
             }
             MouseButton::Right => {}
             MouseButton::Middle => {}
@@ -136,7 +163,11 @@ impl App {
     }
 
     fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {
-        self.ecs_world.states.input.next().accumulate_mouse_scroll_delta(delta);
+        self.ecs_world
+            .states
+            .input
+            .next()
+            .accumulate_mouse_scroll_delta(delta);
     }
 
     fn handle_cursor_moved_by_event(&mut self, position: (f64, f64)) {
@@ -147,7 +178,13 @@ impl App {
     }
 
     fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
-        if self.ecs_world.states.input.next().process_keys(event.physical_key, event.state) {
+        if self
+            .ecs_world
+            .states
+            .input
+            .next()
+            .process_keys(event.physical_key, event.state)
+        {
             return;
         }
 
@@ -156,36 +193,35 @@ impl App {
                 active_event_loop.exit();
             }
             PhysicalKey::Code(KeyCode::Enter)
-            if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
-                {
-                    // Toggle fullscreen mode.
-                    if let Some(window) = &self.window {
-                        if window.fullscreen().is_some() {
-                            window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
-                                1024.0, 640.0,
-                            ))));
-                            window.set_fullscreen(None);
-                        } else {
-                            window.set_max_inner_size::<Size>(None);
-                            window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                        }
+                if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
+            {
+                // Toggle fullscreen mode.
+                if let Some(window) = &self.window {
+                    if window.fullscreen().is_some() {
+                        window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
+                            1024.0, 640.0,
+                        ))));
+                        window.set_fullscreen(None);
+                    } else {
+                        window.set_max_inner_size::<Size>(None);
+                        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
                     }
                 }
+            }
 
             // Toggle shading mode
-            PhysicalKey::Code(KeyCode::F1)
-            if event.state == ElementState::Pressed =>
-                {
-                    self.ecs_world.states.wgpu_render.toggle_pipeline_selector();
-                }
+            PhysicalKey::Code(KeyCode::F1) if event.state == ElementState::Pressed => {
+                self.ecs_world.states.wgpu_render.toggle_pipeline_selector();
+            }
 
             // Toggle retro mode
-            PhysicalKey::Code(KeyCode::F2)
-            if event.state == ElementState::Pressed =>
-                {
-                    let retro_enabled = self.ecs_world.states.wgpu_render.retro_enabled();
-                    self.ecs_world.states.wgpu_render.set_retro_enabled(!retro_enabled);
-                }
+            PhysicalKey::Code(KeyCode::F2) if event.state == ElementState::Pressed => {
+                let retro_enabled = self.ecs_world.states.wgpu_render.retro_enabled();
+                self.ecs_world
+                    .states
+                    .wgpu_render
+                    .set_retro_enabled(!retro_enabled);
+            }
             _ => {}
         }
     }
@@ -239,7 +275,12 @@ impl ApplicationHandler for App {
         self.reinitialize_window(active_event_loop);
     }
 
-    fn device_event(&mut self, _event_loop: &ActiveEventLoop, _device_id: DeviceId, event: DeviceEvent) {
+    fn device_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _device_id: DeviceId,
+        event: DeviceEvent,
+    ) {
         match event {
             DeviceEvent::Added => {}
             DeviceEvent::Removed => {}
@@ -297,7 +338,10 @@ fn main() -> eyre::Result<()> {
     let _logging = setup_logging();
 
     let args = parse_arguments();
-    let backend = args.get_one::<Backends>("backend").cloned().unwrap_or(Backends::GL);
+    let backend = args
+        .get_one::<Backends>("backend")
+        .cloned()
+        .unwrap_or(Backends::GL);
 
     let wgpu_hardware = WgpuHardware::initialize(backend);
     let mut app = App::new(wgpu_hardware);

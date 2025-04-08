@@ -132,6 +132,13 @@ impl FrameContext {
 pub trait World {
     /// The ID of this world.
     const ID: WorldId;
+
+    /// The ID of this world.
+    #[inline]
+    #[allow(dead_code)]
+    fn id(&self) -> WorldId {
+        Self::ID
+    }
 }
 
 
@@ -143,7 +150,12 @@ pub struct MainWorld<E, Q> {
     /// The systems.
     pub systems: MainWorldSystems,
     /// The entity locator.
-    entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
+    //
+    // Hashmap type not provided by design. Provide your own implementation such as fxhash::FxHashMap via type alias.
+    // Example:
+    //      type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
+    //
+    entity_locations: EntityLocationMap<EntityId, EntityArchetypeRef>,
     /// The frame context.
     context: FrameContext,
     /// The fixed-time accumulators.
@@ -618,7 +630,7 @@ impl<E, Q> MainWorld<E, Q> {
         camera: CameraComponent,
         camera_fps_controller: CameraFpsControllerComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -656,7 +668,7 @@ impl<E, Q> MainWorld<E, Q> {
         color: ColorComponent,
         position: PositionComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -697,7 +709,7 @@ impl<E, Q> MainWorld<E, Q> {
         transform: TransformComponent,
         model: ModelComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -737,7 +749,7 @@ impl<E, Q> MainWorld<E, Q> {
         velocity: VelocityComponent,
         health: HealthComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -774,7 +786,7 @@ impl<E, Q> MainWorld<E, Q> {
         position: PositionComponent,
         collider: ColliderComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -808,7 +820,7 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         position: PositionComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -841,7 +853,7 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         background_color: BackgroundColorComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -1981,5 +1993,501 @@ impl core::fmt::Display for DespawnError {
         }
     }
 }
-
 impl core::error::Error for DespawnError { }
+
+impl<E, Q> MainWorld<E, Q> {
+    /// Frontloads entities provided by their archetype IDs and indexes (e.g., from quadtree results,
+    /// followed by entity location lookups). Performs best when the indices are presorted in ascending order.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[allow(dead_code)]
+    pub fn frontload(
+        &mut self,
+        archetype: ArchetypeId,
+        indices_to_frontload: &[usize],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        match archetype {
+            ArchetypeId::Camera => {
+                self.frontload_cameras_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::DynamicLight => {
+                self.frontload_dynamic_lights_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::Cube => {
+                self.frontload_cubes_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::Player => {
+                self.frontload_players_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::ForegroundObject => {
+                self.frontload_foreground_objects_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::BackgroundObject => {
+                self.frontload_background_objects_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::SceneBackground => {
+                self.frontload_scene_backgrounds_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            #[allow(unreachable_patterns)]
+            _ => {
+                0
+            }
+        }
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_cameras(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .camera
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_cameras_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .camera
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_cameras_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&CameraEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .camera
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_dynamic_lights(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .dynamic_light
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_dynamic_lights_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .dynamic_light
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_dynamic_lights_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&DynamicLightEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .dynamic_light
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_cubes(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .cube
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_cubes_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .cube
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_cubes_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&CubeEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .cube
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_players(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .player
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_players_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .player
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_players_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&PlayerEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .player
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_foreground_objects(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .foreground_object
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_foreground_objects_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .foreground_object
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_foreground_objects_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&ForegroundObjectEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .foreground_object
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_background_objects(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .background_object
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_background_objects_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .background_object
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_background_objects_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&BackgroundObjectEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .background_object
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_scene_backgrounds(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .scene_background
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_scene_backgrounds_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .scene_background
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_scene_backgrounds_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&SceneBackgroundEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .scene_background
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+}
