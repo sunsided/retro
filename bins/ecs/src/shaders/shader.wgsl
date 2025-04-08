@@ -45,6 +45,7 @@ struct VertexOutput {
     @location(1) tangent_position: vec3<f32>,
     @location(2) tangent_light_position: vec3<f32>,
     @location(3) tangent_view_position: vec3<f32>,
+    @location(4) entity_id: u32,
 };
 
 @vertex
@@ -82,6 +83,7 @@ fn vs_main(
     out.tangent_position = tangent_matrix * world_position.xyz;
     out.tangent_view_position = tangent_matrix * camera.view_pos.xyz;
     out.tangent_light_position = tangent_matrix * light.position;
+    out.entity_id = instance.entity_id;
     return out;
 }
 
