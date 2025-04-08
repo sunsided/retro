@@ -1,5 +1,7 @@
 # TODO: Allow definition of custom commands to be emitted by systems
 
+allow_unsafe: true
+
 states:
   - name: WgpuRender
     description: The WGPU render state; will be initialized in the Render phase hooks

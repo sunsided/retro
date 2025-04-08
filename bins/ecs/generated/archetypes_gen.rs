@@ -126,6 +126,13 @@ pub trait Archetype: 'static + Send + Sync {
     /// The ID of this archetype.
     const ID: ArchetypeId;
 
+    /// The ID of this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    fn id(&self) -> ArchetypeId {
+        Self::ID
+    }
+
     /// Returns the number of entities in this archetype.
     fn len(&self) -> usize;
 
@@ -227,6 +234,19 @@ impl ArchetypeEntityData {
     }
 }
 
+/// A container for an entity with its associated data.
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EntityWithIdAndData<Data: EntityData> {
+    pub id: EntityId,
+    pub data: Data,
+}
+
+/// Marker trait for entity data.
+pub trait EntityData {
+    const ARCHETYPE_ID: ArchetypeId;
+}
+
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct CameraArchetype {
@@ -236,12 +256,7 @@ pub struct CameraArchetype {
 }
 
 /// An entity of the [`CameraArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct CameraEntity {
-    pub id: EntityId,
-    pub data: CameraEntityData,
-}
+pub type CameraEntity = EntityWithIdAndData<CameraEntityData>;
 
 /// An entity of the [`CameraArchetype`].
 #[derive(Debug, Clone)]
@@ -249,6 +264,98 @@ pub struct CameraEntity {
 pub struct CameraEntityData {
     pub camera: CameraComponent,
     pub camera_fps_controller: CameraFpsControllerComponent,
+}
+
+impl EntityData for CameraEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CameraArchetype::ID;
+}
+
+/// A reference to an entity of the [`CameraArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CameraEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub camera: &'archetype CameraComponent,
+    pub camera_fps_controller: &'archetype CameraFpsControllerComponent,
+}
+
+/// A mutable reference to an entity of the [`CameraArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct CameraEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub camera: &'archetype mut CameraComponent,
+    pub camera_fps_controller: &'archetype mut CameraFpsControllerComponent,
+}
+
+/// An iterator for entities in the [`CameraArchetype`].
+pub struct CameraEntityIterator<'archetype> {
+    archetype: &'archetype CameraArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> CameraEntityIterator<'archetype> {
+    fn new(archetype: &'archetype CameraArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for CameraEntityIterator<'archetype> {
+    type Item = CameraEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl CameraArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> CameraEntityIterator {
+        CameraEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<CameraEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> CameraEntityRef {
+        CameraEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            camera: self.cameras.get_unchecked(index),
+            camera_fps_controller: self.camera_fps_controllers.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
+        CameraEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            camera: self.cameras.get_unchecked_mut(index),
+            camera_fps_controller: self.camera_fps_controllers.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -465,12 +572,7 @@ pub struct DynamicLightArchetype {
 }
 
 /// An entity of the [`DynamicLightArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct DynamicLightEntity {
-    pub id: EntityId,
-    pub data: DynamicLightEntityData,
-}
+pub type DynamicLightEntity = EntityWithIdAndData<DynamicLightEntityData>;
 
 /// An entity of the [`DynamicLightArchetype`].
 #[derive(Debug, Clone)]
@@ -479,6 +581,102 @@ pub struct DynamicLightEntityData {
     pub dynamic_light: DynamicLightComponent,
     pub color: ColorComponent,
     pub position: PositionComponent,
+}
+
+impl EntityData for DynamicLightEntityData {
+    const ARCHETYPE_ID: ArchetypeId = DynamicLightArchetype::ID;
+}
+
+/// A reference to an entity of the [`DynamicLightArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DynamicLightEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub dynamic_light: &'archetype DynamicLightComponent,
+    pub color: &'archetype ColorComponent,
+    pub position: &'archetype PositionComponent,
+}
+
+/// A mutable reference to an entity of the [`DynamicLightArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct DynamicLightEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub dynamic_light: &'archetype mut DynamicLightComponent,
+    pub color: &'archetype mut ColorComponent,
+    pub position: &'archetype mut PositionComponent,
+}
+
+/// An iterator for entities in the [`DynamicLightArchetype`].
+pub struct DynamicLightEntityIterator<'archetype> {
+    archetype: &'archetype DynamicLightArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> DynamicLightEntityIterator<'archetype> {
+    fn new(archetype: &'archetype DynamicLightArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for DynamicLightEntityIterator<'archetype> {
+    type Item = DynamicLightEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl DynamicLightArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> DynamicLightEntityIterator {
+        DynamicLightEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
+        DynamicLightEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            dynamic_light: self.dynamic_lights.get_unchecked(index),
+            color: self.colors.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
+        DynamicLightEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            dynamic_light: self.dynamic_lights.get_unchecked_mut(index),
+            color: self.colors.get_unchecked_mut(index),
+            position: self.positions.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -739,12 +937,7 @@ pub struct CubeArchetype {
 }
 
 /// An entity of the [`CubeArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct CubeEntity {
-    pub id: EntityId,
-    pub data: CubeEntityData,
-}
+pub type CubeEntity = EntityWithIdAndData<CubeEntityData>;
 
 /// An entity of the [`CubeArchetype`].
 #[derive(Debug, Clone)]
@@ -754,6 +947,106 @@ pub struct CubeEntityData {
     pub velocity: VelocityComponent,
     pub transform: TransformComponent,
     pub model: ModelComponent,
+}
+
+impl EntityData for CubeEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CubeArchetype::ID;
+}
+
+/// A reference to an entity of the [`CubeArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CubeEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+    pub velocity: &'archetype VelocityComponent,
+    pub transform: &'archetype TransformComponent,
+    pub model: &'archetype ModelComponent,
+}
+
+/// A mutable reference to an entity of the [`CubeArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct CubeEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+    pub velocity: &'archetype mut VelocityComponent,
+    pub transform: &'archetype mut TransformComponent,
+    pub model: &'archetype mut ModelComponent,
+}
+
+/// An iterator for entities in the [`CubeArchetype`].
+pub struct CubeEntityIterator<'archetype> {
+    archetype: &'archetype CubeArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> CubeEntityIterator<'archetype> {
+    fn new(archetype: &'archetype CubeArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for CubeEntityIterator<'archetype> {
+    type Item = CubeEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl CubeArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> CubeEntityIterator {
+        CubeEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<CubeEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> CubeEntityRef {
+        CubeEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+            velocity: self.velocities.get_unchecked(index),
+            transform: self.transforms.get_unchecked(index),
+            model: self.models.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
+        CubeEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+            velocity: self.velocities.get_unchecked_mut(index),
+            transform: self.transforms.get_unchecked_mut(index),
+            model: self.models.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1056,12 +1349,7 @@ pub struct PlayerArchetype {
 }
 
 /// An entity of the [`PlayerArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct PlayerEntity {
-    pub id: EntityId,
-    pub data: PlayerEntityData,
-}
+pub type PlayerEntity = EntityWithIdAndData<PlayerEntityData>;
 
 /// An entity of the [`PlayerArchetype`].
 #[derive(Debug, Clone)]
@@ -1070,6 +1358,102 @@ pub struct PlayerEntityData {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
     pub health: HealthComponent,
+}
+
+impl EntityData for PlayerEntityData {
+    const ARCHETYPE_ID: ArchetypeId = PlayerArchetype::ID;
+}
+
+/// A reference to an entity of the [`PlayerArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PlayerEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+    pub velocity: &'archetype VelocityComponent,
+    pub health: &'archetype HealthComponent,
+}
+
+/// A mutable reference to an entity of the [`PlayerArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct PlayerEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+    pub velocity: &'archetype mut VelocityComponent,
+    pub health: &'archetype mut HealthComponent,
+}
+
+/// An iterator for entities in the [`PlayerArchetype`].
+pub struct PlayerEntityIterator<'archetype> {
+    archetype: &'archetype PlayerArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> PlayerEntityIterator<'archetype> {
+    fn new(archetype: &'archetype PlayerArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for PlayerEntityIterator<'archetype> {
+    type Item = PlayerEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl PlayerArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> PlayerEntityIterator {
+        PlayerEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<PlayerEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> PlayerEntityRef {
+        PlayerEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+            velocity: self.velocities.get_unchecked(index),
+            health: self.healths.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
+        PlayerEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+            velocity: self.velocities.get_unchecked_mut(index),
+            health: self.healths.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1328,12 +1712,7 @@ pub struct ForegroundObjectArchetype {
 }
 
 /// An entity of the [`ForegroundObjectArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct ForegroundObjectEntity {
-    pub id: EntityId,
-    pub data: ForegroundObjectEntityData,
-}
+pub type ForegroundObjectEntity = EntityWithIdAndData<ForegroundObjectEntityData>;
 
 /// An entity of the [`ForegroundObjectArchetype`].
 #[derive(Debug, Clone)]
@@ -1341,6 +1720,98 @@ pub struct ForegroundObjectEntity {
 pub struct ForegroundObjectEntityData {
     pub position: PositionComponent,
     pub collider: ColliderComponent,
+}
+
+impl EntityData for ForegroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = ForegroundObjectArchetype::ID;
+}
+
+/// A reference to an entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+    pub collider: &'archetype ColliderComponent,
+}
+
+/// A mutable reference to an entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+    pub collider: &'archetype mut ColliderComponent,
+}
+
+/// An iterator for entities in the [`ForegroundObjectArchetype`].
+pub struct ForegroundObjectEntityIterator<'archetype> {
+    archetype: &'archetype ForegroundObjectArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> ForegroundObjectEntityIterator<'archetype> {
+    fn new(archetype: &'archetype ForegroundObjectArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for ForegroundObjectEntityIterator<'archetype> {
+    type Item = ForegroundObjectEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl ForegroundObjectArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> ForegroundObjectEntityIterator {
+        ForegroundObjectEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
+        ForegroundObjectEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+            collider: self.colliders.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
+        ForegroundObjectEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+            collider: self.colliders.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1555,18 +2026,101 @@ pub struct BackgroundObjectArchetype {
 }
 
 /// An entity of the [`BackgroundObjectArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct BackgroundObjectEntity {
-    pub id: EntityId,
-    pub data: BackgroundObjectEntityData,
-}
+pub type BackgroundObjectEntity = EntityWithIdAndData<BackgroundObjectEntityData>;
 
 /// An entity of the [`BackgroundObjectArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityData {
     pub position: PositionComponent,
+}
+
+impl EntityData for BackgroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = BackgroundObjectArchetype::ID;
+}
+
+/// A reference to an entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype PositionComponent,
+}
+
+/// A mutable reference to an entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub position: &'archetype mut PositionComponent,
+}
+
+/// An iterator for entities in the [`BackgroundObjectArchetype`].
+pub struct BackgroundObjectEntityIterator<'archetype> {
+    archetype: &'archetype BackgroundObjectArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> BackgroundObjectEntityIterator<'archetype> {
+    fn new(archetype: &'archetype BackgroundObjectArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for BackgroundObjectEntityIterator<'archetype> {
+    type Item = BackgroundObjectEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl BackgroundObjectArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> BackgroundObjectEntityIterator {
+        BackgroundObjectEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
+        BackgroundObjectEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
+        BackgroundObjectEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            position: self.positions.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]
@@ -1738,18 +2292,101 @@ pub struct SceneBackgroundArchetype {
 }
 
 /// An entity of the [`SceneBackgroundArchetype`].
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct SceneBackgroundEntity {
-    pub id: EntityId,
-    pub data: SceneBackgroundEntityData,
-}
+pub type SceneBackgroundEntity = EntityWithIdAndData<SceneBackgroundEntityData>;
 
 /// An entity of the [`SceneBackgroundArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct SceneBackgroundEntityData {
     pub background_color: BackgroundColorComponent,
+}
+
+impl EntityData for SceneBackgroundEntityData {
+    const ARCHETYPE_ID: ArchetypeId = SceneBackgroundArchetype::ID;
+}
+
+/// A reference to an entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub background_color: &'archetype BackgroundColorComponent,
+}
+
+/// A mutable reference to an entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub background_color: &'archetype mut BackgroundColorComponent,
+}
+
+/// An iterator for entities in the [`SceneBackgroundArchetype`].
+pub struct SceneBackgroundEntityIterator<'archetype> {
+    archetype: &'archetype SceneBackgroundArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> SceneBackgroundEntityIterator<'archetype> {
+    fn new(archetype: &'archetype SceneBackgroundArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for SceneBackgroundEntityIterator<'archetype> {
+    type Item = SceneBackgroundEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl SceneBackgroundArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> SceneBackgroundEntityIterator {
+        SceneBackgroundEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
+        SceneBackgroundEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            background_color: self.background_colors.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
+        SceneBackgroundEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            background_color: self.background_colors.get_unchecked_mut(index),
+        }
+    }
 }
 
 #[allow(dead_code)]

@@ -132,6 +132,13 @@ impl FrameContext {
 pub trait World {
     /// The ID of this world.
     const ID: WorldId;
+
+    /// The ID of this world.
+    #[inline]
+    #[allow(dead_code)]
+    fn id(&self) -> WorldId {
+        Self::ID
+    }
 }
 
 
@@ -143,7 +150,12 @@ pub struct MainWorld<E, Q> {
     /// The systems.
     pub systems: MainWorldSystems,
     /// The entity locator.
-    entity_locations: std::collections::HashMap<EntityId, EntityArchetypeRef>,
+    //
+    // Hashmap type not provided by design. Provide your own implementation such as fxhash::FxHashMap via type alias.
+    // Example:
+    //      type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
+    //
+    entity_locations: EntityLocationMap<EntityId, EntityArchetypeRef>,
     /// The frame context.
     context: FrameContext,
     /// The fixed-time accumulators.
@@ -618,7 +630,7 @@ impl<E, Q> MainWorld<E, Q> {
         camera: CameraComponent,
         camera_fps_controller: CameraFpsControllerComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -656,7 +668,7 @@ impl<E, Q> MainWorld<E, Q> {
         color: ColorComponent,
         position: PositionComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -697,7 +709,7 @@ impl<E, Q> MainWorld<E, Q> {
         transform: TransformComponent,
         model: ModelComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -737,7 +749,7 @@ impl<E, Q> MainWorld<E, Q> {
         velocity: VelocityComponent,
         health: HealthComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -774,7 +786,7 @@ impl<E, Q> MainWorld<E, Q> {
         position: PositionComponent,
         collider: ColliderComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -808,7 +820,7 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         position: PositionComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
@@ -841,7 +853,7 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         background_color: BackgroundColorComponent,
     ) -> EntityId {
-        struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]

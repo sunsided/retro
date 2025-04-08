@@ -36,6 +36,9 @@ use crate::engine::phases::render::{
 pub use crate::engine::input_state::InputState;
 use crate::engine::camera_fps_controller::CameraFpsControllerData;
 
+/// The hash map used for entity lookups.
+type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
+
 include!("../generated/components_gen.rs");
 include!("../generated/world_gen.rs");
 include!("../generated/systems_gen.rs");
@@ -45,3 +48,71 @@ include!("../generated/archetypes_gen.rs");
 ///
 /// Implements [`CreateSystems`].
 pub struct SystemFactory;
+
+impl CubeArchetype {
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    pub fn frontload_entities<F>(&mut self, entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>, should_frontload: F) -> usize
+    where
+        F: Fn(&CubeEntityData) -> bool,
+    {
+        let mut left = 0;
+        let mut right = self.entities.len().wrapping_sub(1);
+        let mut swaps_made = Vec::new();
+
+        loop {
+            // Move left pointer forward until an invalid entry is found
+            while left <= right && should_frontload(&self.entity_data_at(left)) {
+                left += 1;
+            }
+
+            // Move right pointer backward until a valid entry is found
+            while left <= right && !should_frontload(&self.entity_data_at(right)) {
+                right = right.wrapping_sub(1);
+            }
+
+            if left >= right {
+                break;
+            }
+
+            // Swap entities and record swapped indices
+            self.swap_entities(left, right);
+            swaps_made.push((left, self.entities[left]));
+            swaps_made.push((right, self.entities[right]));
+
+            left += 1;
+            right = right.wrapping_sub(1);
+        }
+
+        // Only update indices for swapped entities
+        for (index, entity_id) in swaps_made {
+            let reference = EntityArchetypeRef {
+                archetype: self.id(),
+                index
+            };
+            entity_lookup.insert(entity_id, reference);
+        }
+
+        // At this point, `left` indicates how many entities are valid (frontloaded)
+        left
+    }
+
+    #[inline(always)]
+    pub fn entity_data_at(&self, idx: usize) -> CubeEntityData {
+        CubeEntityData {
+            position: self.positions[idx].clone(),
+            velocity: self.velocities[idx].clone(),
+            transform: self.transforms[idx].clone(),
+            model: self.models[idx].clone(),
+        }
+    }
+
+    #[inline(always)]
+    pub fn swap_entities(&mut self, idx_a: usize, idx_b: usize) {
+        self.entities.swap(idx_a, idx_b);
+        self.positions.swap(idx_a, idx_b);
+        self.velocities.swap(idx_a, idx_b);
+        self.transforms.swap(idx_a, idx_b);
+        self.models.swap(idx_a, idx_b);
+    }
+}

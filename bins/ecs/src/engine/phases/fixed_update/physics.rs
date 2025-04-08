@@ -24,4 +24,5 @@ impl ApplyPhysicsSystem for PhysicsSystem {
         position.y += velocity.y * dt;
         position.z += velocity.z * dt;
     }
+
 }
