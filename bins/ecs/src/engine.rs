@@ -58,28 +58,61 @@ impl<E, Q> MainWorld<E, Q> {
     }
 }
 
-impl CubeArchetype {
+impl FrontloadEntitiesScan for CubeArchetype {
+}
+
+impl GetEntityAt for CubeArchetype {
+    type EntityRef<'archetype> = CubeEntityRef<'archetype>;
+
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+}
+
+pub trait GetEntityAt {
+    type EntityRef<'archetype>
+    where
+        Self: 'archetype;
+
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>>;
+}
+
+pub trait FrontloadEntitiesScan:
+    Archetype
+    + FrontloadEntities
+    + GetEntityAt
+    + core::ops::Index<usize, Output = EntityId>
+{
+
     /// Frontloads entities satisfying `should_frontload`.
     /// Returns the number of entities frontloaded.
-    pub fn frontload_entities<F>(&mut self, entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>, should_frontload: F) -> usize
+    fn frontload_entities<F>(&mut self, entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>, should_frontload: F) -> usize
     where
-        F: Fn(&CubeEntityRef) -> bool,
+        for<'archetype> F: Fn(&<Self as GetEntityAt>::EntityRef<'archetype>) -> bool,
     {
         let mut left = 0;
-        let mut right = self.entities.len().wrapping_sub(1);
+        let mut right = self.len().wrapping_sub(1);
         let mut swaps_made = Vec::new();
 
         loop {
             // Move left pointer forward until an invalid entry is found
-            let reference =  self.get_at(left).unwrap();
-            while left <= right && should_frontload(&reference) {
-                left += 1;
+            while left <= right {
+                let reference = self.get_at(left).unwrap();
+                if should_frontload(&reference) {
+                    left += 1;
+                } else {
+                    break;
+                }
             }
 
             // Move right pointer backward until a valid entry is found
-            let reference =  self.get_at(right).unwrap();
-            while left <= right && !should_frontload(&reference) {
-                right = right.wrapping_sub(1);
+            while left <= right {
+                let reference = self.get_at(right).unwrap();
+                if !should_frontload(&reference) {
+                    right = right.wrapping_sub(1);
+                } else {
+                    break;
+                }
             }
 
             if left >= right {
@@ -88,8 +121,8 @@ impl CubeArchetype {
 
             // Swap entities and record swapped indices
             self.swap_entities(left, right);
-            swaps_made.push((left, self.entities[left]));
-            swaps_made.push((right, self.entities[right]));
+            swaps_made.push((left, self[left]));
+            swaps_made.push((right, self[right]));
 
             left += 1;
             right = right.wrapping_sub(1);
@@ -98,7 +131,7 @@ impl CubeArchetype {
         // Only update indices for swapped entities
         for (index, entity_id) in swaps_made {
             let reference = EntityArchetypeRef {
-                archetype: self.id(),
+                archetype: Self::ID,
                 index
             };
             entity_lookup.insert(entity_id, reference);
@@ -106,24 +139,5 @@ impl CubeArchetype {
 
         // At this point, `left` indicates how many entities are valid (frontloaded)
         left
-    }
-
-    #[inline(always)]
-    pub fn entity_data_at(&self, idx: usize) -> CubeEntityData {
-        CubeEntityData {
-            position: self.positions[idx].clone(),
-            velocity: self.velocities[idx].clone(),
-            transform: self.transforms[idx].clone(),
-            model: self.models[idx].clone(),
-        }
-    }
-
-    #[inline(always)]
-    pub fn swap_entities(&mut self, idx_a: usize, idx_b: usize) {
-        self.entities.swap(idx_a, idx_b);
-        self.positions.swap(idx_a, idx_b);
-        self.velocities.swap(idx_a, idx_b);
-        self.transforms.swap(idx_a, idx_b);
-        self.models.swap(idx_a, idx_b);
     }
 }

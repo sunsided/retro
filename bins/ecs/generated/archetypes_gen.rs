@@ -2549,3 +2549,251 @@ impl PartialEq<ArchetypeId> for SceneBackgroundArchetype {
         Self::ID.eq(other)
     }
 }
+
+impl core::ops::Index<usize> for CameraArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for DynamicLightArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for CubeArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for PlayerArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for ForegroundObjectArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for BackgroundObjectArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for SceneBackgroundArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+pub trait FrontloadEntities: Archetype + core::ops::Index<usize, Output = EntityId> {
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    fn frontload_entities_by_ids(
+        &mut self,
+        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        // Collect and filter valid indices
+        let mut indices_to_frontload: Vec<usize> = entities_to_frontload
+            .iter()
+            .filter_map(|id| entity_lookup.get(id))
+            .filter(|id| id.archetype == Self::ID)
+            .map(|id| id.index)
+            .collect();
+
+        // Sort indices to achieve linear access patterns
+        // TODO: Measure; might be overkill for small numbers
+        indices_to_frontload.sort_unstable();
+
+        let mut frontload_target_idx = previous_frontload_pivot.unwrap_or_default();
+        let mut swaps_made = Vec::new();
+
+        for current_idx in indices_to_frontload {
+            // If already frontloaded, skip
+            if current_idx < frontload_target_idx {
+                continue;
+            }
+
+            // If entity is exactly where it should be, no swap needed
+            if current_idx == frontload_target_idx {
+                frontload_target_idx += 1;
+                continue;
+            }
+
+            // Swap the entity into the target frontload position
+            self.swap_entities(current_idx, frontload_target_idx);
+
+            // Track swapped entity IDs for lookup update
+            let swapped_entity_id = self[current_idx];
+            let frontloaded_entity_id = self[frontload_target_idx];
+
+            swaps_made.push((frontloaded_entity_id, frontload_target_idx));
+            swaps_made.push((swapped_entity_id, current_idx));
+
+            frontload_target_idx += 1;
+        }
+
+        // Update only swapped entity positions in the lookup map
+        for (eid, index) in swaps_made {
+            let reference = EntityArchetypeRef {
+                archetype: Self::ID,
+                index
+            };
+            entity_lookup.insert(eid, reference);
+        }
+
+        frontload_target_idx
+    }
+
+    fn swap_entities(&mut self, current_idx: usize, new_idx: usize);
+}
+
+impl FrontloadEntities for CameraArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.cameras.swap(first, second);
+        self.camera_fps_controllers.swap(first, second);
+    }
+}
+
+impl CameraArchetype {
+
+}
+
+impl FrontloadEntities for DynamicLightArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.dynamic_lights.swap(first, second);
+        self.colors.swap(first, second);
+        self.positions.swap(first, second);
+    }
+}
+
+impl DynamicLightArchetype {
+
+}
+
+impl FrontloadEntities for CubeArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+        self.velocities.swap(first, second);
+        self.transforms.swap(first, second);
+        self.models.swap(first, second);
+    }
+}
+
+impl CubeArchetype {
+
+}
+
+impl FrontloadEntities for PlayerArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+        self.velocities.swap(first, second);
+        self.healths.swap(first, second);
+    }
+}
+
+impl PlayerArchetype {
+
+}
+
+impl FrontloadEntities for ForegroundObjectArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+        self.colliders.swap(first, second);
+    }
+}
+
+impl ForegroundObjectArchetype {
+
+}
+
+impl FrontloadEntities for BackgroundObjectArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.positions.swap(first, second);
+    }
+}
+
+impl BackgroundObjectArchetype {
+
+}
+
+impl FrontloadEntities for SceneBackgroundArchetype {
+    /// Swaps two entities in the archetype.
+    ///
+    /// Note that this function is meant to be called internally and does **not** perform any bookkeeping
+    /// such as updating the world's entity location map.
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.background_colors.swap(first, second);
+    }
+}
+
+impl SceneBackgroundArchetype {
+
+}
