@@ -68,13 +68,25 @@ fn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {
 
 // Fragment shader
 
-// Global helper function for luminance calculation
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    // If outside [0..1], return black
+    if (in.uv.x < 0.0 || in.uv.x > 1.0 || in.uv.y < 0.0 || in.uv.y > 1.0) {
+        return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    }
+
+    // Otherwise sample the retro texture
+    return textureSample(myTexture, mySampler, in.uv);
+}
+
+// Edge-preserving fragment shader
+
 fn luminance(c: vec4<f32>) -> f32 {
     return dot(c.rgb, vec3<f32>(0.299, 0.587, 0.114));
 }
 
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_edge_preserving_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Return black if UV is out of bounds
     if (in.uv.x < 0.0 || in.uv.x > 1.0 || in.uv.y < 0.0 || in.uv.y > 1.0) {
         return vec4<f32>(0.0, 0.0, 0.0, 1.0);
