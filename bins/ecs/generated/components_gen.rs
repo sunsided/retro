@@ -1,31 +1,232 @@
 /// The ID of a [`Component`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct ComponentId(core::num::NonZeroU64);
+#[repr(u32)]
+pub enum ComponentId {
+    /// The [`Camera`](CameraComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`CameraSystem`] ([`SystemId::Camera`])
+    /// - [`CameraRenderSystem`] ([`SystemId::CameraRender`])
+    Camera = 1,
+    /// The [`CameraFpsController`](CameraFpsControllerComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`CameraSystem`] ([`SystemId::Camera`])
+    CameraFpsController = 2,
+    /// The [`Position`](PositionComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+    /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+    /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+    /// - [`ForegroundObjectArchetype`] ([`ArchetypeId::ForegroundObject`])
+    /// - [`BackgroundObjectArchetype`] ([`ArchetypeId::BackgroundObject`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`PhysicsSystem`] ([`SystemId::Physics`])
+    /// - [`RenderSystem`] ([`SystemId::Render`])
+    Position = 3,
+    /// The [`Transform`](TransformComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`RenderSystem`] ([`SystemId::Render`])
+    Transform = 4,
+    /// The [`Velocity`](VelocityComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+    /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`PhysicsSystem`] ([`SystemId::Physics`])
+    Velocity = 5,
+    /// The [`Health`](HealthComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    Health = 6,
+    /// The [`Collider`](ColliderComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`ForegroundObjectArchetype`] ([`ArchetypeId::ForegroundObject`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    Collider = 7,
+    /// The [`Model`](ModelComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`RenderSystem`] ([`SystemId::Render`])
+    Model = 8,
+    /// The [`Color`](ColorComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
+    Color = 9,
+    /// The background color used for clearing the render buffer
+    ///
+    /// For details, see the [`BackgroundColorComponent`](BackgroundColorComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`BackgroundColorCycleSystem`] ([`SystemId::BackgroundColorCycle`])
+    /// - [`RenderBackgroundSystem`] ([`SystemId::RenderBackground`])
+    /// - [`VgaBlitSystem`] ([`SystemId::VgaBlit`])
+    BackgroundColor = 10,
+    /// A marker component for light entities
+    ///
+    /// For details, see the [`DynamicLightComponent`](DynamicLightComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
+    DynamicLight = 11,
+}
 
 #[allow(dead_code)]
 impl ComponentId {
-    pub const fn new(id: u64) -> Option<Self> {
-        if let Some(id) = core::num::NonZeroU64::new(id) {
-            Some(Self(id))
-        } else {
-            None
-        }
-    }
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Camera`](ComponentId::Camera) component.
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::CameraFpsController`](ComponentId::CameraFpsController) component.
+    pub const CAMERA_FPS_CONTROLLER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Position`](ComponentId::Position) component.
+    pub const POSITION_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Transform`](ComponentId::Transform) component.
+    pub const TRANSFORM_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Velocity`](ComponentId::Velocity) component.
+    pub const VELOCITY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Health`](ComponentId::Health) component.
+    pub const HEALTH_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Collider`](ComponentId::Collider) component.
+    pub const COLLIDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Model`](ComponentId::Model) component.
+    pub const MODEL_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Color`](ComponentId::Color) component.
+    pub const COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::BackgroundColor`](ComponentId::BackgroundColor) component.
+    pub const BACKGROUND_COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::DynamicLight`](ComponentId::DynamicLight) component.
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+}
 
+#[allow(dead_code)]
+impl ComponentId {
+    /// Compile-time constant lookup of [`ComponentId::Camera`](ComponentId::Camera).
+    const COMPONENT_1: ComponentId = ComponentId::Camera;
+    /// Compile-time constant lookup of [`ComponentId::CameraFpsController`](ComponentId::CameraFpsController).
+    const COMPONENT_2: ComponentId = ComponentId::CameraFpsController;
+    /// Compile-time constant lookup of [`ComponentId::Position`](ComponentId::Position).
+    const COMPONENT_3: ComponentId = ComponentId::Position;
+    /// Compile-time constant lookup of [`ComponentId::Transform`](ComponentId::Transform).
+    const COMPONENT_4: ComponentId = ComponentId::Transform;
+    /// Compile-time constant lookup of [`ComponentId::Velocity`](ComponentId::Velocity).
+    const COMPONENT_5: ComponentId = ComponentId::Velocity;
+    /// Compile-time constant lookup of [`ComponentId::Health`](ComponentId::Health).
+    const COMPONENT_6: ComponentId = ComponentId::Health;
+    /// Compile-time constant lookup of [`ComponentId::Collider`](ComponentId::Collider).
+    const COMPONENT_7: ComponentId = ComponentId::Collider;
+    /// Compile-time constant lookup of [`ComponentId::Model`](ComponentId::Model).
+    const COMPONENT_8: ComponentId = ComponentId::Model;
+    /// Compile-time constant lookup of [`ComponentId::Color`](ComponentId::Color).
+    const COMPONENT_9: ComponentId = ComponentId::Color;
+    /// Compile-time constant lookup of [`ComponentId::BackgroundColor`](ComponentId::BackgroundColor).
+    const COMPONENT_10: ComponentId = ComponentId::BackgroundColor;
+    /// Compile-time constant lookup of [`ComponentId::DynamicLight`](ComponentId::DynamicLight).
+    const COMPONENT_11: ComponentId = ComponentId::DynamicLight;
+}
+
+#[allow(dead_code)]
+impl ComponentId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
+        match self {
+            Self::Camera => Self::CAMERA_ID_VALUE,
+            Self::CameraFpsController => Self::CAMERA_FPS_CONTROLLER_ID_VALUE,
+            Self::Position => Self::POSITION_ID_VALUE,
+            Self::Transform => Self::TRANSFORM_ID_VALUE,
+            Self::Velocity => Self::VELOCITY_ID_VALUE,
+            Self::Health => Self::HEALTH_ID_VALUE,
+            Self::Collider => Self::COLLIDER_ID_VALUE,
+            Self::Model => Self::MODEL_ID_VALUE,
+            Self::Color => Self::COLOR_ID_VALUE,
+            Self::BackgroundColor => Self::BACKGROUND_COLOR_ID_VALUE,
+            Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
+        }
     }
 
     /// Returns this ID as a `u64` value.
     pub const fn as_u64(&self) -> u64 {
-            self.0.get()
+        self.as_nonzero_u64().get()
     }
 }
 
 impl core::hash::Hash for ComponentId {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
+        self.as_u64().hash(state);
     }
 }
 
@@ -38,6 +239,24 @@ impl From<ComponentId> for core::num::NonZeroU64 {
 impl From<ComponentId> for u64 {
     fn from(value: ComponentId) -> u64 {
         value.as_u64()
+    }
+}
+
+impl core::fmt::Display for ComponentId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        match self {
+            Self::Camera => write!(f, "Camera (ID 1)"),
+            Self::CameraFpsController => write!(f, "CameraFpsController (ID 2)"),
+            Self::Position => write!(f, "Position (ID 3)"),
+            Self::Transform => write!(f, "Transform (ID 4)"),
+            Self::Velocity => write!(f, "Velocity (ID 5)"),
+            Self::Health => write!(f, "Health (ID 6)"),
+            Self::Collider => write!(f, "Collider (ID 7)"),
+            Self::Model => write!(f, "Model (ID 8)"),
+            Self::Color => write!(f, "Color (ID 9)"),
+            Self::BackgroundColor => write!(f, "BackgroundColor (ID 10)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 11)"),
+        }
     }
 }
 
@@ -54,9 +273,20 @@ pub trait Component: 'static + Send + Sync {
     }
 }
 
-/// A component.
+/// A `Camera` component.
 ///
 /// See also [`CameraData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`CameraSystem`] ([`SystemId::Camera`])
+/// - [`CameraRenderSystem`] ([`SystemId::CameraRender`])
 #[derive(Debug, Clone)]
 pub struct CameraComponent(CameraData);
 
@@ -75,7 +305,7 @@ impl CameraComponent {
 
 #[automatically_derived]
 impl Component for CameraComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(1).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Camera;
 }
 
 impl PartialEq<ComponentId> for CameraComponent {
@@ -135,9 +365,19 @@ impl core::borrow::BorrowMut<CameraData> for CameraComponent {
     }
 }
 
-/// A component.
+/// A `CameraFpsController` component.
 ///
 /// See also [`CameraFpsControllerData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`CameraSystem`] ([`SystemId::Camera`])
 #[derive(Debug, Clone)]
 pub struct CameraFpsControllerComponent(CameraFpsControllerData);
 
@@ -156,7 +396,7 @@ impl CameraFpsControllerComponent {
 
 #[automatically_derived]
 impl Component for CameraFpsControllerComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(2).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::CameraFpsController;
 }
 
 impl PartialEq<ComponentId> for CameraFpsControllerComponent {
@@ -216,9 +456,24 @@ impl core::borrow::BorrowMut<CameraFpsControllerData> for CameraFpsControllerCom
     }
 }
 
-/// A component.
+/// A `Position` component.
 ///
 /// See also [`PositionData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+/// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+/// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+/// - [`ForegroundObjectArchetype`] ([`ArchetypeId::ForegroundObject`])
+/// - [`BackgroundObjectArchetype`] ([`ArchetypeId::BackgroundObject`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`PhysicsSystem`] ([`SystemId::Physics`])
+/// - [`RenderSystem`] ([`SystemId::Render`])
 #[derive(Debug, Clone)]
 pub struct PositionComponent(PositionData);
 
@@ -237,7 +492,7 @@ impl PositionComponent {
 
 #[automatically_derived]
 impl Component for PositionComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(3).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Position;
 }
 
 impl PartialEq<ComponentId> for PositionComponent {
@@ -297,9 +552,19 @@ impl core::borrow::BorrowMut<PositionData> for PositionComponent {
     }
 }
 
-/// A component.
+/// A `Transform` component.
 ///
 /// See also [`TransformData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`RenderSystem`] ([`SystemId::Render`])
 #[derive(Debug, Clone)]
 pub struct TransformComponent(TransformData);
 
@@ -318,7 +583,7 @@ impl TransformComponent {
 
 #[automatically_derived]
 impl Component for TransformComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(4).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Transform;
 }
 
 impl PartialEq<ComponentId> for TransformComponent {
@@ -378,9 +643,20 @@ impl core::borrow::BorrowMut<TransformData> for TransformComponent {
     }
 }
 
-/// A component.
+/// A `Velocity` component.
 ///
 /// See also [`VelocityData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+/// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`PhysicsSystem`] ([`SystemId::Physics`])
 #[derive(Debug, Clone)]
 pub struct VelocityComponent(VelocityData);
 
@@ -399,7 +675,7 @@ impl VelocityComponent {
 
 #[automatically_derived]
 impl Component for VelocityComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(5).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Velocity;
 }
 
 impl PartialEq<ComponentId> for VelocityComponent {
@@ -459,9 +735,18 @@ impl core::borrow::BorrowMut<VelocityData> for VelocityComponent {
     }
 }
 
-/// A component.
+/// A `Health` component.
 ///
 /// See also [`HealthData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
 #[derive(Debug, Clone)]
 pub struct HealthComponent(HealthData);
 
@@ -480,7 +765,7 @@ impl HealthComponent {
 
 #[automatically_derived]
 impl Component for HealthComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(6).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Health;
 }
 
 impl PartialEq<ComponentId> for HealthComponent {
@@ -540,9 +825,18 @@ impl core::borrow::BorrowMut<HealthData> for HealthComponent {
     }
 }
 
-/// A component.
+/// A `Collider` component.
 ///
 /// See also [`ColliderData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`ForegroundObjectArchetype`] ([`ArchetypeId::ForegroundObject`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
 #[derive(Debug, Clone)]
 pub struct ColliderComponent(ColliderData);
 
@@ -561,7 +855,7 @@ impl ColliderComponent {
 
 #[automatically_derived]
 impl Component for ColliderComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(7).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Collider;
 }
 
 impl PartialEq<ComponentId> for ColliderComponent {
@@ -621,9 +915,19 @@ impl core::borrow::BorrowMut<ColliderData> for ColliderComponent {
     }
 }
 
-/// A component.
+/// A `Model` component.
 ///
 /// See also [`ModelData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`RenderSystem`] ([`SystemId::Render`])
 #[derive(Debug, Clone)]
 pub struct ModelComponent(ModelData);
 
@@ -642,7 +946,7 @@ impl ModelComponent {
 
 #[automatically_derived]
 impl Component for ModelComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(8).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Model;
 }
 
 impl PartialEq<ComponentId> for ModelComponent {
@@ -702,9 +1006,19 @@ impl core::borrow::BorrowMut<ModelData> for ModelComponent {
     }
 }
 
-/// A component.
+/// A `Color` component.
 ///
 /// See also [`ColorData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
 #[derive(Debug, Clone)]
 pub struct ColorComponent(ColorData);
 
@@ -723,7 +1037,7 @@ impl ColorComponent {
 
 #[automatically_derived]
 impl Component for ColorComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(9).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::Color;
 }
 
 impl PartialEq<ComponentId> for ColorComponent {
@@ -786,6 +1100,18 @@ impl core::borrow::BorrowMut<ColorData> for ColorComponent {
 /// The background color used for clearing the render buffer
 ///
 /// See also [`BackgroundColorData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`BackgroundColorCycleSystem`] ([`SystemId::BackgroundColorCycle`])
+/// - [`RenderBackgroundSystem`] ([`SystemId::RenderBackground`])
+/// - [`VgaBlitSystem`] ([`SystemId::VgaBlit`])
 #[derive(Debug, Clone)]
 pub struct BackgroundColorComponent(BackgroundColorData);
 
@@ -804,7 +1130,7 @@ impl BackgroundColorComponent {
 
 #[automatically_derived]
 impl Component for BackgroundColorComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(10).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::BackgroundColor;
 }
 
 impl PartialEq<ComponentId> for BackgroundColorComponent {
@@ -867,6 +1193,16 @@ impl core::borrow::BorrowMut<BackgroundColorData> for BackgroundColorComponent {
 /// A marker component for light entities
 ///
 /// See also [`DynamicLightData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
 #[derive(Debug, Clone)]
 pub struct DynamicLightComponent(DynamicLightData);
 
@@ -885,7 +1221,7 @@ impl DynamicLightComponent {
 
 #[automatically_derived]
 impl Component for DynamicLightComponent {
-    const ID: ComponentId = ComponentId(core::num::NonZeroU64::new(11).expect("A zero component ID was provided"));
+    const ID: ComponentId = ComponentId::DynamicLight;
 }
 
 impl PartialEq<ComponentId> for DynamicLightComponent {

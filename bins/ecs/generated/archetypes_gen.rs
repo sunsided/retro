@@ -55,24 +55,69 @@ impl core::fmt::Display for EntityId {
 
 /// The ID of an [`Archetype`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct ArchetypeId(core::num::NonZeroU64);
+#[repr(u32)]
+pub enum ArchetypeId {
+    /// The [`Camera`](CameraArchetype) archetype.
+    Camera = 1,
+    /// The [`DynamicLight`](DynamicLightArchetype) archetype.
+    DynamicLight = 2,
+    /// A marching cube :)
+    ///
+    /// For details, see the [`CubeArchetype`](CubeArchetype) Struct.
+    Cube = 3,
+    /// The [`Player`](PlayerArchetype) archetype.
+    Player = 4,
+    /// The [`ForegroundObject`](ForegroundObjectArchetype) archetype.
+    ForegroundObject = 5,
+    /// The [`BackgroundObject`](BackgroundObjectArchetype) archetype.
+    BackgroundObject = 6,
+    /// The scene background.
+    ///
+    /// For details, see the [`SceneBackgroundArchetype`](SceneBackgroundArchetype) Struct.
+    SceneBackground = 7,
+}
+
+impl ArchetypeId {
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Camera`](ArchetypeId::Camera) archetype.
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::DynamicLight`](ArchetypeId::DynamicLight) archetype.
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Cube`](ArchetypeId::Cube) archetype.
+    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Player`](ArchetypeId::Player) archetype.
+    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::ForegroundObject`](ArchetypeId::ForegroundObject) archetype.
+    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::BackgroundObject`](ArchetypeId::BackgroundObject) archetype.
+    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::SceneBackground`](ArchetypeId::SceneBackground) archetype.
+    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+}
 
 #[allow(dead_code)]
 impl ArchetypeId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
+        match self {
+            Self::Camera => Self::CAMERA_ID_VALUE,
+            Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
+            Self::Cube => Self::CUBE_ID_VALUE,
+            Self::Player => Self::PLAYER_ID_VALUE,
+            Self::ForegroundObject => Self::FOREGROUND_OBJECT_ID_VALUE,
+            Self::BackgroundObject => Self::BACKGROUND_OBJECT_ID_VALUE,
+            Self::SceneBackground => Self::SCENE_BACKGROUND_ID_VALUE,
+        }
     }
 
     /// Returns this ID as a `u64` value.
     pub const fn as_u64(&self) -> u64 {
-            self.0.get()
+        self.as_nonzero_u64().get()
     }
 }
 
 impl core::hash::Hash for ArchetypeId {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
+        self.as_u64().hash(state);
     }
 }
 
@@ -90,15 +135,14 @@ impl From<ArchetypeId> for u64 {
 
 impl core::fmt::Display for ArchetypeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        match self.0.get() {
-            1 => write!(f, "Camera (Archetype ID 1)"),
-            2 => write!(f, "DynamicLight (Archetype ID 2)"),
-            3 => write!(f, "Cube (Archetype ID 3)"),
-            4 => write!(f, "Player (Archetype ID 4)"),
-            5 => write!(f, "ForegroundObject (Archetype ID 5)"),
-            6 => write!(f, "BackgroundObject (Archetype ID 6)"),
-            7 => write!(f, "SceneBackground (Archetype ID 7)"),
-            id => write!(f, "Archetype ID {id}")
+        match self {
+            Self::Camera => write!(f, "Camera (ID 1)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 2)"),
+            Self::Cube => write!(f, "Cube (ID 3)"),
+            Self::Player => write!(f, "Player (ID 4)"),
+            Self::ForegroundObject => write!(f, "ForegroundObject (ID 5)"),
+            Self::BackgroundObject => write!(f, "BackgroundObject (ID 6)"),
+            Self::SceneBackground => write!(f, "SceneBackground (ID 7)"),
         }
     }
 }
@@ -438,9 +482,9 @@ impl core::ops::DerefMut for CameraEntity {
 #[allow(dead_code)]
 impl CameraArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 2] = [
-        ComponentId::new(1).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(2).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 2] = [
+        ComponentId::COMPONENT_1,
+        ComponentId::COMPONENT_2,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -545,7 +589,7 @@ impl HasComponents<CameraFpsControllerComponent> for CameraArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for CameraArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(1).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::Camera;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -785,10 +829,10 @@ impl core::ops::DerefMut for DynamicLightEntity {
 #[allow(dead_code)]
 impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 3] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(9).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(11).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 3] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_11,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -909,7 +953,7 @@ impl HasComponents<PositionComponent> for DynamicLightArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for DynamicLightArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(2).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::DynamicLight;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1181,11 +1225,11 @@ impl core::ops::DerefMut for CubeEntity {
 #[allow(dead_code)]
 impl CubeArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 4] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(4).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(8).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 4] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_4,
+        ComponentId::COMPONENT_5,
+        ComponentId::COMPONENT_8,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1322,7 +1366,7 @@ impl HasComponents<ModelComponent> for CubeArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for CubeArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(3).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::Cube;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1562,10 +1606,10 @@ impl core::ops::DerefMut for PlayerEntity {
 #[allow(dead_code)]
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 3] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(5).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(6).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 3] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_5,
+        ComponentId::COMPONENT_6,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1686,7 +1730,7 @@ impl HasComponents<HealthComponent> for PlayerArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for PlayerArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(4).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::Player;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -1894,9 +1938,9 @@ impl core::ops::DerefMut for ForegroundObjectEntity {
 #[allow(dead_code)]
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 2] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
-        ComponentId::new(7).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 2] = [
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_7,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2001,7 +2045,7 @@ impl HasComponents<ColliderComponent> for ForegroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for ForegroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(5).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::ForegroundObject;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -2177,8 +2221,8 @@ impl core::ops::DerefMut for BackgroundObjectEntity {
 #[allow(dead_code)]
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(3).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 1] = [
+        ComponentId::COMPONENT_3,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2267,7 +2311,7 @@ impl HasComponents<PositionComponent> for BackgroundObjectArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for BackgroundObjectArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(6).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::BackgroundObject;
 
     fn len(&self) -> usize {
         self.entities.len()
@@ -2443,8 +2487,8 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 #[allow(dead_code)]
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENT_IDS: [ComponentId; 1] = [
-        ComponentId::new(10).expect("Invalid ID on ECS construction time"),
+    pub const COMPONENTS: [ComponentId; 1] = [
+        ComponentId::COMPONENT_10,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2533,7 +2577,7 @@ impl HasComponents<BackgroundColorComponent> for SceneBackgroundArchetype {
 #[automatically_derived]
 #[allow(dead_code)]
 impl Archetype for SceneBackgroundArchetype {
-    const ID: ArchetypeId = ArchetypeId(core::num::NonZeroU64::new(7).expect("A zero archetype ID was provided"));
+    const ID: ArchetypeId = ArchetypeId::SceneBackground;
 
     fn len(&self) -> usize {
         self.entities.len()

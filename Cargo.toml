@@ -6,3 +6,6 @@ default-members = ["crates/*", "bins/*"]
 [profile.dev]
 opt-level = 1
 debug = true
+
+[profile.dev.package.sillyecs]
+opt-level = 3

@@ -1,22 +1,154 @@
 /// The ID of a [`System`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct SystemId(core::num::NonZeroU64);
+#[repr(u32)]
+pub enum SystemId {
+    /// The [`Camera`](CameraSystem) system.
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`CameraComponent`]
+    /// - [`CameraFpsControllerComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+    Camera = 1,
+    /// The [`CameraRender`](CameraRenderSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`CameraComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+    CameraRender = 2,
+    /// The [`Physics`](PhysicsSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`VelocityComponent`]
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`PositionComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+    /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
+    Physics = 3,
+    /// The [`BackgroundColorCycle`](BackgroundColorCycleSystem) system.
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`BackgroundColorComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
+    BackgroundColorCycle = 4,
+    /// The [`RenderBackground`](RenderBackgroundSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`BackgroundColorComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
+    RenderBackground = 5,
+    /// The [`Render`](RenderSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`PositionComponent`]
+    /// - [`TransformComponent`]
+    /// - [`ModelComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+    Render = 6,
+    /// The [`DynamicLight`](DynamicLightSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`ColorComponent`]
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`DynamicLightComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+    DynamicLight = 7,
+    /// If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
+    ///
+    /// For details, see the [`VgaBlitSystem`](VgaBlitSystem) Struct.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`BackgroundColorComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
+    VgaBlit = 8,
+}
+
+impl SystemId {
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Camera`](SystemId::Camera) system.
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::CameraRender`](SystemId::CameraRender) system.
+    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Physics`](SystemId::Physics) system.
+    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::BackgroundColorCycle`](SystemId::BackgroundColorCycle) system.
+    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderBackground`](SystemId::RenderBackground) system.
+    pub const RENDER_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Render`](SystemId::Render) system.
+    pub const RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::DynamicLight`](SystemId::DynamicLight) system.
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::VgaBlit`](SystemId::VgaBlit) system.
+    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+}
 
 impl SystemId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
+        match self {
+            Self::Camera => Self::CAMERA_ID_VALUE,
+            Self::CameraRender => Self::CAMERA_RENDER_ID_VALUE,
+            Self::Physics => Self::PHYSICS_ID_VALUE,
+            Self::BackgroundColorCycle => Self::BACKGROUND_COLOR_CYCLE_ID_VALUE,
+            Self::RenderBackground => Self::RENDER_BACKGROUND_ID_VALUE,
+            Self::Render => Self::RENDER_ID_VALUE,
+            Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
+            Self::VgaBlit => Self::VGA_BLIT_ID_VALUE,
+        }
     }
 
     /// Returns this ID as a `u64` value.
     pub const fn as_u64(&self) -> u64 {
-        self.0.get()
+        self.as_nonzero_u64().get()
     }
 }
 
 impl core::hash::Hash for SystemId {
     fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
+        self.as_u64().hash(state);
     }
 }
 
@@ -29,6 +161,21 @@ impl From<SystemId> for core::num::NonZeroU64 {
 impl From<SystemId> for u64 {
     fn from(value: SystemId) -> u64 {
         value.as_u64()
+    }
+}
+
+impl core::fmt::Display for SystemId {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        match self {
+            Self::Camera => write!(f, "Camera (ID 1)"),
+            Self::CameraRender => write!(f, "CameraRender (ID 2)"),
+            Self::Physics => write!(f, "Physics (ID 3)"),
+            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 4)"),
+            Self::RenderBackground => write!(f, "RenderBackground (ID 5)"),
+            Self::Render => write!(f, "Render (ID 6)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 7)"),
+            Self::VgaBlit => write!(f, "VgaBlit (ID 8)"),
+        }
     }
 }
 
@@ -336,13 +483,15 @@ pub trait SystemRenderPhaseEvents {
 /// The business logic is implemented via the [`ApplyCameraSystem`] trait.
 /// See also [`CameraData`] for the systems-specific data.
 ///
-/// ### Reads
-/// 
-///
 /// ### Mutates
 /// 
 /// - [`CameraComponent`]
 /// - [`CameraFpsControllerComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
 #[derive(Debug)]
 pub struct CameraSystem(CameraSystemData);
 
@@ -510,7 +659,7 @@ impl CameraSystem {
 
 #[automatically_derived]
 impl System for CameraSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(1).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::Camera;
 }
 
 impl PartialEq<SystemId> for CameraSystem {
@@ -551,8 +700,10 @@ impl core::ops::DerefMut for CameraSystem {
 /// 
 /// - [`CameraComponent`]
 ///
-/// ### Mutates
+/// # Archetype Use
+/// This component processes components in the following archetypes:
 /// 
+/// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
 #[derive(Debug)]
 pub struct CameraRenderSystem(CameraRenderSystemData);
 
@@ -709,7 +860,7 @@ impl CameraRenderSystem {
 
 #[automatically_derived]
 impl System for CameraRenderSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(2).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::CameraRender;
 }
 
 impl PartialEq<SystemId> for CameraRenderSystem {
@@ -753,6 +904,12 @@ impl core::ops::DerefMut for CameraRenderSystem {
 /// ### Mutates
 /// 
 /// - [`PositionComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
+/// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
 #[derive(Debug)]
 pub struct PhysicsSystem(PhysicsSystemData);
 
@@ -923,7 +1080,7 @@ impl PhysicsSystem {
 
 #[automatically_derived]
 impl System for PhysicsSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(3).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::Physics;
 }
 
 impl PartialEq<SystemId> for PhysicsSystem {
@@ -960,12 +1117,14 @@ impl core::ops::DerefMut for PhysicsSystem {
 /// The business logic is implemented via the [`ApplyBackgroundColorCycleSystem`] trait.
 /// See also [`BackgroundColorCycleData`] for the systems-specific data.
 ///
-/// ### Reads
-/// 
-///
 /// ### Mutates
 /// 
 /// - [`BackgroundColorComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
 #[derive(Debug)]
 pub struct BackgroundColorCycleSystem(BackgroundColorCycleSystemData);
 
@@ -1110,7 +1269,7 @@ impl BackgroundColorCycleSystem {
 
 #[automatically_derived]
 impl System for BackgroundColorCycleSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(4).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::BackgroundColorCycle;
 }
 
 impl PartialEq<SystemId> for BackgroundColorCycleSystem {
@@ -1151,8 +1310,10 @@ impl core::ops::DerefMut for BackgroundColorCycleSystem {
 /// 
 /// - [`BackgroundColorComponent`]
 ///
-/// ### Mutates
+/// # Archetype Use
+/// This component processes components in the following archetypes:
 /// 
+/// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
 #[derive(Debug)]
 pub struct RenderBackgroundSystem(RenderBackgroundSystemData);
 
@@ -1297,7 +1458,7 @@ impl RenderBackgroundSystem {
 
 #[automatically_derived]
 impl System for RenderBackgroundSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(5).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::RenderBackground;
 }
 
 impl PartialEq<SystemId> for RenderBackgroundSystem {
@@ -1340,8 +1501,10 @@ impl core::ops::DerefMut for RenderBackgroundSystem {
 /// - [`TransformComponent`]
 /// - [`ModelComponent`]
 ///
-/// ### Mutates
+/// # Archetype Use
+/// This component processes components in the following archetypes:
 /// 
+/// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
 #[derive(Debug)]
 pub struct RenderSystem(RenderSystemData);
 
@@ -1508,7 +1671,7 @@ impl RenderSystem {
 
 #[automatically_derived]
 impl System for RenderSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(6).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::Render;
 }
 
 impl PartialEq<SystemId> for RenderSystem {
@@ -1552,6 +1715,11 @@ impl core::ops::DerefMut for RenderSystem {
 /// ### Mutates
 /// 
 /// - [`DynamicLightComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
 #[derive(Debug)]
 pub struct DynamicLightSystem(DynamicLightSystemData);
 
@@ -1719,7 +1887,7 @@ impl DynamicLightSystem {
 
 #[automatically_derived]
 impl System for DynamicLightSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(7).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::DynamicLight;
 }
 
 impl PartialEq<SystemId> for DynamicLightSystem {
@@ -1761,8 +1929,10 @@ impl core::ops::DerefMut for DynamicLightSystem {
 /// 
 /// - [`BackgroundColorComponent`]
 ///
-/// ### Mutates
+/// # Archetype Use
+/// This component processes components in the following archetypes:
 /// 
+/// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
 #[derive(Debug)]
 pub struct VgaBlitSystem(VgaBlitSystemData);
 
@@ -1907,7 +2077,7 @@ impl VgaBlitSystem {
 
 #[automatically_derived]
 impl System for VgaBlitSystem {
-    const ID: SystemId = SystemId(core::num::NonZeroU64::new(8).expect("A zero system ID was provided"));
+    const ID: SystemId = SystemId::VgaBlit;
 }
 
 impl PartialEq<SystemId> for VgaBlitSystem {
