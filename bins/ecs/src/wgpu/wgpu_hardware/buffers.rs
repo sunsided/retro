@@ -1,10 +1,9 @@
 use std::ops::RangeBounds;
-use cgmath::{InnerSpace, Rotation3, Zero};
 use tracing::instrument;
 use wgpu::{BindingResource, Buffer, BufferAddress, BufferSlice, Queue};
 use wgpu::util::DeviceExt;
 use crate::wgpu::camera_uniform::CameraUniform;
-use crate::wgpu::instance::{Instance, InstanceRaw};
+use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::light::LightUniform;
 use crate::wgpu::retro_uniform::RetroUniform;
 
@@ -131,7 +130,6 @@ impl InstanceBuffer {
     // NOTE: Make sure that if you add new instances to the Vec, you recreate the
     //       instance_buffer as well as camera_bind_group. Otherwise, your new instances
     //       won't show up correctly.
-    const SPACE_BETWEEN: f32 = 3.0;
     const NUM_INSTANCES_PER_ROW: u32 = 10;
 
     #[instrument(skip(device))]
