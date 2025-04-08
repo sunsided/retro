@@ -129,17 +129,13 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         {
             let mut render_pass = frame_state.passes.clear_background_pass(&background_color);
 
-            // Enable the instance buffer.
-            // TODO: Whyyyy do I need an instance buffer for the light?
-            render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
-
             // Render the light.
             // TODO: Move the light rendering to another system
             render_pass.set_pipeline(&device.pipelines().light);
             render_pass.draw_light_model(
                 &device.models().cube,
-                &device.bind_groups().camera,
-                &device.bind_groups().light_vb,
+                &device.bind_groups().camera_uniform,
+                &device.bind_groups().light_uniforms,
             );
         }
     }

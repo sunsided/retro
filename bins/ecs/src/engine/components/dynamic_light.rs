@@ -38,6 +38,6 @@ impl DynamicLightData {
     }
 
     pub fn write_to_buffer(&self, gpu: &DeviceAndQueue) {
-        gpu.queue().write_buffer(gpu.buffers().light_vb.as_ref(), 0, bytemuck::cast_slice(&[self.uniform]));
+        gpu.queue().write_buffer(gpu.buffers().light_uniforms.as_ref(), 0, bytemuck::cast_slice(&[self.uniform]));
     }
 }

@@ -9,8 +9,8 @@ use crate::wgpu::retro_uniform::RetroUniform;
 
 #[derive(Debug)]
 pub struct Buffers {
-    pub camera: CameraBuffer,
-    pub light_vb: LightBuffer,
+    pub camera_uniform: CameraUniformBuffer,
+    pub light_uniforms: LightUniformBuffer,
     pub instances: InstanceBuffer,
     pub retro_uniform: RetroUniformBuffer,
 }
@@ -18,13 +18,13 @@ pub struct Buffers {
 impl Buffers {
     #[instrument(skip(device))]
     pub fn create_from(device: &wgpu::Device) -> Self {
-        let camera = CameraBuffer::create(device);
-        let light_vb = LightBuffer::create(device);
+        let camera_uniform = CameraUniformBuffer::create(device);
+        let light_uniforms = LightUniformBuffer::create(device);
         let instances = InstanceBuffer::create(device);
         let retro_uniform = RetroUniformBuffer::create(device);
         Self {
-            camera,
-            light_vb,
+            camera_uniform,
+            light_uniforms,
             instances,
             retro_uniform
         }
@@ -32,17 +32,17 @@ impl Buffers {
 }
 
 #[derive(Debug)]
-pub struct CameraBuffer {
+pub struct CameraUniformBuffer {
     buffer: Buffer,
 }
 
-impl CameraBuffer {
+impl CameraUniformBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
         let camera_uniform = CameraUniform::new();
         let buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
-                label: Some("camera_buffer"),
+                label: Some("camera_uniform"),
                 contents: bytemuck::cast_slice(&[camera_uniform]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
@@ -68,18 +68,18 @@ impl CameraBuffer {
     }
 }
 
-impl AsRef<Buffer> for CameraBuffer {
+impl AsRef<Buffer> for CameraUniformBuffer {
     fn as_ref(&self) -> &Buffer {
         &self.buffer
     }
 }
 
 #[derive(Debug)]
-pub struct LightBuffer {
+pub struct LightUniformBuffer {
     buffer: Buffer,
 }
 
-impl LightBuffer {
+impl LightUniformBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
         let light_uniform = LightUniform::new(
@@ -87,7 +87,7 @@ impl LightBuffer {
             [1.0, 1.0, 1.0]);
         let buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
-                label: Some("light_vb"),
+                label: Some("light_uniform"),
                 contents: bytemuck::cast_slice(&[light_uniform]),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             }
@@ -114,7 +114,7 @@ impl LightBuffer {
     }
 }
 
-impl AsRef<Buffer> for LightBuffer {
+impl AsRef<Buffer> for LightUniformBuffer {
     fn as_ref(&self) -> &Buffer {
         &self.buffer
     }

@@ -70,7 +70,7 @@ impl ApplyRenderSystem for RenderSystem {
             // Render, then clear the local buffer.
             if instance_buf.len() >= max_instances {
                 let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
-                render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
+                render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera_uniform, &device.bind_groups().light_uniforms);
                 instance_buf.clear();
             }
         }
@@ -78,7 +78,7 @@ impl ApplyRenderSystem for RenderSystem {
         // Render the rest.
         if instance_buf.len() > 0 {
             let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
-            render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
+            render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera_uniform, &device.bind_groups().light_uniforms);
             instance_buf.clear();
         }
     }
