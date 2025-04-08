@@ -14,6 +14,9 @@ var myTexture: texture_2d<f32>;
 @group(0) @binding(2)
 var mySampler: sampler;
 
+@group(0) @binding(3)
+var t_entity: texture_2d<u32>;
+
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) uv: vec2<f32>,

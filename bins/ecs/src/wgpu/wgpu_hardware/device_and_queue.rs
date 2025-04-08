@@ -32,7 +32,7 @@ pub struct DeviceAndQueue {
 impl DeviceAndQueue {
     pub(super) fn new(device: Device, queue: Queue, config: SurfaceConfiguration) -> DeviceAndQueue {
         let samplers = TextureSamplers::create_from(&device);
-        let textures = Textures::create_from(&device, &queue, config.format);
+        let textures = Textures::create_from(&device, &queue, &config);
         let buffers = Buffers::create_from(&device);
         let depths = DepthBuffers::create_from(&device, &config);
         let shaders = Shaders::create_from(&device);
@@ -94,6 +94,7 @@ impl DeviceAndQueue {
     #[instrument(skip(self))]
     pub fn recreate_surface_dependent_buffers(&mut self) {
         self.depths.recreate(&self.device, &self.config);
+        self.textures.recreate(&self.device, &self.config);
     }
 
     pub fn apply_render_pipeline_to_pass(&self, render_pass: &mut wgpu::RenderPass, pipeline_selector: RenderPipelineSelector) {

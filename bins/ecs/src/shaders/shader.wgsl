@@ -99,10 +99,16 @@ var t_normal: texture_2d<f32>;
 @group(0) @binding(3)
 var s_normal: sampler;
 
+// Fragment shader output
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @location(1) entity_id: u32,
+};
+
 // The @location(0) bit tells WGPU to store the vec4 value returned
 // by this function in the first color target.
 @fragment
-fn fs_flat_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_flat_main(in: VertexOutput) -> FragmentOutput {
     let object_color = vec4<f32>(0.3, 0.2, 0.1, 1.0);
     let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
 
@@ -125,7 +131,10 @@ fn fs_flat_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let specular_color = specular_strength * light.color;
 
     let result = (ambient_color + diffuse_color) * object_color.xyz;
-    return vec4<f32>(result, object_color.a);
+    var out: FragmentOutput;
+    out.color = vec4<f32>(result, object_color.a);
+    out.entity_id = in.entity_id;
+    return out;
 }
 
 // The @location(0) bit tells WGPU to store the vec4 value returned

@@ -109,6 +109,10 @@ impl BindGroups {
                     binding: 2,
                     resource: wgpu::BindingResource::Sampler(&samplers.retro_sampler),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::TextureView(&textures.frame_entity_id.view),
+                },
             ],
         })
     }
