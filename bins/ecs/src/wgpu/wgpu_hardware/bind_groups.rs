@@ -7,8 +7,8 @@ use crate::wgpu::wgpu_hardware::textures::Textures;
 
 #[derive(Debug)]
 pub struct BindGroups {
-    pub camera: BindGroup,
-    pub light_vb: BindGroup,
+    pub camera_uniform: BindGroup,
+    pub light_uniforms: BindGroup,
     #[allow(dead_code)]
     pub cover_tex: BindGroup,
     pub vga_fullscreen: BindGroup,
@@ -17,13 +17,13 @@ pub struct BindGroups {
 impl BindGroups {
     #[instrument(skip_all)]
     pub fn create_from(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers, textures: &Textures, samplers: &TextureSamplers) -> Self {
-        let camera = Self::create_camera(device, layouts, buffers);
-        let light_vb = Self::create_light(device, layouts, buffers);
+        let camera_uniform = Self::create_camera_uniform(device, layouts, buffers);
+        let light_uniforms = Self::create_light_uniform(device, layouts, buffers);
         let cover_tex = Self::create_cover(device, layouts, textures, samplers);
         let vga_fullscreen = Self::create_vga_fullscreen(device, layouts, textures, samplers, buffers);
         Self {
-            camera,
-            light_vb,
+            camera_uniform,
+            light_uniforms,
             cover_tex,
             vga_fullscreen
         }
@@ -64,13 +64,13 @@ impl BindGroups {
     }
 
     #[instrument(skip_all)]
-    fn create_camera(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers) -> BindGroup {
+    fn create_camera_uniform(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layouts.camera_uniforms,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: buffers.camera.as_entire_binding(),
+                    resource: buffers.camera_uniform.as_entire_binding(),
                 }
             ],
             label: Some("camera_bind_group"),
@@ -78,16 +78,16 @@ impl BindGroups {
     }
 
     #[instrument(skip_all)]
-    fn create_light(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers) -> BindGroup {
+    fn create_light_uniform(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layouts.lighting_uniforms,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: buffers.light_vb.as_entire_binding(),
+                    resource: buffers.light_uniforms.as_entire_binding(),
                 }
             ],
-            label: Some("light_vb_bind_group"),
+            label: Some("light_uniform_bind_group"),
         })
     }
 

@@ -174,9 +174,9 @@ pub struct MainWorldStates {
     /// The state is used in the following systems:
     /// - [`CameraSystem`]
     /// - [`CameraRenderSystem`]
-    /// - [`DynamicLightSystem`]
     /// - [`RenderBackgroundSystem`]
     /// - [`RenderSystem`]
+    /// - [`DynamicLightSystem`]
     /// - [`VgaBlitSystem`]
     pub wgpu_render: WgpuRenderState,
     /// The uniforms of the active camera.
@@ -1459,7 +1459,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 4
+        // System group 1 of 5
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1481,7 +1481,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 4
+        // System group 2 of 5
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1505,7 +1505,34 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 4
+        // System group 3 of 5
+        let is_ready = self.systems.dynamic_light.is_ready(
+               &self.context,
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.dynamic_light.on_begin_phase(
+                    &self.context,
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply DynamicLightSystem to DynamicLightArchetype
+            self.systems.dynamic_light.apply_many(
+                &self.context,
+                &mut self.states.wgpu_render,
+                &self.archetypes.dynamic_light.colors,
+                &mut self.archetypes.dynamic_light.dynamic_lights,
+            );
+
+            self.systems.dynamic_light.on_end_phase(
+                &self.context,
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 4 of 5
         let is_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1527,7 +1554,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 4 of 4
+        // System group 5 of 5
         let is_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1551,33 +1578,6 @@ impl<E, Q> MainWorld<E, Q> {
                 &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_end_phase returned an error"))
-            .ok();
-        }
-        // System group 4 of 4
-        let is_ready = self.systems.dynamic_light.is_ready(
-               &self.context,
-               &self.states.wgpu_render,
-           );
-        if is_ready && self.systems.dynamic_light.on_begin_phase(
-                    &self.context,
-                    &self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply DynamicLightSystem to DynamicLightArchetype
-            self.systems.dynamic_light.apply_many(
-                &self.context,
-                &self.states.wgpu_render,
-                &self.archetypes.dynamic_light.colors,
-                &mut self.archetypes.dynamic_light.dynamic_lights,
-            );
-
-            self.systems.dynamic_light.on_end_phase(
-                &self.context,
-                &self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -1679,6 +1679,43 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 3
+        let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
+               &self.context,
+               &mut self.states.wgpu_render,
+           );
+        let is_dynamic_light_ready = is_dynamic_light_ready &
+            self.systems.dynamic_light.on_begin_phase(
+                &self.context,
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_dynamic_light_ready {
+                    s.spawn(|_| {
+                        // Apply DynamicLightSystem to DynamicLightArchetype
+                        self.systems.dynamic_light.apply_many(
+                            &self.context,
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.dynamic_light.colors,
+                            &mut self.archetypes.dynamic_light.dynamic_lights,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.dynamic_light.on_end_phase(
+            &self.context,
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 4
         let is_vga_blit_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1710,7 +1747,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 4
+        // System group 5
         let is_camera_render_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1721,17 +1758,6 @@ impl<E, Q> MainWorld<E, Q> {
                 &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_begin_phase returned an error"))
-            .is_ok();
-        let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
-               &self.context,
-               &self.states.wgpu_render,
-           );
-        let is_dynamic_light_ready = is_dynamic_light_ready &
-            self.systems.dynamic_light.on_begin_phase(
-                &self.context,
-                &self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
@@ -1747,17 +1773,6 @@ impl<E, Q> MainWorld<E, Q> {
                         );
                     });
                 }
-                if is_dynamic_light_ready {
-                    s.spawn(|_| {
-                        // Apply DynamicLightSystem to DynamicLightArchetype
-                        self.systems.dynamic_light.apply_many(
-                            &self.context,
-                            &self.states.wgpu_render,
-                            &self.archetypes.dynamic_light.colors,
-                            &mut self.archetypes.dynamic_light.dynamic_lights,
-                        );
-                    });
-                }
             });
         }
 
@@ -1766,13 +1781,6 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.states.active_camera,
         )
         .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_end_phase returned an error"))
-        .ok();
-
-        self.systems.dynamic_light.on_end_phase(
-            &self.context,
-            &self.states.wgpu_render,
-        )
-        .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
         SystemRenderPhaseEvents::on_end_phase(

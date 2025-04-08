@@ -117,8 +117,7 @@ impl RenderPipelines {
             surface_format,
             Some(Texture::DEPTH_FORMAT),
             &[
-                ModelVertex::desc(),
-                InstanceRaw::desc()
+                ModelVertex::desc()
             ],
             RenderMode::Filled,
             "light"
