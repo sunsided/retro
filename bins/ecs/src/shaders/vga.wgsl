@@ -105,36 +105,35 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let upEntity:     u32 = textureLoad(t_entity, pixelCoord - vec2<i32>(0, 1), 0).r;
     let downEntity:   u32 = textureLoad(t_entity, pixelCoord + vec2<i32>(0, 1), 0).r;
 
-    // Sample depth values from the depth texture
+    // Sample depth values
     let centerDepth: f32 = textureLoad(t_depth, pixelCoord, 0);
     let leftDepth:   f32 = textureLoad(t_depth, pixelCoord - vec2<i32>(1, 0), 0);
     let rightDepth:  f32 = textureLoad(t_depth, pixelCoord + vec2<i32>(1, 0), 0);
     let upDepth:     f32 = textureLoad(t_depth, pixelCoord - vec2<i32>(0, 1), 0);
     let downDepth:   f32 = textureLoad(t_depth, pixelCoord + vec2<i32>(0, 1), 0);
 
-    // Define a threshold for depth differences
-    let depthThreshold: f32 = 0.05;
+    // Define a threshold for depth difference (tweak as needed)
+    let depthThreshold: f32 = 0.01;
 
-    // Detect if any neighbor has a different entity id and similar depth
+    // Only detect an edge on the "raising" flank (neighbor is further away)
     var edgeDetected: bool = false;
-    if (centerEntity != leftEntity && abs(centerDepth - leftDepth) < depthThreshold) {
+    if (centerEntity != leftEntity && centerDepth < leftDepth) {
         edgeDetected = true;
     }
-    if (centerEntity != rightEntity && abs(centerDepth - rightDepth) < depthThreshold) {
+    if (centerEntity != rightEntity && centerDepth < rightDepth) {
         edgeDetected = true;
     }
-    if (centerEntity != upEntity && abs(centerDepth - upDepth) < depthThreshold) {
+    if (centerEntity != upEntity && centerDepth < upDepth) {
         edgeDetected = true;
     }
-    if (centerEntity != downEntity && abs(centerDepth - downDepth) < depthThreshold) {
+    if (centerEntity != downEntity && centerDepth < downDepth) {
         edgeDetected = true;
     }
 
-    // Define an edge blend factor for darkening.
-    // 0.0 means no darkening; 1.0 would be completely dark.
-    let edgeBlendFactor: f32 = 0.8;
+    // Define a blend factor for darkening (0.0 = no outline, 1.0 = fully black outline)
+    let edgeBlendFactor: f32 = 1.0;
 
-    // If an edge is detected, blend the center color with a darker version of itself.
+    // If an edge is detected, blend the center color with black.
     if (edgeDetected) {
         let darkColor = vec4<f32>(0.0, 0.0, 0.0, 1.0);
         return mix(centerColor, darkColor, edgeBlendFactor);
