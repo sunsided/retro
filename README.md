@@ -16,7 +16,15 @@ by `winit` instead of `minifb`. Rendering is performed using `wgpu` by targeting
 VGA-sized (320x200) offscreen texture, then linearly sampling to fullscreen. The
 VGA upsampling shader provides some contour rendering for less pixel mess.
 
-Hardware instancing is used to render identical entites in batched calls.
+Other "highlights":
+
+- Archetype-style ECS via [sillyecs](https://github.com/sunsided/sillyecs) to drive simulation and rendering.
+- Unbounded simulation runs with vsync-locked rendering passes.
+- Hardware instancing is used to render identical entites in batched calls.
+- Simple dynamic lighting with a singular light source and Blinn-Phong Diffuse and Specular lighting.
+- Normal mapping support.
+- Model loading from `.obj` via the `tobj`.
+- A simple FPS-style camera controller.
 
 ## Screenshots
 
