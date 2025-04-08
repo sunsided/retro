@@ -15,7 +15,10 @@ impl Instance {
     }
 }
 
-/// The raw instance passed to the [`InstanceBuffer`](crate::wgpu::wgpu_hardware::InstanceBuffer)
+/// The raw instance passed to the [`InstanceBuffer`](crate::wgpu::wgpu_hardware::InstanceBuffer).
+///
+/// When changing fields, ensure the [`VertexBufferLayout`](wgpu::VertexBufferLayout) returned by
+/// the [`InstanceRaw::desc`](InstanceRaw::desc) function is adjusted accordingly.
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct InstanceRaw {
