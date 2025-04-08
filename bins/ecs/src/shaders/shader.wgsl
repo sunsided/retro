@@ -26,6 +26,9 @@ struct InstanceInput {
     @location(9) normal_matrix_0: vec3<f32>,
     @location(10) normal_matrix_1: vec3<f32>,
     @location(11) normal_matrix_2: vec3<f32>,
+
+    // The entity ID
+    @location(12) entity_id: u32,
 };
 
 struct VertexInput {
@@ -42,6 +45,7 @@ struct VertexOutput {
     @location(1) tangent_position: vec3<f32>,
     @location(2) tangent_light_position: vec3<f32>,
     @location(3) tangent_view_position: vec3<f32>,
+    @location(4) entity_id: u32,
 };
 
 @vertex
@@ -79,6 +83,7 @@ fn vs_main(
     out.tangent_position = tangent_matrix * world_position.xyz;
     out.tangent_view_position = tangent_matrix * camera.view_pos.xyz;
     out.tangent_light_position = tangent_matrix * light.position;
+    out.entity_id = instance.entity_id;
     return out;
 }
 
@@ -94,10 +99,16 @@ var t_normal: texture_2d<f32>;
 @group(0) @binding(3)
 var s_normal: sampler;
 
+// Fragment shader output
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @location(1) entity_id: u32,
+};
+
 // The @location(0) bit tells WGPU to store the vec4 value returned
 // by this function in the first color target.
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_flat_main(in: VertexOutput) -> FragmentOutput {
     let object_color = vec4<f32>(0.3, 0.2, 0.1, 1.0);
     let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
 
@@ -120,13 +131,14 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let specular_color = specular_strength * light.color;
 
     let result = (ambient_color + diffuse_color) * object_color.xyz;
-    return vec4<f32>(result, object_color.a);
+    var out: FragmentOutput;
+    out.color = vec4<f32>(result, object_color.a);
+    out.entity_id = in.entity_id;
+    return out;
 }
 
-// The @location(0) bit tells WGPU to store the vec4 value returned
-// by this function in the first color target.
 @fragment
-fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
+fn fs_textured_main(in: VertexOutput) -> FragmentOutput {
     let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
     let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
 
@@ -149,5 +161,29 @@ fn fs_textured_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let specular_color = specular_strength * light.color;
 
     let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
-    return vec4<f32>(result, object_color.a);
+
+    var out: FragmentOutput;
+    out.color = vec4<f32>(result, object_color.a);
+    out.entity_id = in.entity_id;
+    return out;
+}
+
+// Fragment shader for flat-shading each instance.
+@fragment
+fn fs_instance_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let color = randomColorFromID(in.entity_id);
+    return vec4<f32>(color, 1.0);
+}
+
+// Helper: Generate a pseudo-random value from the entity ID using an offset.
+fn randomValue(id: u32, offset: f32) -> f32 {
+    return fract(sin(f32(id) + offset) * 43758.5453);
+}
+
+// Generate a color vector by computing a different random value for each channel.
+fn randomColorFromID(id: u32) -> vec3<f32> {
+    let r = randomValue(id, 1.0);
+    let g = randomValue(id, 2.0);
+    let b = randomValue(id, 3.0);
+    return vec3<f32>(r, g, b);
 }

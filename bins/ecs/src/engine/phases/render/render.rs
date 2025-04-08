@@ -49,6 +49,7 @@ impl ApplyRenderSystem for RenderSystem {
             return;
         };
 
+        let frame_entity_ids = frame_state.per_frame_entity_ids();
         let mut render_pass = frame_state.render_pass(&device);
 
         // Enable the instance buffer.
@@ -61,9 +62,11 @@ impl ApplyRenderSystem for RenderSystem {
         instance_buf.clear();
 
         for ((position, transforms), _models) in positions.iter().zip(transforms).zip(models) {
+            let id = frame_entity_ids.next();
             let instance = Instance {
                 position: position.as_vector3(),
                 rotation: transforms.rotation,
+                entity_id: id
             };
             instance_buf.push(instance.to_raw());
 

@@ -1,11 +1,15 @@
-use tracing::instrument;
-use wgpu::{Device, Queue, TextureFormat};
+use tracing::{debug, instrument};
+use wgpu::{Device, Queue, SurfaceConfiguration, TextureFormat};
 use crate::wgpu::texture::{Texture, TextureType};
 
 #[derive(Debug)]
 pub struct Textures {
     /// My silly little VGA offscreen buffer (whopping 320x200 pixels!)
     pub vga_offscreen: Texture,
+    /// Frame entity ID buffer (surface-sized)
+    pub surface_frame_entity_id: Texture,
+    /// Frame entity ID buffer (VGA sized)
+    pub vga_frame_entity_id: Texture,
     /// A 1x1 normal map.
     pub fallback_normals: Texture,
     /// An example cover texture
@@ -14,14 +18,78 @@ pub struct Textures {
 
 impl Textures {
     #[instrument(skip_all)]
-    pub fn create_from(device: &Device, queue: &Queue, surface_format: TextureFormat) -> Self {
-        let vga_offscreen = Self::create_vga_offscreen(&device, surface_format);
+    pub fn create_from(device: &Device, queue: &Queue, surface_config: &SurfaceConfiguration) -> Self {
+        let vga_offscreen = Self::create_vga_offscreen(&device, surface_config.format);
+        let surface_frame_entity_id = Self::create_surface_frame_entity_id(&device, surface_config);
+        let vga_frame_entity_id = Self::create_vga_frame_entity_id(&device);
         let fallback_normals = Self::create_fallback_normals(&device, queue);
         let cover = Self::create_cover(&device, queue);
         Self {
             vga_offscreen,
+            surface_frame_entity_id,
+            vga_frame_entity_id,
             fallback_normals,
             cover
+        }
+    }
+
+    #[instrument(skip_all)]
+    pub fn recreate(&mut self, device: &Device, surface_config: &SurfaceConfiguration) {
+        debug!("Recreating texture buffers");
+        self.surface_frame_entity_id = Self::create_surface_frame_entity_id(&device, surface_config);
+    }
+
+    #[instrument(skip_all)]
+    fn create_surface_frame_entity_id(device: &Device, surface_config: &SurfaceConfiguration) -> Texture {
+        let size = wgpu::Extent3d {
+            width: surface_config.width,
+            height: surface_config.height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            format: TextureFormat::R32Uint,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            label: Some("frame_entity_id"),
+            dimension: wgpu::TextureDimension::D2,
+            view_formats: &[],
+        });
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        Texture {
+            texture,
+            view
+        }
+    }
+
+    #[instrument(skip_all)]
+    fn create_vga_frame_entity_id(device: &Device) -> Texture {
+        let size = wgpu::Extent3d {
+            width: Texture::VGA_WIDTH,
+            height: Texture::VGA_HEIGHT,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            format: TextureFormat::R32Uint,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            label: Some("frame_entity_id"),
+            dimension: wgpu::TextureDimension::D2,
+            view_formats: &[],
+        });
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        Texture {
+            texture,
+            view
         }
     }
 

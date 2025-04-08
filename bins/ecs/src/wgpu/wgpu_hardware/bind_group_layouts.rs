@@ -29,6 +29,7 @@ pub struct BindGroupLayouts {
     /// ## Bindings
     /// - `@binding(0)`: The texture
     /// - `@binding(1)`: The texture sampler
+    /// - `@binding(3)`: The entity ID
     pub vga_fullscreen: BindGroupLayout,
 }
 
@@ -160,6 +161,28 @@ impl BindGroupLayouts {
                     binding: 2,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+                // Binding 3 = (per-frame) entity ID
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Uint,
+                    },
+                    count: None,
+                },
+                // Binding 4 = depth buffer
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        multisampled: false,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        sample_type: wgpu::TextureSampleType::Depth
+                    },
                     count: None,
                 },
             ],

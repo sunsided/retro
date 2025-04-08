@@ -75,11 +75,15 @@ impl WgpuRenderState {
                     debug!("Switching to wireframe pipeline");
                     RenderPipelineSelector::Wireframe
                 } else {
-                    debug!("Switching to textured pipeline (wireframe not supported)");
-                    RenderPipelineSelector::Textured
+                    debug!("Switching to entity pipeline (wireframe not supported)");
+                    RenderPipelineSelector::Entity
                 }
             },
             RenderPipelineSelector::Wireframe => {
+                debug!("Switching to entity pipeline");
+                RenderPipelineSelector::Entity
+            },
+            RenderPipelineSelector::Entity => {
                 debug!("Switching to textured pipeline");
                 RenderPipelineSelector::Textured
             },

@@ -10,6 +10,7 @@ use crate::wgpu::texture::Texture;
 pub struct RenderPipelines {
     pub textured_render: RenderPipeline,
     pub flat_render: RenderPipeline,
+    pub flat_entity_render: RenderPipeline,
     pub light: RenderPipeline,
     pub wireframe_render: Option<RenderPipeline>,
     pub vga_fullscreen: RenderPipeline,
@@ -24,7 +25,9 @@ pub enum RenderPipelineSelector {
     Boring,
     /// Uses a wireframe rendering pipeline, if supported.
     /// Falls back to [`Boring`](Self::Boring) otherwise.
-    Wireframe
+    Wireframe,
+    /// Flat-shade each distinct entity.
+    Entity
 }
 
 impl RenderPipelines {
@@ -35,6 +38,7 @@ impl RenderPipelines {
             RenderPipelineSelector::Textured => &self.textured_render,
             RenderPipelineSelector::Boring => &self.flat_render,
             RenderPipelineSelector::Wireframe => &self.wireframe_render.as_ref().unwrap_or(&self.flat_render),
+            RenderPipelineSelector::Entity => &self.flat_entity_render,
         }
     }
 }
@@ -45,12 +49,14 @@ impl RenderPipelines {
         let layout = Self::create_standard_render_layout(&device, bind_group_layouts);
         let textured_render = Self::create_textured_render(&device, &layout, surface_format, shaders);
         let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
+        let flat_entity_render = Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
         let wireframe_render = Self::create_wireframe_render(&device, &layout, surface_format, shaders);
         let light = Self::create_light(&device, bind_group_layouts, surface_format, shaders);
         let vga_fullscreen = Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
         Self {
             textured_render,
             flat_render,
+            flat_entity_render,
             wireframe_render,
             light,
             vga_fullscreen
@@ -115,6 +121,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc()
@@ -145,6 +152,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -167,6 +175,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -187,6 +196,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -197,17 +207,58 @@ impl RenderPipelines {
         )
     }
 
+    #[instrument(skip_all)]
+    fn create_flat_entity_render(device: &Device, layout: &PipelineLayout, surface_format: TextureFormat, shaders: &Shaders) -> RenderPipeline {
+        Self::create_render_pipeline(
+            shaders.render.vertex_shader(),
+            shaders.render.instance_fragment_shader(),
+            &device,
+            &layout,
+            surface_format,
+            true,
+            Some(Texture::DEPTH_FORMAT),
+            &[
+                ModelVertex::desc(),
+                InstanceRaw::desc()
+            ],
+            RenderMode::Filled,
+            "flat_entity_render"
+        )
+    }
+
     fn create_render_pipeline(
         vertex: VertexShaderRef<'_>,
         fragment: FragmentShaderRef<'_>,
         device: &Device,
         layout: &PipelineLayout,
         color_format: TextureFormat,
+        write_entity_ids: bool,
         depth_format: Option<TextureFormat>,
         vertex_layouts: &[wgpu::VertexBufferLayout],
         render_mode: RenderMode,
         label: &str,
     ) -> RenderPipeline {
+        // Render to a texture.
+        let texture_target = Some(wgpu::ColorTargetState {
+            format: color_format,
+            blend: Some(wgpu::BlendState {
+                alpha: wgpu::BlendComponent::REPLACE,
+                color: wgpu::BlendComponent::REPLACE,
+            }),
+            write_mask: wgpu::ColorWrites::ALL,
+        });
+
+        // Render to an entity ID target
+        let entity_id_target = if write_entity_ids {
+            Some(wgpu::ColorTargetState {
+                format: TextureFormat::R32Uint, // entity ID target
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            })
+        } else {
+            None
+        };
+
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(label),
             layout: Some(layout),
@@ -220,14 +271,10 @@ impl RenderPipelines {
             fragment: Some(wgpu::FragmentState {
                 module: fragment.module(),
                 entry_point: fragment.entry_point(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: color_format,
-                    blend: Some(wgpu::BlendState {
-                        alpha: wgpu::BlendComponent::REPLACE,
-                        color: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
+                targets: &[
+                    texture_target,
+                    entity_id_target,
+                ],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {

@@ -21,6 +21,7 @@ struct VertexInput {
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) color: vec3<f32>,
+    @location(1) entity_id: u32,
 };
 
 @vertex
@@ -31,12 +32,22 @@ fn vs_main(
     var out: VertexOutput;
     out.clip_position = camera.view_proj * vec4<f32>(model.position * scale + light.position, 1.0);
     out.color = light.color;
+    out.entity_id = 4294967295u;
     return out;
 }
 
 // Fragment shader
 
+// Fragment shader output
+struct FragmentOutput {
+    @location(0) color: vec4<f32>,
+    @location(1) entity_id: u32,
+};
+
 @fragment
-fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(in.color, 1.0);
+fn fs_main(in: VertexOutput) -> FragmentOutput {
+    var out: FragmentOutput;
+    out.color = vec4<f32>(in.color, 1.0);
+    out.entity_id = in.entity_id;
+    return out;
 }
