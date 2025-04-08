@@ -63,7 +63,7 @@ impl CubeArchetype {
     /// Returns the number of entities frontloaded.
     pub fn frontload_entities<F>(&mut self, entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>, should_frontload: F) -> usize
     where
-        F: Fn(&CubeEntityData) -> bool,
+        F: Fn(&CubeEntityRef) -> bool,
     {
         let mut left = 0;
         let mut right = self.entities.len().wrapping_sub(1);
@@ -71,12 +71,14 @@ impl CubeArchetype {
 
         loop {
             // Move left pointer forward until an invalid entry is found
-            while left <= right && should_frontload(&self.entity_data_at(left)) {
+            let reference =  self.get_at(left).unwrap();
+            while left <= right && should_frontload(&reference) {
                 left += 1;
             }
 
             // Move right pointer backward until a valid entry is found
-            while left <= right && !should_frontload(&self.entity_data_at(right)) {
+            let reference =  self.get_at(right).unwrap();
+            while left <= right && !should_frontload(&reference) {
                 right = right.wrapping_sub(1);
             }
 
