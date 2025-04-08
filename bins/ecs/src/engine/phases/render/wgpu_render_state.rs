@@ -7,7 +7,7 @@ use winit::dpi::PhysicalSize;
 use winit::window::Window;
 use crate::engine::phases::render::frame_state::FrameState;
 use crate::wgpu::retro_uniform::RetroUniform;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
+use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 
 /// Represents the render state for the WGPU system.
 ///
@@ -31,7 +31,9 @@ pub struct WgpuRenderState {
     /// The per-frame state, which contains details for the current frame.
     frame_state: Option<FrameState>,
     /// Retro rendering state
-    retro: Retro
+    retro: Retro,
+    /// Selects the render pipeline (wireframe, etc.)
+    pipeline_selector: RenderPipelineSelector,
 }
 
 #[derive(Default)]
@@ -55,6 +57,30 @@ impl WgpuRenderState {
     #[inline]
     pub fn set_frame_state(&mut self, frame_state: Option<FrameState>) {
         self.frame_state = frame_state;
+    }
+
+    /// Toggles the render pipeline selector.
+    pub fn toggle_pipeline_selector(&mut self) {
+        self.pipeline_selector = match self.pipeline_selector {
+            RenderPipelineSelector::Textured => {
+                debug!("Switching to boring pipeline");
+                RenderPipelineSelector::Boring
+            },
+            RenderPipelineSelector::Boring => {
+                // Skip wireframe if it's not supported by the GPU
+                if self.wireframe_supported() {
+                    debug!("Switching to wireframe pipeline");
+                    RenderPipelineSelector::Wireframe
+                } else {
+                    debug!("Switching to textured pipeline (wireframe not supported)");
+                    RenderPipelineSelector::Textured
+                }
+            },
+            RenderPipelineSelector::Wireframe => {
+                debug!("Switching to textured pipeline");
+                RenderPipelineSelector::Textured
+            },
+        };
     }
 
     #[inline]

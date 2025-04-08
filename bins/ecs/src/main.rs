@@ -177,19 +177,7 @@ impl App {
             PhysicalKey::Code(KeyCode::F1)
             if event.state == ElementState::Pressed =>
                 {
-                    let system = self.ecs_world.systems.as_render_background_mut();
-                    system.selector = match system.selector {
-                        RenderPipelineSelector::Textured => RenderPipelineSelector::Boring,
-                        RenderPipelineSelector::Boring => {
-                            // Skip wireframe if it's not supported by the GPU
-                            if self.ecs_world.states.wgpu_render.wireframe_supported() {
-                                RenderPipelineSelector::Wireframe
-                            } else {
-                                RenderPipelineSelector::Textured
-                            }
-                        },
-                        RenderPipelineSelector::Wireframe => RenderPipelineSelector::Textured,
-                    };
+                    self.ecs_world.states.wgpu_render.toggle_pipeline_selector();
                 }
 
             // Toggle retro mode

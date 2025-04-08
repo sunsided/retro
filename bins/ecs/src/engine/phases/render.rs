@@ -67,6 +67,7 @@ pub mod dynamic_light;
 mod wgpu_render_state;
 mod frame_state;
 mod render;
+pub mod vga_blit;
 
 use crate::engine::{BackgroundColorComponent, ModelComponent};
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
@@ -84,12 +85,6 @@ use crate::wgpu::render_passes::RenderPasses;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 pub use self::wgpu_render_state::WgpuRenderState;
 pub use self::frame_state::FrameState;
-
-impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
-    fn create(&self) -> RenderBackgroundSystem {
-        RenderBackgroundSystem(RenderBackgroundSystemData::default())
-    }
-}
 
 impl CreateSystem<RenderSystem> for SystemFactory {
     fn create(&self) -> RenderSystem {

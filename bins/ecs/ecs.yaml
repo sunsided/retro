@@ -150,5 +150,16 @@ systems:
       - use: WgpuRender
         write: true
 
+  - name: VgaBlit
+    description: If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
+    phase: Render
+    run_after:
+      - Render  # specifically, run last
+    inputs:
+      - BackgroundColor
+    states:
+      - use: WgpuRender
+        write: true
+
 # TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.
 # TODO: Generate a function that loops all archetypes matching the signature of a given system

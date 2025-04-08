@@ -14,16 +14,6 @@ impl ApplyRenderSystem for RenderSystem {
         state.is_ready()
     }
 
-    fn apply_single(
-        &mut self,
-        _state: &mut WgpuRenderState,
-        position: &PositionComponent,
-        transform: &TransformComponent,
-        model: &ModelComponent,
-    ) {
-        debug!("Rendering a single entity at {position:?}, {transform:?}.");
-    }
-
     fn apply_many(&mut self, wgpu_render: &mut WgpuRenderState, positions: &[PositionComponent], transforms: &[TransformComponent], models: &[ModelComponent]) {
         if positions.is_empty() {
             return;

@@ -177,6 +177,7 @@ pub struct MainWorldStates {
     /// - [`DynamicLightSystem`]
     /// - [`RenderBackgroundSystem`]
     /// - [`RenderSystem`]
+    /// - [`VgaBlitSystem`]
     pub wgpu_render: WgpuRenderState,
     /// The uniforms of the active camera.
     ///
@@ -207,6 +208,7 @@ pub struct MainWorldSystems {
     render: RenderSystem,
     background_color_cycle: BackgroundColorCycleSystem,
     render_background: RenderBackgroundSystem,
+    vga_blit: VgaBlitSystem,
 }
 
 impl MainWorldSystems {
@@ -308,6 +310,20 @@ impl MainWorldSystems {
         use core::ops::DerefMut;
         self.render_background.deref_mut()
     }
+
+    /// Gives immutable access to the [`VgaBlitSystemData`] of the [`VgaBlitSystem`].
+    #[inline]
+    pub fn as_vga_blit_ref(&self) -> &VgaBlitSystemData {
+        use core::ops::Deref;
+        self.vga_blit.deref()
+    }
+
+    /// Gives mutable access to the [`VgaBlitSystemData`] of the [`VgaBlitSystem`].
+    #[inline]
+    pub fn as_vga_blit_mut(&mut self) -> &mut VgaBlitSystemData {
+        use core::ops::DerefMut;
+        self.vga_blit.deref_mut()
+    }
 }
 
 impl AsRef<CameraSystemData> for MainWorldSystems {
@@ -405,6 +421,20 @@ impl AsMut<RenderBackgroundSystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut RenderBackgroundSystemData {
         self.as_render_background_mut()
+    }
+}
+
+impl AsRef<VgaBlitSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &VgaBlitSystemData {
+        self.as_vga_blit_ref()
+    }
+}
+
+impl AsMut<VgaBlitSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut VgaBlitSystemData {
+        self.as_vga_blit_mut()
     }
 }
 
@@ -518,7 +548,8 @@ impl<E, Q> MainWorld<E, Q> {
          + CreateSystem<PhysicsSystem>
          + CreateSystem<RenderSystem>
          + CreateSystem<BackgroundColorCycleSystem>
-         + CreateSystem<RenderBackgroundSystem>,
+         + CreateSystem<RenderBackgroundSystem>
+         + CreateSystem<VgaBlitSystem>,
         E: SystemPhaseEvents,
         Q: WorldCommandQueue
     {
@@ -533,6 +564,7 @@ impl<E, Q> MainWorld<E, Q> {
                 render: CreateSystem::<RenderSystem>::create(create_systems),
                 background_color_cycle: CreateSystem::<BackgroundColorCycleSystem>::create(create_systems),
                 render_background: CreateSystem::<RenderBackgroundSystem>::create(create_systems),
+                vga_blit: CreateSystem::<VgaBlitSystem>::create(create_systems),
             },
             entity_locations: Default::default(),
             context,
@@ -1427,7 +1459,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 3
+        // System group 1 of 4
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1449,7 +1481,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 3
+        // System group 2 of 4
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1473,7 +1505,29 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 3
+        // System group 3 of 4
+        let is_ready = self.systems.vga_blit.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.vga_blit.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply VgaBlitSystem to SceneBackgroundArchetype
+            self.systems.vga_blit.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.scene_background.background_colors,
+            );
+
+            self.systems.vga_blit.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 4 of 4
         let is_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1499,7 +1553,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 3
+        // System group 4 of 4
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &self.states.wgpu_render,
@@ -1625,6 +1679,38 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 3
+        let is_vga_blit_ready = self.systems.vga_blit.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_vga_blit_ready = is_vga_blit_ready &
+            self.systems.vga_blit.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_vga_blit_ready {
+                    s.spawn(|_| {
+                        // Apply VgaBlitSystem to SceneBackgroundArchetype
+                        self.systems.vga_blit.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.scene_background.background_colors,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.vga_blit.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 4
         let is_camera_render_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
