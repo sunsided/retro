@@ -23,7 +23,7 @@ worlds:
   - name: Main
     archetypes:
       - Camera
-      - Particle
+      - Cube
       - Player
       - ForegroundObject
       - BackgroundObject
@@ -34,9 +34,11 @@ components:
   - name: Camera
   - name: CameraFpsController
   - name: Position
+  - name: Transform
   - name: Velocity
   - name: Health
   - name: Collider
+  - name: Model
   - name: Color
   - name: BackgroundColor
     description: The background color used for clearing the render buffer
@@ -55,11 +57,13 @@ archetypes:
       - Color
       - Position
 
-  - name: Particle
-    description: A particle system particle.
+  - name: Cube
+    description: A marching cube :)
     components:
       - Position
       - Velocity
+      - Transform
+      - Model
 
   - name: Player
     components:
@@ -140,6 +144,19 @@ systems:
       - RenderBackground
     inputs:
       - Position
+      - Transform
+      - Model
+    states:
+      - use: WgpuRender
+        write: true
+
+  - name: VgaBlit
+    description: If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
+    phase: Render
+    run_after:
+      - Render  # specifically, run last
+    inputs:
+      - BackgroundColor
     states:
       - use: WgpuRender
         write: true

@@ -101,7 +101,7 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem>
+pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSystem> + CreateSystem<VgaBlitSystem>
 { }
 
 #[automatically_derived]
@@ -114,6 +114,7 @@ where
      + CreateSystem<BackgroundColorCycleSystem>
      + CreateSystem<RenderBackgroundSystem>
      + CreateSystem<RenderSystem>
+     + CreateSystem<VgaBlitSystem>
 {
 }
 
@@ -1093,12 +1094,12 @@ impl PhysicsSystem {
         );
     }
 
-    /// Applies this system to the [`ParticleArchetype`].
+    /// Applies this system to the [`CubeArchetype`].
     #[inline]
     #[deprecated]
-    fn apply_to_particle(
+    fn apply_to_cube(
         &mut self,
-        archetype: &mut ParticleArchetype,
+        archetype: &mut CubeArchetype,
         context: &FrameContext,
     ) {
         self.apply_many(
@@ -1540,6 +1541,8 @@ impl core::ops::DerefMut for RenderBackgroundSystem {
 /// ### Reads
 /// 
 /// - [`PositionComponent`]
+/// - [`TransformComponent`]
+/// - [`ModelComponent`]
 ///
 /// ### Mutates
 /// 
@@ -1598,6 +1601,8 @@ pub trait ApplyRenderSystem: System {
     /// ### Reads
     /// 
     /// - `position`: A reference to the input component of type [`PositionComponent`].
+    /// - `transform`: A reference to the input component of type [`TransformComponent`].
+    /// - `model`: A reference to the input component of type [`ModelComponent`].
     ///
     /// ### Mutates
     /// 
@@ -1606,6 +1611,8 @@ pub trait ApplyRenderSystem: System {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         position: &PositionComponent,
+        transform: &TransformComponent,
+        model: &ModelComponent,
     ) {
          // intentionally left blank
      }
@@ -1615,6 +1622,8 @@ pub trait ApplyRenderSystem: System {
     /// ### Reads
     /// 
     /// - `position`: A slice of the input components of type [`PositionComponent`].
+    /// - `transform`: A slice of the input components of type [`TransformComponent`].
+    /// - `model`: A slice of the input components of type [`ModelComponent`].
     ///
     /// ### Mutates
     /// 
@@ -1622,12 +1631,16 @@ pub trait ApplyRenderSystem: System {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         positions: &[PositionComponent],
+        transforms: &[TransformComponent],
+        models: &[ModelComponent],
     ) {
-        let zipped_iter = positions;
-        for position in zipped_iter {
+        let zipped_iter = positions.iter().zip(transforms.iter().zip(models.iter()));
+        for (position, (transform, model)) in zipped_iter {
             self.apply_single(
                 wgpu_render,
                 position,
+                transform,
+                model,
             );
         }
     }
@@ -1641,11 +1654,15 @@ impl RenderSystem {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         position: &PositionComponent,
+        transform: &TransformComponent,
+        model: &ModelComponent,
     ) {
         ApplyRenderSystem::apply_single(
             self,
             wgpu_render,
             position,
+            transform,
+            model,
         );
     }
 
@@ -1654,6 +1671,8 @@ impl RenderSystem {
     /// ### Reads
     /// 
     /// - `position`: A slice of the input components of type [`PositionComponent`].
+    /// - `transform`: A slice of the input components of type [`TransformComponent`].
+    /// - `model`: A slice of the input components of type [`ModelComponent`].
     ///
     /// ### Mutates
     /// 
@@ -1662,81 +1681,31 @@ impl RenderSystem {
         &mut self,
         wgpu_render: &mut WgpuRenderState,
         positions: &[PositionComponent],
+        transforms: &[TransformComponent],
+        models: &[ModelComponent],
     ) {
         ApplyRenderSystem::apply_many(
             self,
             wgpu_render,
             positions,
+            transforms,
+            models,
         );
     }
 
-    /// Applies this system to the [`DynamicLightArchetype`].
+    /// Applies this system to the [`CubeArchetype`].
     #[inline]
     #[deprecated]
-    fn apply_to_dynamic_light(
+    fn apply_to_cube(
         &mut self,
-        archetype: &mut DynamicLightArchetype,
+        archetype: &mut CubeArchetype,
         wgpu_render: &mut WgpuRenderState,
     ) {
         self.apply_many(
             wgpu_render,
             &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`ParticleArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_particle(
-        &mut self,
-        archetype: &mut ParticleArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`PlayerArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_player(
-        &mut self,
-        archetype: &mut PlayerArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`ForegroundObjectArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_foreground_object(
-        &mut self,
-        archetype: &mut ForegroundObjectArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`BackgroundObjectArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_background_object(
-        &mut self,
-        archetype: &mut BackgroundObjectArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
+            &archetype.transforms,
+            &archetype.models,
         );
     }
 }
@@ -1770,6 +1739,194 @@ impl core::ops::Deref for RenderSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for RenderSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+
+/// If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
+///
+/// The business logic is implemented via the [`ApplyVgaBlitSystem`] trait.
+/// See also [`VgaBlitData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`BackgroundColorComponent`]
+///
+/// ### Mutates
+/// 
+#[derive(Debug)]
+pub struct VgaBlitSystem(VgaBlitSystemData);
+
+/// Implements the business logic for the [`VgaBlitSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyVgaBlitSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A reference to the input component of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        background_color: &BackgroundColorComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A slice of the input components of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        background_colors: &[BackgroundColorComponent],
+    ) {
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            self.apply_single(
+                wgpu_render,
+                background_color,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl VgaBlitSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        background_color: &BackgroundColorComponent,
+    ) {
+        ApplyVgaBlitSystem::apply_single(
+            self,
+            wgpu_render,
+            background_color,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A slice of the input components of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline]
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        background_colors: &[BackgroundColorComponent],
+    ) {
+        ApplyVgaBlitSystem::apply_many(
+            self,
+            wgpu_render,
+            background_colors,
+        );
+    }
+
+    /// Applies this system to the [`SceneBackgroundArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_scene_background(
+        &mut self,
+        archetype: &mut SceneBackgroundArchetype,
+        wgpu_render: &mut WgpuRenderState,
+    ) {
+        self.apply_many(
+            wgpu_render,
+            &archetype.background_colors,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for VgaBlitSystem {
+    const ID: SystemId = SystemId(core::num::NonZeroU64::new(8).expect("A zero system ID was provided"));
+}
+
+impl PartialEq<SystemId> for VgaBlitSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<VgaBlitSystemData> for VgaBlitSystem {
+    fn from(data: VgaBlitSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for VgaBlitSystem {
+    type Target = VgaBlitSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for VgaBlitSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

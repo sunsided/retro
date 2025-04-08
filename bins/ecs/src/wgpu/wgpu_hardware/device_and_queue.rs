@@ -7,6 +7,7 @@ use crate::wgpu::wgpu_hardware::bind_groups::BindGroups;
 use crate::wgpu::wgpu_hardware::buffers::Buffers;
 use crate::wgpu::wgpu_hardware::models::Models;
 use crate::wgpu::wgpu_hardware::render_pipelines::RenderPipelines;
+use crate::wgpu::wgpu_hardware::RenderPipelineSelector;
 use crate::wgpu::wgpu_hardware::shaders::Shaders;
 use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::textures::Textures;
@@ -93,6 +94,11 @@ impl DeviceAndQueue {
     #[instrument(skip(self))]
     pub fn recreate_surface_dependent_buffers(&mut self) {
         self.depths.recreate(&self.device, &self.config);
+    }
+
+    pub fn apply_render_pipeline_to_pass(&self, render_pass: &mut wgpu::RenderPass, pipeline_selector: RenderPipelineSelector) {
+        let pipeline = self.pipelines.render_pipeline(pipeline_selector);
+        render_pass.set_pipeline(&pipeline);
     }
 
     pub const fn device(&self) -> &Device {

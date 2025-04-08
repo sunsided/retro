@@ -1,10 +1,9 @@
 use std::ops::RangeBounds;
-use cgmath::{InnerSpace, Rotation3, Zero};
 use tracing::instrument;
 use wgpu::{BindingResource, Buffer, BufferAddress, BufferSlice, Queue};
 use wgpu::util::DeviceExt;
 use crate::wgpu::camera_uniform::CameraUniform;
-use crate::wgpu::instance::Instance;
+use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::light::LightUniform;
 use crate::wgpu::retro_uniform::RetroUniform;
 
@@ -124,51 +123,49 @@ impl AsRef<Buffer> for LightBuffer {
 #[derive(Debug)]
 pub struct InstanceBuffer {
     buffer: Buffer,
-    pub num_instances: u32,
+    num_instances: u32,
 }
 
 impl InstanceBuffer {
     // NOTE: Make sure that if you add new instances to the Vec, you recreate the
     //       instance_buffer as well as camera_bind_group. Otherwise, your new instances
     //       won't show up correctly.
-    const SPACE_BETWEEN: f32 = 3.0;
     const NUM_INSTANCES_PER_ROW: u32 = 10;
+
+    pub const MAX_INSTANCES: u32 = Self::NUM_INSTANCES_PER_ROW * Self::NUM_INSTANCES_PER_ROW;
 
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
-        let instances = (0..Self::NUM_INSTANCES_PER_ROW).flat_map(|z| {
-            (0..Self::NUM_INSTANCES_PER_ROW).map(move |x| {
-                let x = Self::SPACE_BETWEEN * (x as f32 - Self::NUM_INSTANCES_PER_ROW as f32 / 2.0);
-                let z = Self::SPACE_BETWEEN * (z as f32 - Self::NUM_INSTANCES_PER_ROW as f32 / 2.0);
-
-                let position = cgmath::Vector3 { x, y: 0.0, z };
-
-                let rotation = if position.is_zero() {
-                    cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.0))
-                } else {
-                    cgmath::Quaternion::from_axis_angle(position.normalize(), cgmath::Deg(45.0))
-                };
-
-                Instance {
-                    position, rotation,
-                }
-            })
-        }).collect::<Vec<_>>();
-        let num_instances = instances.len() as u32;
-
-        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
+        let num_instances = Self::MAX_INSTANCES;
+        let buffer = device.create_buffer(
+            &wgpu::BufferDescriptor {
                 label: Some("Instance Buffer"),
-                contents: bytemuck::cast_slice(&instance_data),
-                usage: wgpu::BufferUsages::VERTEX,
+                size: (num_instances as usize * size_of::<InstanceRaw>()) as BufferAddress,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: true
             }
         );
+
+        {
+            let mut mapping = buffer.slice(..).get_mapped_range_mut();
+            mapping.fill(0);
+        }
+        buffer.unmap();
+
         Self { buffer, num_instances }
     }
 
     pub const fn len(&self) -> usize {
         self.num_instances as usize
+    }
+
+    /// Update the buffer on device with a new [`InstanceRaw`] slice.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn send_to_device(&self, queue: &Queue, instances: &[InstanceRaw]) -> u32 {
+        let data_bytes = bytemuck::cast_slice(&instances);
+        queue.write_buffer(&self.buffer, 0, data_bytes);
+        instances.len() as _
     }
 
     #[inline]

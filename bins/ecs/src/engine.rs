@@ -26,8 +26,10 @@ use crate::engine::components::*;
 use crate::engine::phases::fixed_update::physics::PhysicsSystemData;
 use crate::engine::phases::update::{color_cycle::BackgroundColorCycleSystemData, camera::CameraSystemData};
 use crate::engine::phases::render::{
-    RenderSystemData, WgpuRenderState,
+    WgpuRenderState,
+    render::RenderSystemData,
     background::{BackgroundColorData, RenderBackgroundSystemData},
+    vga_blit::VgaBlitSystemData,
     camera_render::CameraRenderSystemData,
     dynamic_light::DynamicLightSystemData,
 };

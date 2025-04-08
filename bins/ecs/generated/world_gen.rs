@@ -177,6 +177,7 @@ pub struct MainWorldStates {
     /// - [`DynamicLightSystem`]
     /// - [`RenderBackgroundSystem`]
     /// - [`RenderSystem`]
+    /// - [`VgaBlitSystem`]
     pub wgpu_render: WgpuRenderState,
     /// The uniforms of the active camera.
     ///
@@ -190,7 +191,7 @@ pub struct MainWorldStates {
 struct MainWorldArchetypes {
     pub camera: CameraArchetype,
     pub dynamic_light: DynamicLightArchetype,
-    pub particle: ParticleArchetype,
+    pub cube: CubeArchetype,
     pub player: PlayerArchetype,
     pub foreground_object: ForegroundObjectArchetype,
     pub background_object: BackgroundObjectArchetype,
@@ -203,10 +204,11 @@ pub struct MainWorldSystems {
     camera: CameraSystem,
     camera_render: CameraRenderSystem,
     dynamic_light: DynamicLightSystem,
-    render: RenderSystem,
     physics: PhysicsSystem,
+    render: RenderSystem,
     background_color_cycle: BackgroundColorCycleSystem,
     render_background: RenderBackgroundSystem,
+    vga_blit: VgaBlitSystem,
 }
 
 impl MainWorldSystems {
@@ -253,20 +255,6 @@ impl MainWorldSystems {
         self.dynamic_light.deref_mut()
     }
 
-    /// Gives immutable access to the [`RenderSystemData`] of the [`RenderSystem`].
-    #[inline]
-    pub fn as_render_ref(&self) -> &RenderSystemData {
-        use core::ops::Deref;
-        self.render.deref()
-    }
-
-    /// Gives mutable access to the [`RenderSystemData`] of the [`RenderSystem`].
-    #[inline]
-    pub fn as_render_mut(&mut self) -> &mut RenderSystemData {
-        use core::ops::DerefMut;
-        self.render.deref_mut()
-    }
-
     /// Gives immutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
     #[inline]
     pub fn as_physics_ref(&self) -> &PhysicsSystemData {
@@ -279,6 +267,20 @@ impl MainWorldSystems {
     pub fn as_physics_mut(&mut self) -> &mut PhysicsSystemData {
         use core::ops::DerefMut;
         self.physics.deref_mut()
+    }
+
+    /// Gives immutable access to the [`RenderSystemData`] of the [`RenderSystem`].
+    #[inline]
+    pub fn as_render_ref(&self) -> &RenderSystemData {
+        use core::ops::Deref;
+        self.render.deref()
+    }
+
+    /// Gives mutable access to the [`RenderSystemData`] of the [`RenderSystem`].
+    #[inline]
+    pub fn as_render_mut(&mut self) -> &mut RenderSystemData {
+        use core::ops::DerefMut;
+        self.render.deref_mut()
     }
 
     /// Gives immutable access to the [`BackgroundColorCycleSystemData`] of the [`BackgroundColorCycleSystem`].
@@ -307,6 +309,20 @@ impl MainWorldSystems {
     pub fn as_render_background_mut(&mut self) -> &mut RenderBackgroundSystemData {
         use core::ops::DerefMut;
         self.render_background.deref_mut()
+    }
+
+    /// Gives immutable access to the [`VgaBlitSystemData`] of the [`VgaBlitSystem`].
+    #[inline]
+    pub fn as_vga_blit_ref(&self) -> &VgaBlitSystemData {
+        use core::ops::Deref;
+        self.vga_blit.deref()
+    }
+
+    /// Gives mutable access to the [`VgaBlitSystemData`] of the [`VgaBlitSystem`].
+    #[inline]
+    pub fn as_vga_blit_mut(&mut self) -> &mut VgaBlitSystemData {
+        use core::ops::DerefMut;
+        self.vga_blit.deref_mut()
     }
 }
 
@@ -352,20 +368,6 @@ impl AsMut<DynamicLightSystemData> for MainWorldSystems {
     }
 }
 
-impl AsRef<RenderSystemData> for MainWorldSystems {
-    #[inline]
-    fn as_ref(&self) -> &RenderSystemData {
-        self.as_render_ref()
-    }
-}
-
-impl AsMut<RenderSystemData> for MainWorldSystems {
-    #[inline]
-    fn as_mut(&mut self) -> &mut RenderSystemData {
-        self.as_render_mut()
-    }
-}
-
 impl AsRef<PhysicsSystemData> for MainWorldSystems {
     #[inline]
     fn as_ref(&self) -> &PhysicsSystemData {
@@ -377,6 +379,20 @@ impl AsMut<PhysicsSystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut PhysicsSystemData {
         self.as_physics_mut()
+    }
+}
+
+impl AsRef<RenderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &RenderSystemData {
+        self.as_render_ref()
+    }
+}
+
+impl AsMut<RenderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut RenderSystemData {
+        self.as_render_mut()
     }
 }
 
@@ -408,6 +424,20 @@ impl AsMut<RenderBackgroundSystemData> for MainWorldSystems {
     }
 }
 
+impl AsRef<VgaBlitSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &VgaBlitSystemData {
+        self.as_vga_blit_ref()
+    }
+}
+
+impl AsMut<VgaBlitSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut VgaBlitSystemData {
+        self.as_vga_blit_mut()
+    }
+}
+
 /// Spawns an entity into the world.
 impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
@@ -427,11 +457,11 @@ impl<E, Q> Spawn<DynamicLightEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
-impl<E, Q> Spawn<ParticleEntityData> for MainWorld<E, Q> {
+impl<E, Q> Spawn<CubeEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: ParticleEntityData) -> EntityId {
-        self.spawn_particle(data)
+    fn spawn(&mut self, data: CubeEntityData) -> EntityId {
+        self.spawn_cube(data)
     }
 }
 
@@ -515,10 +545,11 @@ impl<E, Q> MainWorld<E, Q> {
         S: CreateSystem<CameraSystem>
          + CreateSystem<CameraRenderSystem>
          + CreateSystem<DynamicLightSystem>
-         + CreateSystem<RenderSystem>
          + CreateSystem<PhysicsSystem>
+         + CreateSystem<RenderSystem>
          + CreateSystem<BackgroundColorCycleSystem>
-         + CreateSystem<RenderBackgroundSystem>,
+         + CreateSystem<RenderBackgroundSystem>
+         + CreateSystem<VgaBlitSystem>,
         E: SystemPhaseEvents,
         Q: WorldCommandQueue
     {
@@ -529,10 +560,11 @@ impl<E, Q> MainWorld<E, Q> {
                 camera: CreateSystem::<CameraSystem>::create(create_systems),
                 camera_render: CreateSystem::<CameraRenderSystem>::create(create_systems),
                 dynamic_light: CreateSystem::<DynamicLightSystem>::create(create_systems),
-                render: CreateSystem::<RenderSystem>::create(create_systems),
                 physics: CreateSystem::<PhysicsSystem>::create(create_systems),
+                render: CreateSystem::<RenderSystem>::create(create_systems),
                 background_color_cycle: CreateSystem::<BackgroundColorCycleSystem>::create(create_systems),
                 render_background: CreateSystem::<RenderBackgroundSystem>::create(create_systems),
+                vga_blit: CreateSystem::<VgaBlitSystem>::create(create_systems),
             },
             entity_locations: Default::default(),
             context,
@@ -643,23 +675,27 @@ impl<E, Q> MainWorld<E, Q> {
             )
     }
 
-    /// Spawn a new `Particle` entity into the world given its [`ParticleEntityData`].
+    /// Spawn a new `Cube` entity into the world given its [`CubeEntityData`].
     #[inline]
-    pub fn spawn_particle(
+    pub fn spawn_cube(
         &mut self,
-        particle: ParticleEntityData
+        cube: CubeEntityData
     ) -> EntityId {
-        self.spawn_particle_with(
-            particle.position,
-            particle.velocity,
+        self.spawn_cube_with(
+            cube.position,
+            cube.velocity,
+            cube.transform,
+            cube.model,
         )
     }
 
-    /// Spawn a new `Particle` entity into the world.
-    pub fn spawn_particle_with(
+    /// Spawn a new `Cube` entity into the world.
+    pub fn spawn_cube_with(
         &mut self,
         position: PositionComponent,
         velocity: VelocityComponent,
+        transform: TransformComponent,
+        model: ModelComponent,
     ) -> EntityId {
         struct Registry<'a>(&'a mut std::collections::HashMap<EntityId, EntityArchetypeRef>);
 
@@ -671,10 +707,12 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.particle
+        self.archetypes.cube
             .spawn_with(
                 position,
                 velocity,
+                transform,
+                model,
                 Registry(&mut self.entity_locations)
             )
     }
@@ -1155,11 +1193,11 @@ impl<E, Q> MainWorld<E, Q> {
                 .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
-            // Apply PhysicsSystem to ParticleArchetype
+            // Apply PhysicsSystem to CubeArchetype
             self.systems.physics.apply_many(
                 &self.context,
-                &self.archetypes.particle.velocities,
-                &mut self.archetypes.particle.positions,
+                &self.archetypes.cube.velocities,
+                &mut self.archetypes.cube.positions,
             );
             // Apply PhysicsSystem to PlayerArchetype
             self.systems.physics.apply_many(
@@ -1421,7 +1459,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 3
+        // System group 1 of 4
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1443,7 +1481,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 3
+        // System group 2 of 4
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1453,30 +1491,12 @@ impl<E, Q> MainWorld<E, Q> {
                 .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
                 .is_ok()
         {
-            // Apply RenderSystem to DynamicLightArchetype
+            // Apply RenderSystem to CubeArchetype
             self.systems.render.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.dynamic_light.positions,
-            );
-            // Apply RenderSystem to ParticleArchetype
-            self.systems.render.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.particle.positions,
-            );
-            // Apply RenderSystem to PlayerArchetype
-            self.systems.render.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.player.positions,
-            );
-            // Apply RenderSystem to ForegroundObjectArchetype
-            self.systems.render.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.foreground_object.positions,
-            );
-            // Apply RenderSystem to BackgroundObjectArchetype
-            self.systems.render.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.background_object.positions,
+                &self.archetypes.cube.positions,
+                &self.archetypes.cube.transforms,
+                &self.archetypes.cube.models,
             );
 
             self.systems.render.on_end_phase(
@@ -1485,7 +1505,29 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 3
+        // System group 3 of 4
+        let is_ready = self.systems.vga_blit.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.vga_blit.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply VgaBlitSystem to SceneBackgroundArchetype
+            self.systems.vga_blit.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.scene_background.background_colors,
+            );
+
+            self.systems.vga_blit.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 4 of 4
         let is_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1511,7 +1553,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 3
+        // System group 4 of 4
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &self.states.wgpu_render,
@@ -1618,30 +1660,12 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_ready {
                     s.spawn(|_| {
-                        // Apply RenderSystem to DynamicLightArchetype
+                        // Apply RenderSystem to CubeArchetype
                         self.systems.render.apply_many(
                             &mut self.states.wgpu_render,
-                            &self.archetypes.dynamic_light.positions,
-                        );
-                        // Apply RenderSystem to ParticleArchetype
-                        self.systems.render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.particle.positions,
-                        );
-                        // Apply RenderSystem to PlayerArchetype
-                        self.systems.render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.player.positions,
-                        );
-                        // Apply RenderSystem to ForegroundObjectArchetype
-                        self.systems.render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.foreground_object.positions,
-                        );
-                        // Apply RenderSystem to BackgroundObjectArchetype
-                        self.systems.render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.background_object.positions,
+                            &self.archetypes.cube.positions,
+                            &self.archetypes.cube.transforms,
+                            &self.archetypes.cube.models,
                         );
                     });
                 }
@@ -1655,6 +1679,38 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 3
+        let is_vga_blit_ready = self.systems.vga_blit.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_vga_blit_ready = is_vga_blit_ready &
+            self.systems.vga_blit.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_vga_blit_ready {
+                    s.spawn(|_| {
+                        // Apply VgaBlitSystem to SceneBackgroundArchetype
+                        self.systems.vga_blit.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.scene_background.background_colors,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.vga_blit.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 4
         let is_camera_render_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1767,9 +1823,9 @@ impl<E, Q> MainWorld<E, Q> {
                 let id = self.spawn_dynamic_light(data);
                 tracing::trace!(%id, "Spawned DynamicLight entity");
             },
-            ArchetypeEntityData::Particle(data) => {
-                let id = self.spawn_particle(data);
-                tracing::trace!(%id, "Spawned Particle entity");
+            ArchetypeEntityData::Cube(data) => {
+                let id = self.spawn_cube(data);
+                tracing::trace!(%id, "Spawned Cube entity");
             },
             ArchetypeEntityData::Player(data) => {
                 let id = self.spawn_player(data);
@@ -1808,11 +1864,11 @@ impl<E, Q> MainWorld<E, Q> {
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, DynamicLightArchetype::ID))?
                 }
-                ParticleArchetype::ID => {
+                CubeArchetype::ID => {
                     self.archetypes
-                        .particle
+                        .cube
                         .drop_at_index(loc.index)
-                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ParticleArchetype::ID))?
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CubeArchetype::ID))?
                 }
                 PlayerArchetype::ID => {
                     self.archetypes

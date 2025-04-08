@@ -38,10 +38,11 @@ use tracing::{debug, info, instrument, warn};
 use wgpu::{Adapter, Backends, Device, DeviceType, InstanceDescriptor, PresentMode, Queue, RequestDeviceError, Surface, SurfaceConfiguration, TextureUsages};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-pub use crate::wgpu::wgpu_hardware::device_and_queue::DeviceAndQueue;
-pub use crate::wgpu::wgpu_hardware::surface_id::SurfaceId;
-pub use crate::wgpu::wgpu_hardware::surface_wrapper::SurfaceWrapper;
-pub use crate::wgpu::wgpu_hardware::render_pipelines::RenderPipelineSelector;
+pub use self::device_and_queue::DeviceAndQueue;
+pub use self::surface_id::SurfaceId;
+pub use self::surface_wrapper::SurfaceWrapper;
+pub use self::render_pipelines::RenderPipelineSelector;
+pub use self::buffers::InstanceBuffer;
 
 #[derive(Debug, Default)]
 pub struct WgpuHardware {

@@ -6,6 +6,8 @@ pub mod collider;
 pub mod camera_fps_controller;
 pub mod color;
 pub mod dynamic_light;
+pub mod transform;
+pub mod model;
 
 pub use camera::*;
 pub use position::*;
@@ -15,3 +17,5 @@ pub use collider::*;
 pub use camera_fps_controller::*;
 pub use color::*;
 pub use dynamic_light::*;
+pub use transform::*;
+pub use model::*;

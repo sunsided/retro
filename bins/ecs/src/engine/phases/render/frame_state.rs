@@ -1,41 +1,46 @@
 use std::time::{Duration, Instant};
-use wgpu::{CommandEncoder, SurfaceTexture, TextureView};
+use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
+use crate::wgpu::render_passes::RenderPasses;
+use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
 
 /// Represents the state for a single rendering frame.
 ///
 /// This struct contains resources specific to the current frame,
-/// such as the surface texture, the texture view for rendering,
-/// and the command encoder for issuing GPU commands.
-/// It also tracks the start time of the frame rendering process.
+/// such as the render passes, command encoder, and timing information.
+/// It manages the GPU resources required for rendering operations
+/// and tracks the start time of the frame rendering process for performance analysis.
 ///
 /// # Fields
-/// - `frame`: The surface texture for the current frame, which represents
-///   the frame buffer where rendering commands are drawn.
-/// - `view`: A `TextureView` created from the `frame`, used as the target
-///   for rendering operations.
-/// - `encoder`: A `CommandEncoder` that records all rendering and compute
-///   commands to be executed on the GPU for this frame.
-/// - `render_start`: The timestamp marking the start of the rendering for
-///   this frame, primarily used for performance measurement.
+/// - `passes`: A `RenderPasses` struct, which encapsulates various render targets,
+///   including different texture views and the command encoder used for rendering.
+/// - `render_start`: The timestamp marking the beginning of the rendering process
+///   for this frame, useful for debugging and measuring frame time performance.
 ///
 /// # Uses
-/// See e.g.
+/// This struct is used to manage per-frame rendering resources and timing during
+/// the rendering pipeline.
 ///
+/// Example systems using `FrameState`:
+/// - [`ApplyRenderSystem`]
 /// - [`ApplyRenderBackgroundSystem`]
 pub struct FrameState {
-    pub frame: SurfaceTexture,
-    pub view: TextureView,
-    pub encoder: CommandEncoder,
+    pub passes: RenderPasses,
     pub render_start: Instant,
+    pub render_pipeline_selector: RenderPipelineSelector,
 }
 
 impl FrameState {
-    pub const fn new(frame: SurfaceTexture, view: TextureView, encoder: CommandEncoder, render_start: Instant) -> Self {
+    pub const fn new(passes: RenderPasses, render_start: Instant, render_pipeline_selector: RenderPipelineSelector) -> Self {
         Self {
-            frame,
-            view,
-            encoder,
-            render_start
+            passes,
+            render_start,
+            render_pipeline_selector
         }
+    }
+
+    pub fn render_pass(&mut self, device: &DeviceAndQueue) -> RenderPass {
+        let mut pass = self.passes.render_pass();
+        device.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
+        pass
     }
 }
