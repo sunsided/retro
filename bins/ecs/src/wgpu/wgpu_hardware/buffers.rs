@@ -130,11 +130,13 @@ impl InstanceBuffer {
     // NOTE: Make sure that if you add new instances to the Vec, you recreate the
     //       instance_buffer as well as camera_bind_group. Otherwise, your new instances
     //       won't show up correctly.
-    pub const NUM_INSTANCES_PER_ROW: u32 = 10;
+    const NUM_INSTANCES_PER_ROW: u32 = 10;
+
+    pub const MAX_INSTANCES: u32 = Self::NUM_INSTANCES_PER_ROW * Self::NUM_INSTANCES_PER_ROW;
 
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
-        let num_instances = Self::NUM_INSTANCES_PER_ROW * Self::NUM_INSTANCES_PER_ROW;
+        let num_instances = Self::MAX_INSTANCES;
         let buffer = device.create_buffer(
             &wgpu::BufferDescriptor {
                 label: Some("Instance Buffer"),

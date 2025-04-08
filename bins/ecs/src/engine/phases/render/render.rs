@@ -2,12 +2,22 @@ use tracing::{debug, trace, warn};
 use wgpu::{RenderPass, TextureView};
 use crate::engine::{ApplyRenderSystem, BackgroundColorComponent, CreateSystem, ModelComponent, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, TransformComponent};
 use crate::engine::phases::render::{FrameState, WgpuRenderState};
-use crate::wgpu::instance::Instance;
+use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::model::DrawModel;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+use crate::wgpu::wgpu_hardware::{DeviceAndQueue, InstanceBuffer, RenderPipelineSelector};
 
-#[derive(Default, Debug)]
-pub struct RenderSystemData;
+#[derive(Debug)]
+pub struct RenderSystemData {
+    instance_buffer: Vec<InstanceRaw>,
+}
+
+impl Default for RenderSystemData {
+    fn default() -> Self {
+        Self {
+            instance_buffer: Vec::with_capacity(InstanceBuffer::MAX_INSTANCES as usize),
+        }
+    }
+}
 
 impl CreateSystem<RenderSystem> for SystemFactory {
     fn create(&self) -> RenderSystem {
@@ -45,7 +55,11 @@ impl ApplyRenderSystem for RenderSystem {
         render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
 
         let max_instances = device.buffers().instances.len();
-        let mut instance_buf = Vec::with_capacity(max_instances);
+
+        // Fetch the (local) instance buffer and clear it in case something went wrong.
+        let instance_buf = &mut self.instance_buffer;
+        instance_buf.clear();
+
         for ((position, transforms), _models) in positions.iter().zip(transforms).zip(models) {
             let instance = Instance {
                 position: position.as_vector3(),
@@ -65,6 +79,7 @@ impl ApplyRenderSystem for RenderSystem {
         if instance_buf.len() > 0 {
             let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
             render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera, &device.bind_groups().light_vb);
+            instance_buf.clear();
         }
     }
 }
