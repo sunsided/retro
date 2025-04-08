@@ -136,7 +136,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // If an edge is detected, blend the center color with a darker version of itself.
     if (edgeDetected) {
-        let darkColor = vec4<f32>(1.0, 0.0, 0.0, 1.0);
+        let darkColor = vec4<f32>(0.0, 0.0, 0.0, 1.0);
         return mix(centerColor, darkColor, edgeBlendFactor);
     }
 

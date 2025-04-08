@@ -175,7 +175,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
-            false,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -196,7 +196,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
-            false,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
@@ -215,7 +215,7 @@ impl RenderPipelines {
             &device,
             &layout,
             surface_format,
-            false,
+            true,
             Some(Texture::DEPTH_FORMAT),
             &[
                 ModelVertex::desc(),
