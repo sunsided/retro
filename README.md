@@ -20,7 +20,7 @@ Other "highlights":
 
 - Archetype-style ECS via [sillyecs](https://github.com/sunsided/sillyecs) to drive simulation and rendering.
 - Unbounded simulation runs with vsync-locked rendering passes.
-- Hardware instancing is used to render identical entites in batched calls.
+- Hardware instancing is used to render identical entitishopt -s globstares in batched calls.
 - Simple dynamic lighting with a singular light source and Blinn-Phong Diffuse and Specular lighting.
 - Normal mapping support.
 - Model loading from `.obj` via the `tobj`.

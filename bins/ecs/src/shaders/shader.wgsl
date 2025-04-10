@@ -45,7 +45,7 @@ struct VertexOutput {
     @location(1) tangent_position: vec3<f32>,
     @location(2) tangent_light_position: vec3<f32>,
     @location(3) tangent_view_position: vec3<f32>,
-    @location(4) entity_id: u32,
+    @location(4) @interpolate(flat) entity_id: u32,
 };
 
 @vertex
