@@ -585,12 +585,12 @@ pub fn main() -> Result<(), winit::error::EventLoopError> {
 
                 surface.configure(
                     &device,
-                    &wgpu::SurfaceConfiguration {
-                        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    &SurfaceConfiguration {
+                        usage: TextureUsages::RENDER_ATTACHMENT,
                         format,
                         width: physical_size.width,
                         height: physical_size.height,
-                        present_mode: wgpu::PresentMode::AutoVsync,
+                        present_mode: PresentMode::AutoVsync,
                         alpha_mode: wgpu::CompositeAlphaMode::Auto,
                         view_formats: vec![],
                         desired_maximum_frame_latency: 2,
@@ -671,12 +671,12 @@ pub fn main() -> Result<(), winit::error::EventLoopError> {
 
                         surface.configure(
                             device,
-                            &wgpu::SurfaceConfiguration {
+                            &SurfaceConfiguration {
                                 format: *format,
-                                usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+                                usage: TextureUsages::RENDER_ATTACHMENT,
                                 width: size.width,
                                 height: size.height,
-                                present_mode: wgpu::PresentMode::AutoVsync,
+                                present_mode: PresentMode::AutoVsync,
                                 alpha_mode: wgpu::CompositeAlphaMode::Auto,
                                 view_formats: vec![],
                                 desired_maximum_frame_latency: 2,

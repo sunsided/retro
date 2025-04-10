@@ -5,7 +5,6 @@ edition = "2024"
 
 [dependencies]
 wgpu = "25.0.0"
-winit = "0.30.9"
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
