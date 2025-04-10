@@ -1,14 +1,50 @@
-use std::env;
+use fs_extra::copy_items;
+use fs_extra::dir::CopyOptions;
 use sillyecs::EcsCode;
 use std::fs::File;
 use std::io::BufReader;
-use fs_extra::copy_items;
-use fs_extra::dir::CopyOptions;
+use std::path::Path;
+use std::{env, fs};
 
 fn main() -> eyre::Result<()> {
+    compile_shaders()?;
     generate_ecs_code()?;
     copy_resources()?;
     Ok(())
+}
+
+fn compile_shaders() -> eyre::Result<()> {
+    const SHADER_DIR: &str = "src/shaders";
+    let shader_paths = find_shader_paths(SHADER_DIR);
+    if shader_paths.is_empty() {
+        eprintln!("❌ No WGSL shaders found in directory: {SHADER_DIR}");
+        std::process::exit(1);
+    }
+    for path in shader_paths {
+        println!("cargo:rerun-if-changed={path}");
+        let src = fs::read_to_string(&path)?;
+        naga::front::wgsl::parse_str(&src).expect(&format!("WGSL failed to parse: {path}"));
+    }
+
+    Ok(())
+}
+
+fn find_shader_paths<P>(dir: P) -> Vec<String>
+where
+    P: AsRef<Path>,
+{
+    let mut shader_paths = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().map_or(false, |ext| ext == "wgsl") {
+                shader_paths.push(path.to_string_lossy().into_owned());
+            }
+        }
+    }
+
+    shader_paths
 }
 
 fn generate_ecs_code() -> eyre::Result<()> {
