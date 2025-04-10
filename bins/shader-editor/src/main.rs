@@ -4,6 +4,10 @@ use crate::logging::setup_logging;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info};
+use wgpu::{
+    Adapter, Backends, Device, Instance, InstanceDescriptor, PresentMode, Surface,
+    SurfaceConfiguration, TextureUsages,
+};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{
@@ -18,32 +22,42 @@ use winit::window::{Fullscreen, Window, WindowId};
 struct App {
     window: Option<Arc<Window>>,
     modifiers: ModifiersState,
+    instance: Instance,
+    surface: Option<Surface<'static>>,
+    device: Option<Device>,
+    adapter: Option<Adapter>,
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(instance: Instance) -> Self {
         Self {
             window: None,
             modifiers: ModifiersState::default(),
+            instance,
+            device: None,
+            surface: None,
         }
     }
 
     fn reinitialize_window(&mut self, active_event_loop: &ActiveEventLoop) {
-        if self.window.is_none() {
-            // Initialize if missing.
-            let attributes = Window::default_attributes()
-                .with_title("Shader Editor")
-                .with_inner_size(LogicalSize::new(1024.0, 640.0))
-                .with_resizable(false);
-
-            let window = Arc::new(
-                active_event_loop
-                    .create_window(attributes)
-                    .expect("Failed to create window"),
-            );
-
-            self.window = Some(window.clone());
+        if !self.window.is_none() {
+            return;
         }
+
+        // Initialize if missing.
+        let attributes = Window::default_attributes()
+            .with_title("Shader Editor")
+            .with_inner_size(LogicalSize::new(1024.0, 640.0))
+            .with_resizable(false);
+
+        let window = Arc::new(
+            active_event_loop
+                .create_window(attributes)
+                .expect("Failed to create window"),
+        );
+
+        self.window = Some(window.clone());
+        self.wgpu_reinitialize(window);
     }
 
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
@@ -97,6 +111,74 @@ impl App {
 
             _ => {}
         }
+    }
+
+    fn wgpu_reinitialize(&mut self, window: Arc<Window>) {
+        let size = window.inner_size();
+        debug!(width = %size.width, height = %size.height, "Creating WGPU surface");
+        let surface = self
+            .instance
+            .create_surface(window)
+            .inspect_err(|error| tracing::error!(%error, "Failed to create surface"))?;
+        self.surface = Some(surface);
+
+        let Some(surface) = self.surface.as_ref() else {
+            unreachable!("A surface that was just created should always be available");
+        };
+
+        // If we already have an adapter, and it is compatible with the new surface, skip creation.
+        let surface_caps = &self
+            .adapter
+            .map(|adapter| surface.get_capabilities(&adapter))
+            .unwrap_or_default();
+        let recreate_device = surface_caps.formats.is_empty();
+        if recreate_device {
+            let adapter = self.request_adapter(surface)?;
+            let (device, queue) = self.request_device(&adapter)?;
+
+            let surface_caps = surface.get_capabilities(&adapter);
+
+            let config = SurfaceConfiguration {
+                usage: TextureUsages::RENDER_ATTACHMENT,
+                format: surface_caps.formats[0],
+                width: size.width,
+                height: size.height,
+                present_mode: PresentMode::Fifo, // surface_caps.present_modes[0],
+                alpha_mode: surface_caps.alpha_modes[0],
+                view_formats: vec![],
+                desired_maximum_frame_latency: 2,
+            };
+
+            self.adapter = Some(adapter);
+            self.device = Some(device);
+        } else {
+            let Some(adapter) = self.adapter.as_mut() else {
+                unreachable!("The adapter is known to exist");
+            };
+
+            let Some(device) = self.device.as_mut() else {
+                unreachable!("Since the adapter existed, the surface also must exist");
+            };
+
+            device.set_config(Self::get_surface_config(size, surface, &adapter));
+        }
+        Ok(())
+    }
+
+    fn wgpu_resize(&mut self, new_size: PhysicalSize<u32>) {
+        if new_size.width <= 0 || new_size.height <= 0 {
+            return;
+        }
+
+        let Some(mut surface) = &mut self.surface else {
+            return;
+        };
+
+        let Some(device) = &mut self.device else {
+            return;
+        };
+
+        device.resize_surface(new_size, &mut surface);
     }
 }
 
@@ -164,9 +246,21 @@ impl ApplicationHandler for App {
 
 fn main() -> eyre::Result<()> {
     let _logging = setup_logging();
-    let mut app = App::new();
+
+    let instance = wgpu_instance();
+
+    let mut app = App::new(instance);
     let event_loop = EventLoop::new()?;
     event_loop.set_control_flow(ControlFlow::Poll);
     event_loop.run_app(&mut app)?;
     Ok(())
+}
+
+fn wgpu_instance() -> Instance {
+    let descriptor = InstanceDescriptor {
+        backends: Backends::default(),
+        flags: Default::default(),
+        backend_options: Default::default(),
+    };
+    Instance::new(&descriptor)
 }

@@ -1,16 +1,16 @@
-use tracing::instrument;
-use wgpu::{Device, MaintainResult, Queue, Surface, SurfaceConfiguration};
-use winit::dpi::PhysicalSize;
-use crate::wgpu::wgpu_hardware::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::bind_groups::BindGroups;
 use crate::wgpu::wgpu_hardware::buffers::Buffers;
+use crate::wgpu::wgpu_hardware::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::models::Models;
 use crate::wgpu::wgpu_hardware::render_pipelines::RenderPipelines;
-use crate::wgpu::wgpu_hardware::RenderPipelineSelector;
 use crate::wgpu::wgpu_hardware::shaders::Shaders;
 use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::textures::Textures;
+use crate::wgpu::wgpu_hardware::RenderPipelineSelector;
+use tracing::instrument;
+use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
+use winit::dpi::PhysicalSize;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -30,15 +30,27 @@ pub struct DeviceAndQueue {
 }
 
 impl DeviceAndQueue {
-    pub(super) fn new(device: Device, queue: Queue, config: SurfaceConfiguration) -> DeviceAndQueue {
+    pub(super) fn new(
+        device: Device,
+        queue: Queue,
+        config: SurfaceConfiguration,
+    ) -> DeviceAndQueue {
         let samplers = TextureSamplers::create_from(&device);
         let textures = Textures::create_from(&device, &queue, &config);
         let buffers = Buffers::create_from(&device);
         let depths = DepthBuffers::create_from(&device, &config);
         let shaders = Shaders::create_from(&device);
         let bind_group_layouts = BindGroupLayouts::create_from(&device);
-        let bind_groups = BindGroups::create_from(&device, &bind_group_layouts, &buffers, &textures, &samplers, &depths);
-        let pipelines = RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
+        let bind_groups = BindGroups::create_from(
+            &device,
+            &bind_group_layouts,
+            &buffers,
+            &textures,
+            &samplers,
+            &depths,
+        );
+        let pipelines =
+            RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
         Self {
             device,
@@ -52,15 +64,8 @@ impl DeviceAndQueue {
             pipelines,
             shaders,
             models,
-            textures
+            textures,
         }
-    }
-
-    /// Polls the underlying device.
-    #[inline]
-    #[allow(dead_code)]
-    pub fn poll_device(&mut self, maintain: wgpu::Maintain) -> MaintainResult {
-        self.device.poll(maintain)
     }
 
     /// Submits a command buffer to the WGPU queue for execution.
@@ -97,7 +102,11 @@ impl DeviceAndQueue {
         self.textures.recreate(&self.device, &self.config);
     }
 
-    pub fn apply_render_pipeline_to_pass(&self, render_pass: &mut wgpu::RenderPass, pipeline_selector: RenderPipelineSelector) {
+    pub fn apply_render_pipeline_to_pass(
+        &self,
+        render_pass: &mut wgpu::RenderPass,
+        pipeline_selector: RenderPipelineSelector,
+    ) {
         let pipeline = self.pipelines.render_pipeline(pipeline_selector);
         render_pass.set_pipeline(&pipeline);
     }
