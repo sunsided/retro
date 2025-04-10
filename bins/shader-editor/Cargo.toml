@@ -1,0 +1,16 @@
+[package]
+name = "shader-editor"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+wgpu = "25.0.0"
+winit = "0.30.9"
+tracing = { version = "0.1.41", features = ["attributes"] }
+tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2.3"
+eyre = "0.6.12"
+
+# Necessary to fix a breaking issue with deranged on Rust 2024
+[dependencies.time]
+version = "0.3.41"
