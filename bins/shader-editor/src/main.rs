@@ -26,6 +26,12 @@ use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
 use winit::monitor::MonitorHandle;
 use winit::window::{Fullscreen, Window, WindowId};
 
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct Uniforms {
+    transform: [[f32; 4]; 4],
+}
+
 const EXAMPLE_SHADER: &str = // language=wgsl
     r#"
     // Vertex attributes
@@ -39,10 +45,18 @@ const EXAMPLE_SHADER: &str = // language=wgsl
         @location(0) color: vec3<f32>,
     };
 
+    struct Uniforms {
+        transform: mat4x4<f32>
+    };
+
+    @group(0) @binding(0)
+    var<uniform> uniforms: Uniforms;
+
     @vertex
     fn vs_main(input: VertexInput) -> VertexOutput {
         var out: VertexOutput;
-        out.clip_position = vec4<f32>(input.position, 0.0, 1.0);
+        let pos = vec4<f32>(input.position, 0.0, 1.0);
+        out.clip_position = uniforms.transform * pos;
         out.color = input.color;
         return out;
     }
@@ -111,6 +125,8 @@ struct App {
     egui_platform: Option<Platform>,
     egui_egui_rpass: Option<RenderPass>,
     egui_demo_app: Option<DemoWindows>,
+    uniform_buffer: Option<Buffer>,
+    uniform_bind_group: Option<wgpu::BindGroup>,
     start_time: Instant,
 }
 
@@ -131,6 +147,8 @@ impl App {
             egui_demo_app: None,
             egui_platform: None,
             egui_egui_rpass: None,
+            uniform_buffer: None,
+            uniform_bind_group: None,
             start_time: Instant::now(),
         }
     }
@@ -296,9 +314,24 @@ impl App {
 
         let shader = device.create_shader_module(shader);
 
+        let uniform_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Uniform Bind Group Layout"),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new(64),
+                    },
+                    count: None,
+                }],
+            });
+
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("Render Pipeline"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[&uniform_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -345,6 +378,30 @@ impl App {
             cache: None,
         });
 
+        // Create uniform buffer and bind group (start with identity matrix) -----
+        let identity: [[f32; 4]; 4] = [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ];
+        let uniform_data = Uniforms {
+            transform: identity,
+        };
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: bytemuck::cast_slice(&[uniform_data]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("Uniform Bind Group"),
+            layout: &uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
         self.adapter = Some(adapter);
         self.device = Some(device);
         self.surface = Some(surface);
@@ -356,6 +413,8 @@ impl App {
         self.egui_platform = Some(platform);
         self.egui_egui_rpass = Some(egui_rpass);
         self.egui_demo_app = Some(demo_app);
+        self.uniform_buffer = Some(uniform_buffer);
+        self.uniform_bind_group = Some(uniform_bind_group);
     }
 
     #[instrument(skip(self))]
@@ -422,6 +481,7 @@ impl App {
             occlusion_query_set: None,
         });
 
+        /*
         rpass.set_pipeline(self.pipeline.as_ref().unwrap());
         rpass.set_vertex_buffer(0, self.vertex_buffer.as_ref().unwrap().slice(..));
         rpass.set_index_buffer(
@@ -429,6 +489,7 @@ impl App {
             wgpu::IndexFormat::Uint16,
         );
         rpass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
+        */
 
         drop(rpass);
 
@@ -485,6 +546,77 @@ impl App {
         egui_rpass
             .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
             .unwrap();
+
+        // Assume that the ShaderArea widget is the one we just added.
+        // For simplicity, we fetch its coordinates via egui (you might store them in App state).
+        // Here we assume the last ui call produced the shader_response (and you can store shader_area_rect globally).
+        // For this example, we'll use a dummy rectangle if needed.
+        // (In production, store the rect from the widget callback.)
+        let shader_area_rect =
+            egui::Rect::from_min_size(Pos2::new(150.0, 150.0), egui::vec2(300.0, 200.0));
+        let scale = window.scale_factor() as f32;
+
+        // Convert from egui points to physical pixels:
+        let area_min_x = shader_area_rect.min.x * scale;
+        let area_min_y = shader_area_rect.min.y * scale;
+        let area_width = shader_area_rect.width() * scale;
+        let area_height = shader_area_rect.height() * scale;
+        let screen_w = config.width as f32;
+        let screen_h = config.height as f32;
+        let center_x = area_min_x + area_width * 0.5;
+        let center_y = area_min_y + area_height * 0.5;
+
+        // Convert window center to clip space:
+        let center_clip_x = center_x / screen_w * 2.0 - 1.0;
+        let center_clip_y = 1.0 - center_y / screen_h * 2.0;
+
+        // Compute scale factors so that quad width in clip space is (area_width/screen_w)*2, etc.
+        let scale_x = area_width / screen_w;
+        let scale_y = area_height / screen_h;
+        let transform: [[f32; 4]; 4] = [
+            [scale_x, 0.0, 0.0, center_clip_x],
+            [0.0, scale_y, 0.0, center_clip_y],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ];
+        // Transpose to match WGSL’s column-major expectation:
+        let transform = transpose(transform);
+        let uniform_data = Uniforms { transform };
+
+        // Update the uniform buffer with the new transform
+        queue.write_buffer(
+            self.uniform_buffer.as_ref().unwrap(),
+            0,
+            bytemuck::cast_slice(&[uniform_data]),
+        );
+
+        // ----- NEW: Shader Overlay Pass -----
+        {
+            let mut shader_rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Shader Overlay Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        // Set load to LoadOp::Load to keep the UI already rendered.
+                        load: wgpu::LoadOp::Load,
+                        store: wgpu::StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            shader_rpass.set_pipeline(self.pipeline.as_ref().unwrap());
+            // Bind our uniform so the vertex shader gets the transformation matrix.
+            shader_rpass.set_bind_group(0, self.uniform_bind_group.as_ref().unwrap(), &[]);
+            shader_rpass.set_vertex_buffer(0, self.vertex_buffer.as_ref().unwrap().slice(..));
+            shader_rpass.set_index_buffer(
+                self.index_buffer.as_ref().unwrap().slice(..),
+                wgpu::IndexFormat::Uint16,
+            );
+            shader_rpass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
+        }
 
         queue.submit(Some(encoder.finish()));
         frame.present();
@@ -589,4 +721,13 @@ fn wgpu_instance() -> Instance {
         backend_options: Default::default(),
     };
     Instance::new(&descriptor)
+}
+
+const fn transpose(mat: [[f32; 4]; 4]) -> [[f32; 4]; 4] {
+    [
+        [mat[0][0], mat[1][0], mat[2][0], mat[3][0]],
+        [mat[0][1], mat[1][1], mat[2][1], mat[3][1]],
+        [mat[0][2], mat[1][2], mat[2][2], mat[3][2]],
+        [mat[0][3], mat[1][3], mat[2][3], mat[3][3]],
+    ]
 }
