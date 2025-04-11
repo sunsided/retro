@@ -1,10 +1,10 @@
-use tracing::instrument;
-use wgpu::{BindGroup, BindGroupLayout, Sampler, TextureView};
 use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::buffers::Buffers;
 use crate::wgpu::wgpu_hardware::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::textures::Textures;
+use tracing::instrument;
+use wgpu::{BindGroup, BindGroupLayout, Sampler, TextureView};
 
 #[derive(Debug)]
 pub struct BindGroups {
@@ -17,83 +17,122 @@ pub struct BindGroups {
 
 impl BindGroups {
     #[instrument(skip_all)]
-    pub fn create_from(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers, textures: &Textures, samplers: &TextureSamplers, depths: &DepthBuffers) -> Self {
+    pub fn create_from(
+        device: &wgpu::Device,
+        layouts: &BindGroupLayouts,
+        buffers: &Buffers,
+        textures: &Textures,
+        samplers: &TextureSamplers,
+        depths: &DepthBuffers,
+    ) -> Self {
         let camera_uniform = Self::create_camera_uniform(device, layouts, buffers);
         let light_uniforms = Self::create_light_uniform(device, layouts, buffers);
         let cover_tex = Self::create_cover(device, layouts, textures, samplers);
-        let vga_fullscreen = Self::create_vga_fullscreen(device, layouts, textures, samplers, buffers, depths);
+        let vga_fullscreen =
+            Self::create_vga_fullscreen(device, layouts, textures, samplers, buffers, depths);
         Self {
             camera_uniform,
             light_uniforms,
             cover_tex,
-            vga_fullscreen
+            vga_fullscreen,
         }
     }
 
     #[instrument(skip_all)]
-    fn create_cover(device: &wgpu::Device, layouts: &BindGroupLayouts, textures: &Textures, samplers: &TextureSamplers) -> BindGroup {
-        Self::create_diffuse_and_normal(device, &layouts.diffuse_and_normal, &textures.cover.view, &samplers.linear, &textures.fallback_normals.view, &samplers.linear, Some("cover_bind_group"))
+    fn create_cover(
+        device: &wgpu::Device,
+        layouts: &BindGroupLayouts,
+        textures: &Textures,
+        samplers: &TextureSamplers,
+    ) -> BindGroup {
+        Self::create_diffuse_and_normal(
+            device,
+            &layouts.diffuse_and_normal,
+            &textures.cover.view,
+            &samplers.linear,
+            &textures.fallback_normals.view,
+            &samplers.linear,
+            Some("cover_bind_group"),
+        )
     }
 
     #[instrument(skip_all)]
-    fn create_diffuse_and_normal(device: &wgpu::Device, layout: &BindGroupLayout, tex_view: &TextureView, tex_sampler: &Sampler, normal_view: &TextureView, normal_sampler: &Sampler, label: Option<&str>) -> BindGroup {
-        device.create_bind_group(
-            &wgpu::BindGroupDescriptor {
-                layout,
-                entries: &[
-                    // Diffuse map
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(tex_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(tex_sampler),
-                    },
-                    // Normal map
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: wgpu::BindingResource::TextureView(normal_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: wgpu::BindingResource::Sampler(normal_sampler),
-                    }
-                ],
-                label,
-            })
-    }
-
-    #[instrument(skip_all)]
-    fn create_camera_uniform(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers) -> BindGroup {
+    fn create_diffuse_and_normal(
+        device: &wgpu::Device,
+        layout: &BindGroupLayout,
+        tex_view: &TextureView,
+        tex_sampler: &Sampler,
+        normal_view: &TextureView,
+        normal_sampler: &Sampler,
+        label: Option<&str>,
+    ) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &layouts.camera_uniforms,
+            layout,
             entries: &[
+                // Diffuse map
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: buffers.camera_uniform.as_entire_binding(),
-                }
+                    resource: wgpu::BindingResource::TextureView(tex_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(tex_sampler),
+                },
+                // Normal map
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(normal_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: wgpu::BindingResource::Sampler(normal_sampler),
+                },
             ],
+            label,
+        })
+    }
+
+    #[instrument(skip_all)]
+    fn create_camera_uniform(
+        device: &wgpu::Device,
+        layouts: &BindGroupLayouts,
+        buffers: &Buffers,
+    ) -> BindGroup {
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &layouts.camera_uniforms,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffers.camera_uniform.as_entire_binding(),
+            }],
             label: Some("camera_bind_group"),
         })
     }
 
     #[instrument(skip_all)]
-    fn create_light_uniform(device: &wgpu::Device, layouts: &BindGroupLayouts, buffers: &Buffers) -> BindGroup {
+    fn create_light_uniform(
+        device: &wgpu::Device,
+        layouts: &BindGroupLayouts,
+        buffers: &Buffers,
+    ) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &layouts.lighting_uniforms,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffers.light_uniforms.as_entire_binding(),
-                }
-            ],
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: buffers.light_uniforms.as_entire_binding(),
+            }],
             label: Some("light_uniform_bind_group"),
         })
     }
 
     #[instrument(skip_all)]
-    fn create_vga_fullscreen(device: &wgpu::Device, layouts: &BindGroupLayouts, textures: &Textures, samplers: &TextureSamplers, buffers: &Buffers, depths: &DepthBuffers) -> BindGroup {
+    fn create_vga_fullscreen(
+        device: &wgpu::Device,
+        layouts: &BindGroupLayouts,
+        textures: &Textures,
+        samplers: &TextureSamplers,
+        buffers: &Buffers,
+        depths: &DepthBuffers,
+    ) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("vga_fullscreen"),
             layout: &layouts.vga_fullscreen,
@@ -112,7 +151,9 @@ impl BindGroups {
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
-                    resource: wgpu::BindingResource::TextureView(&textures.vga_frame_entity_id.view),
+                    resource: wgpu::BindingResource::TextureView(
+                        &textures.vga_frame_entity_id.view,
+                    ),
                 },
                 wgpu::BindGroupEntry {
                     binding: 4,

@@ -64,27 +64,32 @@
 pub mod background;
 pub mod camera_render;
 pub mod dynamic_light;
-mod wgpu_render_state;
 mod frame_state;
 pub mod render;
 pub mod vga_blit;
+mod wgpu_render_state;
 
+pub use self::frame_state::FrameState;
+pub use self::wgpu_render_state::WgpuRenderState;
+use crate::engine::phases::render::background::RenderBackgroundSystemData;
+use crate::engine::{
+    ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent,
+    RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents,
+    TransformComponent,
+};
 use crate::engine::{BackgroundColorComponent, ModelComponent};
+use crate::wgpu::render_passes::RenderPasses;
+use crate::wgpu::wgpu_hardware::{
+    DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError,
+};
+use parking_lot::lock_api::MutexGuard;
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
-use parking_lot::lock_api::MutexGuard;
 use tracing::{error, trace, warn};
 use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
-use wgpu::hal::empty::Encoder;
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-use crate::engine::{ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents, TransformComponent};
-use crate::engine::phases::render::background::RenderBackgroundSystemData;
-use crate::wgpu::render_passes::RenderPasses;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
-pub use self::wgpu_render_state::WgpuRenderState;
-pub use self::frame_state::FrameState;
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderReady {
@@ -124,7 +129,11 @@ impl SystemRenderPhaseEvents for PhaseEvents {
     /// # Returns
     /// - `Ok(())` if the frame state was successfully initialized.
     /// - `Err(wgpu::SurfaceError)` if there was an issue obtaining the surface texture.
-    fn on_begin_phase(&mut self, _context: &FrameContext, render: &mut WgpuRenderState) -> Result<Self::Result, Self::Error> {
+    fn on_begin_phase(
+        &mut self,
+        _context: &FrameContext,
+        render: &mut WgpuRenderState,
+    ) -> Result<Self::Result, Self::Error> {
         // TODO: Have the application (through the ECS) react to wgpu::SurfaceError::Lost | wgpu::SurfaceError::Outdated by recreating the window.
         // TODO: Have the application react to wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other by exiting
         // TODO: Have the application react to wgpu::SurfaceError::Timeout by hoping for thee best :)
@@ -165,8 +174,18 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                     label: Some("Render Encoder"),
                 });
 
-            let passes = RenderPasses::new(&device, render.retro_enabled(), encoder, frame, screen_texture);
-            Some(FrameState::new(passes, render_start, render.pipeline_selector()))
+            let passes = RenderPasses::new(
+                &device,
+                render.retro_enabled(),
+                encoder,
+                frame,
+                screen_texture,
+            );
+            Some(FrameState::new(
+                passes,
+                render_start,
+                render.pipeline_selector(),
+            ))
         });
         Ok(RenderReady::Ready)
     }
@@ -195,7 +214,12 @@ impl SystemRenderPhaseEvents for PhaseEvents {
     /// # Returns
     /// - `Ok(())` on success.
     /// - `Err(wgpu::SurfaceError)` if any errors occur during the rendering pipeline.
-    fn on_end_phase(&mut self, data: Option<Self::Result>, context: &FrameContext, render: &mut WgpuRenderState) -> Result<(), Self::Error> {
+    fn on_end_phase(
+        &mut self,
+        data: Option<Self::Result>,
+        context: &FrameContext,
+        render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
         if !data.unwrap_or_default().is_ready() {
             return Ok(());
         }
@@ -203,16 +227,20 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         if let Ok((device, frame_state)) = render.finish_frame() {
             frame_state.passes.finish_and_present(device);
             let render_duration = frame_state.render_start.elapsed();
-            trace!(context.frame_number, "Rendered frame in {render_duration:?}");
-        }
-        else {
+            trace!(
+                context.frame_number,
+                "Rendered frame in {render_duration:?}"
+            );
+        } else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
         };
 
         // Trace the time of the phase itself.
         let elapsed = self.elapsed();
-        trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemRenderPhaseEvents>::NAME);
+        trace!(
+            "{name} phase took {elapsed:?}",
+            name = <PhaseEvents as SystemRenderPhaseEvents>::NAME
+        );
         Ok(())
     }
 }
-

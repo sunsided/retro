@@ -1,6 +1,6 @@
+use crate::wgpu::texture::Texture;
 use tracing::{debug, instrument};
 use wgpu::SurfaceConfiguration;
-use crate::wgpu::texture::Texture;
 
 #[derive(Debug)]
 pub struct DepthBuffers {
@@ -17,7 +17,7 @@ impl DepthBuffers {
         let vga_offscreen = Self::create_vga_offscreen(device);
         Self {
             screen,
-            vga_offscreen
+            vga_offscreen,
         }
     }
 
@@ -28,7 +28,10 @@ impl DepthBuffers {
     }
 
     #[instrument(skip_all)]
-    fn create_depth_texture(device: &wgpu::Device, surface_config: &SurfaceConfiguration) -> Texture {
+    fn create_depth_texture(
+        device: &wgpu::Device,
+        surface_config: &SurfaceConfiguration,
+    ) -> Texture {
         Texture::depth_texture(&device, &surface_config, "depth_texture")
     }
 

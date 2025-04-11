@@ -2,8 +2,8 @@ mod camera;
 mod camera_controller;
 mod projection;
 
-pub use crate::camera::camera_controller::CameraController;
 pub use crate::camera::camera::Camera;
+pub use crate::camera::camera_controller::CameraController;
 pub use crate::camera::projection::Projection;
 
 /// The coordinate system in Wgpu is based on DirectX and Metal's coordinate systems.

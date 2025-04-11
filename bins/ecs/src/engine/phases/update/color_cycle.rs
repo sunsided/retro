@@ -28,8 +28,11 @@
 //! between RGB and HSV color spaces. This allows background colors to transition
 //! smoothly in a visually appealing way, useful for games, visual effects, or UI elements.
 
+use crate::engine::{
+    ApplyBackgroundColorCycleSystem, BackgroundColorComponent, BackgroundColorCycleSystem,
+    FrameContext,
+};
 use std::convert::Infallible;
-use crate::engine::{ApplyBackgroundColorCycleSystem, BackgroundColorComponent, BackgroundColorCycleSystem, FrameContext};
 
 impl Default for BackgroundColorCycleSystem {
     fn default() -> Self {
@@ -45,20 +48,14 @@ pub struct BackgroundColorCycleSystemData {
 
 impl Default for BackgroundColorCycleSystemData {
     fn default() -> Self {
-        Self {
-            cycle_speed: 100.0,
-        }
+        Self { cycle_speed: 100.0 }
     }
 }
 
 impl ApplyBackgroundColorCycleSystem for BackgroundColorCycleSystem {
     type Error = Infallible;
 
-    fn apply_single(
-        &mut self,
-        context: &FrameContext,
-        color: &mut BackgroundColorComponent,
-    ) {
+    fn apply_single(&mut self, context: &FrameContext, color: &mut BackgroundColorComponent) {
         let dt = context.delta_time_secs;
 
         // Convert current RGB to HSV.
@@ -105,7 +102,11 @@ fn rgb_to_hsv(r: f32, g: f32, b: f32) -> (f32, f32, f32) {
     };
 
     let h = if h < 0.0 { h + 360.0 } else { h };
-    let s = if max.abs() < f32::EPSILON { 0.0 } else { delta / max };
+    let s = if max.abs() < f32::EPSILON {
+        0.0
+    } else {
+        delta / max
+    };
     let v = max;
     (h, s, v)
 }

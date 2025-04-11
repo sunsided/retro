@@ -1,6 +1,6 @@
+use derive_more::Deref;
 use std::ops::{Add, Mul, Sub};
 use std::time::Duration;
-use derive_more::Deref;
 
 /// A duration in seconds.
 #[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd, Deref)]

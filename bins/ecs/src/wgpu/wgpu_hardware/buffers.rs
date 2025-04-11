@@ -1,11 +1,11 @@
-use std::ops::RangeBounds;
-use tracing::instrument;
-use wgpu::{BindingResource, Buffer, BufferAddress, BufferSlice, Queue};
-use wgpu::util::DeviceExt;
 use crate::wgpu::camera_uniform::CameraUniform;
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::light::LightUniform;
 use crate::wgpu::retro_uniform::RetroUniform;
+use std::ops::RangeBounds;
+use tracing::instrument;
+use wgpu::util::DeviceExt;
+use wgpu::{BindingResource, Buffer, BufferAddress, BufferSlice, Queue};
 
 #[derive(Debug)]
 pub struct Buffers {
@@ -26,7 +26,7 @@ impl Buffers {
             camera_uniform,
             light_uniforms,
             instances,
-            retro_uniform
+            retro_uniform,
         }
     }
 }
@@ -40,13 +40,11 @@ impl CameraUniformBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
         let camera_uniform = CameraUniform::new();
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("camera_uniform"),
-                contents: bytemuck::cast_slice(&[camera_uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("camera_uniform"),
+            contents: bytemuck::cast_slice(&[camera_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
         Self { buffer }
     }
 
@@ -82,16 +80,12 @@ pub struct LightUniformBuffer {
 impl LightUniformBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
-        let light_uniform = LightUniform::new(
-            [2.0, 2.0, 2.0],
-            [1.0, 1.0, 1.0]);
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("light_uniform"),
-                contents: bytemuck::cast_slice(&[light_uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let light_uniform = LightUniform::new([2.0, 2.0, 2.0], [1.0, 1.0, 1.0]);
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("light_uniform"),
+            contents: bytemuck::cast_slice(&[light_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
         Self { buffer }
     }
 
@@ -137,14 +131,12 @@ impl InstanceBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
         let num_instances = Self::MAX_INSTANCES;
-        let buffer = device.create_buffer(
-            &wgpu::BufferDescriptor {
-                label: Some("Instance Buffer"),
-                size: (num_instances as usize * size_of::<InstanceRaw>()) as BufferAddress,
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: true
-            }
-        );
+        let buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Instance Buffer"),
+            size: (num_instances as usize * size_of::<InstanceRaw>()) as BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: true,
+        });
 
         {
             let mut mapping = buffer.slice(..).get_mapped_range_mut();
@@ -152,7 +144,10 @@ impl InstanceBuffer {
         }
         buffer.unmap();
 
-        Self { buffer, num_instances }
+        Self {
+            buffer,
+            num_instances,
+        }
     }
 
     pub const fn len(&self) -> usize {
@@ -189,13 +184,11 @@ impl RetroUniformBuffer {
     #[instrument(skip(device))]
     fn create(device: &wgpu::Device) -> Self {
         let light_uniform = RetroUniform::default();
-        let buffer = device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("retro_uniform"),
-                contents: bytemuck::cast_slice(&[light_uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            }
-        );
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("retro_uniform"),
+            contents: bytemuck::cast_slice(&[light_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
         Self { buffer }
     }
 

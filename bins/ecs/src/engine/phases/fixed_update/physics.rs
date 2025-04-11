@@ -1,5 +1,7 @@
+use crate::engine::{
+    ApplyPhysicsSystem, FrameContext, PhysicsSystem, PositionComponent, VelocityComponent,
+};
 use std::convert::Infallible;
-use crate::engine::{ApplyPhysicsSystem, FrameContext, PhysicsSystem, PositionComponent, VelocityComponent};
 
 impl Default for PhysicsSystem {
     fn default() -> Self {
@@ -24,5 +26,4 @@ impl ApplyPhysicsSystem for PhysicsSystem {
         position.y += velocity.y * dt;
         position.z += velocity.z * dt;
     }
-
 }

@@ -1,12 +1,13 @@
 pub struct Instance {
     pub position: cgmath::Vector3<f32>,
     pub rotation: cgmath::Quaternion<f32>,
-    pub entity_id: u32
+    pub entity_id: u32,
 }
 
 impl Instance {
     pub fn to_raw(&self) -> InstanceRaw {
-        let model = cgmath::Matrix4::from_translation(self.position) * cgmath::Matrix4::from(self.rotation);
+        let model =
+            cgmath::Matrix4::from_translation(self.position) * cgmath::Matrix4::from(self.rotation);
         InstanceRaw {
             model: model.into(),
             normal: cgmath::Matrix3::from(self.rotation).into(),
@@ -48,7 +49,6 @@ impl InstanceRaw {
                     shader_location: 5,
                     format: wgpu::VertexFormat::Float32x4,
                 },
-
                 // A mat4 takes up 4 vertex slots as it is technically 4 vec4s. We need to define a slot
                 // for each vec4. We don't have to do this in code, though.
                 wgpu::VertexAttribute {
@@ -66,7 +66,6 @@ impl InstanceRaw {
                     shader_location: 8,
                     format: wgpu::VertexFormat::Float32x4,
                 },
-
                 // normal rotation matrix
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 16]>() as wgpu::BufferAddress,
@@ -83,7 +82,6 @@ impl InstanceRaw {
                     shader_location: 11,
                     format: wgpu::VertexFormat::Float32x3,
                 },
-
                 // per-frame entity ID
                 wgpu::VertexAttribute {
                     offset: mem::size_of::<[f32; 25]>() as wgpu::BufferAddress,

@@ -1,10 +1,13 @@
-use tracing::{debug, trace, warn};
-use wgpu::{RenderPass, TextureView};
-use crate::engine::{ApplyRenderSystem, BackgroundColorComponent, CreateSystem, ModelComponent, PositionComponent, RenderBackgroundSystem, RenderSystem, SystemFactory, TransformComponent};
 use crate::engine::phases::render::{FrameState, WgpuRenderState};
+use crate::engine::{
+    ApplyRenderSystem, BackgroundColorComponent, CreateSystem, ModelComponent, PositionComponent,
+    RenderBackgroundSystem, RenderSystem, SystemFactory, TransformComponent,
+};
 use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, InstanceBuffer, RenderPipelineSelector};
+use tracing::{debug, trace, warn};
+use wgpu::{RenderPass, TextureView};
 
 #[derive(Debug)]
 pub struct RenderSystemData {
@@ -39,7 +42,13 @@ impl ApplyRenderSystem for RenderSystem {
         state.is_ready()
     }
 
-    fn apply_many(&mut self, wgpu_render: &mut WgpuRenderState, positions: &[PositionComponent], transforms: &[TransformComponent], models: &[ModelComponent]) {
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        positions: &[PositionComponent],
+        transforms: &[TransformComponent],
+        models: &[ModelComponent],
+    ) {
         if positions.is_empty() {
             return;
         }
@@ -66,22 +75,38 @@ impl ApplyRenderSystem for RenderSystem {
             let instance = Instance {
                 position: position.as_vector3(),
                 rotation: transforms.rotation,
-                entity_id: id
+                entity_id: id,
             };
             instance_buf.push(instance.to_raw());
 
             // Render, then clear the local buffer.
             if instance_buf.len() >= max_instances {
-                let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
-                render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera_uniform, &device.bind_groups().light_uniforms);
+                let num_instances = device
+                    .buffers()
+                    .instances
+                    .send_to_device(&device.queue(), &instance_buf);
+                render_pass.draw_model_instanced(
+                    &device.models().cube,
+                    0..num_instances,
+                    &device.bind_groups().camera_uniform,
+                    &device.bind_groups().light_uniforms,
+                );
                 instance_buf.clear();
             }
         }
 
         // Render the rest.
         if instance_buf.len() > 0 {
-            let num_instances = device.buffers().instances.send_to_device(&device.queue(), &instance_buf);
-            render_pass.draw_model_instanced(&device.models().cube, 0..num_instances, &device.bind_groups().camera_uniform, &device.bind_groups().light_uniforms);
+            let num_instances = device
+                .buffers()
+                .instances
+                .send_to_device(&device.queue(), &instance_buf);
+            render_pass.draw_model_instanced(
+                &device.models().cube,
+                0..num_instances,
+                &device.bind_groups().camera_uniform,
+                &device.bind_groups().light_uniforms,
+            );
             instance_buf.clear();
         }
     }

@@ -1,11 +1,14 @@
+use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
+use crate::engine::{
+    BackgroundColorCycleSystem, CreateSystem, FrameContext, PhaseEvents, RenderSystem,
+    SystemFactory, SystemFixedUpdatePhaseEvents, SystemUpdatePhaseEvents,
+};
 use std::convert::Infallible;
 use std::time::Instant;
 use tracing::trace;
-use crate::engine::{BackgroundColorCycleSystem, CreateSystem, FrameContext, PhaseEvents, RenderSystem, SystemFactory, SystemFixedUpdatePhaseEvents, SystemUpdatePhaseEvents};
-use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
 
-pub mod color_cycle;
 pub mod camera;
+pub mod color_cycle;
 
 impl CreateSystem<BackgroundColorCycleSystem> for SystemFactory {
     fn create(&self) -> BackgroundColorCycleSystem {
@@ -22,9 +25,16 @@ impl SystemUpdatePhaseEvents for PhaseEvents {
         Ok(())
     }
 
-    fn on_end_phase(&mut self, _data: Option<Self::Result>, _context: &FrameContext) -> Result<(), Self::Error> {
+    fn on_end_phase(
+        &mut self,
+        _data: Option<Self::Result>,
+        _context: &FrameContext,
+    ) -> Result<(), Self::Error> {
         let elapsed = self.elapsed();
-        trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemUpdatePhaseEvents>::NAME);
+        trace!(
+            "{name} phase took {elapsed:?}",
+            name = <PhaseEvents as SystemUpdatePhaseEvents>::NAME
+        );
         Ok(())
     }
 }

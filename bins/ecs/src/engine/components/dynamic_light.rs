@@ -1,20 +1,17 @@
-use cgmath::Rotation3;
 use crate::seconds::Seconds;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use crate::wgpu::light::LightUniform;
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
+use cgmath::Rotation3;
 
 #[derive(Debug, Clone)]
 pub struct DynamicLightData {
-    pub uniform: LightUniform
+    pub uniform: LightUniform,
 }
 
 impl Default for DynamicLightData {
     fn default() -> Self {
         Self {
-            uniform: LightUniform::new(
-                [2.0, 2.0, 2.0],
-                [1.0, 1.0, 1.0]
-            )
+            uniform: LightUniform::new([2.0, 2.0, 2.0], [1.0, 1.0, 1.0]),
         }
     }
 }
@@ -38,6 +35,10 @@ impl DynamicLightData {
     }
 
     pub fn write_to_buffer(&self, gpu: &DeviceAndQueue) {
-        gpu.queue().write_buffer(gpu.buffers().light_uniforms.as_ref(), 0, bytemuck::cast_slice(&[self.uniform]));
+        gpu.queue().write_buffer(
+            gpu.buffers().light_uniforms.as_ref(),
+            0,
+            bytemuck::cast_slice(&[self.uniform]),
+        );
     }
 }

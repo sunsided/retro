@@ -1,9 +1,9 @@
-use std::f32::consts::FRAC_PI_2;
-use cgmath::{InnerSpace, Rad, Vector3};
 use crate::camera::Camera;
 use crate::engine::input_state::KeyState;
 use crate::engine::InputState;
 use crate::seconds::Seconds;
+use cgmath::{InnerSpace, Rad, Vector3};
+use std::f32::consts::FRAC_PI_2;
 
 const SAFE_FRAC_PI_2: f32 = FRAC_PI_2 - 0.0001;
 
@@ -81,7 +81,8 @@ impl CameraController {
         // changes when zooming. I've added this to make it easier
         // to get closer to an object you want to focus on.
         let (pitch_sin, pitch_cos) = camera.pitch.0.sin_cos();
-        let scrollward = Vector3::new(pitch_cos * yaw_cos, pitch_sin, pitch_cos * yaw_sin).normalize();
+        let scrollward =
+            Vector3::new(pitch_cos * yaw_cos, pitch_sin, pitch_cos * yaw_sin).normalize();
         camera.position += scrollward * self.scroll * self.speed * self.sensitivity * dt;
         self.scroll = 0.0;
 

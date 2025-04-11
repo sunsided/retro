@@ -1,10 +1,14 @@
+use crate::engine::components::ActiveCameraState;
+use crate::engine::phases::render::WgpuRenderState;
+use crate::engine::{
+    ApplyCameraRenderSystem, ApplyDynamicLightSystem, CameraComponent, CameraRenderSystem,
+    ColorComponent, CreateSystem, DynamicLightComponent, DynamicLightSystem, FrameContext,
+    SystemFactory,
+};
+use crate::wgpu::light::DrawLight;
 use std::convert::Infallible;
 use std::time::Duration;
 use tracing::{debug, warn};
-use crate::engine::{ApplyCameraRenderSystem, ApplyDynamicLightSystem, CameraComponent, CameraRenderSystem, ColorComponent, CreateSystem, DynamicLightComponent, DynamicLightSystem, FrameContext, SystemFactory};
-use crate::engine::components::ActiveCameraState;
-use crate::engine::phases::render::WgpuRenderState;
-use crate::wgpu::light::DrawLight;
 
 #[derive(Debug)]
 pub struct DynamicLightSystemData;
@@ -12,7 +16,13 @@ pub struct DynamicLightSystemData;
 impl ApplyDynamicLightSystem for DynamicLightSystem {
     type Error = Infallible;
 
-    fn apply_many(&mut self, context: &FrameContext, gpu: &mut WgpuRenderState, colors: &[ColorComponent], lights: &mut [DynamicLightComponent]) {
+    fn apply_many(
+        &mut self,
+        context: &FrameContext,
+        gpu: &mut WgpuRenderState,
+        colors: &[ColorComponent],
+        lights: &mut [DynamicLightComponent],
+    ) {
         let Ok((device, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;

@@ -1,6 +1,6 @@
+use crate::engine::{FrameContext, PhaseEvents, SystemStartupPhaseEvents};
 use std::convert::Infallible;
 use tracing::trace;
-use crate::engine::{FrameContext, PhaseEvents, SystemStartupPhaseEvents};
 
 impl SystemStartupPhaseEvents for PhaseEvents {
     type Result = ();
@@ -11,9 +11,16 @@ impl SystemStartupPhaseEvents for PhaseEvents {
         Ok(())
     }
 
-    fn on_end_phase(&mut self, _data: Option<Self::Result>, _context: &FrameContext) -> Result<(), Self::Error> {
+    fn on_end_phase(
+        &mut self,
+        _data: Option<Self::Result>,
+        _context: &FrameContext,
+    ) -> Result<(), Self::Error> {
         let elapsed = self.elapsed();
-        trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemStartupPhaseEvents>::NAME);
+        trace!(
+            "{name} phase took {elapsed:?}",
+            name = <PhaseEvents as SystemStartupPhaseEvents>::NAME
+        );
         Ok(())
     }
 }

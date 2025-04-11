@@ -1,5 +1,5 @@
-use std::time::Instant;
 use crate::seconds::Seconds;
+use std::time::Instant;
 
 /// A simple FPS counter using an exponential moving average filter.
 #[derive(Debug, Clone)]

@@ -10,6 +10,6 @@
 //! promoting modular and organized code structure for the application.
 
 pub mod fixed_update;
-pub mod update;
 pub mod render;
 pub mod startup;
+pub mod update;

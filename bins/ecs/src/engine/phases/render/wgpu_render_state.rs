@@ -1,13 +1,16 @@
+use crate::engine::phases::render::frame_state::FrameState;
+use crate::wgpu::retro_uniform::RetroUniform;
+use crate::wgpu::wgpu_hardware::{
+    DeviceAndQueue, RenderPipelineSelector, WgpuHardware, WgpuReinitializeWindowError,
+    WgpuResizeSurfaceError,
+};
 use std::cell::Cell;
 use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use tracing::{debug, instrument};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
-use crate::engine::phases::render::frame_state::FrameState;
-use crate::wgpu::retro_uniform::RetroUniform;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError};
 
 /// Represents the render state for the WGPU system.
 ///
@@ -40,7 +43,7 @@ pub struct WgpuRenderState {
 pub struct Retro {
     enabled: bool,
     uniform: RetroUniform,
-    uniform_uploaded: AtomicBool
+    uniform_uploaded: AtomicBool,
 }
 
 impl WgpuRenderState {
@@ -68,7 +71,7 @@ impl WgpuRenderState {
             RenderPipelineSelector::Textured => {
                 debug!("Switching to boring pipeline");
                 RenderPipelineSelector::Boring
-            },
+            }
             RenderPipelineSelector::Boring => {
                 // Skip wireframe if it's not supported by the GPU
                 if self.wireframe_supported() {
@@ -78,15 +81,15 @@ impl WgpuRenderState {
                     debug!("Switching to entity pipeline (wireframe not supported)");
                     RenderPipelineSelector::Entity
                 }
-            },
+            }
             RenderPipelineSelector::Wireframe => {
                 debug!("Switching to entity pipeline");
                 RenderPipelineSelector::Entity
-            },
+            }
             RenderPipelineSelector::Entity => {
                 debug!("Switching to textured pipeline");
                 RenderPipelineSelector::Textured
-            },
+            }
         };
     }
 
@@ -96,7 +99,9 @@ impl WgpuRenderState {
     }
 
     #[instrument(skip(self))]
-    pub fn for_rendering(&mut self) -> Result<(&DeviceAndQueue, &mut FrameState), RenderPhaseError> {
+    pub fn for_rendering(
+        &mut self,
+    ) -> Result<(&DeviceAndQueue, &mut FrameState), RenderPhaseError> {
         let Some(hardware) = self.hardware.device() else {
             debug!("Device is not ready yet, cannot render");
             return Err(RenderPhaseError::DeviceNotReady);
@@ -126,17 +131,27 @@ impl WgpuRenderState {
     }
 
     #[inline]
-    pub fn reinitialize_surface(&mut self, window: Arc<Window>) -> Result<(), WgpuReinitializeWindowError> {
+    pub fn reinitialize_surface(
+        &mut self,
+        window: Arc<Window>,
+    ) -> Result<(), WgpuReinitializeWindowError> {
         self.retro.uniform.resize_surface(window.inner_size());
-        self.retro.uniform_uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.retro
+            .uniform_uploaded
+            .store(false, std::sync::atomic::Ordering::Relaxed);
 
         self.hardware.reinitialize_surface(window)
     }
 
     #[inline]
-    pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
+    pub fn resize_surface(
+        &mut self,
+        new_size: PhysicalSize<u32>,
+    ) -> Result<(), WgpuResizeSurfaceError> {
         self.retro.uniform.resize_surface(new_size);
-        self.retro.uniform_uploaded.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.retro
+            .uniform_uploaded
+            .store(false, std::sync::atomic::Ordering::Relaxed);
 
         self.hardware.resize_surface(new_size)
     }
@@ -160,7 +175,11 @@ impl WgpuRenderState {
     // TODO: Refactor
     pub fn update_retro_uniform(&self) {
         // Set the flag to uploaded; if it was already uploaded, return.
-        if self.retro.uniform_uploaded.swap(true, std::sync::atomic::Ordering::Relaxed) {
+        if self
+            .retro
+            .uniform_uploaded
+            .swap(true, std::sync::atomic::Ordering::Relaxed)
+        {
             return;
         }
 
@@ -169,7 +188,10 @@ impl WgpuRenderState {
         };
 
         debug!("Updating retro uniform");
-        device.buffers().retro_uniform.send_to_device(device.queue(), self.retro.uniform);
+        device
+            .buffers()
+            .retro_uniform
+            .send_to_device(device.queue(), self.retro.uniform);
     }
 
     /// Toggles retro rendering state.

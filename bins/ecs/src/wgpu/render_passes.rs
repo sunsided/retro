@@ -1,7 +1,7 @@
-use std::ops::{Deref, DerefMut};
-use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
 use crate::engine::BackgroundColorComponent;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
+use std::ops::{Deref, DerefMut};
+use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
 
 pub struct RenderPasses {
     encoder: CommandEncoder,
@@ -30,7 +30,13 @@ impl DerefMut for RenderPasses {
 }
 
 impl RenderPasses {
-    pub fn new(device: &DeviceAndQueue, retro_enabled: bool, encoder: CommandEncoder, surface_tex: SurfaceTexture, surface_view: TextureView) -> Self {
+    pub fn new(
+        device: &DeviceAndQueue,
+        retro_enabled: bool,
+        encoder: CommandEncoder,
+        surface_tex: SurfaceTexture,
+        surface_view: TextureView,
+    ) -> Self {
         let surface_depth_view = device.depths().screen.view.clone();
         let surface_frame_entity_id_view = device.textures().surface_frame_entity_id.view.clone();
         let vga_frame_entity_id_view = device.textures().vga_frame_entity_id.view.clone();
@@ -56,7 +62,10 @@ impl RenderPasses {
         self.surface_tex.present();
     }
 
-    pub fn clear_background_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass {
+    pub fn clear_background_pass(
+        &mut self,
+        background_color: &BackgroundColorComponent,
+    ) -> RenderPass {
         if self.retro_enabled {
             self.create_retro_clear_pass(background_color)
         } else {
@@ -72,7 +81,10 @@ impl RenderPasses {
         }
     }
 
-    pub fn final_pass(&mut self, background_color: &BackgroundColorComponent) -> Option<RenderPass> {
+    pub fn final_pass(
+        &mut self,
+        background_color: &BackgroundColorComponent,
+    ) -> Option<RenderPass> {
         if self.retro_enabled {
             Some(self.create_final_pass(background_color))
         } else {
@@ -80,25 +92,32 @@ impl RenderPasses {
         }
     }
 
-    fn create_quality_clear_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass {
+    fn create_quality_clear_pass(
+        &mut self,
+        background_color: &BackgroundColorComponent,
+    ) -> RenderPass {
         Self::create_render_pass(
             &mut self.encoder,
             Some(background_color),
             &self.surface_view,
             Some(&self.surface_frame_entity_id_view),
             &self.surface_depth_view,
-            "clear_background"
+            "clear_background",
         )
     }
 
-    fn create_retro_clear_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass {
+    fn create_retro_clear_pass(
+        &mut self,
+        background_color: &BackgroundColorComponent,
+    ) -> RenderPass {
         Self::create_render_pass(
             &mut self.encoder,
             Some(background_color),
             &self.vga_offscreen_view,
             Some(&self.vga_frame_entity_id_view),
             &self.vga_depth_view,
-            "vga_first_pass")
+            "vga_first_pass",
+        )
     }
 
     fn create_quality_render_pass(&mut self) -> RenderPass {
@@ -108,7 +127,7 @@ impl RenderPasses {
             &self.surface_view,
             Some(&self.surface_frame_entity_id_view),
             &self.surface_depth_view,
-            "quality_render"
+            "quality_render",
         )
     }
 
@@ -119,10 +138,18 @@ impl RenderPasses {
             &self.vga_offscreen_view,
             Some(&self.vga_frame_entity_id_view),
             &self.vga_depth_view,
-            "vga_render")
+            "vga_render",
+        )
     }
 
-    fn create_render_pass<'encoder>(encoder: &'encoder mut CommandEncoder, background_color: Option<&BackgroundColorComponent>, tex_view: &TextureView, entity_view: Option<&TextureView>, depth_view: &TextureView, label: &'static str) -> RenderPass<'encoder> {
+    fn create_render_pass<'encoder>(
+        encoder: &'encoder mut CommandEncoder,
+        background_color: Option<&BackgroundColorComponent>,
+        tex_view: &TextureView,
+        entity_view: Option<&TextureView>,
+        depth_view: &TextureView,
+        label: &'static str,
+    ) -> RenderPass<'encoder> {
         let tex_load = if let Some(background_color) = background_color {
             wgpu::LoadOp::Clear(background_color.as_wgpu_color())
         } else {
@@ -135,59 +162,55 @@ impl RenderPasses {
             wgpu::LoadOp::Load
         };
 
-        let entity_id_attachment = entity_view.map(|view| {
-            wgpu::RenderPassColorAttachment {
-                view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: tex_load,
-                    store: wgpu::StoreOp::Store,
-                },
-            }
+        let entity_id_attachment = entity_view.map(|view| wgpu::RenderPassColorAttachment {
+            view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: tex_load,
+                store: wgpu::StoreOp::Store,
+            },
         });
 
-        encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some(label),
-                color_attachments: &[
-                    Some(wgpu::RenderPassColorAttachment {
-                        view: tex_view,
-                        resolve_target: None,
-                        ops: wgpu::Operations {
-                            load: tex_load,
-                            store: wgpu::StoreOp::Store,
-                        },
-                    }),
-                    entity_id_attachment
-                ],
-                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: depth_view,
-                    depth_ops: Some(wgpu::Operations {
-                        load: depth_load,
+        encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some(label),
+            color_attachments: &[
+                Some(wgpu::RenderPassColorAttachment {
+                    view: tex_view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: tex_load,
                         store: wgpu::StoreOp::Store,
-                    }),
-                    stencil_ops: None,
+                    },
                 }),
-                occlusion_query_set: None,
-                timestamp_writes: None,
-            })
+                entity_id_attachment,
+            ],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: depth_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: depth_load,
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
+            occlusion_query_set: None,
+            timestamp_writes: None,
+        })
     }
 
     fn create_final_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass {
-        self.encoder
-            .begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("vga_second_pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.surface_view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                timestamp_writes: None,
-                occlusion_query_set: None,
-            })
+        self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("vga_second_pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &self.surface_view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        })
     }
 }

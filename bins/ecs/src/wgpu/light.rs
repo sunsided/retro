@@ -1,5 +1,5 @@
-use std::ops::Range;
 use crate::wgpu::model::{Mesh, Model};
+use std::ops::Range;
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -18,7 +18,7 @@ impl LightUniform {
             position,
             _padding: 0,
             color,
-            _padding2: 0
+            _padding2: 0,
         }
     }
 }
@@ -98,7 +98,12 @@ where
         light_bind_group: &'model wgpu::BindGroup,
     ) {
         for mesh in &model.meshes {
-            self.draw_light_mesh_instanced(mesh, instances.clone(), camera_bind_group, light_bind_group);
+            self.draw_light_mesh_instanced(
+                mesh,
+                instances.clone(),
+                camera_bind_group,
+                light_bind_group,
+            );
         }
     }
 }

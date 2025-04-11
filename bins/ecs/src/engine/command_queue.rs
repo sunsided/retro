@@ -15,8 +15,8 @@
 //! - [`WorldCommandSender`]: Provides an interface for sending `WorldCommand`s, ensuring safe
 //!   communication between different parts of the system.
 
-use crossbeam_channel::TryRecvError;
 use crate::engine::{WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crossbeam_channel::TryRecvError;
 
 /// A command queue for sending and receiving [`WorldCommand`]s within the engine.
 ///

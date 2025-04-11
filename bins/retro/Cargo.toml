@@ -8,6 +8,3 @@ dotenvy = "0.15.7"
 retro = { path = "../../crates/retro" }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
-
-[dependencies.deranged]
-version = "=0.4.1" # fix build issue with tracing-appender > time > deranged

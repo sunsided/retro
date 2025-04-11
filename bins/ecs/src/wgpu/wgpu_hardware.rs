@@ -20,29 +20,32 @@
 //! - **Error Handling**: Provides error enumeration (`WgpuReinitializeWindowError`)
 //!   for better handling of common errors during initialization or reinitialization.
 
+mod bind_group_layouts;
+mod bind_groups;
+mod buffers;
+mod depth_buffers;
 mod device_and_queue;
+mod models;
+mod render_pipelines;
+mod shaders;
 mod surface_id;
 mod surface_wrapper;
 mod texture_samplers;
-mod depth_buffers;
-mod bind_group_layouts;
-mod render_pipelines;
-mod shaders;
-mod buffers;
-mod bind_groups;
-mod models;
 mod textures;
 
-use std::sync::Arc;
-use tracing::{debug, info, instrument, warn};
-use wgpu::{Adapter, Backends, Device, DeviceType, InstanceDescriptor, PresentMode, Queue, RequestDeviceError, Surface, SurfaceConfiguration, TextureUsages};
-use winit::dpi::PhysicalSize;
-use winit::window::Window;
+pub use self::buffers::InstanceBuffer;
 pub use self::device_and_queue::DeviceAndQueue;
+pub use self::render_pipelines::RenderPipelineSelector;
 pub use self::surface_id::SurfaceId;
 pub use self::surface_wrapper::SurfaceWrapper;
-pub use self::render_pipelines::RenderPipelineSelector;
-pub use self::buffers::InstanceBuffer;
+use std::sync::Arc;
+use tracing::{debug, info, instrument, warn};
+use wgpu::{
+    Adapter, Backends, Device, DeviceType, InstanceDescriptor, PresentMode, Queue,
+    RequestAdapterError, RequestDeviceError, Surface, SurfaceConfiguration, TextureUsages,
+};
+use winit::dpi::PhysicalSize;
+use winit::window::Window;
 
 #[derive(Debug, Default)]
 pub struct WgpuHardware {
@@ -73,7 +76,10 @@ impl WgpuHardware {
             backend_options: Default::default(),
         };
         let instance = wgpu::Instance::new(&descriptor);
-        WgpuHardware { instance, ..Default::default() }
+        WgpuHardware {
+            instance,
+            ..Default::default()
+        }
     }
 
     /// Get access to the device, if configured.
@@ -96,7 +102,14 @@ impl WgpuHardware {
     /// Indicates whether wireframe rendering is supported by the adapter.
     #[inline]
     pub fn wireframe_supported(&self) -> bool {
-        self.adapter.as_ref().map(|adapter| adapter.features().contains(wgpu::Features::POLYGON_MODE_LINE)).unwrap_or_default()
+        self.adapter
+            .as_ref()
+            .map(|adapter| {
+                adapter
+                    .features()
+                    .contains(wgpu::Features::POLYGON_MODE_LINE)
+            })
+            .unwrap_or_default()
     }
 }
 
@@ -105,9 +118,9 @@ pub enum WgpuReinitializeWindowError {
     #[error("Failed to create GPU surface: {0}")]
     CreateSurface(#[from] wgpu::CreateSurfaceError),
     #[error("No fitting GPU adapter found")]
-    NoAdapterFound,
+    NoAdapterFound(#[from] RequestAdapterError),
     #[error("Failed to request device: {0}")]
-    NoDevice(#[from] RequestDeviceError)
+    NoDevice(#[from] RequestDeviceError),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -117,16 +130,21 @@ pub enum WgpuResizeSurfaceError {
     #[error("No surface available to resize")]
     NoSurface,
     #[error("No device available to resize the surface with")]
-    NoDevice
+    NoDevice,
 }
 
 impl WgpuHardware {
     #[instrument(skip(self, window))]
-    pub fn reinitialize_surface(&mut self, window: Arc<Window>) -> Result<(), WgpuReinitializeWindowError> {
+    pub fn reinitialize_surface(
+        &mut self,
+        window: Arc<Window>,
+    ) -> Result<(), WgpuReinitializeWindowError> {
         let size = window.inner_size();
         debug!(width = %size.width, height = %size.height, "Creating WGPU surface");
         self.surface.reset();
-        let surface = self.instance.create_surface(window)
+        let surface = self
+            .instance
+            .create_surface(window)
             .inspect_err(|error| tracing::error!(%error, "Failed to create surface"))?;
         self.surface = SurfaceWrapper::from(surface);
 
@@ -135,7 +153,9 @@ impl WgpuHardware {
         };
 
         // If we already have an adapter, and it is compatible with the new surface, skip creation.
-        let surface_caps = self.adapter.as_ref()
+        let surface_caps = self
+            .adapter
+            .as_ref()
             .map(|adapter| surface.get_capabilities(&adapter))
             .unwrap_or_default();
         let recreate_device = surface_caps.formats.is_empty();
@@ -160,7 +180,10 @@ impl WgpuHardware {
         Ok(())
     }
 
-    pub fn resize_surface(&mut self, new_size: PhysicalSize<u32>) -> Result<(), WgpuResizeSurfaceError> {
+    pub fn resize_surface(
+        &mut self,
+        new_size: PhysicalSize<u32>,
+    ) -> Result<(), WgpuResizeSurfaceError> {
         if new_size.width <= 0 || new_size.height <= 0 {
             return Err(WgpuResizeSurfaceError::InvalidSize(new_size));
         }
@@ -188,32 +211,65 @@ impl WgpuHardware {
                     force_fallback_adapter: false,
                 },
             ))
-            .ok_or(WgpuReinitializeWindowError::NoAdapterFound)
-            .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id(), "Failed to request adapter"))?;
+            .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id(), "Failed to request adapter"))
+            .map_err( WgpuReinitializeWindowError::NoAdapterFound)?;
 
         let info = adapter.get_info();
         match info.device_type {
-            DeviceType::Other => warn!("Adapter is of unsupported type: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
-            DeviceType::IntegratedGpu => info!("Running on an integrated GPU: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
-            DeviceType::DiscreteGpu => info!("Running on a discrete GPU: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
-            DeviceType::VirtualGpu => info!("Running on a virtual GPU: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
-            DeviceType::Cpu => warn!("Running using software renderer: {name} ({vendor}, {driver})", name = info.name, vendor = info.vendor, driver = info.driver_info),
+            DeviceType::Other => warn!(
+                "Adapter is of unsupported type: {name} ({vendor}, {driver})",
+                name = info.name,
+                vendor = info.vendor,
+                driver = info.driver_info
+            ),
+            DeviceType::IntegratedGpu => info!(
+                "Running on an integrated GPU: {name} ({vendor}, {driver})",
+                name = info.name,
+                vendor = info.vendor,
+                driver = info.driver_info
+            ),
+            DeviceType::DiscreteGpu => info!(
+                "Running on a discrete GPU: {name} ({vendor}, {driver})",
+                name = info.name,
+                vendor = info.vendor,
+                driver = info.driver_info
+            ),
+            DeviceType::VirtualGpu => info!(
+                "Running on a virtual GPU: {name} ({vendor}, {driver})",
+                name = info.name,
+                vendor = info.vendor,
+                driver = info.driver_info
+            ),
+            DeviceType::Cpu => warn!(
+                "Running using software renderer: {name} ({vendor}, {driver})",
+                name = info.name,
+                vendor = info.vendor,
+                driver = info.driver_info
+            ),
         }
 
         Ok(adapter)
     }
 
     #[instrument(skip(self, adapter))]
-    fn request_device(&self, adapter: &Adapter) -> Result<(Device, Queue), WgpuReinitializeWindowError> {
+    fn request_device(
+        &self,
+        adapter: &Adapter,
+    ) -> Result<(Device, Queue), WgpuReinitializeWindowError> {
         debug!(surface_id = %self.surface.id(), "Requesting GPU device and queue due to surface change");
 
         // Enable wireframe rendering support.
         let mut required_features = wgpu::Features::empty();
-        if adapter.features().contains(wgpu::Features::POLYGON_MODE_LINE) {
+        if adapter
+            .features()
+            .contains(wgpu::Features::POLYGON_MODE_LINE)
+        {
             debug!("Adapter supports wireframe rendering");
             required_features |= wgpu::Features::POLYGON_MODE_LINE;
         } else {
-            debug!("Adapter does not support wireframe rendering, falling back to empty feature set");
+            debug!(
+                "Adapter does not support wireframe rendering, falling back to empty feature set"
+            );
         };
 
         let (device, queue) = pollster::block_on(adapter
@@ -223,19 +279,25 @@ impl WgpuHardware {
                     required_features,
                     required_limits: wgpu::Limits::default(),
                     memory_hints: Default::default(),
-                },
-                None,
+                    trace: Default::default(),
+                }
             ))
             .inspect_err(|error| tracing::error!(%error, surface_id = %self.surface.id(), "Failed to request device"))?;
         Ok((device, queue))
     }
 
     #[instrument(skip_all)]
-    fn get_surface_config(size: PhysicalSize<u32>, surface: &Surface, adapter: &Adapter) -> SurfaceConfiguration {
+    fn get_surface_config(
+        size: PhysicalSize<u32>,
+        surface: &Surface,
+        adapter: &Adapter,
+    ) -> SurfaceConfiguration {
         let surface_caps = surface.get_capabilities(&adapter);
 
         // Pick sRGB format (or the next-best one).
-        let surface_format = surface_caps.formats.iter()
+        let surface_format = surface_caps
+            .formats
+            .iter()
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
