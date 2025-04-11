@@ -434,19 +434,30 @@ impl App {
         let platform = self.egui_platform.as_mut().unwrap();
 
         // Begin to draw the UI frame.
+        platform.context().set_zoom_factor(2.0);
         platform.begin_pass();
 
         // Draw the demo application.
+        /*
         let demo_app = self.egui_demo_app.as_mut().unwrap();
         demo_app.ui(&platform.context());
+        */
+
+        let ctx = platform.context();
+        egui::CentralPanel::default().show(&ctx, |ui| {
+            egui::CollapsingHeader::new("Panel Title")
+                .default_open(false) // closed by default; change to true if desired
+                .show(ui, |ui| {
+                    ui.label("This is basic text content inside the panel.");
+                });
+        });
 
         // End the UI frame. We could now handle the output and draw the UI with the backend.
         let full_output = platform.end_pass(Some(&window));
 
-        const PIXELS_PER_POINT: f32 = 1.0;
         let paint_jobs = platform
             .context()
-            .tessellate(full_output.shapes, PIXELS_PER_POINT);
+            .tessellate(full_output.shapes, full_output.pixels_per_point);
 
         // Upload all resources for the GPU.
         let surface_config = self.config.as_ref().unwrap();
