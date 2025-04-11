@@ -18,7 +18,7 @@ impl egui::Widget for ShaderArea {
 
         // Draw a bright magenta rectangle as the placeholder.
         ui.painter()
-            .rect_filled(rect, 0.0, egui::Color32::from_rgb(255, 0, 255));
+            .rect_filled(rect, 0.0, egui::Color32::from_rgb(50, 50, 50));
         response
     }
 }

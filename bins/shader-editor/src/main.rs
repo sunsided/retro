@@ -647,10 +647,16 @@ impl App {
         ];
         // Transpose to match WGSL’s column-major expectation:
         let transform = transpose(transform);
-        let uniform_data = Uniforms { transform };
 
-        // ----- NEW: Shader Overlay Pass -----
+        // Shader Overlay Pass
         {
+            // Compute physical coordinates from the UI widget rectangle:
+            let scale = window.scale_factor() as f32;
+            let scissor_x = (shader_area_rect.min.x * scale) as u32;
+            let scissor_y = (shader_area_rect.min.y * scale) as u32;
+            let scissor_width = (shader_area_rect.width() * scale) as u32;
+            let scissor_height = (shader_area_rect.height() * scale) as u32;
+
             let mut shader_rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Shader Overlay Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -673,7 +679,20 @@ impl App {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
+
+            shader_rpass.set_viewport(
+                shader_area_rect.min.x * scale,
+                shader_area_rect.min.y * scale,
+                shader_area_rect.width() * scale,
+                shader_area_rect.height() * scale,
+                0.0,
+                1.0,
+            );
+
+            shader_rpass.set_scissor_rect(scissor_x, scissor_y, scissor_width, scissor_height);
+
             shader_rpass.set_pipeline(pipeline);
+
             // Bind our uniform so the vertex shader gets the transformation matrix.
             shader_rpass.set_bind_group(0, &*uniform_bind_group, &[]);
 
@@ -703,30 +722,13 @@ impl App {
                     transform: mvp.to_cols_array_2d(),
                 }
             } else {
-                // For the flat quad, compute the transform from the UI-provided rectangle.
-                let scale = window.scale_factor() as f32;
-                let area_min_x = shader_area_rect.min.x * scale;
-                let area_min_y = shader_area_rect.min.y * scale;
-                let area_width = shader_area_rect.width() * scale;
-                let area_height = shader_area_rect.height() * scale;
-                let screen_w = surface_config.width as f32;
-                let screen_h = surface_config.height as f32;
-                let center_x = area_min_x + area_width * 0.5;
-                let center_y = area_min_y + area_height * 0.5;
-                let center_clip_x = center_x / screen_w * 2.0 - 1.0;
-                let center_clip_y = 1.0 - center_y / screen_h * 2.0;
-                let scale_x = area_width / screen_w;
-                let scale_y = area_height / screen_h;
-                // Build a simple 2D transform in 3D space (z remains 0).
-                let transform_2d: [[f32; 4]; 4] = [
-                    [scale_x, 0.0, 0.0, center_clip_x],
-                    [0.0, scale_y, 0.0, center_clip_y],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0],
-                ];
-                // Transpose to match WGSL’s column-major order.
                 Uniforms {
-                    transform: transpose(transform_2d),
+                    transform: [
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],
+                    ],
                 }
             };
 
