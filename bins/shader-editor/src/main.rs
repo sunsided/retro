@@ -615,39 +615,6 @@ impl App {
             .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
             .unwrap();
 
-        // Assume that the ShaderArea widget is the one we just added.
-        // For simplicity, we fetch its coordinates via egui (you might store them in App state).
-        // Here we assume the last ui call produced the shader_response (and you can store shader_area_rect globally).
-        // For this example, we'll use a dummy rectangle if needed.
-        // (In production, store the rect from the widget callback.)
-        let scale = window.scale_factor() as f32;
-
-        // Convert from egui points to physical pixels:
-        let area_min_x = shader_area_rect.min.x * scale;
-        let area_min_y = shader_area_rect.min.y * scale;
-        let area_width = shader_area_rect.width() * scale;
-        let area_height = shader_area_rect.height() * scale;
-        let screen_w = surface_config.width as f32;
-        let screen_h = surface_config.height as f32;
-        let center_x = area_min_x + area_width * 0.5;
-        let center_y = area_min_y + area_height * 0.5;
-
-        // Convert window center to clip space:
-        let center_clip_x = center_x / screen_w * 2.0 - 1.0;
-        let center_clip_y = 1.0 - center_y / screen_h * 2.0;
-
-        // Compute scale factors so that quad width in clip space is (area_width/screen_w)*2, etc.
-        let scale_x = area_width / screen_w;
-        let scale_y = area_height / screen_h;
-        let transform: [[f32; 4]; 4] = [
-            [scale_x, 0.0, 0.0, center_clip_x],
-            [0.0, scale_y, 0.0, center_clip_y],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ];
-        // Transpose to match WGSL’s column-major expectation:
-        let transform = transpose(transform);
-
         // Shader Overlay Pass
         {
             // Compute physical coordinates from the UI widget rectangle:
