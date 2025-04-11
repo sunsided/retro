@@ -3,7 +3,7 @@ mod widgets;
 
 use crate::logging::setup_logging;
 use crate::widgets::shader_area::ShaderArea;
-use egui::{FontDefinitions, Pos2};
+use egui::{FontDefinitions, Pos2, Rect, emath};
 use egui_demo_lib::DemoWindows;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
@@ -507,7 +507,9 @@ impl App {
         */
 
         let ctx = platform.context();
-        egui::Window::new("My Draggable Frame")
+
+        let mut shader_area_rect = Rect::from_pos(Pos2::default());
+        egui::Window::new("Shader Preview")
             .default_pos(Pos2::new(100.0, 100.0))
             .collapsible(true)
             .show(&ctx, |ui| {
@@ -515,7 +517,7 @@ impl App {
                 let shader_response = ui.add(ShaderArea::new(300.0, 200.0));
 
                 // Obtain the rectangle (in egui points) where the shader area was drawn.
-                let shader_area_rect = shader_response.rect;
+                shader_area_rect = shader_response.rect;
 
                 // (For demonstration) Show the coordinates as text.
                 ui.label(format!("Shader area coordinates: {:?}", shader_area_rect));
@@ -552,8 +554,6 @@ impl App {
         // Here we assume the last ui call produced the shader_response (and you can store shader_area_rect globally).
         // For this example, we'll use a dummy rectangle if needed.
         // (In production, store the rect from the widget callback.)
-        let shader_area_rect =
-            egui::Rect::from_min_size(Pos2::new(150.0, 150.0), egui::vec2(300.0, 200.0));
         let scale = window.scale_factor() as f32;
 
         // Convert from egui points to physical pixels:
