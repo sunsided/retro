@@ -1,7 +1,7 @@
 mod logging;
 
 use crate::logging::setup_logging;
-use egui::FontDefinitions;
+use egui::{FontDefinitions, Pos2};
 use egui_demo_lib::DemoWindows;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
@@ -444,13 +444,16 @@ impl App {
         */
 
         let ctx = platform.context();
-        egui::CentralPanel::default().show(&ctx, |ui| {
-            egui::CollapsingHeader::new("Panel Title")
-                .default_open(false) // closed by default; change to true if desired
-                .show(ui, |ui| {
-                    ui.label("This is basic text content inside the panel.");
-                });
-        });
+        egui::Window::new("My Draggable Frame")
+            .default_pos(Pos2::new(100.0, 100.0))
+            .collapsible(true)
+            .show(&ctx, |ui| {
+                egui::CollapsingHeader::new("Panel Title")
+                    .default_open(true)
+                    .show(ui, |ui| {
+                        ui.label("Basic text content inside the panel.");
+                    });
+            });
 
         // End the UI frame. We could now handle the output and draw the UI with the backend.
         let full_output = platform.end_pass(Some(&window));
