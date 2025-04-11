@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use wgpu::{
     Adapter, Buffer, Device, Instance, Queue, RenderPipeline, Surface, SurfaceConfiguration,
+    Texture, TextureView,
 };
 use winit::keyboard::ModifiersState;
 use winit::window::Window;
@@ -51,4 +52,6 @@ pub struct InitializedAppState {
     pub uniform_bind_group: wgpu::BindGroup,
     pub start_time: Instant,
     pub render_cube: bool,
+    pub depth_texture: Texture,
+    pub depth_view: TextureView,
 }

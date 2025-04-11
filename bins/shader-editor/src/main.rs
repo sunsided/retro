@@ -8,6 +8,7 @@ use crate::widgets::shader_area::ShaderArea;
 use egui::{FontDefinitions, Pos2, Rect};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
+use glam::{Mat4, Vec3};
 use std::sync::Arc;
 use std::time::Instant;
 use tracing::{debug, instrument, warn};
@@ -36,7 +37,7 @@ const EXAMPLE_SHADER: &str = // language=wgsl
     r#"
     // Vertex attributes
     struct VertexInput {
-        @location(0) position: vec2<f32>,
+        @location(0) position: vec3<f32>,
         @location(1) color: vec3<f32>,
     };
 
@@ -55,7 +56,7 @@ const EXAMPLE_SHADER: &str = // language=wgsl
     @vertex
     fn vs_main(input: VertexInput) -> VertexOutput {
         var out: VertexOutput;
-        let pos = vec4<f32>(input.position, 0.0, 1.0);
+        let pos = vec4<f32>(input.position, 1.0);
         out.clip_position = uniforms.transform * pos;
         out.color = input.color;
         return out;
@@ -302,8 +303,25 @@ impl App {
         let vertex_buffer_layout = wgpu::VertexBufferLayout {
             array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x3],
+            attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
         };
+
+        let depth_format = wgpu::TextureFormat::Depth24PlusStencil8;
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Depth Texture"),
+            size: wgpu::Extent3d {
+                width: size.width,
+                height: size.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: depth_format,
+            usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         // Create flat (quad) buffers
         let flat_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -390,7 +408,13 @@ impl App {
                 unclipped_depth: false,
                 conservative: false,
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: depth_format,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -445,6 +469,8 @@ impl App {
             adapter,
             start_time,
             render_cube: true,
+            depth_texture,
+            depth_view,
         }
     }
 
@@ -487,6 +513,8 @@ impl App {
             cube_vertex_buffer,
             cube_index_buffer,
             render_cube,
+            start_time,
+            depth_view,
             ..
         }) = &mut self.state
         else {
@@ -519,20 +547,17 @@ impl App {
                     store: wgpu::StoreOp::Store,
                 },
             })],
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &depth_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: wgpu::StoreOp::Store,
+                }),
+                stencil_ops: None,
+            }),
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-
-        /*
-        rpass.set_pipeline(self.pipeline.as_ref().unwrap());
-        rpass.set_vertex_buffer(0, self.vertex_buffer.as_ref().unwrap().slice(..));
-        rpass.set_index_buffer(
-            self.index_buffer.as_ref().unwrap().slice(..),
-            wgpu::IndexFormat::Uint16,
-        );
-        rpass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
-        */
 
         drop(rpass);
 
@@ -624,9 +649,6 @@ impl App {
         let transform = transpose(transform);
         let uniform_data = Uniforms { transform };
 
-        // Update the uniform buffer with the new transform
-        queue.write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[uniform_data]));
-
         // ----- NEW: Shader Overlay Pass -----
         {
             let mut shader_rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -640,13 +662,76 @@ impl App {
                         store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &depth_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Store,
+                    }),
+                    stencil_ops: None,
+                }),
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
             shader_rpass.set_pipeline(pipeline);
             // Bind our uniform so the vertex shader gets the transformation matrix.
             shader_rpass.set_bind_group(0, &*uniform_bind_group, &[]);
+
+            let uniform_data = if *render_cube {
+                // Compute a perspective projection and a view matrix for 3D.
+                let fov: f32 = 45.0_f32.to_radians();
+                let aspect = surface_config.width as f32 / surface_config.height as f32;
+                let near = 0.1;
+                let far = 100.0;
+                let perspective = Mat4::perspective_rh(fov, aspect, near, far);
+
+                // Place the camera at (0,0,5) looking at the origin.
+                let eye = Vec3::new(0.0, 0.0, 5.0);
+                let center = Vec3::ZERO;
+                let up = Vec3::Y;
+                let view = Mat4::look_at_rh(eye, center, up);
+
+                // Apply a model rotation (for example, animate around Y axis).
+                let angle = start_time.elapsed().as_secs_f32();
+                let model = Mat4::from_rotation_y(angle);
+
+                // Combine to get the final MVP matrix.
+                let mvp = perspective * view * model;
+
+                // Convert to a 4x4 array.
+                Uniforms {
+                    transform: mvp.to_cols_array_2d(),
+                }
+            } else {
+                // For the flat quad, compute the transform from the UI-provided rectangle.
+                let scale = window.scale_factor() as f32;
+                let area_min_x = shader_area_rect.min.x * scale;
+                let area_min_y = shader_area_rect.min.y * scale;
+                let area_width = shader_area_rect.width() * scale;
+                let area_height = shader_area_rect.height() * scale;
+                let screen_w = surface_config.width as f32;
+                let screen_h = surface_config.height as f32;
+                let center_x = area_min_x + area_width * 0.5;
+                let center_y = area_min_y + area_height * 0.5;
+                let center_clip_x = center_x / screen_w * 2.0 - 1.0;
+                let center_clip_y = 1.0 - center_y / screen_h * 2.0;
+                let scale_x = area_width / screen_w;
+                let scale_y = area_height / screen_h;
+                // Build a simple 2D transform in 3D space (z remains 0).
+                let transform_2d: [[f32; 4]; 4] = [
+                    [scale_x, 0.0, 0.0, center_clip_x],
+                    [0.0, scale_y, 0.0, center_clip_y],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ];
+                // Transpose to match WGSL’s column-major order.
+                Uniforms {
+                    transform: transpose(transform_2d),
+                }
+            };
+
+            // Update the uniform buffer with the new transforms.
+            queue.write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[uniform_data]));
 
             if *render_cube {
                 shader_rpass.set_vertex_buffer(0, cube_vertex_buffer.slice(..));
