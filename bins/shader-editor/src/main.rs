@@ -616,18 +616,13 @@ impl App {
             .unwrap();
 
         // Shader Overlay Pass
-        {
+        if shader_area_rect.is_positive() {
             // Compute physical coordinates from the UI widget rectangle.
             let scale = window.scale_factor() as f32;
             let r_x = shader_area_rect.min.x * scale;
             let r_y = shader_area_rect.min.y * scale;
             let r_w = shader_area_rect.width() * scale;
             let r_h = shader_area_rect.height() * scale;
-
-            // Skip rendering if the region has zero (or negative) size.
-            if r_w <= 0.0 || r_h <= 0.0 {
-                return;
-            }
 
             // Render target dimensions.
             let screen_w = surface_config.width as f32;
