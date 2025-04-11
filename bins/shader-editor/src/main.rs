@@ -629,12 +629,6 @@ impl App {
                 return;
             }
 
-            // Define scissor parameters (in physical pixels).
-            let scissor_x = r_x as u32;
-            let scissor_y = r_y as u32;
-            let scissor_width = r_w as u32;
-            let scissor_height = r_h as u32;
-
             // Render target dimensions.
             let screen_w = surface_config.width as f32;
             let screen_h = surface_config.height as f32;
@@ -676,9 +670,36 @@ impl App {
                 occlusion_query_set: None,
             });
 
-            // We do not call set_viewport here so that our full-screen NDC space is used.
-            // We do set the scissor rect to clip all drawing to the widget's physical bounds.
-            shader_rpass.set_scissor_rect(scissor_x, scissor_y, scissor_width, scissor_height);
+            // Compute desired widget bounds in physical pixels.
+            let scale = window.scale_factor() as f32;
+            let widget_x = shader_area_rect.min.x * scale;
+            let widget_y = shader_area_rect.min.y * scale;
+            let widget_w = shader_area_rect.width() * scale;
+            let widget_h = shader_area_rect.height() * scale;
+
+            // Full render target size.
+            let screen_w = surface_config.width as f32;
+            let screen_h = surface_config.height as f32;
+
+            // Compute intersection with render target bounds: [0, screen_w] and [0, screen_h].
+            let intersect_x = widget_x.max(0.0);
+            let intersect_y = widget_y.max(0.0);
+            let intersect_x2 = (widget_x + widget_w).min(screen_w);
+            let intersect_y2 = (widget_y + widget_h).min(screen_h);
+
+            let final_scissor_x = intersect_x as u32;
+            let final_scissor_y = intersect_y as u32;
+            let final_scissor_width = (intersect_x2 - intersect_x) as u32;
+            let final_scissor_height = (intersect_y2 - intersect_y) as u32;
+
+            // Then later, in your render pass, set the scissor rect to these values:
+            shader_rpass.set_scissor_rect(
+                final_scissor_x,
+                final_scissor_y,
+                final_scissor_width,
+                final_scissor_height,
+            );
+
             shader_rpass.set_pipeline(pipeline);
             shader_rpass.set_bind_group(0, &*uniform_bind_group, &[]);
 
