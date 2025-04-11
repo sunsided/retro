@@ -1,6 +1,8 @@
 mod logging;
+mod widgets;
 
 use crate::logging::setup_logging;
+use crate::widgets::shader_area::ShaderArea;
 use egui::{FontDefinitions, Pos2};
 use egui_demo_lib::DemoWindows;
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
@@ -448,11 +450,14 @@ impl App {
             .default_pos(Pos2::new(100.0, 100.0))
             .collapsible(true)
             .show(&ctx, |ui| {
-                egui::CollapsingHeader::new("Panel Title")
-                    .default_open(true)
-                    .show(ui, |ui| {
-                        ui.label("Basic text content inside the panel.");
-                    });
+                // Insert the custom shader widget, e.g., 300x200 points.
+                let shader_response = ui.add(ShaderArea::new(300.0, 200.0));
+
+                // Obtain the rectangle (in egui points) where the shader area was drawn.
+                let shader_area_rect = shader_response.rect;
+
+                // (For demonstration) Show the coordinates as text.
+                ui.label(format!("Shader area coordinates: {:?}", shader_area_rect));
             });
 
         // End the UI frame. We could now handle the output and draw the UI with the backend.
