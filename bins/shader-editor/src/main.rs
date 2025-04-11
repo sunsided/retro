@@ -70,30 +70,75 @@ const EXAMPLE_SHADER: &str = // language=wgsl
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct Vertex {
-    position: [f32; 2],
+    position: [f32; 3],
     color: [f32; 3],
 }
 
-const VERTICES: &[Vertex] = &[
+const QUAD_VERTICES: &[Vertex] = &[
     Vertex {
-        position: [-1.0, -1.0],
+        position: [-1.0, -1.0, 0.0],
         color: [1.0, 0.0, 0.0],
-    }, // bottom left - red
+    },
     Vertex {
-        position: [1.0, -1.0],
+        position: [1.0, -1.0, 0.0],
         color: [0.0, 1.0, 0.0],
-    }, // bottom right - green
+    },
     Vertex {
-        position: [1.0, 1.0],
+        position: [1.0, 1.0, 0.0],
         color: [0.0, 0.0, 1.0],
-    }, // top right - blue
+    },
     Vertex {
-        position: [-1.0, 1.0],
+        position: [-1.0, 1.0, 0.0],
         color: [1.0, 1.0, 1.0],
-    }, // top left - white
+    },
 ];
+const QUAD_INDICES: &[u16] = &[0, 1, 2, 2, 3, 0];
 
-const INDICES: &[u16] = &[0, 1, 2, 2, 3, 0]; // two triangles
+const CUBE_VERTICES: &[Vertex] = &[
+    // Front face
+    Vertex {
+        position: [-1.0, -1.0, 1.0],
+        color: [1.0, 0.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, -1.0, 1.0],
+        color: [0.0, 1.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, 1.0, 1.0],
+        color: [0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0, 1.0],
+        color: [1.0, 1.0, 1.0],
+    },
+    // Back face
+    Vertex {
+        position: [-1.0, -1.0, -1.0],
+        color: [1.0, 0.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, -1.0, -1.0],
+        color: [0.0, 1.0, 0.0],
+    },
+    Vertex {
+        position: [1.0, 1.0, -1.0],
+        color: [0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0, -1.0],
+        color: [1.0, 1.0, 1.0],
+    },
+];
+const CUBE_INDICES: &[u16] = &[
+    // front
+    0, 1, 2, 2, 3, 0, // right
+    1, 5, 6, 6, 2, 1, // back
+    5, 4, 7, 7, 6, 5, // left
+    4, 0, 3, 3, 7, 4, // top
+    3, 2, 6, 6, 7, 3, // bottom
+    4, 5, 1, 1, 0, 4,
+];
 
 struct App {
     state: AppState,
@@ -260,15 +305,27 @@ impl App {
             attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x3],
         };
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
+        // Create flat (quad) buffers
+        let flat_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Flat Vertex Buffer"),
+            contents: bytemuck::cast_slice(QUAD_VERTICES),
             usage: wgpu::BufferUsages::VERTEX,
         });
+        let flat_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Flat Index Buffer"),
+            contents: bytemuck::cast_slice(QUAD_INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
+        // Create cube buffers
+        let cube_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Cube Vertex Buffer"),
+            contents: bytemuck::cast_slice(CUBE_VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        let cube_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Cube Index Buffer"),
+            contents: bytemuck::cast_slice(CUBE_INDICES),
             usage: wgpu::BufferUsages::INDEX,
         });
 
@@ -376,8 +433,10 @@ impl App {
             queue,
             config,
             pipeline,
-            vertex_buffer,
-            index_buffer,
+            flat_vertex_buffer,
+            flat_index_buffer,
+            cube_vertex_buffer,
+            cube_index_buffer,
             egui_platform: platform,
             egui_egui_rpass: egui_rpass,
             egui_demo_app: demo_app,
@@ -385,6 +444,7 @@ impl App {
             uniform_bind_group,
             adapter,
             start_time,
+            render_cube: true,
         }
     }
 
@@ -422,8 +482,11 @@ impl App {
             uniform_buffer,
             pipeline,
             uniform_bind_group,
-            index_buffer,
-            vertex_buffer,
+            flat_vertex_buffer,
+            flat_index_buffer,
+            cube_vertex_buffer,
+            cube_index_buffer,
+            render_cube,
             ..
         }) = &mut self.state
         else {
@@ -490,6 +553,9 @@ impl App {
             .default_pos(Pos2::new(100.0, 100.0))
             .collapsible(true)
             .show(&ctx, |ui| {
+                // Toggle render mode: flat (false) vs cube (true)
+                ui.checkbox(render_cube, "Render Cube");
+
                 // Insert the custom shader widget, e.g., 300x200 points.
                 let shader_response = ui.add(ShaderArea::new(300.0, 200.0));
 
@@ -581,9 +647,18 @@ impl App {
             shader_rpass.set_pipeline(pipeline);
             // Bind our uniform so the vertex shader gets the transformation matrix.
             shader_rpass.set_bind_group(0, &*uniform_bind_group, &[]);
-            shader_rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            shader_rpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            shader_rpass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
+
+            if *render_cube {
+                shader_rpass.set_vertex_buffer(0, cube_vertex_buffer.slice(..));
+                shader_rpass
+                    .set_index_buffer(cube_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                shader_rpass.draw_indexed(0..(CUBE_INDICES.len() as u32), 0, 0..1);
+            } else {
+                shader_rpass.set_vertex_buffer(0, flat_vertex_buffer.slice(..));
+                shader_rpass
+                    .set_index_buffer(flat_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                shader_rpass.draw_indexed(0..(QUAD_INDICES.len() as u32), 0, 0..1);
+            }
         }
 
         queue.submit(Some(encoder.finish()));
