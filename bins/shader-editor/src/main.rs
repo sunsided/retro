@@ -617,21 +617,50 @@ impl App {
 
         // Shader Overlay Pass
         {
-            // Compute physical coordinates from the UI widget rectangle:
+            // Compute physical coordinates from the UI widget rectangle.
             let scale = window.scale_factor() as f32;
-            let scissor_x = (shader_area_rect.min.x * scale) as u32;
-            let scissor_y = (shader_area_rect.min.y * scale) as u32;
-            let scissor_width = (shader_area_rect.width() * scale) as u32;
-            let scissor_height = (shader_area_rect.height() * scale) as u32;
+            let r_x = shader_area_rect.min.x * scale;
+            let r_y = shader_area_rect.min.y * scale;
+            let r_w = shader_area_rect.width() * scale;
+            let r_h = shader_area_rect.height() * scale;
 
+            // Skip rendering if the region has zero (or negative) size.
+            if r_w <= 0.0 || r_h <= 0.0 {
+                return;
+            }
+
+            // Define scissor parameters (in physical pixels).
+            let scissor_x = r_x as u32;
+            let scissor_y = r_y as u32;
+            let scissor_width = r_w as u32;
+            let scissor_height = r_h as u32;
+
+            // Render target dimensions.
+            let screen_w = surface_config.width as f32;
+            let screen_h = surface_config.height as f32;
+
+            // Convert the widget region into NDC coordinates (for the full render target):
+            let ndc_min_x = (r_x / screen_w) * 2.0 - 1.0;
+            let ndc_max_x = ((r_x + r_w) / screen_w) * 2.0 - 1.0;
+            let ndc_min_y = 1.0 - ((r_y + r_h) / screen_h) * 2.0;
+            let ndc_max_y = 1.0 - (r_y / screen_h) * 2.0;
+
+            // Compute scale and translation factors to map clip space (–1 to 1) to the widget’s NDC.
+            let corr_scale_x = (ndc_max_x - ndc_min_x) / 2.0;
+            let corr_scale_y = (ndc_max_y - ndc_min_y) / 2.0;
+            let corr_trans_x = (ndc_max_x + ndc_min_x) / 2.0;
+            let corr_trans_y = (ndc_max_y + ndc_min_y) / 2.0;
+            let correction = Mat4::from_translation(Vec3::new(corr_trans_x, corr_trans_y, 0.0))
+                * Mat4::from_scale(Vec3::new(corr_scale_x, corr_scale_y, 1.0));
+
+            // Begin the render pass—with your color and depth attachments.
             let mut shader_rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Shader Overlay Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        // Set load to LoadOp::Load to keep the UI already rendered.
-                        load: wgpu::LoadOp::Load,
+                        load: wgpu::LoadOp::Load, // Keep the UI already rendered.
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -647,61 +676,43 @@ impl App {
                 occlusion_query_set: None,
             });
 
-            shader_rpass.set_viewport(
-                shader_area_rect.min.x * scale,
-                shader_area_rect.min.y * scale,
-                shader_area_rect.width() * scale,
-                shader_area_rect.height() * scale,
-                0.0,
-                1.0,
-            );
-
+            // We do not call set_viewport here so that our full-screen NDC space is used.
+            // We do set the scissor rect to clip all drawing to the widget's physical bounds.
             shader_rpass.set_scissor_rect(scissor_x, scissor_y, scissor_width, scissor_height);
-
             shader_rpass.set_pipeline(pipeline);
-
-            // Bind our uniform so the vertex shader gets the transformation matrix.
             shader_rpass.set_bind_group(0, &*uniform_bind_group, &[]);
 
+            // Compute and write the uniform transformation.
             let uniform_data = if *render_cube {
-                // Compute a perspective projection and a view matrix for 3D.
+                // Compute the cube's standard MVP.
                 let fov: f32 = 45.0_f32.to_radians();
-                let aspect = surface_config.width as f32 / surface_config.height as f32;
+                let aspect = screen_w / screen_h;
                 let near = 0.1;
                 let far = 100.0;
                 let perspective = Mat4::perspective_rh(fov, aspect, near, far);
-
-                // Place the camera at (0,0,5) looking at the origin.
                 let eye = Vec3::new(0.0, 2.5, 4.0);
                 let center = Vec3::ZERO - Vec3::new(0.0, 0.25, 0.0);
                 let up = Vec3::Y;
                 let view = Mat4::look_at_rh(eye, center, up);
-
-                // Apply a model rotation (for example, animate around Y axis).
                 let angle = start_time.elapsed().as_secs_f32();
                 let model = Mat4::from_rotation_y(angle);
-
-                // Combine to get the final MVP matrix.
                 let mvp = perspective * view * model;
-
-                // Convert to a 4x4 array.
+                // Apply the correction so that the cube appears in the widget region.
+                let mvp_final = correction * mvp;
                 Uniforms {
-                    transform: mvp.to_cols_array_2d(),
+                    transform: mvp_final.to_cols_array_2d(),
                 }
             } else {
+                // For the flat quad, use the correction matrix directly (since the quad's vertices already span [-1,1])
                 Uniforms {
-                    transform: [
-                        [1.0, 0.0, 0.0, 0.0],
-                        [0.0, 1.0, 0.0, 0.0],
-                        [0.0, 0.0, 1.0, 0.0],
-                        [0.0, 0.0, 0.0, 1.0],
-                    ],
+                    transform: correction.to_cols_array_2d(),
                 }
             };
 
-            // Update the uniform buffer with the new transforms.
+            // Update the uniform buffer.
             queue.write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[uniform_data]));
 
+            // Now issue the draw calls.
             if *render_cube {
                 shader_rpass.set_vertex_buffer(0, cube_vertex_buffer.slice(..));
                 shader_rpass
