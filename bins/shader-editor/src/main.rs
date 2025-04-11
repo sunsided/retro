@@ -705,8 +705,8 @@ impl App {
                 let perspective = Mat4::perspective_rh(fov, aspect, near, far);
 
                 // Place the camera at (0,0,5) looking at the origin.
-                let eye = Vec3::new(0.0, 0.0, 5.0);
-                let center = Vec3::ZERO;
+                let eye = Vec3::new(0.0, 2.5, 4.0);
+                let center = Vec3::ZERO - Vec3::new(0.0, 0.25, 0.0);
                 let up = Vec3::Y;
                 let view = Mat4::look_at_rh(eye, center, up);
 
