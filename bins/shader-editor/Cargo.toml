@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wgpu = "25.0.0"
+wgpu = "24.0.0"
 tracing = { version = "0.1.41", features = ["attributes"] }
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
@@ -12,17 +12,12 @@ eyre = "0.6.12"
 pollster = "0.4.0"
 dotenvy = "0.15.7"
 bytemuck = "1.22.0"
-futures = { version = "0.3.31", features = ["thread-pool"] }
-# iced_winit = "0.13.0"
-# iced_wgpu = "0.13.5"
-# iced_core = "0.13.2"
-# iced_widget = { version = "0.13.4", features = ["wgpu"] }
-iced_winit = { git = "https://github.com/sunsided/iced.git", rev = "69c3bf60f6bf4c6492fc64e28d8d7942d5798d92" }
-iced_core = { git = "https://github.com/sunsided/iced.git", rev = "69c3bf60f6bf4c6492fc64e28d8d7942d5798d92" }
-iced_widget = { git = "https://github.com/sunsided/iced.git", rev = "69c3bf60f6bf4c6492fc64e28d8d7942d5798d92", features = ["wgpu"] }
-iced_wgpu = { git = "https://github.com/sunsided/iced.git", rev = "69c3bf60f6bf4c6492fc64e28d8d7942d5798d92" }
-
-
+winit = "0.30.9"
+egui = "0.31.1"
+egui_winit_platform = "0.26.0"
+epi = "0.17.0"
+egui_demo_lib = "0.31.1"
+egui_wgpu_backend = "0.34.0"
 
 # Necessary to fix a breaking issue with deranged on Rust 2024
 [dependencies.time]

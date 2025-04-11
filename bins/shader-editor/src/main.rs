@@ -1,6 +1,10 @@
 mod logging;
 
 use crate::logging::setup_logging;
+use egui::FontDefinitions;
+use egui_demo_lib::DemoWindows;
+use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
+use egui_winit_platform::{Platform, PlatformDescriptor};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, instrument, warn};
@@ -75,7 +79,21 @@ const VERTICES: &[Vertex] = &[
 
 const INDICES: &[u16] = &[0, 1, 2, 2, 3, 0]; // two triangles
 
-/*
+/// A custom event type for the winit app.
+enum Event {
+    RequestRedraw,
+}
+
+/// This is the repaint signal type that egui needs for requesting a repaint from another thread.
+/// It sends the custom RequestRedraw event to the winit event loop.
+struct ExampleRepaintSignal(std::sync::Mutex<winit::event_loop::EventLoopProxy<Event>>);
+
+impl epi::backend::RepaintSignal for ExampleRepaintSignal {
+    fn request_repaint(&self) {
+        self.0.lock().unwrap().send_event(Event::RequestRedraw).ok();
+    }
+}
+
 struct App {
     window: Option<Arc<Window>>,
     modifiers: ModifiersState,
@@ -88,6 +106,10 @@ struct App {
     pipeline: Option<RenderPipeline>,
     vertex_buffer: Option<Buffer>,
     index_buffer: Option<Buffer>,
+    egui_platform: Option<Platform>,
+    egui_egui_rpass: Option<RenderPass>,
+    egui_demo_app: Option<DemoWindows>,
+    start_time: Instant,
 }
 
 impl App {
@@ -104,6 +126,10 @@ impl App {
             pipeline: None,
             vertex_buffer: None,
             index_buffer: None,
+            egui_demo_app: None,
+            egui_platform: None,
+            egui_egui_rpass: None,
+            start_time: Instant::now(),
         }
     }
 
@@ -191,7 +217,7 @@ impl App {
         debug!(width = %size.width, height = %size.height, "Creating WGPU surface");
         let surface = self
             .instance
-            .create_surface(window)
+            .create_surface(window.clone())
             .expect("Failed to create surface");
 
         let adapter =
@@ -202,20 +228,39 @@ impl App {
             }))
             .expect("Failed to create adapter");
 
-        let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
-            label: Some("Device Descriptor"),
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::default(),
-            memory_hints: Default::default(),
-            trace: Default::default(),
-        }))
+        let (device, queue) = pollster::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("Device Descriptor"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                memory_hints: Default::default(),
+            },
+            None,
+        ))
         .expect("Failed to create device and queue");
 
         let surface_caps = surface.get_capabilities(&adapter);
 
+        let surface_format = surface_caps.formats[0];
+
+        // We use the egui_winit_platform crate as the platform.
+        let mut platform = Platform::new(PlatformDescriptor {
+            physical_width: size.width,
+            physical_height: size.height,
+            scale_factor: window.scale_factor(),
+            font_definitions: FontDefinitions::default(),
+            style: Default::default(),
+        });
+
+        // We use the egui_wgpu_backend crate as the render backend.
+        let mut egui_rpass = RenderPass::new(&device, surface_format, 1);
+
+        // Display the demo application that ships with egui.
+        let mut demo_app = egui_demo_lib::DemoWindows::default();
+
         let config = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
-            format: surface_caps.formats[0],
+            format: surface_format,
             width: size.width,
             height: size.height,
             present_mode: PresentMode::Fifo, // surface_caps.present_modes[0],
@@ -306,6 +351,9 @@ impl App {
         self.pipeline = Some(pipeline);
         self.vertex_buffer = Some(vertex_buffer);
         self.index_buffer = Some(index_buffer);
+        self.egui_platform = Some(platform);
+        self.egui_egui_rpass = Some(egui_rpass);
+        self.egui_demo_app = Some(demo_app);
     }
 
     #[instrument(skip(self))]
@@ -381,8 +429,50 @@ impl App {
         rpass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
 
         drop(rpass);
+
+        let window = self.window.as_ref().unwrap();
+        let platform = self.egui_platform.as_mut().unwrap();
+
+        // Begin to draw the UI frame.
+        platform.begin_pass();
+
+        // Draw the demo application.
+        let demo_app = self.egui_demo_app.as_mut().unwrap();
+        demo_app.ui(&platform.context());
+
+        // End the UI frame. We could now handle the output and draw the UI with the backend.
+        let full_output = platform.end_pass(Some(&window));
+
+        const PIXELS_PER_POINT: f32 = 1.0;
+        let paint_jobs = platform
+            .context()
+            .tessellate(full_output.shapes, PIXELS_PER_POINT);
+
+        // Upload all resources for the GPU.
+        let surface_config = self.config.as_ref().unwrap();
+        let screen_descriptor = ScreenDescriptor {
+            physical_width: surface_config.width,
+            physical_height: surface_config.height,
+            scale_factor: window.scale_factor() as f32,
+        };
+        let tdelta: egui::TexturesDelta = full_output.textures_delta;
+        let egui_rpass = self.egui_egui_rpass.as_mut().unwrap();
+        egui_rpass
+            .add_textures(&device, &queue, &tdelta)
+            .expect("add texture ok");
+        egui_rpass.update_buffers(&device, &queue, &paint_jobs, &screen_descriptor);
+
+        // Record all render passes.
+        egui_rpass
+            .execute(&mut encoder, &view, &paint_jobs, &screen_descriptor, None)
+            .unwrap();
+
         queue.submit(Some(encoder.finish()));
         frame.present();
+
+        egui_rpass
+            .remove_textures(tdelta)
+            .expect("remove texture ok");
     }
 }
 
@@ -418,6 +508,11 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        // Pass the winit events to the platform integration.
+        if let Some(platform) = &mut self.egui_platform {
+            platform.handle_event(&event);
+        }
+
         match event {
             WindowEvent::CloseRequested => {
                 active_event_loop.exit();
@@ -435,6 +530,11 @@ impl ApplicationHandler for App {
                 self.handle_cursor_moved_to_event(position);
             }
             WindowEvent::RedrawRequested => {
+                // Pass the winit events to the platform integration.
+                if let Some(platform) = &mut self.egui_platform {
+                    platform.update_time(self.start_time.elapsed().as_secs_f64());
+                }
+
                 if let Some(window) = &self.window {
                     window.request_redraw();
                     self.render();
@@ -470,345 +570,4 @@ fn wgpu_instance() -> Instance {
         backend_options: Default::default(),
     };
     Instance::new(&descriptor)
-}
-*/
-
-mod controls;
-mod scene;
-
-use controls::Controls;
-use scene::Scene;
-
-use iced_wgpu::graphics::Viewport;
-use iced_wgpu::{Engine, Renderer};
-use iced_winit::Clipboard;
-use iced_winit::conversion;
-use iced_winit::core::mouse;
-use iced_winit::core::renderer;
-use iced_winit::core::window;
-use iced_winit::core::{Event, Font, Pixels, Theme};
-use iced_winit::futures;
-use iced_winit::runtime::user_interface::{self, UserInterface};
-use iced_winit::winit;
-
-pub fn main() -> Result<(), winit::error::EventLoopError> {
-    tracing_subscriber::fmt::init();
-
-    // Initialize winit
-    let event_loop = EventLoop::new()?;
-
-    #[allow(clippy::large_enum_variant)]
-    enum Runner {
-        Loading,
-        Ready {
-            window: Arc<winit::window::Window>,
-            queue: wgpu::Queue,
-            device: wgpu::Device,
-            surface: wgpu::Surface<'static>,
-            format: wgpu::TextureFormat,
-            renderer: Renderer,
-            scene: Scene,
-            controls: Controls,
-            events: Vec<Event>,
-            cursor: mouse::Cursor,
-            cache: user_interface::Cache,
-            clipboard: Clipboard,
-            viewport: Viewport,
-            modifiers: ModifiersState,
-            resized: bool,
-        },
-    }
-
-    impl winit::application::ApplicationHandler for Runner {
-        fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-            if let Self::Loading = self {
-                let window = Arc::new(
-                    event_loop
-                        .create_window(winit::window::WindowAttributes::default())
-                        .expect("Create window"),
-                );
-
-                let physical_size = window.inner_size();
-                let viewport = Viewport::with_physical_size(
-                    iced_core::Size::new(physical_size.width, physical_size.height),
-                    window.scale_factor(),
-                );
-                let clipboard = Clipboard::connect(window.clone());
-
-                let backend = Backends::default();
-
-                let instance = Instance::new(&InstanceDescriptor {
-                    backends: backend,
-                    ..Default::default()
-                });
-                let surface = instance
-                    .create_surface(window.clone())
-                    .expect("Create window surface");
-
-                let (format, adapter, device, queue) =
-                    futures::futures::executor::block_on(async {
-                        let adapter = wgpu::util::initialize_adapter_from_env_or_default(
-                            &instance,
-                            Some(&surface),
-                        )
-                        .await
-                        .expect("Create adapter");
-
-                        let adapter_features = adapter.features();
-
-                        let capabilities = surface.get_capabilities(&adapter);
-
-                        let (device, queue) = adapter
-                            .request_device(&wgpu::DeviceDescriptor {
-                                label: None,
-                                required_features: adapter_features & wgpu::Features::default(),
-                                required_limits: wgpu::Limits::default(),
-                                memory_hints: Default::default(),
-                                trace: Default::default(),
-                            })
-                            .await
-                            .expect("Request device");
-
-                        (
-                            capabilities
-                                .formats
-                                .iter()
-                                .copied()
-                                .find(wgpu::TextureFormat::is_srgb)
-                                .or_else(|| capabilities.formats.first().copied())
-                                .expect("Get preferred format"),
-                            adapter,
-                            device,
-                            queue,
-                        )
-                    });
-
-                surface.configure(
-                    &device,
-                    &SurfaceConfiguration {
-                        usage: TextureUsages::RENDER_ATTACHMENT,
-                        format,
-                        width: physical_size.width,
-                        height: physical_size.height,
-                        present_mode: PresentMode::AutoVsync,
-                        alpha_mode: wgpu::CompositeAlphaMode::Auto,
-                        view_formats: vec![],
-                        desired_maximum_frame_latency: 2,
-                    },
-                );
-
-                // Initialize scene and GUI controls
-                let scene = Scene::new(&device, format);
-                let controls = Controls::new();
-
-                // Initialize iced
-
-                let renderer = {
-                    let engine = Engine::new(&adapter, device.clone(), queue.clone(), format, None);
-
-                    Renderer::new(engine, Font::default(), Pixels::from(16))
-                };
-
-                // You should change this if you want to render continuously
-                event_loop.set_control_flow(ControlFlow::Wait);
-
-                *self = Self::Ready {
-                    window,
-                    device,
-                    queue,
-                    renderer,
-                    surface,
-                    format,
-                    scene,
-                    controls,
-                    events: Vec::new(),
-                    cursor: mouse::Cursor::Unavailable,
-                    modifiers: ModifiersState::default(),
-                    cache: user_interface::Cache::new(),
-                    clipboard,
-                    viewport,
-                    resized: false,
-                };
-            }
-        }
-
-        fn window_event(
-            &mut self,
-            event_loop: &winit::event_loop::ActiveEventLoop,
-            _window_id: winit::window::WindowId,
-            event: WindowEvent,
-        ) {
-            let Self::Ready {
-                window,
-                device,
-                queue,
-                surface,
-                format,
-                renderer,
-                scene,
-                controls,
-                events,
-                viewport,
-                cursor,
-                modifiers,
-                clipboard,
-                cache,
-                resized,
-            } = self
-            else {
-                return;
-            };
-
-            match event {
-                WindowEvent::RedrawRequested => {
-                    if *resized {
-                        let size = window.inner_size();
-
-                        *viewport = Viewport::with_physical_size(
-                            iced_core::Size::new(size.width, size.height),
-                            window.scale_factor(),
-                        );
-
-                        surface.configure(
-                            device,
-                            &SurfaceConfiguration {
-                                format: *format,
-                                usage: TextureUsages::RENDER_ATTACHMENT,
-                                width: size.width,
-                                height: size.height,
-                                present_mode: PresentMode::AutoVsync,
-                                alpha_mode: wgpu::CompositeAlphaMode::Auto,
-                                view_formats: vec![],
-                                desired_maximum_frame_latency: 2,
-                            },
-                        );
-
-                        *resized = false;
-                    }
-
-                    match surface.get_current_texture() {
-                        Ok(frame) => {
-                            let view = frame
-                                .texture
-                                .create_view(&wgpu::TextureViewDescriptor::default());
-
-                            let mut encoder =
-                                device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                                    label: None,
-                                });
-
-                            {
-                                // Clear the frame
-                                let mut render_pass =
-                                    Scene::clear(&view, &mut encoder, controls.background_color());
-
-                                // Draw the scene
-                                scene.draw(&mut render_pass);
-                            }
-
-                            // Submit the scene
-                            queue.submit([encoder.finish()]);
-
-                            // Draw iced on top
-                            let mut interface = UserInterface::build(
-                                controls.view(),
-                                viewport.logical_size(),
-                                std::mem::take(cache),
-                                renderer,
-                            );
-
-                            let _ = interface.update(
-                                &[Event::Window(
-                                    window::Event::RedrawRequested(Instant::now()),
-                                )],
-                                *cursor,
-                                renderer,
-                                clipboard,
-                                &mut Vec::new(),
-                            );
-
-                            let mouse_interaction = interface.draw(
-                                renderer,
-                                &Theme::Dark,
-                                &renderer::Style::default(),
-                                *cursor,
-                            );
-                            *cache = interface.into_cache();
-
-                            renderer.present(None, frame.texture.format(), &view, viewport);
-
-                            // Present the frame
-                            frame.present();
-
-                            // Update the mouse cursor
-                            window.set_cursor(conversion::mouse_interaction(mouse_interaction));
-                        }
-                        Err(error) => match error {
-                            wgpu::SurfaceError::OutOfMemory => {
-                                panic!(
-                                    "Swapchain error: {error}. \
-                                        Rendering cannot continue."
-                                )
-                            }
-                            _ => {
-                                // Try rendering again next frame.
-                                window.request_redraw();
-                            }
-                        },
-                    }
-                }
-                WindowEvent::CursorMoved { position, .. } => {
-                    *cursor = mouse::Cursor::Available(conversion::cursor_position(
-                        position,
-                        viewport.scale_factor(),
-                    ));
-                }
-                WindowEvent::ModifiersChanged(new_modifiers) => {
-                    *modifiers = new_modifiers.state();
-                }
-                WindowEvent::Resized(_) => {
-                    *resized = true;
-                }
-                WindowEvent::CloseRequested => {
-                    event_loop.exit();
-                }
-                _ => {}
-            }
-
-            // Map window event to iced event
-            if let Some(event) = conversion::window_event(event, window.scale_factor(), *modifiers)
-            {
-                events.push(event);
-            }
-
-            // If there are events pending
-            if !events.is_empty() {
-                // We process them
-                let mut interface = UserInterface::build(
-                    controls.view(),
-                    viewport.logical_size(),
-                    std::mem::take(cache),
-                    renderer,
-                );
-
-                let mut messages = Vec::new();
-
-                let _ = interface.update(events, *cursor, renderer, clipboard, &mut messages);
-
-                events.clear();
-                *cache = interface.into_cache();
-
-                // update our UI with any messages
-                for message in messages {
-                    controls.update(message);
-                }
-
-                // and request a redraw
-                window.request_redraw();
-            }
-        }
-    }
-
-    let mut runner = Runner::Loading;
-    event_loop.run_app(&mut runner)
 }
