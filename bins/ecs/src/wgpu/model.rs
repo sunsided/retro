@@ -1,5 +1,5 @@
-use std::ops::Range;
 use crate::wgpu::texture::Texture;
+use std::ops::Range;
 
 /// Vertex trait.
 ///
@@ -21,12 +21,12 @@ pub struct ModelVertex {
 }
 
 const MODEL_VERTEX_BUFFER_ATTRIBUTES: [wgpu::VertexAttribute; 5] = wgpu::vertex_attr_array![
-        0 => Float32x3, // vertex shader's @position(0)
-        1 => Float32x2, // vertex shader's @position(1)
-        2 => Float32x3, // vertex shader's @position(2)
-        3 => Float32x3, // vertex shader's @position(3)
-        4 => Float32x3, // vertex shader's @position(4)
-    ];
+    0 => Float32x3, // vertex shader's @position(0)
+    1 => Float32x2, // vertex shader's @position(1)
+    2 => Float32x3, // vertex shader's @position(2)
+    3 => Float32x3, // vertex shader's @position(3)
+    4 => Float32x3, // vertex shader's @position(4)
+];
 
 impl Vertex for ModelVertex {
     fn desc() -> wgpu::VertexBufferLayout<'static> {
@@ -106,7 +106,6 @@ impl Material {
     }
 }
 
-
 pub trait DrawModel<'model> {
     #[inline]
     #[allow(dead_code)]
@@ -114,8 +113,8 @@ pub trait DrawModel<'model> {
         &mut self,
         model: &'model Model,
         camera_bind_group: &'model wgpu::BindGroup,
-        light_bind_group: &'model wgpu::BindGroup)
-    {
+        light_bind_group: &'model wgpu::BindGroup,
+    ) {
         self.draw_model_instanced(model, 0..1, camera_bind_group, light_bind_group);
     }
 
@@ -124,11 +123,17 @@ pub trait DrawModel<'model> {
         model: &'model Model,
         instances: Range<u32>,
         camera_bind_group: &'model wgpu::BindGroup,
-        light_bind_group: &'model wgpu::BindGroup
+        light_bind_group: &'model wgpu::BindGroup,
     ) {
         for mesh in &model.meshes {
             let material = &model.materials[mesh.material];
-            self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group, light_bind_group);
+            self.draw_mesh_instanced(
+                mesh,
+                material,
+                instances.clone(),
+                camera_bind_group,
+                light_bind_group,
+            );
         }
     }
 
@@ -142,7 +147,13 @@ pub trait DrawModel<'model> {
         light_bind_group: &'model wgpu::BindGroup,
     ) {
         for mesh in &model.meshes {
-            self.draw_mesh_instanced(mesh, material, instances.clone(), camera_bind_group, light_bind_group);
+            self.draw_mesh_instanced(
+                mesh,
+                material,
+                instances.clone(),
+                camera_bind_group,
+                light_bind_group,
+            );
         }
     }
 
@@ -153,8 +164,8 @@ pub trait DrawModel<'model> {
         mesh: &'model Mesh,
         material: &'model Material,
         camera_bind_group: &'model wgpu::BindGroup,
-        light_bind_group: &'model wgpu::BindGroup)
-    {
+        light_bind_group: &'model wgpu::BindGroup,
+    ) {
         self.draw_mesh_instanced(mesh, material, 0..1, camera_bind_group, light_bind_group);
     }
 
@@ -178,8 +189,8 @@ where
         material: &'model Material,
         instances: Range<u32>,
         camera_bind_group: &'model wgpu::BindGroup,
-        light_bind_group: &'model wgpu::BindGroup
-    ){
+        light_bind_group: &'model wgpu::BindGroup,
+    ) {
         self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
         self.set_bind_group(0, &material.bind_group, &[]);

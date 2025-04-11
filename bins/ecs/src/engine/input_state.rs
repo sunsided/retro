@@ -1,14 +1,13 @@
+use crate::seconds::Seconds;
 use std::time::Instant;
 use tracing::debug;
 use winit::dpi::PhysicalPosition;
 use winit::event::{ElementState, MouseScrollDelta};
 use winit::keyboard::{KeyCode, PhysicalKey};
-use crate::seconds::Seconds;
 
 /// The sample rate of the input.
 const SWAP_RATE_HZ: f32 = 120.0;
 const SWAP_RATE_SECONDS: f32 = 1.0 / SWAP_RATE_HZ;
-
 
 #[derive(Debug)]
 pub struct InputState {
@@ -39,7 +38,7 @@ pub struct InputStateBuffer {
     pub key_left: KeyState,
     pub key_right: KeyState,
     pub key_up: KeyState,
-    pub key_down: KeyState
+    pub key_down: KeyState,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -97,7 +96,11 @@ impl KeyState {
 
 impl From<bool> for KeyState {
     fn from(value: bool) -> Self {
-        if value { KeyState::Pressed } else { KeyState::Released }
+        if value {
+            KeyState::Pressed
+        } else {
+            KeyState::Released
+        }
     }
 }
 
@@ -107,7 +110,8 @@ impl From<ElementState> for KeyState {
             ElementState::Pressed => KeyState::Pressed,
             ElementState::Released => KeyState::Released,
         }
-    }}
+    }
+}
 
 impl InputStateBuffer {
     fn reset(&mut self) {
@@ -135,10 +139,7 @@ impl InputStateBuffer {
         let delta = -match delta {
             // I'm assuming a line is about 1 pixels
             MouseScrollDelta::LineDelta(_, scroll) => scroll * 1.0,
-            MouseScrollDelta::PixelDelta(PhysicalPosition {
-                                             y: scroll,
-                                             ..
-                                         }) => scroll as f32,
+            MouseScrollDelta::PixelDelta(PhysicalPosition { y: scroll, .. }) => scroll as f32,
         };
         self.mouse_scroll_delta += delta;
     }

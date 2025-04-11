@@ -34,13 +34,16 @@
 //! Additionally, the `SystemFactory` implementation provides an interface to create instances
 //! of `CameraRenderSystem`, which internally uses `CameraRenderSystemData`.
 
-use std::convert::Infallible;
-use tracing::warn;
-use crate::engine::{ApplyCameraRenderSystem, ApplyCameraSystem, CameraComponent, CameraFpsControllerComponent, CameraRenderSystem, CameraSystem, CreateSystem, FrameContext, SystemFactory};
 use crate::engine::components::ActiveCameraState;
 use crate::engine::input_state::InputState;
 use crate::engine::phases::render::WgpuRenderState;
+use crate::engine::{
+    ApplyCameraRenderSystem, ApplyCameraSystem, CameraComponent, CameraFpsControllerComponent,
+    CameraRenderSystem, CameraSystem, CreateSystem, FrameContext, SystemFactory,
+};
 use crate::seconds::Seconds;
+use std::convert::Infallible;
+use tracing::warn;
 
 #[derive(Debug)]
 pub struct CameraRenderSystemData;
@@ -60,7 +63,12 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
     /// - Identifies the active camera (marked with `active: true`) from the provided list of camera components.
     /// - Updates the active camera's uniform data with its view and projection matrices.
     /// - Writes the updated camera uniform data to the GPU buffer for rendering.
-    fn apply_many(&mut self, wgpu_render: &WgpuRenderState, active_camera: &mut ActiveCameraState, cameras: &[CameraComponent]) {
+    fn apply_many(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        cameras: &[CameraComponent],
+    ) {
         let Some(device) = wgpu_render.hardware().device() else {
             warn!("Skipping camera rendering because no device is set.");
             return;
@@ -73,8 +81,13 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
         };
 
         // This only needs to be done during the render phase unless we use the camera for clip testing in software.
-        active_camera.uniform.update_view_proj(&camera.camera, &camera.projection);
-        device.buffers().camera_uniform.send_to_device(&device.queue(), active_camera.uniform);
+        active_camera
+            .uniform
+            .update_view_proj(&camera.camera, &camera.projection);
+        device
+            .buffers()
+            .camera_uniform
+            .send_to_device(&device.queue(), active_camera.uniform);
     }
 }
 

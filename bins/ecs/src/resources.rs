@@ -1,11 +1,11 @@
+use crate::wgpu::model::{Material, Mesh, Model, ModelVertex};
+use crate::wgpu::texture::{Texture, TextureError, TextureType};
+use image::DynamicImage;
 use std::io;
 use std::io::{BufReader, Cursor, Read};
-use image::DynamicImage;
 use tobj::LoadError;
 use tracing::error;
 use wgpu::util::DeviceExt;
-use crate::wgpu::model::{Material, Mesh, Model, ModelVertex};
-use crate::wgpu::texture::{Texture, TextureError, TextureType};
 
 pub fn load_string<P>(file_name: P) -> io::Result<String>
 where
@@ -52,7 +52,8 @@ pub fn load_texture<P>(
     queue: &wgpu::Queue,
     ty: TextureType,
 ) -> Result<Texture, LoadTextureError>
-where P: AsRef<std::path::Path>
+where
+    P: AsRef<std::path::Path>,
 {
     let file_name = file_name.as_ref();
     let label = file_name.to_string_lossy();
@@ -82,7 +83,7 @@ pub enum ModelLoadError {
     #[error(transparent)]
     IoError(#[from] io::Error),
     #[error("The material {0} does not have a texture assigned to it")]
-    MaterialWithoutTexture(String)
+    MaterialWithoutTexture(String),
 }
 
 pub async fn load_model<P>(
@@ -92,7 +93,8 @@ pub async fn load_model<P>(
     layout: &wgpu::BindGroupLayout,
     sampler: &wgpu::Sampler,
 ) -> Result<Model, ModelLoadError>
-where P: AsRef<std::path::Path>
+where
+    P: AsRef<std::path::Path>,
 {
     let file_name = file_name.as_ref();
     let obj_text = load_string(&file_name)?;
@@ -107,27 +109,45 @@ where P: AsRef<std::path::Path>
             ..Default::default()
         },
         move |p| {
-            let abs_p = file_name.parent().unwrap_or_else(|| std::path::Path::new(".")).join(p);
+            let abs_p = file_name
+                .parent()
+                .unwrap_or_else(|| std::path::Path::new("."))
+                .join(p);
             let mat_text = load_string(&abs_p)
                 .inspect_err(|err| error!(%err, path = ?abs_p, "Failed to load material"))
                 .map_err(|_| LoadError::OpenFileFailed)?;
             tobj::load_mtl_buf(&mut BufReader::new(Cursor::new(mat_text)))
         },
-    ).map_err(ModelLoadError::LoadModelError)?;
+    )
+    .map_err(ModelLoadError::LoadModelError)?;
 
     let mut materials = Vec::new();
     for m in obj_materials.map_err(ModelLoadError::LoadMaterialError)? {
         // Load the diffuse map
-        let diffuse_texture = m.diffuse_texture.ok_or_else(|| ModelLoadError::MaterialWithoutTexture(m.name.clone()))?;
-        let diffuse_texture = file_name.parent().unwrap_or_else(|| std::path::Path::new(".")).join(diffuse_texture);
+        let diffuse_texture = m
+            .diffuse_texture
+            .ok_or_else(|| ModelLoadError::MaterialWithoutTexture(m.name.clone()))?;
+        let diffuse_texture = file_name
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("."))
+            .join(diffuse_texture);
         let diffuse_texture = load_texture(&diffuse_texture, device, queue, TextureType::Diffuse)
-            .inspect_err(|err| error!(%err, path = ?diffuse_texture, "Failed to load diffuse texture"))?;
+            .inspect_err(
+            |err| error!(%err, path = ?diffuse_texture, "Failed to load diffuse texture"),
+        )?;
 
         // Load the normal map
-        let normal_texture = m.normal_texture.ok_or_else(|| ModelLoadError::MaterialWithoutTexture(m.name.clone()))?;
-        let normal_texture = file_name.parent().unwrap_or_else(|| std::path::Path::new(".")).join(normal_texture);
+        let normal_texture = m
+            .normal_texture
+            .ok_or_else(|| ModelLoadError::MaterialWithoutTexture(m.name.clone()))?;
+        let normal_texture = file_name
+            .parent()
+            .unwrap_or_else(|| std::path::Path::new("."))
+            .join(normal_texture);
         let normal_texture = load_texture(&normal_texture, device, queue, TextureType::Normal)
-            .inspect_err(|err| error!(%err, path = ?normal_texture, "Failed to load diffuse texture"))?;
+            .inspect_err(
+                |err| error!(%err, path = ?normal_texture, "Failed to load diffuse texture"),
+            )?;
 
         materials.push(Material::new(
             &device,
@@ -135,7 +155,7 @@ where P: AsRef<std::path::Path>
             diffuse_texture,
             normal_texture,
             layout,
-            sampler
+            sampler,
         ));
     }
 
@@ -144,26 +164,32 @@ where P: AsRef<std::path::Path>
         .map(|m| {
             let mut vertices = (0..m.mesh.positions.len() / 3)
                 .map(|i| {
-                    if m.mesh.normals.is_empty(){
+                    if m.mesh.normals.is_empty() {
                         ModelVertex {
                             position: [
                                 m.mesh.positions[i * 3],
                                 m.mesh.positions[i * 3 + 1],
                                 m.mesh.positions[i * 3 + 2],
                             ],
-                            tex_coords: [m.mesh.texcoords[i * 2], 1.0 - m.mesh.texcoords[i * 2 + 1]],
+                            tex_coords: [
+                                m.mesh.texcoords[i * 2],
+                                1.0 - m.mesh.texcoords[i * 2 + 1],
+                            ],
                             normal: [0.0, 0.0, 0.0],
                             tangent: [0.0; 3],
                             bitangent: [0.0; 3],
                         }
-                    }else{
+                    } else {
                         ModelVertex {
                             position: [
                                 m.mesh.positions[i * 3],
                                 m.mesh.positions[i * 3 + 1],
                                 m.mesh.positions[i * 3 + 2],
                             ],
-                            tex_coords: [m.mesh.texcoords[i * 2], 1.0 - m.mesh.texcoords[i * 2 + 1]],
+                            tex_coords: [
+                                m.mesh.texcoords[i * 2],
+                                1.0 - m.mesh.texcoords[i * 2 + 1],
+                            ],
                             normal: [
                                 m.mesh.normals[i * 3],
                                 m.mesh.normals[i * 3 + 1],

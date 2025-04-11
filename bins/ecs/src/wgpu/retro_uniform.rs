@@ -1,5 +1,5 @@
-use winit::dpi::PhysicalSize;
 use crate::wgpu::texture::Texture;
+use winit::dpi::PhysicalSize;
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]

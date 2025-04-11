@@ -1,6 +1,6 @@
-use winit::window::Fullscreen;
 use crate::camera::{Camera, Projection};
 use crate::wgpu::camera_uniform::CameraUniform;
+use winit::window::Fullscreen;
 
 #[derive(Debug, Clone)]
 pub struct CameraData {
@@ -12,13 +12,13 @@ pub struct CameraData {
 
 #[derive(Debug)]
 pub struct ActiveCameraState {
-    pub uniform: CameraUniform
+    pub uniform: CameraUniform,
 }
 
 impl Default for ActiveCameraState {
     fn default() -> Self {
         Self {
-            uniform: CameraUniform::new()
+            uniform: CameraUniform::new(),
         }
     }
 }

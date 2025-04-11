@@ -14,11 +14,7 @@ impl Shaders {
         let render = RenderShaderModule::create_render(&device);
         let light = LightShaderModule::create_render(&device);
         let vga = VgaShaderModule::create_render(&device);
-        Self {
-            render,
-            light,
-            vga
-        }
+        Self { render, light, vga }
     }
 }
 

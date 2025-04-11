@@ -12,8 +12,8 @@
 //! - Resize the aspect ratio dynamically when the rendering dimensions change.
 //! - Generate a perspective projection matrix that works with WGPU.
 
-use cgmath::{perspective, Matrix4, Rad};
 use crate::camera::OPENGL_TO_WGPU_MATRIX;
+use cgmath::{perspective, Matrix4, Rad};
 
 /// Represents a perspective projection matrix configuration for 3D rendering.
 ///
@@ -37,13 +37,7 @@ pub struct Projection {
 }
 
 impl Projection {
-    pub fn new<F: Into<Rad<f32>>>(
-        width: u32,
-        height: u32,
-        fovy: F,
-        znear: f32,
-        zfar: f32,
-    ) -> Self {
+    pub fn new<F: Into<Rad<f32>>>(width: u32, height: u32, fovy: F, znear: f32, zfar: f32) -> Self {
         Self {
             aspect: width as f32 / height as f32,
             fovy: fovy.into(),

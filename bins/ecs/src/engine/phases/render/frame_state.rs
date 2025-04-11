@@ -1,9 +1,9 @@
-use std::sync::Arc;
-use std::sync::atomic::AtomicU32;
-use std::time::{Duration, Instant};
-use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
 use crate::wgpu::render_passes::RenderPasses;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+use std::sync::atomic::AtomicU32;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
 
 /// Represents the state for a single rendering frame.
 ///
@@ -29,11 +29,15 @@ pub struct FrameState {
     pub passes: RenderPasses,
     pub render_start: Instant,
     pub render_pipeline_selector: RenderPipelineSelector,
-    per_frame_entities: FrameEntityIds
+    per_frame_entities: FrameEntityIds,
 }
 
 impl FrameState {
-    pub fn new(passes: RenderPasses, render_start: Instant, render_pipeline_selector: RenderPipelineSelector) -> Self {
+    pub fn new(
+        passes: RenderPasses,
+        render_start: Instant,
+        render_pipeline_selector: RenderPipelineSelector,
+    ) -> Self {
         Self {
             passes,
             render_start,

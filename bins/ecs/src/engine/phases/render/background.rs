@@ -1,12 +1,15 @@
+use crate::engine::phases::render::{FrameState, WgpuRenderState};
+use crate::engine::{
+    ApplyRenderBackgroundSystem, BackgroundColorComponent, CreateSystem, RenderBackgroundSystem,
+    SystemFactory,
+};
+use crate::wgpu::light::DrawLight;
+use crate::wgpu::model::DrawModel;
+use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
-use crate::engine::{ApplyRenderBackgroundSystem, BackgroundColorComponent, CreateSystem, RenderBackgroundSystem, SystemFactory};
-use crate::engine::phases::render::{FrameState, WgpuRenderState};
-use crate::wgpu::model::DrawModel;
-use crate::wgpu::light::DrawLight;
-use crate::wgpu::texture::Texture;
 
 /// Represents a background color with red, green, blue, and alpha components,
 /// used as part of the [`BackgroundColorComponent`].
@@ -119,7 +122,11 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     ///
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
-    fn apply_single(&mut self, gpu: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
+    fn apply_single(
+        &mut self,
+        gpu: &mut WgpuRenderState,
+        background_color: &BackgroundColorComponent,
+    ) {
         let Ok((_device, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;

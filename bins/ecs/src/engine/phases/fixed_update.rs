@@ -1,8 +1,12 @@
-use std::convert::Infallible;
-use tracing::trace;
-use crate::engine::{BackgroundColorCycleSystem, CreateSystem, CreateSystems, FrameContext, PhaseEvents, PhysicsSystem, RenderBackgroundSystem, RenderSystem, SystemFactory, SystemFixedUpdatePhaseEvents};
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
 use crate::engine::phases::update::color_cycle::BackgroundColorCycleSystemData;
+use crate::engine::{
+    BackgroundColorCycleSystem, CreateSystem, CreateSystems, FrameContext, PhaseEvents,
+    PhysicsSystem, RenderBackgroundSystem, RenderSystem, SystemFactory,
+    SystemFixedUpdatePhaseEvents,
+};
+use std::convert::Infallible;
+use tracing::trace;
 
 pub mod physics;
 
@@ -21,9 +25,16 @@ impl SystemFixedUpdatePhaseEvents for PhaseEvents {
         Ok(())
     }
 
-    fn on_end_phase(&mut self, _data: Option<Self::Result>, _context: &FrameContext) -> Result<(), Self::Error> {
+    fn on_end_phase(
+        &mut self,
+        _data: Option<Self::Result>,
+        _context: &FrameContext,
+    ) -> Result<(), Self::Error> {
         let elapsed = self.elapsed();
-        trace!("{name} phase took {elapsed:?}", name = <PhaseEvents as SystemFixedUpdatePhaseEvents>::NAME);
+        trace!(
+            "{name} phase took {elapsed:?}",
+            name = <PhaseEvents as SystemFixedUpdatePhaseEvents>::NAME
+        );
         Ok(())
     }
 }

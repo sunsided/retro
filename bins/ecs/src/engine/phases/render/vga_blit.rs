@@ -1,13 +1,16 @@
+use crate::engine::phases::render::background::RenderBackgroundSystemData;
+use crate::engine::phases::render::{FrameState, WgpuRenderState};
+use crate::engine::{
+    ApplyRenderBackgroundSystem, ApplyVgaBlitSystem, BackgroundColorComponent, CreateSystem,
+    RenderBackgroundSystem, SystemFactory, VgaBlitSystem,
+};
+use crate::wgpu::light::DrawLight;
+use crate::wgpu::model::DrawModel;
+use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
-use crate::engine::{ApplyRenderBackgroundSystem, ApplyVgaBlitSystem, BackgroundColorComponent, CreateSystem, RenderBackgroundSystem, SystemFactory, VgaBlitSystem};
-use crate::engine::phases::render::{FrameState, WgpuRenderState};
-use crate::engine::phases::render::background::RenderBackgroundSystemData;
-use crate::wgpu::model::DrawModel;
-use crate::wgpu::light::DrawLight;
-use crate::wgpu::texture::Texture;
 
 #[derive(Debug, Default)]
 pub struct VgaBlitSystemData;
@@ -25,7 +28,11 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
         state.retro_enabled()
     }
 
-    fn apply_single(&mut self, wgpu_render: &mut WgpuRenderState, background_color: &BackgroundColorComponent) {
+    fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        background_color: &BackgroundColorComponent,
+    ) {
         let Ok((device, frame_state)) = wgpu_render.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;

@@ -28,11 +28,11 @@
 //! - [`image`](https://docs.rs/image) crate: Used for loading and decoding image files.
 //! - [`wgpu`](https://docs.rs/wgpu): A modern graphics API for GPU programming.
 
-use std::path::Path;
-use image::{GenericImageView, ImageError};
-use wgpu::{Device, Queue, TextureFormat};
 use crate::resources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
+use image::{GenericImageView, ImageError};
+use std::path::Path;
+use wgpu::{Device, Queue, TextureFormat};
 
 /// A struct representing a GPU texture along with its corresponding view.
 ///
@@ -69,7 +69,8 @@ impl Texture {
     #[allow(dead_code)]
     pub const VGA_BYTES_PER_PIXEL: u32 = 4; // 32 bpp (RGBA)
     #[allow(dead_code)]
-    pub const VGA_BUFFER_SIZE: usize = (Self::VGA_WIDTH * Self::VGA_HEIGHT * Self::VGA_BYTES_PER_PIXEL) as usize;
+    pub const VGA_BUFFER_SIZE: usize =
+        (Self::VGA_WIDTH * Self::VGA_HEIGHT * Self::VGA_BYTES_PER_PIXEL) as usize;
 
     pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
@@ -93,7 +94,11 @@ impl Texture {
     ///
     /// # See also
     /// - [`TextureSampler::depth_sampler`](crate::wgpu::texture_sampler::TextureSampler::depth_sampler)
-    pub fn depth_texture(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, label: &str) -> Self {
+    pub fn depth_texture(
+        device: &wgpu::Device,
+        config: &wgpu::SurfaceConfiguration,
+        label: &str,
+    ) -> Self {
         let size = wgpu::Extent3d {
             width: config.width.max(1),
             height: config.height.max(1),
@@ -184,28 +189,26 @@ impl Texture {
             depth_or_array_layers: 1,
         };
 
-        let texture = device.create_texture(
-            &wgpu::TextureDescriptor {
-                label,
-                size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                // Most images are stored using sRGB, so we need to reflect that here.
-                format: ty.into(),
-                // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
-                // COPY_DST means that we want to copy data to this texture
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                // This is the same as with the SurfaceConfig. It
-                // specifies what texture formats can be used to
-                // create TextureViews for this texture. The base
-                // texture format (Rgba8UnormSrgb in this case) is
-                // always supported. Note that using a different
-                // texture format is not supported on the WebGL2
-                // backend.
-                view_formats: &[],
-            }
-        );
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label,
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            // Most images are stored using sRGB, so we need to reflect that here.
+            format: ty.into(),
+            // TEXTURE_BINDING tells wgpu that we want to use this texture in shaders
+            // COPY_DST means that we want to copy data to this texture
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            // This is the same as with the SurfaceConfig. It
+            // specifies what texture formats can be used to
+            // create TextureViews for this texture. The base
+            // texture format (Rgba8UnormSrgb in this case) is
+            // always supported. Note that using a different
+            // texture format is not supported on the WebGL2
+            // backend.
+            view_formats: &[],
+        });
 
         queue.write_texture(
             wgpu::TexelCopyTextureInfo {
@@ -244,29 +247,24 @@ impl Texture {
     ///
     /// Returns a `Texture` object containing the fallback normal map and its view, ready for use
     /// in rendering and sampling operations.
-    pub fn fallback_normal_map(
-        device: &Device,
-        queue: &Queue,
-    ) -> Self {
+    pub fn fallback_normal_map(device: &Device, queue: &Queue) -> Self {
         let size = wgpu::Extent3d {
             width: 1,
             height: 1,
             depth_or_array_layers: 1,
         };
 
-        let texture = device.create_texture(
-            &wgpu::TextureDescriptor {
-                label: Some("fallback_normal_map"),
-                size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                // Use linear format for normal maps
-                format: wgpu::TextureFormat::Rgba8Unorm,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            }
-        );
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("fallback_normal_map"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            // Use linear format for normal maps
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
 
         // Flat normal: (0.5, 0.5, 1.0, 1.0) encoded as [128, 128, 255, 255]
         let normal_pixel = [128u8, 128u8, 255u8, 255u8];

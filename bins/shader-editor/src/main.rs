@@ -1,19 +1,20 @@
+mod app_state;
 mod logging;
 mod widgets;
 
+use crate::app_state::{AppState, InitializedAppState, UninitializedAppState};
 use crate::logging::setup_logging;
 use crate::widgets::shader_area::ShaderArea;
-use egui::{FontDefinitions, Pos2, Rect, emath};
-use egui_demo_lib::DemoWindows;
+use egui::{FontDefinitions, Pos2, Rect};
 use egui_wgpu_backend::{RenderPass, ScreenDescriptor};
 use egui_winit_platform::{Platform, PlatformDescriptor};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tracing::{debug, error, info, instrument, warn};
+use std::time::Instant;
+use tracing::{debug, instrument, warn};
 use wgpu::util::DeviceExt;
 use wgpu::{
-    Adapter, Backends, Buffer, Device, Instance, InstanceDescriptor, PolygonMode, PresentMode,
-    Queue, RenderPipeline, Surface, SurfaceConfiguration, TextureUsages,
+    Backends, Instance, InstanceDescriptor, PolygonMode, PresentMode, SurfaceConfiguration,
+    TextureUsages,
 };
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
@@ -23,7 +24,6 @@ use winit::event::{
 };
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
 use winit::keyboard::{KeyCode, ModifiersState, PhysicalKey};
-use winit::monitor::MonitorHandle;
 use winit::window::{Fullscreen, Window, WindowId};
 
 #[repr(C)]
@@ -95,83 +95,42 @@ const VERTICES: &[Vertex] = &[
 
 const INDICES: &[u16] = &[0, 1, 2, 2, 3, 0]; // two triangles
 
-/// A custom event type for the winit app.
-enum Event {
-    RequestRedraw,
-}
-
-/// This is the repaint signal type that egui needs for requesting a repaint from another thread.
-/// It sends the custom RequestRedraw event to the winit event loop.
-struct ExampleRepaintSignal(std::sync::Mutex<winit::event_loop::EventLoopProxy<Event>>);
-
-impl epi::backend::RepaintSignal for ExampleRepaintSignal {
-    fn request_repaint(&self) {
-        self.0.lock().unwrap().send_event(Event::RequestRedraw).ok();
-    }
-}
-
 struct App {
-    window: Option<Arc<Window>>,
-    modifiers: ModifiersState,
-    instance: Instance,
-    surface: Option<Surface<'static>>,
-    device: Option<Device>,
-    adapter: Option<Adapter>,
-    config: Option<SurfaceConfiguration>,
-    queue: Option<Queue>,
-    pipeline: Option<RenderPipeline>,
-    vertex_buffer: Option<Buffer>,
-    index_buffer: Option<Buffer>,
-    egui_platform: Option<Platform>,
-    egui_egui_rpass: Option<RenderPass>,
-    egui_demo_app: Option<DemoWindows>,
-    uniform_buffer: Option<Buffer>,
-    uniform_bind_group: Option<wgpu::BindGroup>,
-    start_time: Instant,
+    state: AppState,
 }
 
 impl App {
     pub fn new(instance: Instance) -> Self {
         Self {
-            window: None,
-            modifiers: ModifiersState::default(),
-            instance,
-            device: None,
-            surface: None,
-            adapter: None,
-            config: None,
-            queue: None,
-            pipeline: None,
-            vertex_buffer: None,
-            index_buffer: None,
-            egui_demo_app: None,
-            egui_platform: None,
-            egui_egui_rpass: None,
-            uniform_buffer: None,
-            uniform_bind_group: None,
-            start_time: Instant::now(),
+            state: AppState::Bootstrapped(UninitializedAppState {
+                instance,
+                start_time: Instant::now(),
+            }),
         }
     }
 
     fn reinitialize_window(&mut self, active_event_loop: &ActiveEventLoop) {
-        if !self.window.is_none() {
-            return;
-        }
+        self.state = match std::mem::take(&mut self.state) {
+            AppState::Bootstrapped(UninitializedAppState {
+                instance,
+                start_time,
+            }) => {
+                // Initialize if missing.
+                let attributes = Window::default_attributes()
+                    .with_title("Shader Editor")
+                    .with_inner_size(LogicalSize::new(1024.0, 640.0))
+                    .with_resizable(false);
 
-        // Initialize if missing.
-        let attributes = Window::default_attributes()
-            .with_title("Shader Editor")
-            .with_inner_size(LogicalSize::new(1024.0, 640.0))
-            .with_resizable(false);
+                let window = Arc::new(
+                    active_event_loop
+                        .create_window(attributes)
+                        .expect("Failed to create window"),
+                );
 
-        let window = Arc::new(
-            active_event_loop
-                .create_window(attributes)
-                .expect("Failed to create window"),
-        );
-
-        self.window = Some(window.clone());
-        self.wgpu_reinitialize(window);
+                AppState::Initialized(self.wgpu_reinitialize(instance, window, start_time))
+            }
+            state => state,
+        };
     }
 
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
@@ -180,10 +139,14 @@ impl App {
     }
 
     fn handle_key_modifiers_event(&mut self, new_modifiers: Modifiers) {
-        self.modifiers = new_modifiers.state();
+        let AppState::Initialized(InitializedAppState { modifiers, .. }) = &mut self.state else {
+            return;
+        };
+
+        *modifiers = new_modifiers.state();
     }
 
-    fn handle_mouse_input_event(&mut self, state: ElementState, button: MouseButton) {
+    fn handle_mouse_input_event(&mut self, _state: ElementState, button: MouseButton) {
         match button {
             MouseButton::Left => {}
             MouseButton::Right => {}
@@ -198,29 +161,32 @@ impl App {
         // nothing here.
     }
 
-    fn handle_mouse_wheel_event(&mut self, delta: MouseScrollDelta) {}
+    fn handle_mouse_wheel_event(&mut self, _delta: MouseScrollDelta) {}
 
-    fn handle_cursor_moved_by_event(&mut self, position: (f64, f64)) {}
+    fn handle_cursor_moved_by_event(&mut self, _position: (f64, f64)) {}
 
     fn handle_keypress_event(&mut self, active_event_loop: &ActiveEventLoop, event: KeyEvent) {
+        let AppState::Initialized(InitializedAppState {
+            window, modifiers, ..
+        }) = &mut self.state
+        else {
+            return;
+        };
+
         match event.physical_key {
             PhysicalKey::Code(KeyCode::Escape) if event.state == ElementState::Pressed => {
                 active_event_loop.exit();
             }
             PhysicalKey::Code(KeyCode::Enter)
-                if event.state == ElementState::Pressed && self.modifiers.alt_key() =>
+                if event.state == ElementState::Pressed && modifiers.alt_key() =>
             {
                 // Toggle fullscreen mode.
-                if let Some(window) = &self.window {
-                    if window.fullscreen().is_some() {
-                        window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(
-                            1024.0, 640.0,
-                        ))));
-                        window.set_fullscreen(None);
-                    } else {
-                        window.set_max_inner_size::<Size>(None);
-                        window.set_fullscreen(Some(Fullscreen::Borderless(None)));
-                    }
+                if window.fullscreen().is_some() {
+                    window.set_max_inner_size(Some(Size::Logical(LogicalSize::new(1024.0, 640.0))));
+                    window.set_fullscreen(None);
+                } else {
+                    window.set_max_inner_size::<Size>(None);
+                    window.set_fullscreen(Some(Fullscreen::Borderless(None)));
                 }
             }
 
@@ -228,25 +194,24 @@ impl App {
         }
     }
 
-    fn wgpu_reinitialize(&mut self, window: Arc<Window>) {
-        self.adapter.take();
-        self.device.take();
-        self.surface.take();
-
+    fn wgpu_reinitialize(
+        &self,
+        instance: Instance,
+        window: Arc<Window>,
+        start_time: Instant,
+    ) -> InitializedAppState {
         let size = window.inner_size();
         debug!(width = %size.width, height = %size.height, "Creating WGPU surface");
-        let surface = self
-            .instance
+        let surface = instance
             .create_surface(window.clone())
             .expect("Failed to create surface");
 
-        let adapter =
-            pollster::block_on(self.instance.request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::HighPerformance,
-                compatible_surface: Some(&surface),
-                force_fallback_adapter: false,
-            }))
-            .expect("Failed to create adapter");
+        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::HighPerformance,
+            compatible_surface: Some(&surface),
+            force_fallback_adapter: false,
+        }))
+        .expect("Failed to create adapter");
 
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
@@ -264,7 +229,7 @@ impl App {
         let surface_format = surface_caps.formats[0];
 
         // We use the egui_winit_platform crate as the platform.
-        let mut platform = Platform::new(PlatformDescriptor {
+        let platform = Platform::new(PlatformDescriptor {
             physical_width: size.width,
             physical_height: size.height,
             scale_factor: window.scale_factor(),
@@ -273,10 +238,10 @@ impl App {
         });
 
         // We use the egui_wgpu_backend crate as the render backend.
-        let mut egui_rpass = RenderPass::new(&device, surface_format, 1);
+        let egui_rpass = RenderPass::new(&device, surface_format, 1);
 
         // Display the demo application that ships with egui.
-        let mut demo_app = egui_demo_lib::DemoWindows::default();
+        let demo_app = egui_demo_lib::DemoWindows::default();
 
         let config = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT,
@@ -402,19 +367,25 @@ impl App {
             }],
         });
 
-        self.adapter = Some(adapter);
-        self.device = Some(device);
-        self.surface = Some(surface);
-        self.queue = Some(queue);
-        self.config = Some(config);
-        self.pipeline = Some(pipeline);
-        self.vertex_buffer = Some(vertex_buffer);
-        self.index_buffer = Some(index_buffer);
-        self.egui_platform = Some(platform);
-        self.egui_egui_rpass = Some(egui_rpass);
-        self.egui_demo_app = Some(demo_app);
-        self.uniform_buffer = Some(uniform_buffer);
-        self.uniform_bind_group = Some(uniform_bind_group);
+        InitializedAppState {
+            window,
+            modifiers: ModifiersState::default(),
+            instance,
+            surface,
+            device,
+            queue,
+            config,
+            pipeline,
+            vertex_buffer,
+            index_buffer,
+            egui_platform: platform,
+            egui_egui_rpass: egui_rpass,
+            egui_demo_app: demo_app,
+            uniform_buffer,
+            uniform_bind_group,
+            adapter,
+            start_time,
+        }
     }
 
     #[instrument(skip(self))]
@@ -424,18 +395,13 @@ impl App {
             return;
         }
 
-        let Some(surface) = &mut self.surface else {
-            warn!("No surface available");
-            return;
-        };
-
-        let Some(device) = &mut self.device else {
-            warn!("No device available");
-            return;
-        };
-
-        let Some(config) = &mut self.config else {
-            warn!("No surface configuration available");
+        let AppState::Initialized(InitializedAppState {
+            surface,
+            device,
+            config,
+            ..
+        }) = &mut self.state
+        else {
             return;
         };
 
@@ -445,10 +411,24 @@ impl App {
     }
 
     fn render(&mut self) {
-        let surface = self.surface.as_ref().unwrap();
-        let device = self.device.as_ref().unwrap();
-        let queue = self.queue.as_ref().unwrap();
-        let config = self.config.as_ref().unwrap();
+        let AppState::Initialized(InitializedAppState {
+            surface,
+            device,
+            config: surface_config,
+            queue,
+            window,
+            egui_platform: platform,
+            egui_egui_rpass: egui_rpass,
+            uniform_buffer,
+            pipeline,
+            uniform_bind_group,
+            index_buffer,
+            vertex_buffer,
+            ..
+        }) = &mut self.state
+        else {
+            return;
+        };
 
         let frame = match surface.get_current_texture() {
             Ok(frame) => frame,
@@ -466,7 +446,7 @@ impl App {
             label: Some("Render Encoder"),
         });
 
-        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
@@ -492,9 +472,6 @@ impl App {
         */
 
         drop(rpass);
-
-        let window = self.window.as_ref().unwrap();
-        let platform = self.egui_platform.as_mut().unwrap();
 
         // Begin to draw the UI frame.
         platform.context().set_zoom_factor(2.0);
@@ -531,14 +508,12 @@ impl App {
             .tessellate(full_output.shapes, full_output.pixels_per_point);
 
         // Upload all resources for the GPU.
-        let surface_config = self.config.as_ref().unwrap();
         let screen_descriptor = ScreenDescriptor {
             physical_width: surface_config.width,
             physical_height: surface_config.height,
             scale_factor: window.scale_factor() as f32,
         };
         let tdelta: egui::TexturesDelta = full_output.textures_delta;
-        let egui_rpass = self.egui_egui_rpass.as_mut().unwrap();
         egui_rpass
             .add_textures(&device, &queue, &tdelta)
             .expect("add texture ok");
@@ -561,8 +536,8 @@ impl App {
         let area_min_y = shader_area_rect.min.y * scale;
         let area_width = shader_area_rect.width() * scale;
         let area_height = shader_area_rect.height() * scale;
-        let screen_w = config.width as f32;
-        let screen_h = config.height as f32;
+        let screen_w = surface_config.width as f32;
+        let screen_h = surface_config.height as f32;
         let center_x = area_min_x + area_width * 0.5;
         let center_y = area_min_y + area_height * 0.5;
 
@@ -584,11 +559,7 @@ impl App {
         let uniform_data = Uniforms { transform };
 
         // Update the uniform buffer with the new transform
-        queue.write_buffer(
-            self.uniform_buffer.as_ref().unwrap(),
-            0,
-            bytemuck::cast_slice(&[uniform_data]),
-        );
+        queue.write_buffer(uniform_buffer, 0, bytemuck::cast_slice(&[uniform_data]));
 
         // ----- NEW: Shader Overlay Pass -----
         {
@@ -607,14 +578,11 @@ impl App {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            shader_rpass.set_pipeline(self.pipeline.as_ref().unwrap());
+            shader_rpass.set_pipeline(pipeline);
             // Bind our uniform so the vertex shader gets the transformation matrix.
-            shader_rpass.set_bind_group(0, self.uniform_bind_group.as_ref().unwrap(), &[]);
-            shader_rpass.set_vertex_buffer(0, self.vertex_buffer.as_ref().unwrap().slice(..));
-            shader_rpass.set_index_buffer(
-                self.index_buffer.as_ref().unwrap().slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
+            shader_rpass.set_bind_group(0, &*uniform_bind_group, &[]);
+            shader_rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            shader_rpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             shader_rpass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
@@ -659,10 +627,18 @@ impl ApplicationHandler for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        let AppState::Initialized(InitializedAppState {
+            egui_platform: platform,
+            start_time,
+            window,
+            ..
+        }) = &mut self.state
+        else {
+            return;
+        };
+
         // Pass the winit events to the platform integration.
-        if let Some(platform) = &mut self.egui_platform {
-            platform.handle_event(&event);
-        }
+        platform.handle_event(&event);
 
         match event {
             WindowEvent::CloseRequested => {
@@ -682,14 +658,10 @@ impl ApplicationHandler for App {
             }
             WindowEvent::RedrawRequested => {
                 // Pass the winit events to the platform integration.
-                if let Some(platform) = &mut self.egui_platform {
-                    platform.update_time(self.start_time.elapsed().as_secs_f64());
-                }
+                platform.update_time(start_time.elapsed().as_secs_f64());
 
-                if let Some(window) = &self.window {
-                    window.request_redraw();
-                    self.render();
-                }
+                window.request_redraw();
+                self.render();
             }
             WindowEvent::Resized(size) => self.handle_resize_event(size),
             _ => (),

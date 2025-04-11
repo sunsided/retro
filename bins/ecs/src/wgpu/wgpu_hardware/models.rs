@@ -1,9 +1,9 @@
-use tracing::instrument;
-use wgpu::Queue;
 use crate::resources;
+use crate::wgpu::model::Model;
 use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
-use crate::wgpu::model::Model;
+use tracing::instrument;
+use wgpu::Queue;
 
 #[derive(Debug)]
 pub struct Models {
@@ -12,17 +12,30 @@ pub struct Models {
 
 impl Models {
     #[instrument(skip(device, queue, layouts, samplers))]
-    pub fn create_from(device: &wgpu::Device, queue: &Queue, layouts: &BindGroupLayouts, samplers: &TextureSamplers) -> Self {
+    pub fn create_from(
+        device: &wgpu::Device,
+        queue: &Queue,
+        layouts: &BindGroupLayouts,
+        samplers: &TextureSamplers,
+    ) -> Self {
         let cube = Self::create_cube(device, queue, layouts, samplers);
-        Self {
-            cube,
-        }
+        Self { cube }
     }
 
     #[instrument(skip(device, queue, layouts, samplers))]
-    fn create_cube(device: &wgpu::Device, queue: &Queue, layouts: &BindGroupLayouts, samplers: &TextureSamplers) -> Model {
-        pollster::block_on(
-            resources::load_model("models/cube/cube.obj", device, queue, &layouts.diffuse_and_normal, &samplers.linear))
-            .expect("Failed to load cube model")
+    fn create_cube(
+        device: &wgpu::Device,
+        queue: &Queue,
+        layouts: &BindGroupLayouts,
+        samplers: &TextureSamplers,
+    ) -> Model {
+        pollster::block_on(resources::load_model(
+            "models/cube/cube.obj",
+            device,
+            queue,
+            &layouts.diffuse_and_normal,
+            &samplers.linear,
+        ))
+        .expect("Failed to load cube model")
     }
 }

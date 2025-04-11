@@ -44,7 +44,7 @@ impl BindGroupLayouts {
             diffuse_and_normal,
             camera_uniforms,
             lighting_uniforms,
-            vga_fullscreen
+            vga_fullscreen,
         }
     }
 
@@ -54,7 +54,7 @@ impl BindGroupLayouts {
             entries: &[
                 // Diffuse texture
                 wgpu::BindGroupLayoutEntry {
-                    binding: 0, // @binding(0)
+                    binding: 0,                               // @binding(0)
                     visibility: wgpu::ShaderStages::FRAGMENT, // NONE, VERTEX, FRAGMENT or COMPUTE
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
@@ -96,18 +96,16 @@ impl BindGroupLayouts {
     #[instrument(skip_all)]
     fn create_camera_buffer_uniforms(device: &wgpu::Device) -> BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None, // TODO: Maybe set this later
-                    },
-                    count: None,
-                }
-            ],
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None, // TODO: Maybe set this later
+                },
+                count: None,
+            }],
             label: Some("camera_buffer"),
         })
     }
@@ -181,7 +179,7 @@ impl BindGroupLayouts {
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
                         view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Depth
+                        sample_type: wgpu::TextureSampleType::Depth,
                     },
                     count: None,
                 },

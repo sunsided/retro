@@ -1,5 +1,5 @@
-use tracing::instrument;
 use crate::wgpu::texture_sampler::TextureSampler;
+use tracing::instrument;
 
 #[derive(Debug)]
 pub struct TextureSamplers {
@@ -21,7 +21,7 @@ impl TextureSamplers {
         Self {
             linear,
             depth,
-            retro_sampler
+            retro_sampler,
         }
     }
 
@@ -35,8 +35,6 @@ impl TextureSamplers {
             ..Default::default()
         });
 
-        TextureSampler {
-            sampler
-        }
+        TextureSampler { sampler }
     }
 }
