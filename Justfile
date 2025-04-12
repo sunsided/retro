@@ -17,23 +17,23 @@ build:
 
 # Test all targets.
 test *ARGS:
-    cargo test --workspace {{ARGS}}
+    cargo test --workspace {{ ARGS }}
 
 # Run benchmarks
 bench *ARGS:
-    cargo bench {{ARGS}}
+    cargo bench {{ ARGS }}
 
 # Run in release mode
 run:
-    RUST_LOG=retro=info cargo run --release --bin retrorun
+    RUST_LOG=ecs=info cargo run --release --bin ecs
 
 # Run with debug logging enabled
 debug:
-    RUST_LOG=retro=debug cargo run --bin retrorun
+    RUST_LOG=ecs=debug cargo run --bin ecs
 
 # Run with tracing enabled
 trace:
-    RUST_LOG=retro=trace cargo run --bin retrorun
+    RUST_LOG=ecs=trace cargo run --bin ecs
 
 # Just build the documentation.
 build-docs:
