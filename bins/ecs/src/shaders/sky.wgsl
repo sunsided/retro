@@ -82,19 +82,29 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     }
     let horizon = smoothstep(effective_threshold, 1.0, vertical);
 
-    // Compute sun direction based on time of day (e.g. rotates across horizon)
+    // Sun direction (moving on tilted arc over world sphere)
     // Time = 0 → sun at -X horizon, Time = 12 → overhead, Time = 24 → full loop
-    let sun_azimuth = (sky.time / 24.0) * 6.2831853;
-    let sun_elevation = radians(45.0);
+    let sun_angle = ((sky.time - 12.0) * 6.2831853 / 24.0);
+    let tilt = radians(145.0);  // orbital inclination
+
+    // Construct sun_dir in world space: rotates around Z axis, tilted toward Y
     let sun_dir = normalize(vec3(
-        cos(sun_elevation) * cos(sun_azimuth),
-        sin(sun_elevation),
-        cos(sun_elevation) * sin(sun_azimuth)
+        cos(sun_angle),
+        sin(sun_angle) * sin(tilt),
+        sin(sun_angle) * cos(tilt)
     ));
 
-    let sun_alignment = dot(ray_dir_world, sun_dir);
-    let sun_glow = smoothstep(0.95, 1.0, sun_alignment);
-    let sun_color = vec3(1.0, 0.9, 0.7);
+    // Only glow when sun is above the horizon (Y > 0)
+    let sun_visibility = max(sun_dir.y, 0);
+
+    // Angular alignment between current pixel and sun direction
+    let cos_angle = dot(ray_dir_world, sun_dir);
+    let glow_size = 0.95;  // higher = smaller sun disc
+    let glow = pow(clamp((cos_angle - glow_size) / (1.0 - glow_size), 0.0, 1.0), 12.0);
+
+    // Final sun glow intensity modulated by whether sun is above horizon
+    let sun_glow = glow * sun_visibility;
+    let sun_color = vec3(1.2, 1.05, 0.85);  // warm and bright
 
     let color = blended_sky * horizon + sun_color * sun_glow;
 
