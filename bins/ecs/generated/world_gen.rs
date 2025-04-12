@@ -181,6 +181,7 @@ pub struct MainWorldStates {
     /// The state is used in the following systems:
     /// - [`CameraSystem`]
     /// - [`CameraRenderSystem`]
+    /// - [`FrameGlobalsSystem`]
     /// - [`RenderBackgroundSystem`]
     /// - [`RenderSkySystem`]
     /// - [`RenderSystem`]
@@ -216,6 +217,7 @@ struct MainWorldArchetypes {
 #[derive(Debug)]
 pub struct MainWorldSystems {
     time_of_day: TimeOfDaySystem,
+    frame_globals: FrameGlobalsSystem,
     render_sky: RenderSkySystem,
     camera: CameraSystem,
     camera_render: CameraRenderSystem,
@@ -241,6 +243,20 @@ impl MainWorldSystems {
     pub fn as_time_of_day_mut(&mut self) -> &mut TimeOfDaySystemData {
         use core::ops::DerefMut;
         self.time_of_day.deref_mut()
+    }
+
+    /// Gives immutable access to the [`FrameGlobalsSystemData`] of the [`FrameGlobalsSystem`].
+    #[inline]
+    pub fn as_frame_globals_ref(&self) -> &FrameGlobalsSystemData {
+        use core::ops::Deref;
+        self.frame_globals.deref()
+    }
+
+    /// Gives mutable access to the [`FrameGlobalsSystemData`] of the [`FrameGlobalsSystem`].
+    #[inline]
+    pub fn as_frame_globals_mut(&mut self) -> &mut FrameGlobalsSystemData {
+        use core::ops::DerefMut;
+        self.frame_globals.deref_mut()
     }
 
     /// Gives immutable access to the [`RenderSkySystemData`] of the [`RenderSkySystem`].
@@ -381,6 +397,20 @@ impl AsMut<TimeOfDaySystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut TimeOfDaySystemData {
         self.as_time_of_day_mut()
+    }
+}
+
+impl AsRef<FrameGlobalsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &FrameGlobalsSystemData {
+        self.as_frame_globals_ref()
+    }
+}
+
+impl AsMut<FrameGlobalsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut FrameGlobalsSystemData {
+        self.as_frame_globals_mut()
     }
 }
 
@@ -624,6 +654,7 @@ impl<E, Q> MainWorld<E, Q> {
         phase_events: E) -> Self
     where
         S: CreateSystem<TimeOfDaySystem>
+         + CreateSystem<FrameGlobalsSystem>
          + CreateSystem<RenderSkySystem>
          + CreateSystem<CameraSystem>
          + CreateSystem<CameraRenderSystem>
@@ -641,6 +672,7 @@ impl<E, Q> MainWorld<E, Q> {
             archetypes: Default::default(),
             systems: MainWorldSystems {
                 time_of_day: CreateSystem::<TimeOfDaySystem>::create(create_systems),
+                frame_globals: CreateSystem::<FrameGlobalsSystem>::create(create_systems),
                 render_sky: CreateSystem::<RenderSkySystem>::create(create_systems),
                 camera: CreateSystem::<CameraSystem>::create(create_systems),
                 camera_render: CreateSystem::<CameraRenderSystem>::create(create_systems),
@@ -693,6 +725,10 @@ impl<E, Q> MainWorld<E, Q> {
     ) -> EntityId {
         self.spawn_environment_with(
             environment.time_of_day,
+            environment.sun,
+            environment.skydome,
+            environment.ambient_light,
+            environment.stars,
         )
     }
 
@@ -700,6 +736,10 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn spawn_environment_with(
         &mut self,
         time_of_day: TimeOfDayComponent,
+        sun: SunComponent,
+        skydome: SkydomeComponent,
+        ambient_light: AmbientLightComponent,
+        stars: StarsComponent,
     ) -> EntityId {
         struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
@@ -714,6 +754,10 @@ impl<E, Q> MainWorld<E, Q> {
         self.archetypes.environment
             .spawn_with(
                 time_of_day,
+                sun,
+                skydome,
+                ambient_light,
+                stars,
                 Registry(&mut self.entity_locations)
             )
     }
@@ -1599,7 +1643,33 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 6
+        // System group 1 of 7
+        let is_ready = self.systems.frame_globals.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.frame_globals.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply FrameGlobalsSystem to EnvironmentArchetype
+            self.systems.frame_globals.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.environment.time_of_daies,
+                &mut self.archetypes.environment.suns,
+                &mut self.archetypes.environment.ambient_lights,
+                &mut self.archetypes.environment.stars,
+                &mut self.archetypes.environment.skydomes,
+            );
+
+            self.systems.frame_globals.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 7
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1621,7 +1691,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 6
+        // System group 3 of 7
         let is_ready = self.systems.render_sky.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1634,7 +1704,7 @@ impl<E, Q> MainWorld<E, Q> {
             // Apply RenderSkySystem to EnvironmentArchetype
             self.systems.render_sky.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.environment.time_of_daies,
+                &self.archetypes.environment.skydomes,
             );
 
             self.systems.render_sky.on_end_phase(
@@ -1643,7 +1713,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 6
+        // System group 4 of 7
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1667,7 +1737,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 4 of 6
+        // System group 5 of 7
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &mut self.states.wgpu_render,
@@ -1694,7 +1764,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 5 of 6
+        // System group 6 of 7
         let is_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1716,7 +1786,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 6 of 6
+        // System group 7 of 7
         let is_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1775,6 +1845,42 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 1
+        let is_frame_globals_ready = self.systems.frame_globals.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_frame_globals_ready = is_frame_globals_ready &
+            self.systems.frame_globals.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_frame_globals_ready {
+                    s.spawn(|_| {
+                        // Apply FrameGlobalsSystem to EnvironmentArchetype
+                        self.systems.frame_globals.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.environment.time_of_daies,
+                            &mut self.archetypes.environment.suns,
+                            &mut self.archetypes.environment.ambient_lights,
+                            &mut self.archetypes.environment.stars,
+                            &mut self.archetypes.environment.skydomes,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.frame_globals.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 2
         let is_render_background_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1806,7 +1912,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 2
+        // System group 3
         let is_render_sky_ready = self.systems.render_sky.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1825,7 +1931,7 @@ impl<E, Q> MainWorld<E, Q> {
                         // Apply RenderSkySystem to EnvironmentArchetype
                         self.systems.render_sky.apply_many(
                             &mut self.states.wgpu_render,
-                            &self.archetypes.environment.time_of_daies,
+                            &self.archetypes.environment.skydomes,
                         );
                     });
                 }
@@ -1838,7 +1944,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 3
+        // System group 4
         let is_render_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1872,7 +1978,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 4
+        // System group 5
         let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &mut self.states.wgpu_render,
@@ -1909,7 +2015,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 5
+        // System group 6
         let is_vga_blit_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1941,7 +2047,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 6
+        // System group 7
         let is_camera_render_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,

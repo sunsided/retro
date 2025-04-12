@@ -28,6 +28,7 @@ use crate::engine::phases::render::{
     background::{BackgroundColorData, RenderBackgroundSystemData},
     camera_render::CameraRenderSystemData,
     dynamic_light::DynamicLightSystemData,
+    frame_globals::FrameGlobalsSystemData,
     render::RenderSystemData,
     render_sky::RenderSkySystemData,
     vga_blit::VgaBlitSystemData,

@@ -64,6 +64,7 @@
 pub mod background;
 pub mod camera_render;
 pub mod dynamic_light;
+pub mod frame_globals;
 mod frame_state;
 pub mod render;
 pub mod render_sky;
