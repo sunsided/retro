@@ -13,6 +13,8 @@
 //! operations and `bytemuck` for efficient memory representation.
 
 use crate::camera::{Camera, Projection};
+use crate::wgpu::uniforms::mat3x3_std140::Mat3x3Std140;
+use cgmath::{Matrix3, SquareMatrix, Transform};
 
 /// A uniform buffer structure for passing camera data to shaders.
 /// This contains the camera's position in world space as well as
@@ -26,6 +28,10 @@ pub struct CameraUniform {
     /// The combined view and projection matrix, used for transforming
     /// world space coordinates into screen space.
     view_proj: [[f32; 4]; 4],
+    /// Inverse projection matrix.
+    inverse_proj: [[f32; 4]; 4],
+    /// The camera's pure rotation matrix (3x3, fit into a 4x3 for alignment)
+    camera_rot: Mat3x3Std140,
 }
 
 impl CameraUniform {
@@ -34,6 +40,8 @@ impl CameraUniform {
         Self {
             view_position: [0.0; 4],
             view_proj: cgmath::Matrix4::identity().into(),
+            inverse_proj: cgmath::Matrix4::identity().into(),
+            camera_rot: Matrix3::identity().into(),
         }
     }
 
@@ -50,6 +58,20 @@ impl CameraUniform {
     /// - `projection`: A reference to the `Projection` object, which provides the projection matrix.
     pub fn update_view_proj(&mut self, camera: &Camera, projection: &Projection) {
         self.view_position = camera.position.to_homogeneous().into();
-        self.view_proj = (projection.calc_matrix() * camera.calc_rh_look_to()).into();
+
+        let proj = projection.calc_matrix();
+        let view = camera.calc_rh_look_to();
+        self.view_proj = (proj * view).into();
+        self.inverse_proj = proj.invert().unwrap().into();
+
+        // camera-to-world rotation matrix (upper 3x3 of view.inverse())
+        let rot = view.inverse_transform().unwrap();
+        let rot3x3 = Matrix3::from_cols(
+            rot.x.truncate(), // right
+            rot.y.truncate(), // up
+            rot.z.truncate(), // forward
+        );
+
+        self.camera_rot = rot3x3.into();
     }
 }

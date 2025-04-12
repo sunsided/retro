@@ -3,6 +3,7 @@ use wgpu::{Device, ShaderModule};
 
 #[derive(Debug)]
 pub struct Shaders {
+    pub sky: SkyShaderModule,
     pub render: RenderShaderModule,
     pub light: LightShaderModule,
     pub vga: VgaShaderModule,
@@ -11,10 +12,16 @@ pub struct Shaders {
 impl Shaders {
     #[instrument(skip(device))]
     pub fn create_from(device: &Device) -> Self {
-        let render = RenderShaderModule::create_render(&device);
-        let light = LightShaderModule::create_render(&device);
-        let vga = VgaShaderModule::create_render(&device);
-        Self { render, light, vga }
+        let sky = SkyShaderModule::create(&device);
+        let render = RenderShaderModule::create(&device);
+        let light = LightShaderModule::create(&device);
+        let vga = VgaShaderModule::create(&device);
+        Self {
+            sky,
+            render,
+            light,
+            vga,
+        }
     }
 }
 
@@ -51,11 +58,40 @@ impl FragmentShaderRef<'_> {
 }
 
 #[derive(Debug)]
+pub struct SkyShaderModule(ShaderModule);
+
+impl SkyShaderModule {
+    #[instrument(skip(device))]
+    fn create(device: &Device) -> Self {
+        let shader = wgpu::ShaderModuleDescriptor {
+            label: Some("Sky"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/sky.wgsl").into()),
+        };
+
+        Self(device.create_shader_module(shader))
+    }
+
+    pub fn vertex_shader(&self) -> VertexShaderRef {
+        VertexShaderRef {
+            entry_point: "vs_main",
+            module: &self.0,
+        }
+    }
+
+    pub fn fragment_shader(&self) -> FragmentShaderRef {
+        FragmentShaderRef {
+            entry_point: "fs_main",
+            module: &self.0,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct RenderShaderModule(ShaderModule);
 
 impl RenderShaderModule {
     #[instrument(skip(device))]
-    fn create_render(device: &Device) -> Self {
+    fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("Normal Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/shader.wgsl").into()),
@@ -98,7 +134,7 @@ pub struct LightShaderModule(ShaderModule);
 
 impl LightShaderModule {
     #[instrument(skip(device))]
-    fn create_render(device: &Device) -> Self {
+    fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("Light Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/light.wgsl").into()),
@@ -127,7 +163,7 @@ pub struct VgaShaderModule(ShaderModule);
 
 impl VgaShaderModule {
     #[instrument(skip(device))]
-    fn create_render(device: &Device) -> Self {
+    fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("VGA Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/vga.wgsl").into()),

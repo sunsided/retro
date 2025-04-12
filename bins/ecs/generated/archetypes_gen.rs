@@ -57,41 +57,45 @@ impl core::fmt::Display for EntityId {
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(u32)]
 pub enum ArchetypeId {
+    /// The [`Environment`](EnvironmentArchetype) archetype.
+    Environment = 1,
     /// The [`Camera`](CameraArchetype) archetype.
-    Camera = 1,
+    Camera = 2,
     /// The [`DynamicLight`](DynamicLightArchetype) archetype.
-    DynamicLight = 2,
+    DynamicLight = 3,
     /// A marching cube :)
     ///
     /// For details, see the [`CubeArchetype`](CubeArchetype) Struct.
-    Cube = 3,
+    Cube = 4,
     /// The [`Player`](PlayerArchetype) archetype.
-    Player = 4,
+    Player = 5,
     /// The [`ForegroundObject`](ForegroundObjectArchetype) archetype.
-    ForegroundObject = 5,
+    ForegroundObject = 6,
     /// The [`BackgroundObject`](BackgroundObjectArchetype) archetype.
-    BackgroundObject = 6,
+    BackgroundObject = 7,
     /// The scene background.
     ///
     /// For details, see the [`SceneBackgroundArchetype`](SceneBackgroundArchetype) Struct.
-    SceneBackground = 7,
+    SceneBackground = 8,
 }
 
 impl ArchetypeId {
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Environment`](ArchetypeId::Environment) archetype.
+    pub const ENVIRONMENT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Camera`](ArchetypeId::Camera) archetype.
-    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::DynamicLight`](ArchetypeId::DynamicLight) archetype.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Cube`](ArchetypeId::Cube) archetype.
-    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Player`](ArchetypeId::Player) archetype.
-    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::ForegroundObject`](ArchetypeId::ForegroundObject) archetype.
-    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::BackgroundObject`](ArchetypeId::BackgroundObject) archetype.
-    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::SceneBackground`](ArchetypeId::SceneBackground) archetype.
-    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -99,6 +103,7 @@ impl ArchetypeId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         match self {
+            Self::Environment => Self::ENVIRONMENT_ID_VALUE,
             Self::Camera => Self::CAMERA_ID_VALUE,
             Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
             Self::Cube => Self::CUBE_ID_VALUE,
@@ -136,13 +141,14 @@ impl From<ArchetypeId> for u64 {
 impl core::fmt::Display for ArchetypeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
-            Self::Camera => write!(f, "Camera (ID 1)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 2)"),
-            Self::Cube => write!(f, "Cube (ID 3)"),
-            Self::Player => write!(f, "Player (ID 4)"),
-            Self::ForegroundObject => write!(f, "ForegroundObject (ID 5)"),
-            Self::BackgroundObject => write!(f, "BackgroundObject (ID 6)"),
-            Self::SceneBackground => write!(f, "SceneBackground (ID 7)"),
+            Self::Environment => write!(f, "Environment (ID 1)"),
+            Self::Camera => write!(f, "Camera (ID 2)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 3)"),
+            Self::Cube => write!(f, "Cube (ID 4)"),
+            Self::Player => write!(f, "Player (ID 5)"),
+            Self::ForegroundObject => write!(f, "ForegroundObject (ID 6)"),
+            Self::BackgroundObject => write!(f, "BackgroundObject (ID 7)"),
+            Self::SceneBackground => write!(f, "SceneBackground (ID 8)"),
         }
     }
 }
@@ -210,6 +216,8 @@ pub trait HasComponent<T: Component> {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntity {
+    /// An entity in the [`Environment`](EnvironmentArchetype) archetype.
+    Environment(EnvironmentEntity),
     /// An entity in the [`Camera`](CameraArchetype) archetype.
     Camera(CameraEntity),
     /// An entity in the [`DynamicLight`](DynamicLightArchetype) archetype.
@@ -230,6 +238,8 @@ pub enum ArchetypeEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntityData {
+    /// An entity in the [`Environment`](EnvironmentArchetype) archetype.
+    Environment(EnvironmentEntityData),
     /// An entity in the [`Camera`](CameraArchetype) archetype.
     Camera(CameraEntityData),
     /// An entity in the [`DynamicLight`](DynamicLightArchetype) archetype.
@@ -251,6 +261,7 @@ impl ArchetypeEntity {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntity`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::Environment(_) => EnvironmentArchetype::ID,
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
             Self::Cube(_) => CubeArchetype::ID,
@@ -267,6 +278,7 @@ impl ArchetypeEntityData {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntityData`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::Environment(_) => EnvironmentArchetype::ID,
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
             Self::Cube(_) => CubeArchetype::ID,
@@ -289,6 +301,272 @@ pub struct EntityWithIdAndData<Data: EntityData> {
 /// Marker trait for entity data.
 pub trait EntityData {
     const ARCHETYPE_ID: ArchetypeId;
+}
+
+/// An archetype grouping entities with identical components.
+#[derive(Debug, Default, Clone)]
+pub struct EnvironmentArchetype {
+    pub entities: Vec<EntityId>,
+    pub time_of_daies: Vec<TimeOfDayComponent>,
+}
+
+/// An entity of the [`EnvironmentArchetype`].
+pub type EnvironmentEntity = EntityWithIdAndData<EnvironmentEntityData>;
+
+/// An entity of the [`EnvironmentArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EnvironmentEntityData {
+    pub time_of_day: TimeOfDayComponent,
+}
+
+impl EntityData for EnvironmentEntityData {
+    const ARCHETYPE_ID: ArchetypeId = EnvironmentArchetype::ID;
+}
+
+/// A reference to an entity of the [`EnvironmentArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EnvironmentEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub time_of_day: &'archetype TimeOfDayComponent,
+}
+
+/// A mutable reference to an entity of the [`EnvironmentArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct EnvironmentEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub time_of_day: &'archetype mut TimeOfDayComponent,
+}
+
+/// An iterator for entities in the [`EnvironmentArchetype`].
+pub struct EnvironmentEntityIterator<'archetype> {
+    archetype: &'archetype EnvironmentArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> EnvironmentEntityIterator<'archetype> {
+    fn new(archetype: &'archetype EnvironmentArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for EnvironmentEntityIterator<'archetype> {
+    type Item = EnvironmentEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl EnvironmentArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> EnvironmentEntityIterator {
+        EnvironmentEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<EnvironmentEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
+        EnvironmentEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            time_of_day: self.time_of_daies.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
+        EnvironmentEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            time_of_day: self.time_of_daies.get_unchecked_mut(index),
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<TimeOfDayComponent> for EnvironmentEntity {
+    #[inline]
+    fn get(&self) -> &TimeOfDayComponent {
+        &self.data.time_of_day
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut TimeOfDayComponent {
+        &mut self.data.time_of_day
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<TimeOfDayComponent> for EnvironmentEntityData {
+    #[inline]
+    fn get(&self) -> &TimeOfDayComponent {
+        &self.time_of_day
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut TimeOfDayComponent {
+        &mut self.time_of_day
+    }
+}
+impl EnvironmentEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<EnvironmentEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl core::ops::Deref for EnvironmentEntity {
+    type Target = EnvironmentEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl core::ops::DerefMut for EnvironmentEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+#[allow(dead_code)]
+impl EnvironmentArchetype {
+    /// The IDs of the components used by this archetype, in ascending order.
+    pub const COMPONENTS: [ComponentId; 1] = [
+        ComponentId::COMPONENT_1,
+    ];
+
+    /// Returns the number of entities in this archetype.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Indicates whether this archetype has no entities.
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Returns the number of components used by this archetype.
+    #[inline(always)]
+    pub const fn num_components(&self) -> usize {
+        1
+    }
+
+    /// Dynamically determines whether this archetype has a specific component.
+    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+        let id = id.as_u64();
+        id == 1 || false
+    }
+
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
+        &mut self,
+        time_of_day: TimeOfDayComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.time_of_daies.push(time_of_day);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.time_of_daies.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
+    }
+}
+
+
+#[automatically_derived]
+impl HasComponents<TimeOfDayComponent> for EnvironmentArchetype {
+    /// Returns a slice of all [`TimeOfDayComponent`] component values.
+    fn get(&self) -> &[TimeOfDayComponent] {
+        self.time_of_daies.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`TimeOfDayComponent`] component values.
+    fn get_mut(&mut self) -> &mut [TimeOfDayComponent] {
+        self.time_of_daies.as_mut_slice()
+    }
+}
+
+
+#[automatically_derived]
+#[allow(dead_code)]
+impl Archetype for EnvironmentArchetype {
+    const ID: ArchetypeId = ArchetypeId::Environment;
+
+    fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+}
+
+impl PartialEq<ArchetypeId> for EnvironmentArchetype {
+    fn eq(&self, other: &ArchetypeId) -> bool {
+        Self::ID.eq(other)
+    }
 }
 
 /// An archetype grouping entities with identical components.
@@ -483,8 +761,8 @@ impl core::ops::DerefMut for CameraEntity {
 impl CameraArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_1,
         ComponentId::COMPONENT_2,
+        ComponentId::COMPONENT_3,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -508,7 +786,7 @@ impl CameraArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || id == 2 || false
+        id == 2 || id == 3 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -830,9 +1108,9 @@ impl core::ops::DerefMut for DynamicLightEntity {
 impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
-        ComponentId::COMPONENT_3,
-        ComponentId::COMPONENT_9,
-        ComponentId::COMPONENT_11,
+        ComponentId::COMPONENT_4,
+        ComponentId::COMPONENT_10,
+        ComponentId::COMPONENT_12,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -856,7 +1134,7 @@ impl DynamicLightArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 9 || id == 11 || false
+        id == 4 || id == 10 || id == 12 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1226,10 +1504,10 @@ impl core::ops::DerefMut for CubeEntity {
 impl CubeArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 4] = [
-        ComponentId::COMPONENT_3,
         ComponentId::COMPONENT_4,
         ComponentId::COMPONENT_5,
-        ComponentId::COMPONENT_8,
+        ComponentId::COMPONENT_6,
+        ComponentId::COMPONENT_9,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1253,7 +1531,7 @@ impl CubeArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 4 || id == 5 || id == 8 || false
+        id == 4 || id == 5 || id == 6 || id == 9 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1607,9 +1885,9 @@ impl core::ops::DerefMut for PlayerEntity {
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
-        ComponentId::COMPONENT_3,
-        ComponentId::COMPONENT_5,
+        ComponentId::COMPONENT_4,
         ComponentId::COMPONENT_6,
+        ComponentId::COMPONENT_7,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1633,7 +1911,7 @@ impl PlayerArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 5 || id == 6 || false
+        id == 4 || id == 6 || id == 7 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1939,8 +2217,8 @@ impl core::ops::DerefMut for ForegroundObjectEntity {
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_3,
-        ComponentId::COMPONENT_7,
+        ComponentId::COMPONENT_4,
+        ComponentId::COMPONENT_8,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1964,7 +2242,7 @@ impl ForegroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || id == 7 || false
+        id == 4 || id == 8 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2222,7 +2500,7 @@ impl core::ops::DerefMut for BackgroundObjectEntity {
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_4,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2246,7 +2524,7 @@ impl BackgroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 3 || false
+        id == 4 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2488,7 +2766,7 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_10,
+        ComponentId::COMPONENT_11,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2512,7 +2790,7 @@ impl SceneBackgroundArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 10 || false
+        id == 11 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2604,6 +2882,14 @@ pub trait GetEntityRef {
 
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype>;
+}
+
+impl core::ops::Index<usize> for EnvironmentArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
 }
 
 impl core::ops::Index<usize> for CameraArchetype {
@@ -2822,6 +3108,24 @@ pub trait FrontloadEntitiesScan:
     }
 }
 
+impl GetEntityRef for EnvironmentArchetype {
+    type EntityRef<'archetype> = EnvironmentEntityRef<'archetype>;
+
+    /// See [`EnvironmentArchetype::get_at`](EnvironmentArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`EnvironmentArchetype::get_at_unchecked`](EnvironmentArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
 impl GetEntityRef for CameraArchetype {
     type EntityRef<'archetype> = CameraEntityRef<'archetype>;
 
@@ -2947,6 +3251,17 @@ impl GetEntityRef for SceneBackgroundArchetype {
         unsafe { self.get_at_unchecked(index) }
     }
 }
+
+impl FrontloadEntities for EnvironmentArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.time_of_daies.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for EnvironmentArchetype { }
 
 impl FrontloadEntities for CameraArchetype {
     #[inline(always)]

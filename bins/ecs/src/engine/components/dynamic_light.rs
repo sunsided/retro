@@ -1,5 +1,5 @@
 use crate::seconds::Seconds;
-use crate::wgpu::light::LightUniform;
+use crate::wgpu::uniforms::LightUniform;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use cgmath::Rotation3;
 

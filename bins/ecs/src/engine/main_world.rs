@@ -1,12 +1,13 @@
 use crate::camera::Projection;
 use crate::engine::components::{
-    CameraData, ColorData, DynamicLightData, PositionData, VelocityData,
+    CameraData, ColorData, DynamicLightData, PositionData, TimeOfDayData, VelocityData,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
-    CubeEntityData, DynamicLightComponent, DynamicLightEntityData, MainWorld, ModelComponent,
-    PositionComponent, SceneBackgroundEntityData, TransformComponent, VelocityComponent,
+    CubeEntityData, DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData,
+    MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData, TimeOfDayComponent,
+    TransformComponent, VelocityComponent,
 };
 use cgmath::{InnerSpace, Rotation3, Zero};
 use parking_lot::Mutex;
@@ -22,6 +23,10 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
     fn create_initial_entities(&mut self) {
         self.spawn_scene_background(SceneBackgroundEntityData {
             background_color: BackgroundColorData::default().into(),
+        });
+
+        self.spawn_environment(EnvironmentEntityData {
+            time_of_day: TimeOfDayData::default().into(),
         });
 
         self.spawn_camera(CameraEntityData {

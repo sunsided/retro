@@ -1,5 +1,5 @@
 use crate::camera::{Camera, Projection};
-use crate::wgpu::camera_uniform::CameraUniform;
+use crate::wgpu::uniforms::CameraUniform;
 use winit::window::Fullscreen;
 
 #[derive(Debug, Clone)]

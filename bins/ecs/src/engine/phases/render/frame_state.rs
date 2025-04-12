@@ -3,7 +3,7 @@ use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
+use wgpu::{CommandEncoder, RenderPass, RenderPipeline, SurfaceTexture, TextureView};
 
 /// Represents the state for a single rendering frame.
 ///
@@ -49,6 +49,12 @@ impl FrameState {
     pub fn render_pass(&mut self, device: &DeviceAndQueue) -> RenderPass {
         let mut pass = self.passes.render_pass();
         device.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
+        pass
+    }
+
+    pub fn render_pass_with(&mut self, pipeline: &RenderPipeline) -> RenderPass {
+        let mut pass = self.passes.render_pass();
+        pass.set_pipeline(pipeline);
         pass
     }
 

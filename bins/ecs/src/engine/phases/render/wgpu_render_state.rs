@@ -1,5 +1,5 @@
 use crate::engine::phases::render::frame_state::FrameState;
-use crate::wgpu::retro_uniform::RetroUniform;
+use crate::wgpu::uniforms::RetroUniform;
 use crate::wgpu::wgpu_hardware::{
     DeviceAndQueue, RenderPipelineSelector, WgpuHardware, WgpuReinitializeWindowError,
     WgpuResizeSurfaceError,

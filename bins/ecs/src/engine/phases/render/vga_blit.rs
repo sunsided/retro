@@ -4,7 +4,6 @@ use crate::engine::{
     ApplyRenderBackgroundSystem, ApplyVgaBlitSystem, BackgroundColorComponent, CreateSystem,
     RenderBackgroundSystem, SystemFactory, VgaBlitSystem,
 };
-use crate::wgpu::light::DrawLight;
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};

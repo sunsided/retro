@@ -52,8 +52,8 @@ impl App {
         let active_camera = ActiveCameraState::default();
         let mut world = MainWorld::new_with_events(
             &SystemFactory,
-            input_state,
             render_state,
+            input_state,
             active_camera,
             CommandQueue::new(),
             events,
