@@ -119,7 +119,7 @@ fn fs_main(
 ) -> FragmentOutput {
     let floor_uv = atlas_uv(in.floor_index, in.tex_coords);
     let floor_color = textureSample(tile_texture, tile_sampler, floor_uv);
-    let floor_normal = textureSample(tile_normal, tile_normal_sampler, floor_uv).xyz * 2.0 - 1.0;
+    let floor_normal = vec3<f32>(0.0, 1.0, 0.0); // assume flat upward-facing tile
 
     let view_dir = normalize(camera.view_pos.xyz - in.world_position);
     let light_dir = normalize(light.position - in.world_position);
