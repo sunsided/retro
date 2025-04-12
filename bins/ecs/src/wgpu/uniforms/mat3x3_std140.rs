@@ -1,3 +1,4 @@
+/// A 3x3 matrix fit into 4x3 for alignment
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Mat3x3Std140 {

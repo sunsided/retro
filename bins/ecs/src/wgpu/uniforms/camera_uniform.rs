@@ -14,7 +14,7 @@
 
 use crate::camera::{Camera, Projection};
 use crate::wgpu::uniforms::mat3x3_std140::Mat3x3Std140;
-use cgmath::{InnerSpace, Matrix3, SquareMatrix, Transform, Vector3};
+use cgmath::{Matrix3, SquareMatrix, Transform};
 
 /// A uniform buffer structure for passing camera data to shaders.
 /// This contains the camera's position in world space as well as
@@ -30,7 +30,7 @@ pub struct CameraUniform {
     view_proj: [[f32; 4]; 4],
     /// Inverse projection matrix.
     inverse_proj: [[f32; 4]; 4],
-    /// The camera's pure rotation matrix (3x3)
+    /// The camera's pure rotation matrix (3x3, fit into a 4x3 for alignment)
     camera_rot: Mat3x3Std140,
 }
 
