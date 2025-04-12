@@ -1,5 +1,19 @@
 // Vertex shader
 
+struct FrameGlobalUniform {
+    time_of_day: f32,
+    day: f32,
+    star_visibility: f32,
+    sun_dir: vec3<f32>,
+    sun_visibility: f32,
+    sun_color: vec3<f32>,
+    sky_color: vec3<f32>,
+    ambient_light: vec3<f32>,
+};
+
+@group(0) @binding(0)
+var<uniform> frame: FrameGlobalUniform;
+
 struct Camera {
     view_pos: vec4<f32>,
     view_proj: mat4x4<f32>,
@@ -15,6 +29,16 @@ struct Light {
 
 @group(2) @binding(0)
 var<uniform> light: Light;
+
+@group(3) @binding(0)
+var t_diffuse: texture_2d<f32>;
+@group(3) @binding(1)
+var s_diffuse: sampler;
+
+@group(3) @binding(2)
+var t_normal: texture_2d<f32>;
+@group(3) @binding(3)
+var s_normal: sampler;
 
 struct InstanceInput {
     @location(5) model_matrix_0: vec4<f32>,
@@ -45,7 +69,8 @@ struct VertexOutput {
     @location(1) tangent_position: vec3<f32>,
     @location(2) tangent_light_position: vec3<f32>,
     @location(3) tangent_view_position: vec3<f32>,
-    @location(4) @interpolate(flat) entity_id: u32,
+    @location(4) tangent_sun_direction: vec3<f32>,
+    @location(5) @interpolate(flat) entity_id: u32,
 };
 
 @vertex
@@ -83,21 +108,10 @@ fn vs_main(
     out.tangent_position = tangent_matrix * world_position.xyz;
     out.tangent_view_position = tangent_matrix * camera.view_pos.xyz;
     out.tangent_light_position = tangent_matrix * light.position;
+    out.tangent_sun_direction = tangent_matrix * frame.sun_dir;
     out.entity_id = instance.entity_id;
     return out;
 }
-
-// Fragment shader
-
-@group(0) @binding(0)
-var t_diffuse: texture_2d<f32>;
-@group(0) @binding(1)
-var s_diffuse: sampler;
-
-@group(0)@binding(2)
-var t_normal: texture_2d<f32>;
-@group(0) @binding(3)
-var s_normal: sampler;
 
 // Fragment shader output
 struct FragmentOutput {
@@ -105,74 +119,17 @@ struct FragmentOutput {
     @location(1) entity_id: u32,
 };
 
-// The @location(0) bit tells WGPU to store the vec4 value returned
-// by this function in the first color target.
-@fragment
-fn fs_flat_main(in: VertexOutput) -> FragmentOutput {
-    let object_color = vec4<f32>(0.3, 0.2, 0.1, 1.0);
-    let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
-
-    // We don't need (or want) much ambient light, so 0.1 is fine
-    let ambient_strength = 0.1;
-    let ambient_color = light.color * ambient_strength;
-
-    // Create the lighting vectors
-    let tangent_normal = object_normal.xyz * 2.0 - 1.0;
-    let light_dir = normalize(in.tangent_light_position - in.tangent_position);
-    let view_dir = normalize(in.tangent_view_position - in.tangent_position);
+fn blinn_phong(
+    tangent_normal: vec3<f32>,
+    light_dir: vec3<f32>,
+    light_color: vec3<f32>,
+    view_dir: vec3<f32>,
+    intensity: f32
+) -> vec3<f32> {
+    let diffuse = max(dot(tangent_normal, light_dir), 0.0);
     let half_dir = normalize(view_dir + light_dir);
-
-    // Diffuse lighting
-    let diffuse_strength = max(dot(tangent_normal, light_dir), 0.0);
-    let diffuse_color = light.color * diffuse_strength;
-
-    // Specular lighting
-    let specular_strength = pow(max(dot(tangent_normal, half_dir), 0.0), 32.0);
-    let specular_color = specular_strength * light.color;
-
-    let result = (ambient_color + diffuse_color) * object_color.xyz;
-    var out: FragmentOutput;
-    out.color = vec4<f32>(result, object_color.a);
-    out.entity_id = in.entity_id;
-    return out;
-}
-
-@fragment
-fn fs_textured_main(in: VertexOutput) -> FragmentOutput {
-    let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
-    let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
-
-    // We don't need (or want) much ambient light, so 0.1 is fine
-    let ambient_strength = 0.1;
-    let ambient_color = light.color * ambient_strength;
-
-    // Create the lighting vectors
-    let tangent_normal = object_normal.xyz * 2.0 - 1.0;
-    let light_dir = normalize(in.tangent_light_position - in.tangent_position);
-    let view_dir = normalize(in.tangent_view_position - in.tangent_position);
-    let half_dir = normalize(view_dir + light_dir);
-
-    // Diffuse lighting
-    let diffuse_strength = max(dot(tangent_normal, light_dir), 0.0);
-    let diffuse_color = light.color * diffuse_strength;
-
-    // Specular lighting
-    let specular_strength = pow(max(dot(tangent_normal, half_dir), 0.0), 32.0);
-    let specular_color = specular_strength * light.color;
-
-    let result = (ambient_color + diffuse_color + specular_color) * object_color.xyz;
-
-    var out: FragmentOutput;
-    out.color = vec4<f32>(result, object_color.a);
-    out.entity_id = in.entity_id;
-    return out;
-}
-
-// Fragment shader for flat-shading each instance.
-@fragment
-fn fs_instance_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    let color = randomColorFromID(in.entity_id);
-    return vec4<f32>(color, 1.0);
+    let specular = pow(max(dot(tangent_normal, half_dir), 0.0), 32.0);
+    return (diffuse + specular) * light_color * intensity;
 }
 
 // Helper: Generate a pseudo-random value from the entity ID using an offset.
@@ -186,4 +143,56 @@ fn randomColorFromID(id: u32) -> vec3<f32> {
     let g = randomValue(id, 2.0);
     let b = randomValue(id, 3.0);
     return vec3<f32>(r, g, b);
+}
+
+// Fragment shader for flat-shading each instance.
+@fragment
+fn fs_instance_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    let color = randomColorFromID(in.entity_id);
+    return vec4<f32>(color, 1.0);
+}
+
+@fragment
+fn fs_flat_main(in: VertexOutput) -> FragmentOutput {
+    let object_color = vec4<f32>(0.3, 0.2, 0.1, 1.0);
+    let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
+
+    let tangent_normal = object_normal.xyz * 2.0 - 1.0;
+    let view_dir = normalize(in.tangent_view_position - in.tangent_position);
+
+    let ambient_color = frame.ambient_light;
+
+    let dyn_light_dir = normalize(in.tangent_light_position - in.tangent_position);
+    let dyn_color = blinn_phong(tangent_normal, dyn_light_dir, light.color, view_dir, 1.0);
+
+    let sun_color = blinn_phong(tangent_normal, normalize(in.tangent_sun_direction), frame.sun_color, view_dir, frame.sun_visibility);
+
+    let result = (ambient_color + dyn_color + sun_color) * object_color.xyz;
+    var out: FragmentOutput;
+    out.color = vec4<f32>(result, object_color.a);
+    out.entity_id = in.entity_id;
+    return out;
+}
+
+@fragment
+fn fs_textured_main(in: VertexOutput) -> FragmentOutput {
+    let object_color: vec4<f32> = textureSample(t_diffuse, s_diffuse, in.tex_coords);
+    let object_normal: vec4<f32> = textureSample(t_normal, s_normal, in.tex_coords);
+
+    let tangent_normal = object_normal.xyz * 2.0 - 1.0;
+    let view_dir = normalize(in.tangent_view_position - in.tangent_position);
+
+    let ambient_color = frame.ambient_light;
+
+    let dyn_light_dir = normalize(in.tangent_light_position - in.tangent_position);
+    let dyn_color = blinn_phong(tangent_normal, dyn_light_dir, light.color, view_dir, 1.0);
+
+    let sun_color = blinn_phong(tangent_normal, normalize(in.tangent_sun_direction), frame.sun_color, view_dir, frame.sun_visibility);
+
+    let result = (ambient_color + dyn_color + sun_color) * object_color.xyz;
+
+    var out: FragmentOutput;
+    out.color = vec4<f32>(result, object_color.a);
+    out.entity_id = in.entity_id;
+    return out;
 }

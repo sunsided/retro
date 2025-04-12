@@ -217,9 +217,10 @@ impl RenderPipelines {
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("render_layout"),
             bind_group_layouts: &[
-                &bind_group_layouts.diffuse_and_normal, // `@group(0)` in the shader
-                &bind_group_layouts.camera_uniforms,    // `@group(1)` in the shader
-                &bind_group_layouts.lighting_uniforms,  // `@group(2)` in the shader
+                &bind_group_layouts.frame_global_uniform, // `@group(0)` in the shader
+                &bind_group_layouts.camera_uniforms,      // `@group(1)` in the shader
+                &bind_group_layouts.lighting_uniforms,    // `@group(2)` in the shader
+                &bind_group_layouts.diffuse_and_normal,   // `@group(3)` in the shader
             ],
             push_constant_ranges: &[],
         })

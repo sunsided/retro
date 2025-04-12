@@ -308,6 +308,10 @@ pub trait EntityData {
 pub struct EnvironmentArchetype {
     pub entities: Vec<EntityId>,
     pub time_of_daies: Vec<TimeOfDayComponent>,
+    pub suns: Vec<SunComponent>,
+    pub skydomes: Vec<SkydomeComponent>,
+    pub ambient_lights: Vec<AmbientLightComponent>,
+    pub stars: Vec<StarsComponent>,
 }
 
 /// An entity of the [`EnvironmentArchetype`].
@@ -318,6 +322,10 @@ pub type EnvironmentEntity = EntityWithIdAndData<EnvironmentEntityData>;
 #[allow(dead_code)]
 pub struct EnvironmentEntityData {
     pub time_of_day: TimeOfDayComponent,
+    pub sun: SunComponent,
+    pub skydome: SkydomeComponent,
+    pub ambient_light: AmbientLightComponent,
+    pub stars: StarsComponent,
 }
 
 impl EntityData for EnvironmentEntityData {
@@ -330,6 +338,10 @@ impl EntityData for EnvironmentEntityData {
 pub struct EnvironmentEntityRef<'archetype> {
     pub entity_id: EntityId,
     pub time_of_day: &'archetype TimeOfDayComponent,
+    pub sun: &'archetype SunComponent,
+    pub skydome: &'archetype SkydomeComponent,
+    pub ambient_light: &'archetype AmbientLightComponent,
+    pub stars: &'archetype StarsComponent,
 }
 
 /// A mutable reference to an entity of the [`EnvironmentArchetype`].
@@ -338,6 +350,10 @@ pub struct EnvironmentEntityRef<'archetype> {
 pub struct EnvironmentEntityMut<'archetype> {
     pub entity_id: EntityId,
     pub time_of_day: &'archetype mut TimeOfDayComponent,
+    pub sun: &'archetype mut SunComponent,
+    pub skydome: &'archetype mut SkydomeComponent,
+    pub ambient_light: &'archetype mut AmbientLightComponent,
+    pub stars: &'archetype mut StarsComponent,
 }
 
 /// An iterator for entities in the [`EnvironmentArchetype`].
@@ -395,6 +411,10 @@ impl EnvironmentArchetype {
         EnvironmentEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             time_of_day: self.time_of_daies.get_unchecked(index),
+            sun: self.suns.get_unchecked(index),
+            skydome: self.skydomes.get_unchecked(index),
+            ambient_light: self.ambient_lights.get_unchecked(index),
+            stars: self.stars.get_unchecked(index),
         }
     }
 
@@ -404,6 +424,10 @@ impl EnvironmentArchetype {
         EnvironmentEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             time_of_day: self.time_of_daies.get_unchecked_mut(index),
+            sun: self.suns.get_unchecked_mut(index),
+            skydome: self.skydomes.get_unchecked_mut(index),
+            ambient_light: self.ambient_lights.get_unchecked_mut(index),
+            stars: self.stars.get_unchecked_mut(index),
         }
     }
 }
@@ -431,6 +455,110 @@ impl HasComponent<TimeOfDayComponent> for EnvironmentEntityData {
     #[inline]
     fn get_mut(&mut self) -> &mut TimeOfDayComponent {
         &mut self.time_of_day
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<SunComponent> for EnvironmentEntity {
+    #[inline]
+    fn get(&self) -> &SunComponent {
+        &self.data.sun
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut SunComponent {
+        &mut self.data.sun
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<SunComponent> for EnvironmentEntityData {
+    #[inline]
+    fn get(&self) -> &SunComponent {
+        &self.sun
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut SunComponent {
+        &mut self.sun
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<SkydomeComponent> for EnvironmentEntity {
+    #[inline]
+    fn get(&self) -> &SkydomeComponent {
+        &self.data.skydome
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut SkydomeComponent {
+        &mut self.data.skydome
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<SkydomeComponent> for EnvironmentEntityData {
+    #[inline]
+    fn get(&self) -> &SkydomeComponent {
+        &self.skydome
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut SkydomeComponent {
+        &mut self.skydome
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<AmbientLightComponent> for EnvironmentEntity {
+    #[inline]
+    fn get(&self) -> &AmbientLightComponent {
+        &self.data.ambient_light
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut AmbientLightComponent {
+        &mut self.data.ambient_light
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<AmbientLightComponent> for EnvironmentEntityData {
+    #[inline]
+    fn get(&self) -> &AmbientLightComponent {
+        &self.ambient_light
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut AmbientLightComponent {
+        &mut self.ambient_light
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<StarsComponent> for EnvironmentEntity {
+    #[inline]
+    fn get(&self) -> &StarsComponent {
+        &self.data.stars
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut StarsComponent {
+        &mut self.data.stars
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<StarsComponent> for EnvironmentEntityData {
+    #[inline]
+    fn get(&self) -> &StarsComponent {
+        &self.stars
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut StarsComponent {
+        &mut self.stars
     }
 }
 impl EnvironmentEntityData {
@@ -462,8 +590,12 @@ impl core::ops::DerefMut for EnvironmentEntity {
 #[allow(dead_code)]
 impl EnvironmentArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENTS: [ComponentId; 1] = [
+    pub const COMPONENTS: [ComponentId; 5] = [
         ComponentId::COMPONENT_1,
+        ComponentId::COMPONENT_2,
+        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_4,
+        ComponentId::COMPONENT_5,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -481,13 +613,13 @@ impl EnvironmentArchetype {
     /// Returns the number of components used by this archetype.
     #[inline(always)]
     pub const fn num_components(&self) -> usize {
-        1
+        5
     }
 
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || false
+        id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -495,12 +627,20 @@ impl EnvironmentArchetype {
     pub fn spawn_with<R>(
         &mut self,
         time_of_day: TimeOfDayComponent,
+        sun: SunComponent,
+        skydome: SkydomeComponent,
+        ambient_light: AmbientLightComponent,
+        stars: StarsComponent,
         mut world_registry: R
     ) -> EntityId
     where
         R: WorldEntityRegistry
     {
         self.time_of_daies.push(time_of_day);
+        self.suns.push(sun);
+        self.skydomes.push(skydome);
+        self.ambient_lights.push(ambient_light);
+        self.stars.push(stars);
 
         let entity_id = EntityId::new();
 
@@ -525,6 +665,10 @@ impl EnvironmentArchetype {
         }
         self.entities.swap_remove(index);
         self.time_of_daies.swap_remove(index);
+        self.suns.swap_remove(index);
+        self.skydomes.swap_remove(index);
+        self.ambient_lights.swap_remove(index);
+        self.stars.swap_remove(index);
         if self.entities.is_empty() {
             Ok(None)
         }
@@ -545,6 +689,58 @@ impl HasComponents<TimeOfDayComponent> for EnvironmentArchetype {
     /// Returns a mutable slice of all [`TimeOfDayComponent`] component values.
     fn get_mut(&mut self) -> &mut [TimeOfDayComponent] {
         self.time_of_daies.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<SunComponent> for EnvironmentArchetype {
+    /// Returns a slice of all [`SunComponent`] component values.
+    fn get(&self) -> &[SunComponent] {
+        self.suns.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`SunComponent`] component values.
+    fn get_mut(&mut self) -> &mut [SunComponent] {
+        self.suns.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<SkydomeComponent> for EnvironmentArchetype {
+    /// Returns a slice of all [`SkydomeComponent`] component values.
+    fn get(&self) -> &[SkydomeComponent] {
+        self.skydomes.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`SkydomeComponent`] component values.
+    fn get_mut(&mut self) -> &mut [SkydomeComponent] {
+        self.skydomes.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<AmbientLightComponent> for EnvironmentArchetype {
+    /// Returns a slice of all [`AmbientLightComponent`] component values.
+    fn get(&self) -> &[AmbientLightComponent] {
+        self.ambient_lights.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`AmbientLightComponent`] component values.
+    fn get_mut(&mut self) -> &mut [AmbientLightComponent] {
+        self.ambient_lights.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<StarsComponent> for EnvironmentArchetype {
+    /// Returns a slice of all [`StarsComponent`] component values.
+    fn get(&self) -> &[StarsComponent] {
+        self.stars.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`StarsComponent`] component values.
+    fn get_mut(&mut self) -> &mut [StarsComponent] {
+        self.stars.as_mut_slice()
     }
 }
 
@@ -761,8 +957,8 @@ impl core::ops::DerefMut for CameraEntity {
 impl CameraArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_2,
-        ComponentId::COMPONENT_3,
+        ComponentId::COMPONENT_6,
+        ComponentId::COMPONENT_7,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -786,7 +982,7 @@ impl CameraArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 2 || id == 3 || false
+        id == 6 || id == 7 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1108,9 +1304,9 @@ impl core::ops::DerefMut for DynamicLightEntity {
 impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
-        ComponentId::COMPONENT_4,
-        ComponentId::COMPONENT_10,
-        ComponentId::COMPONENT_12,
+        ComponentId::COMPONENT_8,
+        ComponentId::COMPONENT_14,
+        ComponentId::COMPONENT_16,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1134,7 +1330,7 @@ impl DynamicLightArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 4 || id == 10 || id == 12 || false
+        id == 8 || id == 14 || id == 16 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1504,10 +1700,10 @@ impl core::ops::DerefMut for CubeEntity {
 impl CubeArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 4] = [
-        ComponentId::COMPONENT_4,
-        ComponentId::COMPONENT_5,
-        ComponentId::COMPONENT_6,
+        ComponentId::COMPONENT_8,
         ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_10,
+        ComponentId::COMPONENT_13,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1531,7 +1727,7 @@ impl CubeArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 4 || id == 5 || id == 6 || id == 9 || false
+        id == 8 || id == 9 || id == 10 || id == 13 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1885,9 +2081,9 @@ impl core::ops::DerefMut for PlayerEntity {
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
-        ComponentId::COMPONENT_4,
-        ComponentId::COMPONENT_6,
-        ComponentId::COMPONENT_7,
+        ComponentId::COMPONENT_8,
+        ComponentId::COMPONENT_10,
+        ComponentId::COMPONENT_11,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1911,7 +2107,7 @@ impl PlayerArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 4 || id == 6 || id == 7 || false
+        id == 8 || id == 10 || id == 11 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2217,8 +2413,8 @@ impl core::ops::DerefMut for ForegroundObjectEntity {
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_4,
         ComponentId::COMPONENT_8,
+        ComponentId::COMPONENT_12,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2242,7 +2438,7 @@ impl ForegroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 4 || id == 8 || false
+        id == 8 || id == 12 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2500,7 +2696,7 @@ impl core::ops::DerefMut for BackgroundObjectEntity {
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_4,
+        ComponentId::COMPONENT_8,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2524,7 +2720,7 @@ impl BackgroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 4 || false
+        id == 8 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2766,7 +2962,7 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_11,
+        ComponentId::COMPONENT_15,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2790,7 +2986,7 @@ impl SceneBackgroundArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 11 || false
+        id == 15 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3258,6 +3454,10 @@ impl FrontloadEntities for EnvironmentArchetype {
     fn swap_entities(&mut self, first: usize, second: usize) {
         self.entities.swap(first, second);
         self.time_of_daies.swap(first, second);
+        self.suns.swap(first, second);
+        self.skydomes.swap(first, second);
+        self.ambient_lights.swap(first, second);
+        self.stars.swap(first, second);
     }
 }
 

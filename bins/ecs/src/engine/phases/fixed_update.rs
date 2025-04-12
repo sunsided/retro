@@ -9,6 +9,8 @@ use std::convert::Infallible;
 use tracing::trace;
 
 pub mod physics;
+pub mod stars;
+pub mod sun;
 pub mod time_of_day;
 
 impl CreateSystem<PhysicsSystem> for SystemFactory {

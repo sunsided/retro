@@ -1,6 +1,7 @@
 use crate::camera::Projection;
 use crate::engine::components::{
-    CameraData, ColorData, DynamicLightData, PositionData, TimeOfDayData, VelocityData,
+    AmbientLightData, CameraData, ColorData, DynamicLightData, PositionData, SkydomeData,
+    StarsData, SunData, TimeOfDayData, VelocityData,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::{
@@ -27,6 +28,10 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
 
         self.spawn_environment(EnvironmentEntityData {
             time_of_day: TimeOfDayData::default().into(),
+            ambient_light: AmbientLightData::default().into(),
+            sun: SunData::default().into(),
+            stars: StarsData::default().into(),
+            skydome: SkydomeData::default().into(),
         });
 
         self.spawn_camera(CameraEntityData {

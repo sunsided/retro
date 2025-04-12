@@ -88,6 +88,7 @@ impl ApplyRenderSystem for RenderSystem {
                 render_pass.draw_model_instanced(
                     &device.models().cube,
                     0..num_instances,
+                    &device.bind_groups().frame_global_uniform,
                     &device.bind_groups().camera_uniform,
                     &device.bind_groups().light_uniforms,
                 );
@@ -104,6 +105,7 @@ impl ApplyRenderSystem for RenderSystem {
             render_pass.draw_model_instanced(
                 &device.models().cube,
                 0..num_instances,
+                &device.bind_groups().frame_global_uniform,
                 &device.bind_groups().camera_uniform,
                 &device.bind_groups().light_uniforms,
             );
