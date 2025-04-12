@@ -42,7 +42,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 floor_index: tile.floor_layer() as u32,
                 wall_index: tile.wall_layer() as u32,
                 top_index: tile.top_layer() as u32,
-                _padding: Default::default(),
+                entity_id: 0,
             });
         }
 

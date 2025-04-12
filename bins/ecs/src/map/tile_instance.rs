@@ -1,4 +1,3 @@
-use crate::wgpu::instance::InstanceRaw;
 use wgpu::{vertex_attr_array, VertexAttribute};
 
 #[repr(C)]
@@ -15,7 +14,7 @@ pub struct TileInstance {
     pub floor_index: u32,
     pub wall_index: u32,
     pub top_index: u32,
-    pub _padding: u32,
+    pub entity_id: u32,
 }
 
 impl TileVertex {
@@ -37,7 +36,7 @@ impl TileVertex {
 impl TileInstance {
     #[allow(unused_qualifications)]
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
-        const LAYOUT: [VertexAttribute; 7] = vertex_attr_array![
+        const LAYOUT: [VertexAttribute; 8] = vertex_attr_array![
             2 => Float32x4,
             3 => Float32x4,
             4 => Float32x4,
@@ -45,6 +44,7 @@ impl TileInstance {
             6 => Uint32,
             7 => Uint32,
             8 => Uint32,
+            9 => Uint32,
         ];
 
         wgpu::VertexBufferLayout {
