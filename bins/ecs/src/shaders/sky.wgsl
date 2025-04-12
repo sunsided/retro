@@ -30,7 +30,7 @@ fn vs_main(@builtin(vertex_index) index: u32) -> VertexOutput {
         vec2(0.0, 2.0)
     );
     var out: VertexOutput;
-    out.position = vec4<f32>(positions[index], 0.0, 1.0);
+    out.position = vec4<f32>(positions[index], 1.0, 1.0);
     out.uv = uvs[index];
     return out;
 }
