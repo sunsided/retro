@@ -80,9 +80,24 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     } else {
         effective_threshold = low_level;
     }
-
     let horizon = smoothstep(effective_threshold, 1.0, vertical);
-    let color = blended_sky * horizon;
+
+    // Compute sun direction based on time of day (e.g. rotates across horizon)
+    // Time = 0 → sun at -X horizon, Time = 12 → overhead, Time = 24 → full loop
+    let sun_azimuth = (sky.time / 24.0) * 6.2831853;
+    let sun_elevation = radians(45.0);
+    let sun_dir = normalize(vec3(
+        cos(sun_elevation) * cos(sun_azimuth),
+        sin(sun_elevation),
+        cos(sun_elevation) * sin(sun_azimuth)
+    ));
+
+    let sun_alignment = dot(ray_dir_world, sun_dir);
+    let sun_glow = smoothstep(0.95, 1.0, sun_alignment);
+    let sun_color = vec3(1.0, 0.9, 0.7);
+
+    let color = blended_sky * horizon + sun_color * sun_glow;
+
 
     return vec4(color, 1.0);
 }
