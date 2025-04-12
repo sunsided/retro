@@ -50,6 +50,12 @@ fn vs_main(@builtin(vertex_index) index: u32) -> VertexOutput {
     return out;
 }
 
+fn hash33(p: vec3<f32>) -> f32 {
+    let p2 = fract(p * 0.1031);
+    let p3 = p2 + dot(p2, vec3(p2.y, p2.z, p2.x) + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Generate camera ray in world space
@@ -115,10 +121,23 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let horizon_distance = 1.0 - vertical;  // 0 at zenith, 1 at horizon
     let reddish_glow = vec3(1.0, 0.25, 0.1) * horizon_distance * sunset_strength * 0.5;
 
-    // Final sky with sun
+    // Sky color with sun
     let sky_color = mix(blended_sky, horizon_tint, horizon);
-    let color = sky_color * horizon + (sun_color_tinted + reddish_glow) * sun_glow;
 
+    // Procedural starfield
+    let noise = hash33(floor(ray_dir_world * 150.0)); // scatter stars across sphere
+    let star = step(0.995, noise);             // only brightest ones show
+    let star_brightness = star * pow(noise, 64.0);  // twinkle sharpness
 
-    return vec4(color, 1.0);
+    // Fade stars based on time and viewing direction.
+    let min_star_elevation = 0.6; // only appear above this
+    let elevation_fade = smoothstep(min_star_elevation, 1.0, vertical); // fade in above 60% up
+
+    let night_fade = smoothstep(0.5, 1.0, 1.0 - cycle);
+    let star_visibility = night_fade * elevation_fade;
+
+    let stars = vec3(1.0) * star_brightness * star_visibility;
+
+    let final_color = (sky_color + reddish_glow) * horizon + sun_color_tinted * sun_glow + stars;
+    return vec4(final_color, 1.0);
 }
