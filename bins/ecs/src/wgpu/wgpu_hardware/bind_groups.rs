@@ -92,9 +92,9 @@ impl BindGroups {
             device,
             &layouts.diffuse_and_normal,
             &textures.bricks_diffuse.view,
-            &samplers.linear,
+            &samplers.tile,
             &textures.bricks_normal.view,
-            &samplers.linear,
+            &samplers.normals,
             Some("cover_bind_group"),
         )
     }
@@ -110,9 +110,9 @@ impl BindGroups {
             device,
             &layouts.diffuse_and_normal,
             &textures.stonepath_diffuse.view,
-            &samplers.linear,
+            &samplers.tile,
             &textures.stonepath_normal.view,
-            &samplers.linear,
+            &samplers.normals,
             Some("stonepath"),
         )
     }
@@ -208,7 +208,7 @@ impl BindGroups {
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: wgpu::BindingResource::Sampler(&samplers.retro_sampler),
+                    resource: wgpu::BindingResource::Sampler(&samplers.retro),
                 },
                 wgpu::BindGroupEntry {
                     binding: 3,
