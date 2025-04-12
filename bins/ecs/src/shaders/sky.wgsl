@@ -84,7 +84,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Sun direction (moving on tilted arc over world sphere)
     // Time = 0 → sun at -X horizon, Time = 12 → overhead, Time = 24 → full loop
-    let sun_angle = ((sky.time - 12.0) * 6.2831853 / 24.0);
+    let sun_angle = ((sky.time + 18.0) * 6.2831853 / 24.0);
     let tilt = radians(145.0);  // orbital inclination
 
     // Construct sun_dir in world space: rotates around Z axis, tilted toward Y
@@ -104,9 +104,20 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
 
     // Final sun glow intensity modulated by whether sun is above horizon
     let sun_glow = glow * sun_visibility;
-    let sun_color = vec3(1.2, 1.05, 0.85);  // warm and bright
 
-    let color = blended_sky * horizon + sun_color * sun_glow;
+    // Sunset factor: 1 at horizon, 0 at zenith
+    let sunset_factor = 1.0 - clamp(sun_dir.y, 0.0, 1.0);
+    let sunset_strength = sunset_factor * cycle;
+
+    let sun_color_tinted = mix(vec3(1.2, 1.05, 0.85), vec3(1.3, 0.5, 0.2), sunset_strength);
+    let horizon_tint = mix(blended_sky, vec3(1.0, 0.4, 0.2), sunset_strength * 0.5);
+
+    let horizon_distance = 1.0 - vertical;  // 0 at zenith, 1 at horizon
+    let reddish_glow = vec3(1.0, 0.25, 0.1) * horizon_distance * sunset_strength * 0.5;
+
+    // Final sky with sun
+    let sky_color = mix(blended_sky, horizon_tint, horizon);
+    let color = sky_color * horizon + (sun_color_tinted + reddish_glow) * sun_glow;
 
 
     return vec4(color, 1.0);
