@@ -36,9 +36,11 @@ impl ApplyTileRenderSystem for TileRenderSystem {
         let frame_entity_ids = frame_state.per_frame_entity_ids();
         let floor_id = frame_entity_ids.next();
         let wall_id = frame_entity_ids.next();
+        let ceil_id = frame_entity_ids.next();
 
         let mut floors = Vec::with_capacity(tiles.len());
         let mut walls = Vec::with_capacity(tiles.len());
+        let mut ceilings = Vec::with_capacity(tiles.len());
 
         for (tile, pos) in tiles.iter().zip(positions) {
             let transform = compute_tile_transform(pos);
@@ -49,6 +51,24 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 decoration_index: 0,
                 entity_id: floor_id,
             });
+
+            if tile.has_ceiling() {
+                let ceiling_transform =
+                    Matrix4::from_translation(Vector3::new(pos.x, pos.y + 1.0, pos.z))
+                        * Matrix4::from_angle_x(Rad(std::f32::consts::PI)); // flip upside down
+                let index = if tile.has_ceiling_variant() {
+                    tile.ceiling_layer() as u32
+                } else {
+                    tile.floor_layer() as u32
+                };
+
+                ceilings.push(TileInstance {
+                    transform: ceiling_transform.into(),
+                    tile_index: index,
+                    decoration_index: 0,
+                    entity_id: ceil_id,
+                });
+            }
 
             spawn_wall_instances_from_tile(&tile, pos.x, pos.z, wall_id, &mut walls);
         }
@@ -62,14 +82,6 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Tile Instance Buffer"),
                 contents: bytemuck::cast_slice(&floors),
-                usage: wgpu::BufferUsages::VERTEX,
-            });
-
-        let wall_buffer = device
-            .device()
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Tile Instance Buffer"),
-                contents: bytemuck::cast_slice(&walls),
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
@@ -88,10 +100,38 @@ impl ApplyTileRenderSystem for TileRenderSystem {
         pass.draw_indexed(0..6, 0, 0..floors.len() as u32);
 
         // Render walls
-        pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
-        pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
-        pass.set_vertex_buffer(1, wall_buffer.slice(..));
-        pass.draw_indexed(0..6, 0, 0..walls.len() as u32);
+        if !walls.is_empty() {
+            let wall_buffer =
+                device
+                    .device()
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("Tile Instance Buffer"),
+                        contents: bytemuck::cast_slice(&walls),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    });
+
+            pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
+            pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+            pass.set_vertex_buffer(1, wall_buffer.slice(..));
+            pass.draw_indexed(0..6, 0, 0..walls.len() as u32);
+        }
+
+        // Ceilings
+        if !ceilings.is_empty() {
+            let ceiling_buffer =
+                device
+                    .device()
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("Tile Ceiling Instance Buffer"),
+                        contents: bytemuck::cast_slice(&ceilings),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    });
+
+            pass.set_bind_group(3, &device.bind_groups().stonepath, &[]);
+            pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+            pass.set_vertex_buffer(1, ceiling_buffer.slice(..));
+            pass.draw_indexed(0..6, 0, 0..ceilings.len() as u32);
+        }
     }
 }
 

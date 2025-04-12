@@ -1,15 +1,13 @@
-use crate::camera::Projection;
 use crate::engine::components::{
     AmbientLightData, CameraData, ColorData, DynamicLightData, FloorType, PositionData,
-    SkydomeData, StarsData, SunData, TileData, TileFlags, TimeOfDayData, TopType, VelocityData,
-    WallType,
+    SkydomeData, StarsData, SunData, TileData, TileFlags, TimeOfDayData, WallType,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::TileEntityData;
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
-    CubeEntityData, DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData,
-    MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData,
+    DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
+    PositionComponent, SceneBackgroundEntityData,
 };
 use crate::map::tile_map::SparseTileMap;
 use crate::tile;
@@ -110,8 +108,8 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                         flags |= TileFlags::WALL_E;
                     }
 
-                    // tile!(floor: FloorType::Grass, wall: WallType::Brick)
-                    tile!(floor: FloorType::Empty, wall: WallType::None, top: TopType::None, flags: flags)
+                    flags |= TileFlags::CEILING;
+                    tile!(floor: FloorType::Empty, wall: WallType::None, ceiling: FloorType::Stone, flags: flags)
                 } else {
                     // tile!(floor: FloorType::Grass, wall: WallType::None)
                     tile!(floor: FloorType::Empty, wall: WallType::None)
@@ -135,13 +133,13 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             2,
             2,
             1,
-            tile!(floor: FloorType::Stone, wall: WallType::Brick, top: TopType::Tower),
+            tile!(floor: FloorType::Stone, wall: WallType::Brick),
         );
         tilemap.set(
             2,
             2,
             2,
-            tile!(floor: FloorType::Stone, wall: WallType::Brick, top: TopType::Tower),
+            tile!(floor: FloorType::Stone, wall: WallType::Brick),
         );
     }
 }

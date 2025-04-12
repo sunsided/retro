@@ -11,12 +11,12 @@ impl TileData {
         ((self.0 >> 8) & 0xFF) as u8
     }
 
-    pub fn top_layer(&self) -> u8 {
+    pub fn ceiling_layer(&self) -> u8 {
         ((self.0 >> 16) & 0xFF) as u8
     }
 
     pub fn flags(&self) -> TileFlags {
-        TileFlags::from_bits_truncate((self.0 >> 24) as u8)
+        TileFlags::from_bits_truncate((self.0 >> 24) as u16)
     }
 
     pub fn middle_layer(&self) -> u32 {
@@ -37,6 +37,18 @@ impl TileData {
 
     pub fn has_wall_west(&self) -> bool {
         self.flags().contains(TileFlags::WALL_W)
+    }
+
+    pub fn has_ceiling(&self) -> bool {
+        self.flags().contains(TileFlags::CEILING) || self.ceiling_layer() != self.floor_layer()
+    }
+
+    pub fn has_ceiling_variant(&self) -> bool {
+        self.flags().contains(TileFlags::CEILING_VARIANT)
+    }
+
+    pub fn is_special(&self) -> bool {
+        self.flags().contains(TileFlags::SPECIAL)
     }
 
     pub fn each_wall<F: FnMut(WallDirection)>(&self, mut f: F) {
@@ -104,18 +116,9 @@ pub enum WallType {
     Secret = 4,
 }
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug)]
-pub enum TopType {
-    None = 0,
-    Tower = 1,
-    Tree = 2,
-    Crystal = 3,
-}
-
 bitflags::bitflags! {
     #[derive(Debug, Clone, Copy)]
-    pub struct TileFlags: u8 {
+    pub struct TileFlags: u16 {
         const NONE      = 0b0000_0000;
         const DOOR      = 0b0000_0001;
         const TRIGGER   = 0b0000_0010;
@@ -126,6 +129,10 @@ bitflags::bitflags! {
         const WALL_E    = 0b0010_0000;
         const WALL_S    = 0b0100_0000;
         const WALL_W    = 0b1000_0000;
+
+        const CEILING           = 0b0000_0001_0000_0000;
+        const CEILING_VARIANT   = 0b0000_0010_0000_0000;
+        const SPECIAL           = 0b0000_0100_0000_0000;
     }
 }
 
@@ -134,12 +141,12 @@ macro_rules! tile {
     (
         floor: $floor:expr,
         wall: $wall:expr,
-        top: $top:expr,
+        ceiling: $ceiling:expr,
         flags: $flags:expr $(,)?
     ) => {
         TileData(
             (($flags.bits() as u32) << 24) |
-            (($top as u32) << 16) |
+            (($ceiling as u32) << 16) |
             (($wall as u32) << 8) |
             ($floor as u32)
         )
@@ -148,16 +155,16 @@ macro_rules! tile {
     (
         floor: $floor:expr,
         wall: $wall:expr,
-        top: $top:expr $(,)?
+        flags: $flags:expr $(,)?
     ) => {
-        tile!(floor: $floor, wall: $wall, top: $top, flags: TileFlags::NONE)
+        tile!(floor: $floor, wall: $wall, ceiling: $floor, flags: $flags)
     };
 
     (
         floor: $floor:expr,
         wall: $wall:expr $(,)?
     ) => {
-        tile!(floor: $floor, wall: $wall, top: TopType::None, flags: TileFlags::NONE)
+        tile!(floor: $floor, wall: $wall, ceiling: $floor, flags: TileFlags::NONE)
     };
 }
 
@@ -165,10 +172,10 @@ impl std::fmt::Display for TileData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Tile(floor: {}, wall: {}, top: {}, flags: {:?})",
+            "Tile(floor: {}, wall: {}, ceiling: {}, flags: {:?})",
             self.floor_layer(),
             self.wall_layer(),
-            self.top_layer(),
+            self.ceiling_layer(),
             self.flags(),
         )
     }
