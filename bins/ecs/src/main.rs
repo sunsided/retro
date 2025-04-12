@@ -1,10 +1,10 @@
 use crate::cli::parse_arguments;
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
-use crate::engine::InitializeMainWorld;
 use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
 use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
+use crate::logic::InitializeMainWorld;
 use crate::wgpu::wgpu_hardware::WgpuHardware;
 use ::wgpu::Backends;
 use std::sync::Arc;

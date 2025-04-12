@@ -1,22 +1,18 @@
 use crate::camera::Projection;
 use crate::engine::components::{
     AmbientLightData, CameraData, ColorData, DynamicLightData, FloorType, PositionData,
-    SkydomeData, StarsData, SunData, TimeOfDayData, TopType, VelocityData, WallType,
+    SkydomeData, StarsData, SunData, TileData, TileFlags, TimeOfDayData, TopType, VelocityData,
+    WallType,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
-use crate::engine::TileFlags;
+use crate::engine::TileEntityData;
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
     CubeEntityData, DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData,
-    MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData, TimeOfDayComponent,
-    TransformComponent, VelocityComponent,
+    MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData,
 };
-use crate::engine::{TileData, TileEntityData};
 use crate::map::tile_map::SparseTileMap;
 use crate::tile;
-use cgmath::{InnerSpace, Rotation3, Zero};
-use parking_lot::Mutex;
-use std::sync::Arc;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
@@ -39,22 +35,22 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         });
 
         self.spawn_camera(CameraEntityData {
-            camera: CameraComponent(CameraData {
+            camera: CameraComponent::new(CameraData {
                 active: true,
                 ..Default::default()
             }),
-            camera_fps_controller: CameraFpsControllerComponent(Default::default()),
+            camera_fps_controller: CameraFpsControllerComponent::new(Default::default()),
         });
 
         self.spawn_dynamic_light(DynamicLightEntityData {
-            dynamic_light: DynamicLightComponent(DynamicLightData::default()),
-            color: ColorComponent(ColorData {
+            dynamic_light: DynamicLightComponent::new(DynamicLightData::default()),
+            color: ColorComponent::new(ColorData {
                 r: 1.0,
                 g: 0.84,
                 b: 0.7,
                 a: 1.0,
             }),
-            position: PositionComponent(PositionData {
+            position: PositionComponent::new(PositionData {
                 x: 2.0,
                 y: 2.0,
                 z: 2.0,
@@ -99,8 +95,23 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             for x in 0..5 {
                 let is_edge = x == 0 || y == 0 || x == 4 || y == 4;
                 let tile = if is_edge {
+                    let mut flags = TileFlags::NONE;
+
+                    if y == 0 {
+                        flags |= TileFlags::WALL_N;
+                    }
+                    if y == 4 {
+                        flags |= TileFlags::WALL_S;
+                    }
+                    if x == 0 {
+                        flags |= TileFlags::WALL_W;
+                    }
+                    if x == 4 {
+                        flags |= TileFlags::WALL_E;
+                    }
+
                     // tile!(floor: FloorType::Grass, wall: WallType::Brick)
-                    tile!(floor: FloorType::Empty, wall: WallType::None)
+                    tile!(floor: FloorType::Empty, wall: WallType::None, top: TopType::None, flags: flags)
                 } else {
                     // tile!(floor: FloorType::Grass, wall: WallType::None)
                     tile!(floor: FloorType::Empty, wall: WallType::None)
@@ -110,9 +121,9 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 self.spawn_tile(TileEntityData {
                     tile: tile.into(),
                     position: PositionData {
-                        x: x as f32,
+                        x: x as f32 - 2.0,
                         y: 0.0,
-                        z: -(y as f32),
+                        z: -(y as f32) + 2.0,
                     }
                     .into(),
                 });

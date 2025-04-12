@@ -22,6 +22,66 @@ impl TileData {
     pub fn middle_layer(&self) -> u32 {
         self.wall_layer() as u32
     }
+
+    pub fn has_wall_north(&self) -> bool {
+        self.flags().contains(TileFlags::WALL_N)
+    }
+
+    pub fn has_wall_south(&self) -> bool {
+        self.flags().contains(TileFlags::WALL_S)
+    }
+
+    pub fn has_wall_east(&self) -> bool {
+        self.flags().contains(TileFlags::WALL_E)
+    }
+
+    pub fn has_wall_west(&self) -> bool {
+        self.flags().contains(TileFlags::WALL_W)
+    }
+
+    pub fn each_wall<F: FnMut(WallDirection)>(&self, mut f: F) {
+        if self.has_wall_north() {
+            f(WallDirection::North);
+        }
+        if self.has_wall_south() {
+            f(WallDirection::South);
+        }
+        if self.has_wall_east() {
+            f(WallDirection::East);
+        }
+        if self.has_wall_west() {
+            f(WallDirection::West);
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum WallDirection {
+    North,
+    East,
+    South,
+    West,
+}
+
+impl WallDirection {
+    pub fn rotation_y_radians(&self) -> f32 {
+        use std::f32::consts::FRAC_PI_2;
+        match self {
+            WallDirection::North => std::f32::consts::PI,
+            WallDirection::East => FRAC_PI_2,
+            WallDirection::South => 0.0,
+            WallDirection::West => FRAC_PI_2 * 3.0,
+        }
+    }
+
+    pub fn offset(&self) -> (i32, i32) {
+        match self {
+            WallDirection::North => (0, -1),
+            WallDirection::East => (1, 0),
+            WallDirection::South => (0, 1),
+            WallDirection::West => (-1, 0),
+        }
+    }
 }
 
 #[repr(u8)]
@@ -61,6 +121,11 @@ bitflags::bitflags! {
         const TRIGGER   = 0b0000_0010;
         const HIDDEN    = 0b0000_0100;
         const RESERVED  = 0b0000_1000;
+
+        const WALL_N    = 0b0001_0000;
+        const WALL_E    = 0b0010_0000;
+        const WALL_S    = 0b0100_0000;
+        const WALL_W    = 0b1000_0000;
     }
 }
 
