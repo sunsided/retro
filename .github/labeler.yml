@@ -8,24 +8,12 @@ dependencies:
 documentation:
   - README.md
 
-fonts:
-  - crates/retro/src/text.rs
-  - crates/retro/src/text/**
-
-lut:
-  - crates/retro/src/lut.rs
-
 logic:
-  - crates/retro/src/logic.rs
-  - crates/retro/src/logic/**
-
-input:
-  - crates/retro/src/input.rs
-  - crates/retro/src/input/**
+  - src/bins/ecs/logic/**
 
 render:
-  - crates/retro/src/render.rs
-  - crates/retro/src/render/**
+  - src/bins/ecs/wgpu/**
+  - src/bins/ecs/engine/phases/render/**
 
 shaders:
   - "**/*.wgsl"
