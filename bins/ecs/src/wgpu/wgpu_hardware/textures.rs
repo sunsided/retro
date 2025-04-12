@@ -16,6 +16,8 @@ pub struct Textures {
     pub cover: Texture,
     pub bricks_diffuse: Texture,
     pub bricks_normal: Texture,
+    pub stonepath_diffuse: Texture,
+    pub stonepath_normal: Texture,
 }
 
 impl Textures {
@@ -32,6 +34,8 @@ impl Textures {
         let cover = Self::create_cover(&device, queue);
         let bricks_diffuse = Self::create_bricks_diffuse(&device, queue);
         let bricks_normal = Self::create_bricks_normal(&device, queue);
+        let stonepath_diffuse = Self::create_stonepath_diffuse(&device, queue);
+        let stonepath_normal = Self::create_stonepath_normal(&device, queue);
         Self {
             vga_offscreen,
             surface_frame_entity_id,
@@ -40,6 +44,8 @@ impl Textures {
             cover,
             bricks_diffuse,
             bricks_normal,
+            stonepath_diffuse,
+            stonepath_normal,
         }
     }
 
@@ -160,6 +166,30 @@ impl Textures {
             queue,
             TextureType::Normal,
             Some("cube-normal.png"),
+        )
+        .expect("Failed to load cover texture")
+    }
+
+    #[instrument(skip(device, queue))]
+    fn create_stonepath_diffuse(device: &Device, queue: &Queue) -> Texture {
+        Texture::from_file_with(
+            "textures/stonepath/Stone_Path_006_basecolor.jpg",
+            device,
+            queue,
+            TextureType::Diffuse,
+            Some("Stone_Path_006_basecolor.jpg"),
+        )
+        .expect("Failed to load cover texture")
+    }
+
+    #[instrument(skip(device, queue))]
+    fn create_stonepath_normal(device: &Device, queue: &Queue) -> Texture {
+        Texture::from_file_with(
+            "textures/stonepath/Stone_Path_006_normal.jpg",
+            device,
+            queue,
+            TextureType::Normal,
+            Some("Stone_Path_006_normal.jpg"),
         )
         .expect("Failed to load cover texture")
     }

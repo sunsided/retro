@@ -33,49 +33,61 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             return;
         };
 
-        let mut instances = Vec::with_capacity(tiles.len());
+        let mut floors = Vec::with_capacity(tiles.len());
+        let mut walls = Vec::with_capacity(tiles.len());
 
         for (tile, pos) in tiles.iter().zip(positions) {
             let transform = compute_tile_transform(pos);
 
-            instances.push(TileInstance {
+            floors.push(TileInstance {
                 transform,
                 tile_index: tile.floor_layer() as u32,
                 decoration_index: 0,
                 entity_id: 0,
             });
 
-            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, 0, &mut instances);
+            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, 0, &mut walls);
         }
 
-        if instances.is_empty() {
+        if floors.is_empty() {
             return;
         }
 
-        let instance_buffer =
-            device
-                .device()
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Tile Instance Buffer"),
-                    contents: bytemuck::cast_slice(&instances),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
+        let floor_buffer = device
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Tile Instance Buffer"),
+                contents: bytemuck::cast_slice(&floors),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
+
+        let wall_buffer = device
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Tile Instance Buffer"),
+                contents: bytemuck::cast_slice(&walls),
+                usage: wgpu::BufferUsages::VERTEX,
+            });
 
         let mut pass = frame_state.render_pass_with(&device.pipelines().tile);
         pass.set_bind_group(0, &device.bind_groups().frame_global_uniform, &[]);
         pass.set_bind_group(1, &device.bind_groups().camera_uniform, &[]);
         pass.set_bind_group(2, &device.bind_groups().light_uniforms, &[]);
         // The texture atlas
-        pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
-
-        pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
-        pass.set_vertex_buffer(1, instance_buffer.slice(..));
-
+        pass.set_bind_group(3, &device.bind_groups().stonepath, &[]);
         pass.set_index_buffer(
             device.buffers().tile_index.slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        pass.draw_indexed(0..6, 0, 0..instances.len() as u32);
+        pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+        pass.set_vertex_buffer(1, floor_buffer.slice(..));
+        pass.draw_indexed(0..6, 0, 0..floors.len() as u32);
+
+        // Render walls
+        pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
+        pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+        pass.set_vertex_buffer(1, wall_buffer.slice(..));
+        pass.draw_indexed(0..6, 0, 0..walls.len() as u32);
     }
 }
 
