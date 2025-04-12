@@ -2,6 +2,7 @@ use crate::engine::{
     ApplyTimeOfDaySystem, CreateSystem, FrameContext, PhysicsSystem, SystemFactory,
     TimeOfDayComponent, TimeOfDaySystem,
 };
+use crate::logic::Weekday;
 use std::convert::Infallible;
 use std::fmt::Debug;
 use tracing::debug;
@@ -36,10 +37,16 @@ impl ApplyTimeOfDaySystem for TimeOfDaySystem {
         time_of_day.time_of_day += time_increase;
         time_of_day.time_of_day %= 24.0;
 
-        if (time_of_day.day + day_increase).floor() > time_of_day.day.floor() {
-            debug!("Day: {}", time_of_day.day);
+        let next_day = time_of_day.day + day_increase;
+        if next_day.floor() > time_of_day.day.floor() {
+            debug!(
+                "It is now {:?} - {} day{} since the journey began",
+                Weekday::from(next_day),
+                next_day as u32,
+                if next_day as u32 > 1 { "s" } else { "" }
+            );
         }
 
-        time_of_day.day += day_increase;
+        time_of_day.day = next_day;
     }
 }

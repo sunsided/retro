@@ -27,6 +27,7 @@ mod cli;
 mod engine;
 mod fps_counter;
 mod logging;
+mod logic;
 mod resources;
 mod seconds;
 mod wgpu;
