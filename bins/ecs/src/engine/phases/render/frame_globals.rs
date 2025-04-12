@@ -52,7 +52,6 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         uniform.sun_direction = sun.direction.into();
         uniform.sun_color = sun.color.into();
         uniform.sun_visibility = sun.intensity;
-        uniform.star_visibility = stars.intensity;
 
         device
             .buffers()
