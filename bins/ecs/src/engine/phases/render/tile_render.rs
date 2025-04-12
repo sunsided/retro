@@ -33,6 +33,10 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             return;
         };
 
+        let frame_entity_ids = frame_state.per_frame_entity_ids();
+        let floor_id = frame_entity_ids.next();
+        let wall_id = frame_entity_ids.next();
+
         let mut floors = Vec::with_capacity(tiles.len());
         let mut walls = Vec::with_capacity(tiles.len());
 
@@ -43,10 +47,10 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 transform,
                 tile_index: tile.floor_layer() as u32,
                 decoration_index: 0,
-                entity_id: 0,
+                entity_id: floor_id,
             });
 
-            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, 0, &mut walls);
+            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, wall_id, &mut walls);
         }
 
         if floors.is_empty() {
