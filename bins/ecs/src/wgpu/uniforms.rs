@@ -1,6 +1,7 @@
 mod camera_uniform;
 mod frame_global_uniform;
 mod light_uniform;
+mod mat3x3_std140;
 mod retro_uniform;
 
 pub use camera_uniform::CameraUniform;

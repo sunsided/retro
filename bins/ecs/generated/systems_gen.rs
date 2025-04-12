@@ -14,17 +14,6 @@ pub enum SystemId {
     /// 
     /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
     Camera = 1,
-    /// The [`CameraRender`](CameraRenderSystem) system.
-    ///
-    /// ### Reads
-    /// 
-    /// - [`CameraComponent`]
-    ///
-    /// # Archetype Use
-    /// This component processes components in the following archetypes:
-    /// 
-    /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
-    CameraRender = 2,
     /// The [`TimeOfDay`](TimeOfDaySystem) system.
     ///
     /// ### Mutates
@@ -35,7 +24,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    TimeOfDay = 3,
+    TimeOfDay = 2,
     /// The [`Physics`](PhysicsSystem) system.
     ///
     /// ### Reads
@@ -51,7 +40,7 @@ pub enum SystemId {
     /// 
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
     /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
-    Physics = 4,
+    Physics = 3,
     /// The [`BackgroundColorCycle`](BackgroundColorCycleSystem) system.
     ///
     /// ### Mutates
@@ -62,7 +51,18 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    BackgroundColorCycle = 5,
+    BackgroundColorCycle = 4,
+    /// The [`CameraRender`](CameraRenderSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`CameraComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+    CameraRender = 5,
     /// The [`RenderBackground`](RenderBackgroundSystem) system.
     ///
     /// ### Reads
@@ -131,14 +131,14 @@ pub enum SystemId {
 impl SystemId {
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Camera`](SystemId::Camera) system.
     pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
-    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::CameraRender`](SystemId::CameraRender) system.
-    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::TimeOfDay`](SystemId::TimeOfDay) system.
-    pub const TIME_OF_DAY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    pub const TIME_OF_DAY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Physics`](SystemId::Physics) system.
-    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::BackgroundColorCycle`](SystemId::BackgroundColorCycle) system.
-    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::CameraRender`](SystemId::CameraRender) system.
+    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderBackground`](SystemId::RenderBackground) system.
     pub const RENDER_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderSky`](SystemId::RenderSky) system.
@@ -156,10 +156,10 @@ impl SystemId {
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         match self {
             Self::Camera => Self::CAMERA_ID_VALUE,
-            Self::CameraRender => Self::CAMERA_RENDER_ID_VALUE,
             Self::TimeOfDay => Self::TIME_OF_DAY_ID_VALUE,
             Self::Physics => Self::PHYSICS_ID_VALUE,
             Self::BackgroundColorCycle => Self::BACKGROUND_COLOR_CYCLE_ID_VALUE,
+            Self::CameraRender => Self::CAMERA_RENDER_ID_VALUE,
             Self::RenderBackground => Self::RENDER_BACKGROUND_ID_VALUE,
             Self::RenderSky => Self::RENDER_SKY_ID_VALUE,
             Self::Render => Self::RENDER_ID_VALUE,
@@ -196,10 +196,10 @@ impl core::fmt::Display for SystemId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
             Self::Camera => write!(f, "Camera (ID 1)"),
-            Self::CameraRender => write!(f, "CameraRender (ID 2)"),
-            Self::TimeOfDay => write!(f, "TimeOfDay (ID 3)"),
-            Self::Physics => write!(f, "Physics (ID 4)"),
-            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 5)"),
+            Self::TimeOfDay => write!(f, "TimeOfDay (ID 2)"),
+            Self::Physics => write!(f, "Physics (ID 3)"),
+            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 4)"),
+            Self::CameraRender => write!(f, "CameraRender (ID 5)"),
             Self::RenderBackground => write!(f, "RenderBackground (ID 6)"),
             Self::RenderSky => write!(f, "RenderSky (ID 7)"),
             Self::Render => write!(f, "Render (ID 8)"),
@@ -285,17 +285,17 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
+pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
 { }
 
 #[automatically_derived]
 impl<T> CreateSystems for T
 where
     T: CreateSystem<CameraSystem>
-     + CreateSystem<CameraRenderSystem>
      + CreateSystem<TimeOfDaySystem>
      + CreateSystem<PhysicsSystem>
      + CreateSystem<BackgroundColorCycleSystem>
+     + CreateSystem<CameraRenderSystem>
      + CreateSystem<RenderBackgroundSystem>
      + CreateSystem<RenderSkySystem>
      + CreateSystem<RenderSystem>
@@ -718,207 +718,6 @@ impl core::ops::Deref for CameraSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for CameraSystem {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-/// A system operating on multiple [`Component`]s.
-///
-/// The business logic is implemented via the [`ApplyCameraRenderSystem`] trait.
-/// See also [`CameraRenderData`] for the systems-specific data.
-///
-/// ### Reads
-/// 
-/// - [`CameraComponent`]
-///
-/// # Archetype Use
-/// This component processes components in the following archetypes:
-/// 
-/// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
-#[derive(Debug)]
-pub struct CameraRenderSystem(CameraRenderSystemData);
-
-/// Implements the business logic for the [`CameraRenderSystem`] system.
-#[allow(dead_code)]
-pub trait ApplyCameraRenderSystem: System {
-    type Error: core::error::Error;
-
-    /// Indicates whether this system is ready for action.
-    ///
-    /// Always called once per phase before all other functions of this system. If it returns
-    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
-    #[inline]
-    #[allow(unused_variables)]
-    fn is_ready(
-        &self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-    ) -> bool {
-        true
-    }
-
-    /// Executed at the beginning of the phase (for this system).
-    ///
-    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
-    /// function was executed.
-    #[inline]
-    #[allow(unused_variables)]
-    fn on_begin_phase(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    /// Executed at the end of the phase (for this system).
-    ///
-    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
-    /// function is executed.
-    #[inline]
-    #[allow(unused_variables)]
-    fn on_end_phase(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-    ) -> Result<(), Self::Error> {
-        Ok(())
-    }
-
-    /// Applies the system's business logic to the given entity components.
-    ///
-    /// ### Performance Considerations
-    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
-    ///
-    /// ### Reads
-    /// 
-    /// - `camera`: A reference to the input component of type [`CameraComponent`].
-    ///
-    /// ### Mutates
-    /// 
-    #[allow(unused_variables)]
-    fn apply_single(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-        camera: &CameraComponent,
-    ) {
-         // intentionally left blank
-     }
-
-    /// Applies the system's business logic to the given entity components.
-    ///
-    /// ### Reads
-    /// 
-    /// - `camera`: A slice of the input components of type [`CameraComponent`].
-    ///
-    /// ### Mutates
-    /// 
-    fn apply_many(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-        cameras: &[CameraComponent],
-    ) {
-        let zipped_iter = cameras;
-        for camera in zipped_iter {
-            self.apply_single(
-                wgpu_render,
-                active_camera,
-                camera,
-            );
-        }
-    }
-}
-
-#[allow(dead_code)]
-impl CameraRenderSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-        camera: &CameraComponent,
-    ) {
-        ApplyCameraRenderSystem::apply_single(
-            self,
-            wgpu_render,
-            active_camera,
-            camera,
-        );
-    }
-
-    /// Applies the system's business logic to the given entity components.
-    ///
-    /// ### Reads
-    /// 
-    /// - `camera`: A slice of the input components of type [`CameraComponent`].
-    ///
-    /// ### Mutates
-    /// 
-    #[inline]
-    fn apply_many(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-        cameras: &[CameraComponent],
-    ) {
-        ApplyCameraRenderSystem::apply_many(
-            self,
-            wgpu_render,
-            active_camera,
-            cameras,
-        );
-    }
-
-    /// Applies this system to the [`CameraArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_camera(
-        &mut self,
-        archetype: &mut CameraArchetype,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            active_camera,
-            &archetype.cameras,
-        );
-    }
-}
-
-#[automatically_derived]
-impl System for CameraRenderSystem {
-    const ID: SystemId = SystemId::CameraRender;
-}
-
-impl PartialEq<SystemId> for CameraRenderSystem {
-    fn eq(&self, other: &SystemId) -> bool {
-        Self::ID.eq(other)
-    }
-}
-
-#[automatically_derived]
-impl From<CameraRenderSystemData> for CameraRenderSystem {
-    fn from(data: CameraRenderSystemData) -> Self {
-        Self(data)
-    }
-}
-
-#[automatically_derived]
-impl core::ops::Deref for CameraRenderSystem {
-    type Target = CameraRenderSystemData;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[automatically_derived]
-impl core::ops::DerefMut for CameraRenderSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
@@ -1517,6 +1316,207 @@ impl core::ops::Deref for BackgroundColorCycleSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for BackgroundColorCycleSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplyCameraRenderSystem`] trait.
+/// See also [`CameraRenderData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`CameraComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
+#[derive(Debug)]
+pub struct CameraRenderSystem(CameraRenderSystemData);
+
+/// Implements the business logic for the [`CameraRenderSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyCameraRenderSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `camera`: A reference to the input component of type [`CameraComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        camera: &CameraComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `camera`: A slice of the input components of type [`CameraComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    fn apply_many(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        cameras: &[CameraComponent],
+    ) {
+        let zipped_iter = cameras;
+        for camera in zipped_iter {
+            self.apply_single(
+                wgpu_render,
+                active_camera,
+                camera,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl CameraRenderSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        camera: &CameraComponent,
+    ) {
+        ApplyCameraRenderSystem::apply_single(
+            self,
+            wgpu_render,
+            active_camera,
+            camera,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `camera`: A slice of the input components of type [`CameraComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline]
+    fn apply_many(
+        &mut self,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        cameras: &[CameraComponent],
+    ) {
+        ApplyCameraRenderSystem::apply_many(
+            self,
+            wgpu_render,
+            active_camera,
+            cameras,
+        );
+    }
+
+    /// Applies this system to the [`CameraArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_camera(
+        &mut self,
+        archetype: &mut CameraArchetype,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+    ) {
+        self.apply_many(
+            wgpu_render,
+            active_camera,
+            &archetype.cameras,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for CameraRenderSystem {
+    const ID: SystemId = SystemId::CameraRender;
+}
+
+impl PartialEq<SystemId> for CameraRenderSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<CameraRenderSystemData> for CameraRenderSystem {
+    fn from(data: CameraRenderSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for CameraRenderSystem {
+    type Target = CameraRenderSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for CameraRenderSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

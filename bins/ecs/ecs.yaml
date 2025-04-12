@@ -103,15 +103,6 @@ systems:
       - Camera
       - CameraFpsController
 
-  - name: CameraRender
-    phase: Render
-    states:
-      - use: WgpuRender
-      - use: ActiveCamera
-        write: true
-    inputs:
-      - Camera
-
   - name: TimeOfDay
     phase: FixedUpdate
     context: true
@@ -133,6 +124,15 @@ systems:
     context: true
     outputs:
       - BackgroundColor
+
+  - name: CameraRender
+    phase: Render
+    states:
+      - use: WgpuRender
+      - use: ActiveCamera
+        write: true
+    inputs:
+      - Camera
 
   - name: RenderBackground
     phase: Render

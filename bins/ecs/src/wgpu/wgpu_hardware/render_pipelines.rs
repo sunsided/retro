@@ -80,12 +80,15 @@ impl RenderPipelines {
     fn create_sky_pipeline(
         device: &Device,
         config_format: TextureFormat,
-        sky_bind_group_layouts: &BindGroupLayouts,
+        bind_group_layouts: &BindGroupLayouts,
         shaders: &Shaders,
     ) -> RenderPipeline {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("sky_pipeline"),
-            bind_group_layouts: &[&sky_bind_group_layouts.frame_global_uniform],
+            bind_group_layouts: &[
+                &bind_group_layouts.frame_global_uniform,
+                &bind_group_layouts.camera_uniforms,
+            ],
             push_constant_ranges: &[],
         });
 
@@ -378,7 +381,7 @@ impl RenderPipelines {
             depth_stencil: depth_format.map(|format| wgpu::DepthStencilState {
                 format,
                 depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual,
+                depth_compare: wgpu::CompareFunction::Less,
                 stencil: wgpu::StencilState::default(),
                 bias: wgpu::DepthBiasState::default(),
             }),

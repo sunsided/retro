@@ -43,6 +43,7 @@ impl ApplyRenderSkySystem for RenderSkySystem {
 
         let mut render_pass = frame_state.render_pass_with(&device.pipelines().sky);
         render_pass.set_bind_group(0, &device.bind_groups().frame_global_uniform, &[]);
+        render_pass.set_bind_group(1, &device.bind_groups().camera_uniform, &[]);
 
         // Draw a full-screen triangle.
         render_pass.draw(0..3, 0..1);
