@@ -98,10 +98,10 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                     let mut flags = TileFlags::NONE;
 
                     if y == 0 {
-                        flags |= TileFlags::WALL_N;
+                        flags |= TileFlags::WALL_S;
                     }
                     if y == 4 {
-                        flags |= TileFlags::WALL_S;
+                        flags |= TileFlags::WALL_N;
                     }
                     if x == 0 {
                         flags |= TileFlags::WALL_W;

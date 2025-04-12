@@ -1,10 +1,11 @@
+use crate::engine::components::TileData;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
     ApplyTileRenderSystem, CreateSystem, PositionComponent, SystemFactory, TileComponent,
     TileRenderSystem,
 };
 use crate::map::tile_instance::TileInstance;
-use cgmath::{Matrix4, Vector3};
+use cgmath::{Matrix4, Rad, Vector3};
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::util::DeviceExt;
@@ -43,6 +44,8 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 decoration_index: 0,
                 entity_id: 0,
             });
+
+            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, 0, &mut instances);
         }
 
         if instances.is_empty() {
@@ -79,4 +82,32 @@ impl ApplyTileRenderSystem for TileRenderSystem {
 fn compute_tile_transform(pos: &PositionComponent) -> [[f32; 4]; 4] {
     let translation = Matrix4::from_translation(Vector3::new(pos.x, pos.y, pos.z));
     translation.into()
+}
+
+pub fn spawn_wall_instances_from_tile(
+    tile: &TileData,
+    tile_x: f32,
+    tile_z: f32,
+    entity_id: u32,
+    out: &mut Vec<TileInstance>,
+) {
+    tile.each_wall(|dir| {
+        let rot_y = dir.rotation_y_radians();
+        let (dx, dy) = dir.offset();
+
+        let base_pos = Vector3::new(tile_x + 0.5 * dx as f32, 0.5, tile_z + 0.5 * dy as f32);
+
+        let upright = Matrix4::from_angle_x(Rad(-std::f32::consts::FRAC_PI_2)); // rotate X axis to stand up
+        let rotate = Matrix4::from_angle_y(Rad(rot_y)); // rotate around Y based on wall direction
+        let translate = Matrix4::from_translation(base_pos);
+
+        let transform = translate * rotate * upright;
+
+        out.push(TileInstance {
+            transform: transform.into(),
+            tile_index: tile.wall_layer() as u32,
+            decoration_index: 0,
+            entity_id,
+        });
+    });
 }
