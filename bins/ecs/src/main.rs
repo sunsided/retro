@@ -28,6 +28,7 @@ mod engine;
 mod fps_counter;
 mod logging;
 mod logic;
+mod map;
 mod resources;
 mod seconds;
 mod wgpu;

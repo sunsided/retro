@@ -1,3 +1,4 @@
+use crate::map::tile_instance::TileVertex;
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::uniforms::{CameraUniform, FrameGlobalUniform, LightUniform, RetroUniform};
 use std::ops::RangeBounds;
@@ -12,6 +13,8 @@ pub struct Buffers {
     pub light_uniforms: LightUniformBuffer,
     pub instances: InstanceBuffer,
     pub retro_uniform: RetroUniformBuffer,
+    pub tile_vertex: TileVertexBuffer,
+    pub tile_index: TileIndexBuffer,
 }
 
 impl Buffers {
@@ -22,12 +25,16 @@ impl Buffers {
         let light_uniforms = LightUniformBuffer::create(device);
         let instances = InstanceBuffer::create(device);
         let retro_uniform = RetroUniformBuffer::create(device);
+        let tile_vertex = TileVertexBuffer::create(device);
+        let tile_index = TileIndexBuffer::create(device);
         Self {
             frame_global_uniform,
             camera_uniform,
             light_uniforms,
             instances,
             retro_uniform,
+            tile_vertex,
+            tile_index,
         }
     }
 }
@@ -260,5 +267,84 @@ impl RetroUniformBuffer {
 impl AsRef<Buffer> for RetroUniformBuffer {
     fn as_ref(&self) -> &Buffer {
         &self.buffer
+    }
+}
+
+/// The vertex buffer for map tiles.
+#[derive(Debug)]
+pub struct TileVertexBuffer {
+    buffer: Buffer,
+}
+
+impl TileVertexBuffer {
+    #[instrument(skip(device))]
+    fn create(device: &wgpu::Device) -> Self {
+        const TILE_VERTICES: &[TileVertex] = &[
+            TileVertex {
+                position: [-0.5, 0.0, -0.5],
+                uv: [0.0, 1.0],
+            },
+            TileVertex {
+                position: [0.5, 0.0, -0.5],
+                uv: [1.0, 1.0],
+            },
+            TileVertex {
+                position: [-0.5, 0.0, 0.5],
+                uv: [0.0, 0.0],
+            },
+            TileVertex {
+                position: [0.5, 0.0, 0.5],
+                uv: [1.0, 0.0],
+            },
+        ];
+
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Tile Vertex Buffer"),
+            contents: bytemuck::cast_slice(TILE_VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+        Self { buffer }
+    }
+
+    #[inline]
+    pub fn as_entire_binding(&self) -> BindingResource<'_> {
+        self.buffer.as_entire_binding()
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
+        self.buffer.slice(bounds)
+    }
+}
+
+/// The index buffer for map tile vertices.
+#[derive(Debug)]
+pub struct TileIndexBuffer {
+    buffer: Buffer,
+}
+
+impl TileIndexBuffer {
+    #[instrument(skip(device))]
+    fn create(device: &wgpu::Device) -> Self {
+        const TILE_INDICES: &[u16] = &[0, 2, 1, 2, 3, 1];
+
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Tile Index Buffer"),
+            contents: bytemuck::cast_slice(TILE_INDICES),
+            usage: wgpu::BufferUsages::INDEX,
+        });
+        Self { buffer }
+    }
+
+    #[inline]
+    pub fn as_entire_binding(&self) -> BindingResource<'_> {
+        self.buffer.as_entire_binding()
+    }
+
+    #[inline]
+    #[allow(dead_code)]
+    pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
+        self.buffer.slice(bounds)
     }
 }

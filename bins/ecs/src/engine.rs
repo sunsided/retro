@@ -32,6 +32,7 @@ use crate::engine::phases::render::{
     frame_globals::FrameGlobalsSystemData,
     render::RenderSystemData,
     render_sky::RenderSkySystemData,
+    tile_render::TileRenderSystemData,
     vga_blit::VgaBlitSystemData,
     WgpuRenderState,
 };

@@ -14,6 +14,7 @@ pub struct BindGroups {
     #[allow(dead_code)]
     pub cover_tex: BindGroup,
     pub vga_fullscreen: BindGroup,
+    pub bricks: BindGroup,
 }
 
 impl BindGroups {
@@ -32,12 +33,14 @@ impl BindGroups {
         let cover_tex = Self::create_cover(device, layouts, textures, samplers);
         let vga_fullscreen =
             Self::create_vga_fullscreen(device, layouts, textures, samplers, buffers, depths);
+        let bricks = Self::create_bricks(device, layouts, textures, samplers);
         Self {
             frame_global_uniform,
             camera_uniform,
             light_uniforms,
             cover_tex,
             vga_fullscreen,
+            bricks,
         }
     }
 
@@ -70,6 +73,24 @@ impl BindGroups {
             &textures.cover.view,
             &samplers.linear,
             &textures.fallback_normals.view,
+            &samplers.linear,
+            Some("cover_bind_group"),
+        )
+    }
+
+    #[instrument(skip_all)]
+    fn create_bricks(
+        device: &wgpu::Device,
+        layouts: &BindGroupLayouts,
+        textures: &Textures,
+        samplers: &TextureSamplers,
+    ) -> BindGroup {
+        Self::create_diffuse_and_normal(
+            device,
+            &layouts.diffuse_and_normal,
+            &textures.bricks_diffuse.view,
+            &samplers.linear,
+            &textures.bricks_normal.view,
             &samplers.linear,
             Some("cover_bind_group"),
         )

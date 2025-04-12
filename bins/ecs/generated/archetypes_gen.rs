@@ -63,20 +63,22 @@ pub enum ArchetypeId {
     Camera = 2,
     /// The [`DynamicLight`](DynamicLightArchetype) archetype.
     DynamicLight = 3,
+    /// The [`Tile`](TileArchetype) archetype.
+    Tile = 4,
     /// A marching cube :)
     ///
     /// For details, see the [`CubeArchetype`](CubeArchetype) Struct.
-    Cube = 4,
+    Cube = 5,
     /// The [`Player`](PlayerArchetype) archetype.
-    Player = 5,
+    Player = 6,
     /// The [`ForegroundObject`](ForegroundObjectArchetype) archetype.
-    ForegroundObject = 6,
+    ForegroundObject = 7,
     /// The [`BackgroundObject`](BackgroundObjectArchetype) archetype.
-    BackgroundObject = 7,
+    BackgroundObject = 8,
     /// The scene background.
     ///
     /// For details, see the [`SceneBackgroundArchetype`](SceneBackgroundArchetype) Struct.
-    SceneBackground = 8,
+    SceneBackground = 9,
 }
 
 impl ArchetypeId {
@@ -86,16 +88,18 @@ impl ArchetypeId {
     pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::DynamicLight`](ArchetypeId::DynamicLight) archetype.
     pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Tile`](ArchetypeId::Tile) archetype.
+    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Cube`](ArchetypeId::Cube) archetype.
-    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Player`](ArchetypeId::Player) archetype.
-    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::ForegroundObject`](ArchetypeId::ForegroundObject) archetype.
-    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::BackgroundObject`](ArchetypeId::BackgroundObject) archetype.
-    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::SceneBackground`](ArchetypeId::SceneBackground) archetype.
-    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -106,6 +110,7 @@ impl ArchetypeId {
             Self::Environment => Self::ENVIRONMENT_ID_VALUE,
             Self::Camera => Self::CAMERA_ID_VALUE,
             Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
+            Self::Tile => Self::TILE_ID_VALUE,
             Self::Cube => Self::CUBE_ID_VALUE,
             Self::Player => Self::PLAYER_ID_VALUE,
             Self::ForegroundObject => Self::FOREGROUND_OBJECT_ID_VALUE,
@@ -144,11 +149,12 @@ impl core::fmt::Display for ArchetypeId {
             Self::Environment => write!(f, "Environment (ID 1)"),
             Self::Camera => write!(f, "Camera (ID 2)"),
             Self::DynamicLight => write!(f, "DynamicLight (ID 3)"),
-            Self::Cube => write!(f, "Cube (ID 4)"),
-            Self::Player => write!(f, "Player (ID 5)"),
-            Self::ForegroundObject => write!(f, "ForegroundObject (ID 6)"),
-            Self::BackgroundObject => write!(f, "BackgroundObject (ID 7)"),
-            Self::SceneBackground => write!(f, "SceneBackground (ID 8)"),
+            Self::Tile => write!(f, "Tile (ID 4)"),
+            Self::Cube => write!(f, "Cube (ID 5)"),
+            Self::Player => write!(f, "Player (ID 6)"),
+            Self::ForegroundObject => write!(f, "ForegroundObject (ID 7)"),
+            Self::BackgroundObject => write!(f, "BackgroundObject (ID 8)"),
+            Self::SceneBackground => write!(f, "SceneBackground (ID 9)"),
         }
     }
 }
@@ -222,6 +228,8 @@ pub enum ArchetypeEntity {
     Camera(CameraEntity),
     /// An entity in the [`DynamicLight`](DynamicLightArchetype) archetype.
     DynamicLight(DynamicLightEntity),
+    /// An entity in the [`Tile`](TileArchetype) archetype.
+    Tile(TileEntity),
     /// A marching cube :)
     Cube(CubeEntity),
     /// An entity in the [`Player`](PlayerArchetype) archetype.
@@ -244,6 +252,8 @@ pub enum ArchetypeEntityData {
     Camera(CameraEntityData),
     /// An entity in the [`DynamicLight`](DynamicLightArchetype) archetype.
     DynamicLight(DynamicLightEntityData),
+    /// An entity in the [`Tile`](TileArchetype) archetype.
+    Tile(TileEntityData),
     /// A marching cube :)
     Cube(CubeEntityData),
     /// An entity in the [`Player`](PlayerArchetype) archetype.
@@ -264,6 +274,7 @@ impl ArchetypeEntity {
             Self::Environment(_) => EnvironmentArchetype::ID,
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
+            Self::Tile(_) => TileArchetype::ID,
             Self::Cube(_) => CubeArchetype::ID,
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
@@ -281,6 +292,7 @@ impl ArchetypeEntityData {
             Self::Environment(_) => EnvironmentArchetype::ID,
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
+            Self::Tile(_) => TileArchetype::ID,
             Self::Cube(_) => CubeArchetype::ID,
             Self::Player(_) => PlayerArchetype::ID,
             Self::ForegroundObject(_) => ForegroundObjectArchetype::ID,
@@ -1305,8 +1317,8 @@ impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
         ComponentId::COMPONENT_8,
-        ComponentId::COMPONENT_14,
-        ComponentId::COMPONENT_16,
+        ComponentId::COMPONENT_15,
+        ComponentId::COMPONENT_17,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1330,7 +1342,7 @@ impl DynamicLightArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 14 || id == 16 || false
+        id == 8 || id == 15 || id == 17 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1439,6 +1451,321 @@ impl Archetype for DynamicLightArchetype {
 }
 
 impl PartialEq<ArchetypeId> for DynamicLightArchetype {
+    fn eq(&self, other: &ArchetypeId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+/// An archetype grouping entities with identical components.
+#[derive(Debug, Default, Clone)]
+pub struct TileArchetype {
+    pub entities: Vec<EntityId>,
+    pub tiles: Vec<TileComponent>,
+    pub positions: Vec<PositionComponent>,
+}
+
+/// An entity of the [`TileArchetype`].
+pub type TileEntity = EntityWithIdAndData<TileEntityData>;
+
+/// An entity of the [`TileArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct TileEntityData {
+    pub tile: TileComponent,
+    pub position: PositionComponent,
+}
+
+impl EntityData for TileEntityData {
+    const ARCHETYPE_ID: ArchetypeId = TileArchetype::ID;
+}
+
+/// A reference to an entity of the [`TileArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct TileEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub tile: &'archetype TileComponent,
+    pub position: &'archetype PositionComponent,
+}
+
+/// A mutable reference to an entity of the [`TileArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct TileEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub tile: &'archetype mut TileComponent,
+    pub position: &'archetype mut PositionComponent,
+}
+
+/// An iterator for entities in the [`TileArchetype`].
+pub struct TileEntityIterator<'archetype> {
+    archetype: &'archetype TileArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> TileEntityIterator<'archetype> {
+    fn new(archetype: &'archetype TileArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for TileEntityIterator<'archetype> {
+    type Item = TileEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl TileArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> TileEntityIterator {
+        TileEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<TileEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> TileEntityRef {
+        TileEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            tile: self.tiles.get_unchecked(index),
+            position: self.positions.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut {
+        TileEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            tile: self.tiles.get_unchecked_mut(index),
+            position: self.positions.get_unchecked_mut(index),
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<TileComponent> for TileEntity {
+    #[inline]
+    fn get(&self) -> &TileComponent {
+        &self.data.tile
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut TileComponent {
+        &mut self.data.tile
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<TileComponent> for TileEntityData {
+    #[inline]
+    fn get(&self) -> &TileComponent {
+        &self.tile
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut TileComponent {
+        &mut self.tile
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for TileEntity {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.data.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.data.position
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<PositionComponent> for TileEntityData {
+    #[inline]
+    fn get(&self) -> &PositionComponent {
+        &self.position
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut PositionComponent {
+        &mut self.position
+    }
+}
+impl TileEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<TileEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl core::ops::Deref for TileEntity {
+    type Target = TileEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl core::ops::DerefMut for TileEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+#[allow(dead_code)]
+impl TileArchetype {
+    /// The IDs of the components used by this archetype, in ascending order.
+    pub const COMPONENTS: [ComponentId; 2] = [
+        ComponentId::COMPONENT_8,
+        ComponentId::COMPONENT_11,
+    ];
+
+    /// Returns the number of entities in this archetype.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Indicates whether this archetype has no entities.
+    #[inline(always)]
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Returns the number of components used by this archetype.
+    #[inline(always)]
+    pub const fn num_components(&self) -> usize {
+        2
+    }
+
+    /// Dynamically determines whether this archetype has a specific component.
+    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+        let id = id.as_u64();
+        id == 8 || id == 11 || false
+    }
+
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
+        &mut self,
+        tile: TileComponent,
+        position: PositionComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.tiles.push(tile);
+        self.positions.push(position);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.tiles.swap_remove(index);
+        self.positions.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
+    }
+}
+
+
+#[automatically_derived]
+impl HasComponents<TileComponent> for TileArchetype {
+    /// Returns a slice of all [`TileComponent`] component values.
+    fn get(&self) -> &[TileComponent] {
+        self.tiles.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`TileComponent`] component values.
+    fn get_mut(&mut self) -> &mut [TileComponent] {
+        self.tiles.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<PositionComponent> for TileArchetype {
+    /// Returns a slice of all [`PositionComponent`] component values.
+    fn get(&self) -> &[PositionComponent] {
+        self.positions.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`PositionComponent`] component values.
+    fn get_mut(&mut self) -> &mut [PositionComponent] {
+        self.positions.as_mut_slice()
+    }
+}
+
+
+#[automatically_derived]
+#[allow(dead_code)]
+impl Archetype for TileArchetype {
+    const ID: ArchetypeId = ArchetypeId::Tile;
+
+    fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+}
+
+impl PartialEq<ArchetypeId> for TileArchetype {
     fn eq(&self, other: &ArchetypeId) -> bool {
         Self::ID.eq(other)
     }
@@ -1703,7 +2030,7 @@ impl CubeArchetype {
         ComponentId::COMPONENT_8,
         ComponentId::COMPONENT_9,
         ComponentId::COMPONENT_10,
-        ComponentId::COMPONENT_13,
+        ComponentId::COMPONENT_14,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1727,7 +2054,7 @@ impl CubeArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 9 || id == 10 || id == 13 || false
+        id == 8 || id == 9 || id == 10 || id == 14 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2083,7 +2410,7 @@ impl PlayerArchetype {
     pub const COMPONENTS: [ComponentId; 3] = [
         ComponentId::COMPONENT_8,
         ComponentId::COMPONENT_10,
-        ComponentId::COMPONENT_11,
+        ComponentId::COMPONENT_12,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2107,7 +2434,7 @@ impl PlayerArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 10 || id == 11 || false
+        id == 8 || id == 10 || id == 12 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2414,7 +2741,7 @@ impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
         ComponentId::COMPONENT_8,
-        ComponentId::COMPONENT_12,
+        ComponentId::COMPONENT_13,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2438,7 +2765,7 @@ impl ForegroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 12 || false
+        id == 8 || id == 13 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2962,7 +3289,7 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_15,
+        ComponentId::COMPONENT_16,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2986,7 +3313,7 @@ impl SceneBackgroundArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 15 || false
+        id == 16 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3073,6 +3400,8 @@ pub trait GetEntityRef {
     where
         Self: 'archetype;
 
+    fn is_empty(&self) -> bool;
+
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>>;
 
@@ -3097,6 +3426,14 @@ impl core::ops::Index<usize> for CameraArchetype {
 }
 
 impl core::ops::Index<usize> for DynamicLightArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
+impl core::ops::Index<usize> for TileArchetype {
     type Output = EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
@@ -3252,6 +3589,10 @@ pub trait FrontloadEntitiesScan:
     where
         for<'archetype> F: FnMut(&<Self as GetEntityRef>::EntityRef<'archetype>) -> bool,
     {
+        if Archetype::is_empty(self) {
+            return 0;
+        }
+
         let mut left = 0;
         let mut right = self.len().wrapping_sub(1);
         let mut swaps_made = Vec::new();
@@ -3307,6 +3648,10 @@ pub trait FrontloadEntitiesScan:
 impl GetEntityRef for EnvironmentArchetype {
     type EntityRef<'archetype> = EnvironmentEntityRef<'archetype>;
 
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
     /// See [`EnvironmentArchetype::get_at`](EnvironmentArchetype::get_at).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
@@ -3324,6 +3669,10 @@ impl GetEntityRef for EnvironmentArchetype {
 
 impl GetEntityRef for CameraArchetype {
     type EntityRef<'archetype> = CameraEntityRef<'archetype>;
+
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
 
     /// See [`CameraArchetype::get_at`](CameraArchetype::get_at).
     #[inline(always)]
@@ -3343,6 +3692,10 @@ impl GetEntityRef for CameraArchetype {
 impl GetEntityRef for DynamicLightArchetype {
     type EntityRef<'archetype> = DynamicLightEntityRef<'archetype>;
 
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
     /// See [`DynamicLightArchetype::get_at`](DynamicLightArchetype::get_at).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
@@ -3358,8 +3711,34 @@ impl GetEntityRef for DynamicLightArchetype {
     }
 }
 
+impl GetEntityRef for TileArchetype {
+    type EntityRef<'archetype> = TileEntityRef<'archetype>;
+
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
+    /// See [`TileArchetype::get_at`](TileArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`TileArchetype::get_at_unchecked`](TileArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
 impl GetEntityRef for CubeArchetype {
     type EntityRef<'archetype> = CubeEntityRef<'archetype>;
+
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
 
     /// See [`CubeArchetype::get_at`](CubeArchetype::get_at).
     #[inline(always)]
@@ -3379,6 +3758,10 @@ impl GetEntityRef for CubeArchetype {
 impl GetEntityRef for PlayerArchetype {
     type EntityRef<'archetype> = PlayerEntityRef<'archetype>;
 
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
     /// See [`PlayerArchetype::get_at`](PlayerArchetype::get_at).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
@@ -3396,6 +3779,10 @@ impl GetEntityRef for PlayerArchetype {
 
 impl GetEntityRef for ForegroundObjectArchetype {
     type EntityRef<'archetype> = ForegroundObjectEntityRef<'archetype>;
+
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
 
     /// See [`ForegroundObjectArchetype::get_at`](ForegroundObjectArchetype::get_at).
     #[inline(always)]
@@ -3415,6 +3802,10 @@ impl GetEntityRef for ForegroundObjectArchetype {
 impl GetEntityRef for BackgroundObjectArchetype {
     type EntityRef<'archetype> = BackgroundObjectEntityRef<'archetype>;
 
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
     /// See [`BackgroundObjectArchetype::get_at`](BackgroundObjectArchetype::get_at).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
@@ -3432,6 +3823,10 @@ impl GetEntityRef for BackgroundObjectArchetype {
 
 impl GetEntityRef for SceneBackgroundArchetype {
     type EntityRef<'archetype> = SceneBackgroundEntityRef<'archetype>;
+
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
 
     /// See [`SceneBackgroundArchetype::get_at`](SceneBackgroundArchetype::get_at).
     #[inline(always)]
@@ -3487,6 +3882,18 @@ impl FrontloadEntities for DynamicLightArchetype {
 }
 
 impl FrontloadEntitiesScan for DynamicLightArchetype { }
+
+impl FrontloadEntities for TileArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.tiles.swap(first, second);
+        self.positions.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for TileArchetype { }
 
 impl FrontloadEntities for CubeArchetype {
     #[inline(always)]

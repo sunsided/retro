@@ -14,6 +14,8 @@ pub struct Textures {
     pub fallback_normals: Texture,
     /// An example cover texture
     pub cover: Texture,
+    pub bricks_diffuse: Texture,
+    pub bricks_normal: Texture,
 }
 
 impl Textures {
@@ -28,12 +30,16 @@ impl Textures {
         let vga_frame_entity_id = Self::create_vga_frame_entity_id(&device);
         let fallback_normals = Self::create_fallback_normals(&device, queue);
         let cover = Self::create_cover(&device, queue);
+        let bricks_diffuse = Self::create_bricks_diffuse(&device, queue);
+        let bricks_normal = Self::create_bricks_normal(&device, queue);
         Self {
             vga_offscreen,
             surface_frame_entity_id,
             vga_frame_entity_id,
             fallback_normals,
             cover,
+            bricks_diffuse,
+            bricks_normal,
         }
     }
 
@@ -130,6 +136,30 @@ impl Textures {
             queue,
             TextureType::Diffuse,
             Some("cover.webp"),
+        )
+        .expect("Failed to load cover texture")
+    }
+
+    #[instrument(skip(device, queue))]
+    fn create_bricks_diffuse(device: &Device, queue: &Queue) -> Texture {
+        Texture::from_file_with(
+            "models/cube/cube-diffuse.jpg",
+            device,
+            queue,
+            TextureType::Diffuse,
+            Some("cube-diffuse.jpg"),
+        )
+        .expect("Failed to load cover texture")
+    }
+
+    #[instrument(skip(device, queue))]
+    fn create_bricks_normal(device: &Device, queue: &Queue) -> Texture {
+        Texture::from_file_with(
+            "models/cube/cube-normal.png",
+            device,
+            queue,
+            TextureType::Normal,
+            Some("cube-normal.png"),
         )
         .expect("Failed to load cover texture")
     }

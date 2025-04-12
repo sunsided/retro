@@ -30,6 +30,7 @@ cgmath = "0.18.0"
 tobj = "4.0.3"
 clap = { version = "4.5.35", features = ["env"] }
 fxhash = "0.2.1"
+bitflags = "2.9.0"
 
 # Necessary to fix a breaking issue with deranged on Rust 2024
 [dependencies.time]

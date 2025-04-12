@@ -101,6 +101,7 @@ pub enum ComponentId {
     /// This component is used by the following archetypes:
     /// 
     /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+    /// - [`TileArchetype`] ([`ArchetypeId::Tile`])
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
     /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
     /// - [`ForegroundObjectArchetype`] ([`ArchetypeId::ForegroundObject`])
@@ -111,6 +112,7 @@ pub enum ComponentId {
     /// 
     /// - [`PhysicsSystem`] ([`SystemId::Physics`])
     /// - [`RenderSystem`] ([`SystemId::Render`])
+    /// - [`TileRenderSystem`] ([`SystemId::TileRender`])
     Position = 8,
     /// The [`Transform`](TransformComponent) component.
     ///
@@ -137,6 +139,18 @@ pub enum ComponentId {
     /// 
     /// - [`PhysicsSystem`] ([`SystemId::Physics`])
     Velocity = 10,
+    /// The [`Tile`](TileComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`TileArchetype`] ([`ArchetypeId::Tile`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`TileRenderSystem`] ([`SystemId::TileRender`])
+    Tile = 11,
     /// The [`Health`](HealthComponent) component.
     ///
     /// # Archetype Use
@@ -147,7 +161,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
-    Health = 11,
+    Health = 12,
     /// The [`Collider`](ColliderComponent) component.
     ///
     /// # Archetype Use
@@ -158,7 +172,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
-    Collider = 12,
+    Collider = 13,
     /// The [`Model`](ModelComponent) component.
     ///
     /// # Archetype Use
@@ -170,7 +184,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`RenderSystem`] ([`SystemId::Render`])
-    Model = 13,
+    Model = 14,
     /// The [`Color`](ColorComponent) component.
     ///
     /// # Archetype Use
@@ -182,7 +196,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
-    Color = 14,
+    Color = 15,
     /// The background color used for clearing the render buffer
     ///
     /// For details, see the [`BackgroundColorComponent`](BackgroundColorComponent) Struct.
@@ -198,7 +212,7 @@ pub enum ComponentId {
     /// - [`BackgroundColorCycleSystem`] ([`SystemId::BackgroundColorCycle`])
     /// - [`RenderBackgroundSystem`] ([`SystemId::RenderBackground`])
     /// - [`VgaBlitSystem`] ([`SystemId::VgaBlit`])
-    BackgroundColor = 15,
+    BackgroundColor = 16,
     /// A marker component for light entities
     ///
     /// For details, see the [`DynamicLightComponent`](DynamicLightComponent) Struct.
@@ -212,7 +226,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
-    DynamicLight = 16,
+    DynamicLight = 17,
 }
 
 #[allow(dead_code)]
@@ -237,18 +251,20 @@ impl ComponentId {
     pub const TRANSFORM_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Velocity`](ComponentId::Velocity) component.
     pub const VELOCITY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Tile`](ComponentId::Tile) component.
+    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Health`](ComponentId::Health) component.
-    pub const HEALTH_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+    pub const HEALTH_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Collider`](ComponentId::Collider) component.
-    pub const COLLIDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
+    pub const COLLIDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Model`](ComponentId::Model) component.
-    pub const MODEL_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
+    pub const MODEL_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Color`](ComponentId::Color) component.
-    pub const COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
+    pub const COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(15).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::BackgroundColor`](ComponentId::BackgroundColor) component.
-    pub const BACKGROUND_COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(15).expect("Error at ECS construction time");
+    pub const BACKGROUND_COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(16).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::DynamicLight`](ComponentId::DynamicLight) component.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(16).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(17).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -273,18 +289,20 @@ impl ComponentId {
     const COMPONENT_9: ComponentId = ComponentId::Transform;
     /// Compile-time constant lookup of [`ComponentId::Velocity`](ComponentId::Velocity).
     const COMPONENT_10: ComponentId = ComponentId::Velocity;
+    /// Compile-time constant lookup of [`ComponentId::Tile`](ComponentId::Tile).
+    const COMPONENT_11: ComponentId = ComponentId::Tile;
     /// Compile-time constant lookup of [`ComponentId::Health`](ComponentId::Health).
-    const COMPONENT_11: ComponentId = ComponentId::Health;
+    const COMPONENT_12: ComponentId = ComponentId::Health;
     /// Compile-time constant lookup of [`ComponentId::Collider`](ComponentId::Collider).
-    const COMPONENT_12: ComponentId = ComponentId::Collider;
+    const COMPONENT_13: ComponentId = ComponentId::Collider;
     /// Compile-time constant lookup of [`ComponentId::Model`](ComponentId::Model).
-    const COMPONENT_13: ComponentId = ComponentId::Model;
+    const COMPONENT_14: ComponentId = ComponentId::Model;
     /// Compile-time constant lookup of [`ComponentId::Color`](ComponentId::Color).
-    const COMPONENT_14: ComponentId = ComponentId::Color;
+    const COMPONENT_15: ComponentId = ComponentId::Color;
     /// Compile-time constant lookup of [`ComponentId::BackgroundColor`](ComponentId::BackgroundColor).
-    const COMPONENT_15: ComponentId = ComponentId::BackgroundColor;
+    const COMPONENT_16: ComponentId = ComponentId::BackgroundColor;
     /// Compile-time constant lookup of [`ComponentId::DynamicLight`](ComponentId::DynamicLight).
-    const COMPONENT_16: ComponentId = ComponentId::DynamicLight;
+    const COMPONENT_17: ComponentId = ComponentId::DynamicLight;
 }
 
 #[allow(dead_code)]
@@ -302,6 +320,7 @@ impl ComponentId {
             Self::Position => Self::POSITION_ID_VALUE,
             Self::Transform => Self::TRANSFORM_ID_VALUE,
             Self::Velocity => Self::VELOCITY_ID_VALUE,
+            Self::Tile => Self::TILE_ID_VALUE,
             Self::Health => Self::HEALTH_ID_VALUE,
             Self::Collider => Self::COLLIDER_ID_VALUE,
             Self::Model => Self::MODEL_ID_VALUE,
@@ -348,12 +367,13 @@ impl core::fmt::Display for ComponentId {
             Self::Position => write!(f, "Position (ID 8)"),
             Self::Transform => write!(f, "Transform (ID 9)"),
             Self::Velocity => write!(f, "Velocity (ID 10)"),
-            Self::Health => write!(f, "Health (ID 11)"),
-            Self::Collider => write!(f, "Collider (ID 12)"),
-            Self::Model => write!(f, "Model (ID 13)"),
-            Self::Color => write!(f, "Color (ID 14)"),
-            Self::BackgroundColor => write!(f, "BackgroundColor (ID 15)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 16)"),
+            Self::Tile => write!(f, "Tile (ID 11)"),
+            Self::Health => write!(f, "Health (ID 12)"),
+            Self::Collider => write!(f, "Collider (ID 13)"),
+            Self::Model => write!(f, "Model (ID 14)"),
+            Self::Color => write!(f, "Color (ID 15)"),
+            Self::BackgroundColor => write!(f, "BackgroundColor (ID 16)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 17)"),
         }
     }
 }
@@ -1025,6 +1045,7 @@ impl core::borrow::BorrowMut<CameraFpsControllerData> for CameraFpsControllerCom
 /// This component is used by the following archetypes:
 /// 
 /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
+/// - [`TileArchetype`] ([`ArchetypeId::Tile`])
 /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
 /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
 /// - [`ForegroundObjectArchetype`] ([`ArchetypeId::ForegroundObject`])
@@ -1035,6 +1056,7 @@ impl core::borrow::BorrowMut<CameraFpsControllerData> for CameraFpsControllerCom
 /// 
 /// - [`PhysicsSystem`] ([`SystemId::Physics`])
 /// - [`RenderSystem`] ([`SystemId::Render`])
+/// - [`TileRenderSystem`] ([`SystemId::TileRender`])
 #[derive(Debug, Clone)]
 pub struct PositionComponent(PositionData);
 
@@ -1292,6 +1314,97 @@ impl core::borrow::Borrow<VelocityData> for VelocityComponent {
 #[automatically_derived]
 impl core::borrow::BorrowMut<VelocityData> for VelocityComponent {
     fn borrow_mut(&mut self) -> &mut VelocityData {
+        &mut self.0
+    }
+}
+
+/// A `Tile` component.
+///
+/// See also [`TileData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`TileArchetype`] ([`ArchetypeId::Tile`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`TileRenderSystem`] ([`SystemId::TileRender`])
+#[derive(Debug, Clone)]
+pub struct TileComponent(TileData);
+
+#[allow(dead_code)]
+impl TileComponent {
+    /// Creates a new [`TileComponent`] instance from [`TileData`].
+    pub const fn new(data: TileData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`TileData`].
+    pub const fn into_inner(self) -> TileData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for TileComponent {
+    const ID: ComponentId = ComponentId::Tile;
+}
+
+impl PartialEq<ComponentId> for TileComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<TileData> for TileComponent {
+    fn from(data: TileData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for TileComponent {
+    type Target = TileData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for TileComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<TileData> for TileComponent {
+    fn as_ref(&self) -> &TileData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<TileData> for TileComponent {
+    fn as_mut(&mut self) -> &mut TileData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<TileData> for TileComponent {
+    fn borrow(&self) -> &TileData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<TileData> for TileComponent {
+    fn borrow_mut(&mut self) -> &mut TileData {
         &mut self.0
     }
 }

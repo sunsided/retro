@@ -1,3 +1,4 @@
+use crate::map::tile_instance::{TileInstance, TileVertex};
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::model::{ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
@@ -15,6 +16,7 @@ pub struct RenderPipelines {
     pub light: RenderPipeline,
     pub wireframe_render: Option<RenderPipeline>,
     pub vga_fullscreen: RenderPipeline,
+    pub tile: RenderPipeline,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -66,6 +68,7 @@ impl RenderPipelines {
         let vga_fullscreen =
             Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
         let sky = Self::create_sky_pipeline(&device, surface_format, bind_group_layouts, shaders);
+        let tile = Self::create_tile_render(&device, &layout, surface_format, shaders);
         Self {
             sky,
             textured_render,
@@ -74,6 +77,7 @@ impl RenderPipelines {
             wireframe_render,
             light,
             vga_fullscreen,
+            tile,
         }
     }
 
@@ -316,6 +320,27 @@ impl RenderPipelines {
             &[ModelVertex::desc(), InstanceRaw::desc()],
             RenderMode::Filled,
             "flat_entity_render",
+        )
+    }
+
+    #[instrument(skip_all)]
+    fn create_tile_render(
+        device: &Device,
+        layout: &PipelineLayout,
+        surface_format: TextureFormat,
+        shaders: &Shaders,
+    ) -> RenderPipeline {
+        Self::create_render_pipeline(
+            shaders.tile.vertex_shader(),
+            shaders.tile.fragment_shader(),
+            &device,
+            &layout,
+            surface_format,
+            true,
+            Some(Texture::DEPTH_FORMAT),
+            &[TileVertex::desc(), TileInstance::desc()],
+            RenderMode::Filled,
+            "tile_render",
         )
     }
 

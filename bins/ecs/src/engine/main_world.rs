@@ -1,15 +1,19 @@
 use crate::camera::Projection;
 use crate::engine::components::{
-    AmbientLightData, CameraData, ColorData, DynamicLightData, PositionData, SkydomeData,
-    StarsData, SunData, TimeOfDayData, VelocityData,
+    AmbientLightData, CameraData, ColorData, DynamicLightData, FloorType, PositionData,
+    SkydomeData, StarsData, SunData, TimeOfDayData, TopType, VelocityData, WallType,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
+use crate::engine::TileFlags;
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
     CubeEntityData, DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData,
     MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData, TimeOfDayComponent,
     TransformComponent, VelocityComponent,
 };
+use crate::engine::{TileData, TileEntityData};
+use crate::map::tile_map::SparseTileMap;
+use crate::tile;
 use cgmath::{InnerSpace, Rotation3, Zero};
 use parking_lot::Mutex;
 use std::sync::Arc;
@@ -57,6 +61,7 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             }),
         });
 
+        /*
         const NUM_INSTANCES_PER_ROW: u32 = 10;
         const SPACE_BETWEEN: f32 = 3.0;
         // Spawn some cubes.
@@ -85,5 +90,47 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 });
             }
         }
+         */
+
+        let mut tilemap = SparseTileMap::new();
+
+        // Create a floor with walls around the edge
+        for y in 0..5 {
+            for x in 0..5 {
+                let is_edge = x == 0 || y == 0 || x == 4 || y == 4;
+                let tile = if is_edge {
+                    // tile!(floor: FloorType::Grass, wall: WallType::Brick)
+                    tile!(floor: FloorType::Empty, wall: WallType::None)
+                } else {
+                    // tile!(floor: FloorType::Grass, wall: WallType::None)
+                    tile!(floor: FloorType::Empty, wall: WallType::None)
+                };
+                tilemap.set(x, y, 0, tile);
+
+                self.spawn_tile(TileEntityData {
+                    tile: tile.into(),
+                    position: PositionData {
+                        x: x as f32,
+                        y: 0.0,
+                        z: -(y as f32),
+                    }
+                    .into(),
+                });
+            }
+        }
+
+        // Add a tower in the center, stacked vertically
+        tilemap.set(
+            2,
+            2,
+            1,
+            tile!(floor: FloorType::Stone, wall: WallType::Brick, top: TopType::Tower),
+        );
+        tilemap.set(
+            2,
+            2,
+            2,
+            tile!(floor: FloorType::Stone, wall: WallType::Brick, top: TopType::Tower),
+        );
     }
 }

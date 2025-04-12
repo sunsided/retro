@@ -148,6 +148,18 @@ pub enum SystemId {
     /// 
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
     Render = 11,
+    /// The [`TileRender`](TileRenderSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`TileComponent`]
+    /// - [`PositionComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`TileArchetype`] ([`ArchetypeId::Tile`])
+    TileRender = 12,
     /// The [`DynamicLight`](DynamicLightSystem) system.
     ///
     /// ### Reads
@@ -162,7 +174,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
-    DynamicLight = 12,
+    DynamicLight = 13,
     /// If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
     ///
     /// For details, see the [`VgaBlitSystem`](VgaBlitSystem) Struct.
@@ -175,7 +187,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    VgaBlit = 13,
+    VgaBlit = 14,
 }
 
 impl SystemId {
@@ -201,10 +213,12 @@ impl SystemId {
     pub const RENDER_SKY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Render`](SystemId::Render) system.
     pub const RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::TileRender`](SystemId::TileRender) system.
+    pub const TILE_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::DynamicLight`](SystemId::DynamicLight) system.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::VgaBlit`](SystemId::VgaBlit) system.
-    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
+    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
 }
 
 impl SystemId {
@@ -222,6 +236,7 @@ impl SystemId {
             Self::RenderBackground => Self::RENDER_BACKGROUND_ID_VALUE,
             Self::RenderSky => Self::RENDER_SKY_ID_VALUE,
             Self::Render => Self::RENDER_ID_VALUE,
+            Self::TileRender => Self::TILE_RENDER_ID_VALUE,
             Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
             Self::VgaBlit => Self::VGA_BLIT_ID_VALUE,
         }
@@ -265,8 +280,9 @@ impl core::fmt::Display for SystemId {
             Self::RenderBackground => write!(f, "RenderBackground (ID 9)"),
             Self::RenderSky => write!(f, "RenderSky (ID 10)"),
             Self::Render => write!(f, "Render (ID 11)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 12)"),
-            Self::VgaBlit => write!(f, "VgaBlit (ID 13)"),
+            Self::TileRender => write!(f, "TileRender (ID 12)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 13)"),
+            Self::VgaBlit => write!(f, "VgaBlit (ID 14)"),
         }
     }
 }
@@ -347,7 +363,7 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<SunSystem> + CreateSystem<StarsSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<FrameGlobalsSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
+pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<SunSystem> + CreateSystem<StarsSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<FrameGlobalsSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<TileRenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
 { }
 
 #[automatically_derived]
@@ -364,6 +380,7 @@ where
      + CreateSystem<RenderBackgroundSystem>
      + CreateSystem<RenderSkySystem>
      + CreateSystem<RenderSystem>
+     + CreateSystem<TileRenderSystem>
      + CreateSystem<DynamicLightSystem>
      + CreateSystem<VgaBlitSystem>
 {
@@ -2821,6 +2838,207 @@ impl core::ops::Deref for RenderSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for RenderSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplyTileRenderSystem`] trait.
+/// See also [`TileRenderData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`TileComponent`]
+/// - [`PositionComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`TileArchetype`] ([`ArchetypeId::Tile`])
+#[derive(Debug)]
+pub struct TileRenderSystem(TileRenderSystemData);
+
+/// Implements the business logic for the [`TileRenderSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyTileRenderSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `tile`: A reference to the input component of type [`TileComponent`].
+    /// - `position`: A reference to the input component of type [`PositionComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        tile: &TileComponent,
+        position: &PositionComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `tile`: A slice of the input components of type [`TileComponent`].
+    /// - `position`: A slice of the input components of type [`PositionComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        tiles: &[TileComponent],
+        positions: &[PositionComponent],
+    ) {
+        let zipped_iter = tiles.iter().zip(positions.iter());
+        for (tile, position) in zipped_iter {
+            self.apply_single(
+                wgpu_render,
+                tile,
+                position,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl TileRenderSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        tile: &TileComponent,
+        position: &PositionComponent,
+    ) {
+        ApplyTileRenderSystem::apply_single(
+            self,
+            wgpu_render,
+            tile,
+            position,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `tile`: A slice of the input components of type [`TileComponent`].
+    /// - `position`: A slice of the input components of type [`PositionComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline]
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        tiles: &[TileComponent],
+        positions: &[PositionComponent],
+    ) {
+        ApplyTileRenderSystem::apply_many(
+            self,
+            wgpu_render,
+            tiles,
+            positions,
+        );
+    }
+
+    /// Applies this system to the [`TileArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_tile(
+        &mut self,
+        archetype: &mut TileArchetype,
+        wgpu_render: &mut WgpuRenderState,
+    ) {
+        self.apply_many(
+            wgpu_render,
+            &archetype.tiles,
+            &archetype.positions,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for TileRenderSystem {
+    const ID: SystemId = SystemId::TileRender;
+}
+
+impl PartialEq<SystemId> for TileRenderSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<TileRenderSystemData> for TileRenderSystem {
+    fn from(data: TileRenderSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for TileRenderSystem {
+    type Target = TileRenderSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for TileRenderSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
