@@ -176,21 +176,22 @@ impl<E, Q> World for MainWorld<E, Q> {
 /// The user states used in the world.
 #[derive(Debug, Default)]
 pub struct MainWorldStates {
-    /// The device input obtained from the window system.
-    ///
-    /// The state is used in the following systems:
-    /// - [`CameraSystem`]
-    pub input: InputState,
     /// The WGPU render state; will be initialized in the Render phase hooks
     ///
     /// The state is used in the following systems:
     /// - [`CameraSystem`]
     /// - [`CameraRenderSystem`]
     /// - [`RenderBackgroundSystem`]
+    /// - [`RenderSkySystem`]
     /// - [`RenderSystem`]
     /// - [`DynamicLightSystem`]
     /// - [`VgaBlitSystem`]
     pub wgpu_render: WgpuRenderState,
+    /// The device input obtained from the window system.
+    ///
+    /// The state is used in the following systems:
+    /// - [`CameraSystem`]
+    pub input: InputState,
     /// The uniforms of the active camera.
     ///
     /// The state is used in the following systems:
@@ -201,6 +202,7 @@ pub struct MainWorldStates {
 /// The archetypes used in the world.
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
+    pub environment: EnvironmentArchetype,
     pub camera: CameraArchetype,
     pub dynamic_light: DynamicLightArchetype,
     pub cube: CubeArchetype,
@@ -213,6 +215,8 @@ struct MainWorldArchetypes {
 /// The systems.
 #[derive(Debug)]
 pub struct MainWorldSystems {
+    time_of_day: TimeOfDaySystem,
+    render_sky: RenderSkySystem,
     camera: CameraSystem,
     camera_render: CameraRenderSystem,
     dynamic_light: DynamicLightSystem,
@@ -224,6 +228,34 @@ pub struct MainWorldSystems {
 }
 
 impl MainWorldSystems {
+
+    /// Gives immutable access to the [`TimeOfDaySystemData`] of the [`TimeOfDaySystem`].
+    #[inline]
+    pub fn as_time_of_day_ref(&self) -> &TimeOfDaySystemData {
+        use core::ops::Deref;
+        self.time_of_day.deref()
+    }
+
+    /// Gives mutable access to the [`TimeOfDaySystemData`] of the [`TimeOfDaySystem`].
+    #[inline]
+    pub fn as_time_of_day_mut(&mut self) -> &mut TimeOfDaySystemData {
+        use core::ops::DerefMut;
+        self.time_of_day.deref_mut()
+    }
+
+    /// Gives immutable access to the [`RenderSkySystemData`] of the [`RenderSkySystem`].
+    #[inline]
+    pub fn as_render_sky_ref(&self) -> &RenderSkySystemData {
+        use core::ops::Deref;
+        self.render_sky.deref()
+    }
+
+    /// Gives mutable access to the [`RenderSkySystemData`] of the [`RenderSkySystem`].
+    #[inline]
+    pub fn as_render_sky_mut(&mut self) -> &mut RenderSkySystemData {
+        use core::ops::DerefMut;
+        self.render_sky.deref_mut()
+    }
 
     /// Gives immutable access to the [`CameraSystemData`] of the [`CameraSystem`].
     #[inline]
@@ -335,6 +367,34 @@ impl MainWorldSystems {
     pub fn as_vga_blit_mut(&mut self) -> &mut VgaBlitSystemData {
         use core::ops::DerefMut;
         self.vga_blit.deref_mut()
+    }
+}
+
+impl AsRef<TimeOfDaySystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &TimeOfDaySystemData {
+        self.as_time_of_day_ref()
+    }
+}
+
+impl AsMut<TimeOfDaySystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut TimeOfDaySystemData {
+        self.as_time_of_day_mut()
+    }
+}
+
+impl AsRef<RenderSkySystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &RenderSkySystemData {
+        self.as_render_sky_ref()
+    }
+}
+
+impl AsMut<RenderSkySystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut RenderSkySystemData {
+        self.as_render_sky_mut()
     }
 }
 
@@ -451,6 +511,15 @@ impl AsMut<VgaBlitSystemData> for MainWorldSystems {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<EnvironmentEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: EnvironmentEntityData) -> EntityId {
+        self.spawn_environment(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
@@ -524,8 +593,8 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new<S>(
         create_systems: &S,
-        input: InputState,
         wgpu_render: WgpuRenderState,
+        input: InputState,
         active_camera: ActiveCameraState,
         command_queue: Q) -> Self
     where
@@ -534,8 +603,8 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     {
         Self::new_with_events(
             create_systems,
-            input,
             wgpu_render,
+            input,
             active_camera,
             command_queue,
             NoOpPhaseEvents
@@ -548,13 +617,15 @@ impl<E, Q> MainWorld<E, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new_with_events<S>(
         create_systems: &S,
-        input: InputState,
         wgpu_render: WgpuRenderState,
+        input: InputState,
         active_camera: ActiveCameraState,
         command_queue: Q,
         phase_events: E) -> Self
     where
-        S: CreateSystem<CameraSystem>
+        S: CreateSystem<TimeOfDaySystem>
+         + CreateSystem<RenderSkySystem>
+         + CreateSystem<CameraSystem>
          + CreateSystem<CameraRenderSystem>
          + CreateSystem<DynamicLightSystem>
          + CreateSystem<PhysicsSystem>
@@ -569,6 +640,8 @@ impl<E, Q> MainWorld<E, Q> {
         Self {
             archetypes: Default::default(),
             systems: MainWorldSystems {
+                time_of_day: CreateSystem::<TimeOfDaySystem>::create(create_systems),
+                render_sky: CreateSystem::<RenderSkySystem>::create(create_systems),
                 camera: CreateSystem::<CameraSystem>::create(create_systems),
                 camera_render: CreateSystem::<CameraRenderSystem>::create(create_systems),
                 dynamic_light: CreateSystem::<DynamicLightSystem>::create(create_systems),
@@ -581,8 +654,8 @@ impl<E, Q> MainWorld<E, Q> {
             entity_locations: Default::default(),
             context,
             states: MainWorldStates {
-                input,
                 wgpu_render,
+                input,
                 active_camera,
             },
             fixed_accumulators: Default::default(),
@@ -610,6 +683,39 @@ impl<E, Q> MainWorld<E, Q> {
     /// De-spawns an entity given by its [`EntityId`]. Returns an error if the entity was unknown in this world.
     pub fn despawn_by_id(&mut self, id: EntityId) -> Result<(), DespawnError> {
         self.handle_despawn_command(id)
+    }
+
+    /// Spawn a new `Environment` entity into the world given its [`EnvironmentEntityData`].
+    #[inline]
+    pub fn spawn_environment(
+        &mut self,
+        environment: EnvironmentEntityData
+    ) -> EntityId {
+        self.spawn_environment_with(
+            environment.time_of_day,
+        )
+    }
+
+    /// Spawn a new `Environment` entity into the world.
+    pub fn spawn_environment_with(
+        &mut self,
+        time_of_day: TimeOfDayComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.environment
+            .spawn_with(
+                time_of_day,
+                Registry(&mut self.entity_locations)
+            )
     }
 
     /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
@@ -1196,6 +1302,28 @@ impl<E, Q> MainWorld<E, Q> {
         Q: WorldCommandSender + WorldCommandReceiver
     {
         // System group 1 of 1
+        let is_ready = self.systems.time_of_day.is_ready(
+               &self.context,
+           );
+        if is_ready && self.systems.time_of_day.on_begin_phase(
+                    &self.context,
+                )
+                .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply TimeOfDaySystem to EnvironmentArchetype
+            self.systems.time_of_day.apply_many(
+                &self.context,
+                &mut self.archetypes.environment.time_of_daies,
+            );
+
+            self.systems.time_of_day.on_end_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 1 of 1
         let is_ready = self.systems.physics.is_ready(
                &self.context,
            );
@@ -1471,7 +1599,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 5
+        // System group 1 of 6
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1493,7 +1621,29 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 5
+        // System group 2 of 6
+        let is_ready = self.systems.render_sky.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.render_sky.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply RenderSkySystem to EnvironmentArchetype
+            self.systems.render_sky.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.environment.time_of_daies,
+            );
+
+            self.systems.render_sky.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 3 of 6
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1517,7 +1667,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 5
+        // System group 4 of 6
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &mut self.states.wgpu_render,
@@ -1544,7 +1694,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 4 of 5
+        // System group 5 of 6
         let is_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1566,7 +1716,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 5 of 5
+        // System group 6 of 6
         let is_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1657,6 +1807,38 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 2
+        let is_render_sky_ready = self.systems.render_sky.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_render_sky_ready = is_render_sky_ready &
+            self.systems.render_sky.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_render_sky_ready {
+                    s.spawn(|_| {
+                        // Apply RenderSkySystem to EnvironmentArchetype
+                        self.systems.render_sky.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.environment.time_of_daies,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.render_sky.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 3
         let is_render_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1690,7 +1872,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 3
+        // System group 4
         let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &mut self.states.wgpu_render,
@@ -1727,7 +1909,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 4
+        // System group 5
         let is_vga_blit_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1759,7 +1941,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 5
+        // System group 6
         let is_camera_render_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -1835,6 +2017,10 @@ impl<E, Q> MainWorld<E, Q> {
     fn handle_spawn_command(&mut self, data: ArchetypeEntityData) {
         match data {
             // Accept only archetypes known to the world
+            ArchetypeEntityData::Environment(data) => {
+                let id = self.spawn_environment(data);
+                tracing::trace!(%id, "Spawned Environment entity");
+            },
             ArchetypeEntityData::Camera(data) => {
                 let id = self.spawn_camera(data);
                 tracing::trace!(%id, "Spawned Camera entity");
@@ -1872,6 +2058,12 @@ impl<E, Q> MainWorld<E, Q> {
     fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
          if let Some(loc) = self.entity_locations.remove(&id) {
             let result = match loc.archetype {
+                EnvironmentArchetype::ID => {
+                    self.archetypes
+                        .environment
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, EnvironmentArchetype::ID))?
+                }
                 CameraArchetype::ID => {
                     self.archetypes
                         .camera
@@ -2008,6 +2200,12 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         match archetype {
+            ArchetypeId::Environment => {
+                self.frontload_environments_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
             ArchetypeId::Camera => {
                 self.frontload_cameras_by_indices_sorted(
                     indices_to_frontload,
@@ -2055,6 +2253,68 @@ impl<E, Q> MainWorld<E, Q> {
                 0
             }
         }
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_environments(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .environment
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_environments_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .environment
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_environments_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&EnvironmentEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .environment
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
     }
 
     /// Frontloads entities provided by their IDs (e.g., from quadtree results).

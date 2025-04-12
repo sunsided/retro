@@ -5,7 +5,7 @@ use crate::engine::{
     ColorComponent, CreateSystem, DynamicLightComponent, DynamicLightSystem, FrameContext,
     SystemFactory,
 };
-use crate::wgpu::light::DrawLight;
+use crate::wgpu::uniforms::DrawLight;
 use std::convert::Infallible;
 use std::time::Duration;
 use tracing::{debug, warn};

@@ -24,6 +24,7 @@ phases:
 worlds:
   - name: Main
     archetypes:
+      - Environment
       - Camera
       - Cube
       - Player
@@ -33,6 +34,7 @@ worlds:
       - DynamicLight
 
 components:
+  - name: TimeOfDay
   - name: Camera
   - name: CameraFpsController
   - name: Position
@@ -48,6 +50,10 @@ components:
     description: A marker component for light entities
 
 archetypes:
+  - name: Environment
+    components:
+      - TimeOfDay
+
   - name: Camera
     components:
       - Camera
@@ -106,6 +112,12 @@ systems:
     inputs:
       - Camera
 
+  - name: TimeOfDay
+    phase: FixedUpdate
+    context: true
+    outputs:
+      - TimeOfDay
+
   - name: Physics
     phase: FixedUpdate
     context: true
@@ -130,10 +142,20 @@ systems:
       - use: WgpuRender
         write: true
 
-  - name: Render
+  - name: RenderSky
     phase: Render
     run_after:
       - RenderBackground
+    inputs:
+      - TimeOfDay
+    states:
+      - use: WgpuRender
+        write: true
+
+  - name: Render
+    phase: Render
+    run_after:
+      - RenderSky
     inputs:
       - Position
       - Transform

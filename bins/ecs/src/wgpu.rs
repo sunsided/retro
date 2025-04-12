@@ -1,9 +1,7 @@
-pub mod camera_uniform;
 pub mod instance;
-pub mod light;
 pub mod model;
 pub mod render_passes;
-pub mod retro_uniform;
 pub mod texture;
 pub mod texture_sampler;
+pub mod uniforms;
 pub mod wgpu_hardware;

@@ -66,6 +66,7 @@ pub mod camera_render;
 pub mod dynamic_light;
 mod frame_state;
 pub mod render;
+pub mod render_sky;
 pub mod vga_blit;
 mod wgpu_render_state;
 

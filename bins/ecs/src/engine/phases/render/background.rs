@@ -3,7 +3,6 @@ use crate::engine::{
     ApplyRenderBackgroundSystem, BackgroundColorComponent, CreateSystem, RenderBackgroundSystem,
     SystemFactory,
 };
-use crate::wgpu::light::DrawLight;
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
