@@ -101,7 +101,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // observing the "jump" when the noise field jumps into a new cell.
     let rotated_ray = rotate_star_dir(ray_dir_world, fract(sky.day - 0.5), sky.star_rotational_speed);
     let uv3d = rotated_ray * 150.0;
-    let noise = hash33(floor(uv3d) + floor(vec3(sky.day - 0.5)));
+    let noise = hash33(floor(uv3d));
 
     let star = step(0.995, noise);
     let star_brightness = star * pow(noise, 64.0);
