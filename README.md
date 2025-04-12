@@ -41,28 +41,6 @@ Rendering can be done to a screen-sized buffer as well:
 
 ![](readme/ecs-highres.jpg)
 
-## Prior Retro Example
-
-## Features
-
-- Retro-style graphics rendering, including effects like fire, plasma, and matrix rain.
-- Simple game mechanics for experimentation with objects such as cubes and spheres.
-- Blending of game visuals with 2D rendering techniques such as sprite blitting and font rendering.
-
-## Screenshot
-
-![](readme/old-screenshot.png)
-
-### Dependencies
-
-- Rust programming language (version 1.85.1 or higher recommended).
-- Uses the following crates for functionality:
-    - `minifb`: For window management and pixel-based rendering.
-    - `rand`, `fastrand`: For randomness in game logic.
-    - `spin_sleep`: To control timing and frame rate.
-    - `tracing` and `tracing-subscriber`: For logging and debugging.
-    - `rayon`, `crossbeam`: Parallel processing enhancements.
-
 ### How to Run
 
 1. Install Rust if you have not already: [https://rustup.rs/](https://rustup.rs/)

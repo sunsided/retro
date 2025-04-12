@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display, Write};
+use std::fmt::{Debug, Display};
 
 /// The days of the week.
 pub enum Weekday {
