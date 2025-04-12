@@ -39,9 +39,8 @@ impl ApplyTileRenderSystem for TileRenderSystem {
 
             instances.push(TileInstance {
                 transform,
-                floor_index: tile.floor_layer() as u32,
-                wall_index: tile.wall_layer() as u32,
-                top_index: tile.top_layer() as u32,
+                tile_index: tile.floor_layer() as u32,
+                decoration_index: 0,
                 entity_id: 0,
             });
         }

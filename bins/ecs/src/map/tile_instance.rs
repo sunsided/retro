@@ -11,9 +11,8 @@ pub struct TileVertex {
 #[derive(Clone, Copy, Default, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct TileInstance {
     pub transform: [[f32; 4]; 4],
-    pub floor_index: u32,
-    pub wall_index: u32,
-    pub top_index: u32,
+    pub tile_index: u32,
+    pub decoration_index: u32,
     pub entity_id: u32,
 }
 
@@ -36,7 +35,7 @@ impl TileVertex {
 impl TileInstance {
     #[allow(unused_qualifications)]
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
-        const LAYOUT: [VertexAttribute; 8] = vertex_attr_array![
+        const LAYOUT: [VertexAttribute; 7] = vertex_attr_array![
             2 => Float32x4,
             3 => Float32x4,
             4 => Float32x4,
@@ -44,7 +43,6 @@ impl TileInstance {
             6 => Uint32,
             7 => Uint32,
             8 => Uint32,
-            9 => Uint32,
         ];
 
         wgpu::VertexBufferLayout {

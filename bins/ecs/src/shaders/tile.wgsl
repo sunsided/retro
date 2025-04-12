@@ -44,21 +44,19 @@ struct VertexInput {
     @location(4) model_2: vec4<f32>,
     @location(5) model_3: vec4<f32>,
 
-    @location(6) floor_index: u32,
-    @location(7) wall_index: u32,
-    @location(8) top_index: u32,
+    @location(6) tile_index: u32,
+    @location(7) deco_index: u32,
 
-    @location(9) entity_id: u32,
+    @location(8) entity_id: u32,
 }
 
 struct VertexOutput {
     @builtin(position) clip_position: vec4<f32>,
     @location(0) tex_coords: vec2<f32>,
     @location(1) world_position: vec3<f32>,
-    @location(2) @interpolate(flat) floor_index: u32,
-    @location(3) @interpolate(flat) wall_index: u32,
-    @location(4) @interpolate(flat) top_index: u32,
-    @location(5) @interpolate(flat) entity_id: u32,
+    @location(2) @interpolate(flat) tile_index: u32,
+    @location(3) @interpolate(flat) deco_index: u32,
+    @location(4) @interpolate(flat) entity_id: u32,
 };
 
 @vertex
@@ -76,9 +74,8 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     out.clip_position = camera.view_proj * vec4<f32>(world_position, 1.0);
     out.tex_coords = input.uv;
     out.world_position = world_position;
-    out.floor_index = input.floor_index;
-    out.wall_index = input.wall_index;
-    out.top_index = input.top_index;
+    out.tile_index = input.tile_index;
+    out.deco_index = input.deco_index;
     out.entity_id = input.entity_id;
     return out;
 }
@@ -117,21 +114,21 @@ fn blinn_phong(
 fn fs_main(
     in: VertexOutput
 ) -> FragmentOutput {
-    let floor_uv = atlas_uv(in.floor_index, in.tex_coords);
-    let floor_color = textureSample(tile_texture, tile_sampler, floor_uv);
-    let floor_normal = vec3<f32>(0.0, 1.0, 0.0); // assume flat upward-facing tile
+    let tile_uv = atlas_uv(in.tile_index, in.tex_coords);
+    let tile_color = textureSample(tile_texture, tile_sampler, tile_uv);
+    let tile_normal = vec3<f32>(0.0, 1.0, 0.0); // assume flat upward-facing tile
 
     let view_dir = normalize(camera.view_pos.xyz - in.world_position);
     let light_dir = normalize(light.position - in.world_position);
     let sun_dir = normalize(frame.sun_dir);
 
-    let dyn_light = blinn_phong(floor_normal, light_dir, light.color, view_dir, 1.0);
-    let sun_light = blinn_phong(floor_normal, sun_dir, frame.sun_color, view_dir, frame.sun_visibility);
+    let dyn_light = blinn_phong(tile_normal, light_dir, light.color, view_dir, 1.0);
+    let sun_light = blinn_phong(tile_normal, sun_dir, frame.sun_color, view_dir, frame.sun_visibility);
 
-    let result = (frame.ambient_light + dyn_light + sun_light) * floor_color.rgb;
+    let result = (frame.ambient_light + dyn_light + sun_light) * tile_color.rgb;
 
     var out: FragmentOutput;
-    out.color = vec4<f32>(result, floor_color.a);
+    out.color = vec4<f32>(result, tile_color.a);
     out.entity_id = 0u;
     return out;
 }
