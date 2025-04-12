@@ -3,17 +3,23 @@
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct FrameGlobalUniform {
-    pub time_of_day: f32, // e.g. 13.5 = 1:30 PM
+    pub time_of_day: f32,     // e.g. 13.5 = 1:30 PM
+    pub star_visibility: f32, // 0.0 (day) to 1.0 (night)
+    pub _pad0: [f32; 2],
 
     pub sun_direction: [f32; 3], // normalized world-space direction to the sun
     pub sun_visibility: f32,     // 0.0 (sun below horizon) to 1.0 (fully visible)
-    pub sun_color: [f32; 3],     // RGB tint of sun light (reddish at horizon)
+
+    pub sun_color: [f32; 3], // RGB tint of sun light (reddish at horizon)
+    pub _pad1: f32,
 
     pub sky_color: [f32; 3], // RGB sky dome base color (interpolated day/night)
-    pub ambient_light: [f32; 3], // RGB ambient lighting (for scene)
+    pub _pad2: f32,
 
-    pub star_visibility: f32, // 0.0 (day) to 1.0 (night)
-    pub _padding: [f32; 3],   // pad to 16-byte multiple for std140
+    pub ambient_light: [f32; 3], // RGB ambient lighting (for scene)
+    pub _pad3: f32,
+
+    pub _pad4: [f32; 2],
 }
 
 impl FrameGlobalUniform {
@@ -26,7 +32,11 @@ impl FrameGlobalUniform {
             sky_color: [0.4, 0.75, 1.0],     // bright daytime sky
             ambient_light: [0.2, 0.25, 0.3], // soft daylight ambient
             star_visibility: 0.0,
-            _padding: [0.0; 3],
+            _pad0: Default::default(),
+            _pad1: Default::default(),
+            _pad2: Default::default(),
+            _pad3: Default::default(),
+            _pad4: Default::default(),
         }
     }
 }

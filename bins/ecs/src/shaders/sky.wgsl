@@ -1,7 +1,13 @@
 // sky.wgsl
 
 struct FrameGlobalUniform {
-    time: f32,
+    time_of_day: f32,
+    star_visibility: f32,
+    sun_dir: vec3<f32>,
+    sun_visibility: f32,
+    sun_color: vec3<f32>,
+    sky_color: vec3<f32>,
+    ambient_light: vec3<f32>,
 };
 
 struct CameraUniform {
@@ -61,83 +67,37 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     // Generate camera ray in world space
     let ndc = in.uv * 2.0 - vec2(1.0);
     let clip = vec4(ndc, 0.0, 1.0); // z = 0 for near plane
-
-    let view_ray = camera.inverse_proj * clip;
-    let ray_dir_view = normalize(view_ray.xyz); // no divide by w needed
+    let ray_dir_view = normalize((camera.inverse_proj * clip).xyz);
     let ray_dir_world = normalize(get_camera_rot() * ray_dir_view);
 
-    // Compute sky vertical factor
+    // Sky vertical factor and horizon fade
     let vertical = clamp((ray_dir_world.y + 1.0) * 0.5, 0.0, 1.0);
 
-    // Day/Night Cycle
-    let night_color = vec3(0.03, 0.03, 0.2);
-    let day_color = vec3(0.4, 0.75, 1.0);
-    let cycle = 0.5 * (1.0 + cos((sky.time - 12.0) * 6.2831853 / 24.0));
-    let blended_sky = mix(night_color, day_color, cycle);
+    let horizon_threshold = mix(0.15, 0.5, sky.star_visibility);
+    let horizon = smoothstep(horizon_threshold, 1.0, vertical);
 
-    // Time-dependent horizon falloff
-    var effective_threshold: f32;
-    const low_level = 0.1;
-    const high_level = 0.5;
-    if (sky.time < 6.0) {
-        effective_threshold = mix(high_level, low_level, smoothstep(0.0, 6.0, sky.time));
-    } else if (sky.time > 18.0) {
-        effective_threshold = mix(low_level, high_level, smoothstep(18.0, 24.0, sky.time));
-    } else {
-        effective_threshold = low_level;
-    }
-    let horizon = smoothstep(effective_threshold, 1.0, vertical);
+    // Base sky color + reddish glow at horizon
+    let reddish_glow = vec3(1.0, 0.25, 0.1) * (1.0 - vertical) * sky.sun_visibility * 0.5;
+    let base_sky = sky.sky_color + reddish_glow;
+    let fade = pow(1.0 - sky.sun_visibility, 2.0);  // only fades if sun is low
+    let night_fade = clamp(1.0 - sky.sun_visibility, 0.0, 1.0);
+    let sky_color = base_sky * (1.0 - night_fade * 0.85); // keep 15% at most
 
-    // Sun direction (moving on tilted arc over world sphere)
-    // Time = 0 → sun at -X horizon, Time = 12 → overhead, Time = 24 → full loop
-    let sun_angle = ((sky.time + 18.0) * 6.2831853 / 24.0);
-    let tilt = radians(145.0);  // orbital inclination
+    // Sun disc contribution
+    let sun_alignment = dot(ray_dir_world, sky.sun_dir);
+    let sun_disc = pow(clamp((sun_alignment - 0.95) / (1.0 - 0.95), 0.0, 1.0), 12.0);
+    let sun_glow = sun_disc * sky.sun_visibility;
+    let sun_contrib = sky.sun_color * sun_glow;
 
-    // Construct sun_dir in world space: rotates around Z axis, tilted toward Y
-    let sun_dir = normalize(vec3(
-        cos(sun_angle),
-        sin(sun_angle) * sin(tilt),
-        sin(sun_angle) * cos(tilt)
-    ));
+    // Procedural sparse stars
+    let noise = hash33(floor(ray_dir_world * 150.0));
+    let star = step(0.995, noise);
+    let star_brightness = star * pow(noise, 64.0);
+    let min_star_elevation = 0.6;
+    let elevation_fade = smoothstep(min_star_elevation, 1.0, vertical);
+    let stars = vec3(1.0) * star_brightness * elevation_fade * sky.star_visibility;
 
-    // Only glow when sun is above the horizon (Y > 0)
-    let sun_visibility = max(sun_dir.y, 0);
-
-    // Angular alignment between current pixel and sun direction
-    let cos_angle = dot(ray_dir_world, sun_dir);
-    let glow_size = 0.95;  // higher = smaller sun disc
-    let glow = pow(clamp((cos_angle - glow_size) / (1.0 - glow_size), 0.0, 1.0), 12.0);
-
-    // Final sun glow intensity modulated by whether sun is above horizon
-    let sun_glow = glow * sun_visibility;
-
-    // Sunset factor: 1 at horizon, 0 at zenith
-    let sunset_factor = 1.0 - clamp(sun_dir.y, 0.0, 1.0);
-    let sunset_strength = sunset_factor * cycle;
-
-    let sun_color_tinted = mix(vec3(1.2, 1.05, 0.85), vec3(1.3, 0.5, 0.2), sunset_strength);
-    let horizon_tint = mix(blended_sky, vec3(1.0, 0.4, 0.2), sunset_strength * 0.5);
-
-    let horizon_distance = 1.0 - vertical;  // 0 at zenith, 1 at horizon
-    let reddish_glow = vec3(1.0, 0.25, 0.1) * horizon_distance * sunset_strength * 0.5;
-
-    // Sky color with sun
-    let sky_color = mix(blended_sky, horizon_tint, horizon);
-
-    // Procedural starfield
-    let noise = hash33(floor(ray_dir_world * 150.0)); // scatter stars across sphere
-    let star = step(0.995, noise);             // only brightest ones show
-    let star_brightness = star * pow(noise, 64.0);  // twinkle sharpness
-
-    // Fade stars based on time and viewing direction.
-    let min_star_elevation = 0.6; // only appear above this
-    let elevation_fade = smoothstep(min_star_elevation, 1.0, vertical); // fade in above 60% up
-
-    let night_fade = smoothstep(0.5, 1.0, 1.0 - cycle);
-    let star_visibility = night_fade * elevation_fade;
-
-    let stars = vec3(1.0) * star_brightness * star_visibility;
-
-    let final_color = (sky_color + reddish_glow) * horizon + sun_color_tinted * sun_glow + stars;
+    // Final color
+    let final_color = (sky_color * horizon) + sun_contrib + stars;
     return vec4(final_color, 1.0);
 }

@@ -46,12 +46,13 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         };
 
         let mut uniform = FrameGlobalUniform::new(time_of_day.time_of_day);
-        uniform.star_visibility = stars.star_visibility;
-        uniform.sky_color = skydome.sky_color;
-        uniform.ambient_light = ambient_light.ambient_light;
-        uniform.sun_direction = sun.sun_direction;
-        uniform.sun_color = sun.sun_color;
-        uniform.sun_visibility = sun.sun_visibility;
+        uniform.star_visibility = stars.intensity;
+        uniform.sky_color = skydome.sky_color.into();
+        uniform.ambient_light = ambient_light.ambient_light.into();
+        uniform.sun_direction = sun.direction.into();
+        uniform.sun_color = sun.color.into();
+        uniform.sun_visibility = sun.intensity;
+        uniform.star_visibility = stars.intensity;
 
         device
             .buffers()

@@ -217,6 +217,8 @@ struct MainWorldArchetypes {
 #[derive(Debug)]
 pub struct MainWorldSystems {
     time_of_day: TimeOfDaySystem,
+    sun: SunSystem,
+    stars: StarsSystem,
     frame_globals: FrameGlobalsSystem,
     render_sky: RenderSkySystem,
     camera: CameraSystem,
@@ -243,6 +245,34 @@ impl MainWorldSystems {
     pub fn as_time_of_day_mut(&mut self) -> &mut TimeOfDaySystemData {
         use core::ops::DerefMut;
         self.time_of_day.deref_mut()
+    }
+
+    /// Gives immutable access to the [`SunSystemData`] of the [`SunSystem`].
+    #[inline]
+    pub fn as_sun_ref(&self) -> &SunSystemData {
+        use core::ops::Deref;
+        self.sun.deref()
+    }
+
+    /// Gives mutable access to the [`SunSystemData`] of the [`SunSystem`].
+    #[inline]
+    pub fn as_sun_mut(&mut self) -> &mut SunSystemData {
+        use core::ops::DerefMut;
+        self.sun.deref_mut()
+    }
+
+    /// Gives immutable access to the [`StarsSystemData`] of the [`StarsSystem`].
+    #[inline]
+    pub fn as_stars_ref(&self) -> &StarsSystemData {
+        use core::ops::Deref;
+        self.stars.deref()
+    }
+
+    /// Gives mutable access to the [`StarsSystemData`] of the [`StarsSystem`].
+    #[inline]
+    pub fn as_stars_mut(&mut self) -> &mut StarsSystemData {
+        use core::ops::DerefMut;
+        self.stars.deref_mut()
     }
 
     /// Gives immutable access to the [`FrameGlobalsSystemData`] of the [`FrameGlobalsSystem`].
@@ -397,6 +427,34 @@ impl AsMut<TimeOfDaySystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut TimeOfDaySystemData {
         self.as_time_of_day_mut()
+    }
+}
+
+impl AsRef<SunSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &SunSystemData {
+        self.as_sun_ref()
+    }
+}
+
+impl AsMut<SunSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut SunSystemData {
+        self.as_sun_mut()
+    }
+}
+
+impl AsRef<StarsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &StarsSystemData {
+        self.as_stars_ref()
+    }
+}
+
+impl AsMut<StarsSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut StarsSystemData {
+        self.as_stars_mut()
     }
 }
 
@@ -654,6 +712,8 @@ impl<E, Q> MainWorld<E, Q> {
         phase_events: E) -> Self
     where
         S: CreateSystem<TimeOfDaySystem>
+         + CreateSystem<SunSystem>
+         + CreateSystem<StarsSystem>
          + CreateSystem<FrameGlobalsSystem>
          + CreateSystem<RenderSkySystem>
          + CreateSystem<CameraSystem>
@@ -672,6 +732,8 @@ impl<E, Q> MainWorld<E, Q> {
             archetypes: Default::default(),
             systems: MainWorldSystems {
                 time_of_day: CreateSystem::<TimeOfDaySystem>::create(create_systems),
+                sun: CreateSystem::<SunSystem>::create(create_systems),
+                stars: CreateSystem::<StarsSystem>::create(create_systems),
                 frame_globals: CreateSystem::<FrameGlobalsSystem>::create(create_systems),
                 render_sky: CreateSystem::<RenderSkySystem>::create(create_systems),
                 camera: CreateSystem::<CameraSystem>::create(create_systems),
@@ -1345,7 +1407,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 1
+        // System group 1 of 2
         let is_ready = self.systems.time_of_day.is_ready(
                &self.context,
            );
@@ -1367,7 +1429,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 1 of 1
+        // System group 1 of 2
         let is_ready = self.systems.physics.is_ready(
                &self.context,
            );
@@ -1394,6 +1456,46 @@ impl<E, Q> MainWorld<E, Q> {
                 &self.context,
             )
             .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 2
+        let is_ready = self.systems.sun.is_ready(
+           );
+        if is_ready && self.systems.sun.on_begin_phase(
+                )
+                .inspect_err(|error| tracing::error!(?error, "SunSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply SunSystem to EnvironmentArchetype
+            self.systems.sun.apply_many(
+                &self.archetypes.environment.time_of_daies,
+                &mut self.archetypes.environment.suns,
+                &mut self.archetypes.environment.skydomes,
+                &mut self.archetypes.environment.ambient_lights,
+            );
+
+            self.systems.sun.on_end_phase(
+            )
+            .inspect_err(|error| tracing::error!(?error, "SunSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 2
+        let is_ready = self.systems.stars.is_ready(
+           );
+        if is_ready && self.systems.stars.on_begin_phase(
+                )
+                .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply StarsSystem to EnvironmentArchetype
+            self.systems.stars.apply_many(
+                &self.archetypes.environment.time_of_daies,
+                &mut self.archetypes.environment.stars,
+            );
+
+            self.systems.stars.on_end_phase(
+            )
+            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -1426,8 +1528,121 @@ impl<E, Q> MainWorld<E, Q> {
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
-        // Only one system in this phase; skip spawning thread.
-        self.apply_system_phase_fixed_update_without_events();
+
+        // System group 1
+        let is_time_of_day_ready = self.systems.time_of_day.is_ready(
+               &self.context,
+           );
+        let is_time_of_day_ready = is_time_of_day_ready &
+            self.systems.time_of_day.on_begin_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "TimeOfDaySystem::on_begin_phase returned an error"))
+            .is_ok();
+        let is_physics_ready = self.systems.physics.is_ready(
+               &self.context,
+           );
+        let is_physics_ready = is_physics_ready &
+            self.systems.physics.on_begin_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_time_of_day_ready {
+                    s.spawn(|_| {
+                        // Apply TimeOfDaySystem to EnvironmentArchetype
+                        self.systems.time_of_day.apply_many(
+                            &self.context,
+                            &mut self.archetypes.environment.time_of_daies,
+                        );
+                    });
+                }
+                if is_physics_ready {
+                    s.spawn(|_| {
+                        // Apply PhysicsSystem to CubeArchetype
+                        self.systems.physics.apply_many(
+                            &self.context,
+                            &self.archetypes.cube.velocities,
+                            &mut self.archetypes.cube.positions,
+                        );
+                        // Apply PhysicsSystem to PlayerArchetype
+                        self.systems.physics.apply_many(
+                            &self.context,
+                            &self.archetypes.player.velocities,
+                            &mut self.archetypes.player.positions,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.time_of_day.on_end_phase(
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "TimeOfDaySystem::on_end_phase returned an error"))
+        .ok();
+
+        self.systems.physics.on_end_phase(
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 2
+        let is_sun_ready = self.systems.sun.is_ready(
+           );
+        let is_sun_ready = is_sun_ready &
+            self.systems.sun.on_begin_phase(
+            )
+            .inspect_err(|error| tracing::error!(%error, "SunSystem::on_begin_phase returned an error"))
+            .is_ok();
+        let is_stars_ready = self.systems.stars.is_ready(
+           );
+        let is_stars_ready = is_stars_ready &
+            self.systems.stars.on_begin_phase(
+            )
+            .inspect_err(|error| tracing::error!(%error, "StarsSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_sun_ready {
+                    s.spawn(|_| {
+                        // Apply SunSystem to EnvironmentArchetype
+                        self.systems.sun.apply_many(
+                            &self.archetypes.environment.time_of_daies,
+                            &mut self.archetypes.environment.suns,
+                            &mut self.archetypes.environment.skydomes,
+                            &mut self.archetypes.environment.ambient_lights,
+                        );
+                    });
+                }
+                if is_stars_ready {
+                    s.spawn(|_| {
+                        // Apply StarsSystem to EnvironmentArchetype
+                        self.systems.stars.apply_many(
+                            &self.archetypes.environment.time_of_daies,
+                            &mut self.archetypes.environment.stars,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.sun.on_end_phase(
+        )
+        .inspect_err(|error| tracing::error!(%error, "SunSystem::on_end_phase returned an error"))
+        .ok();
+
+        self.systems.stars.on_end_phase(
+        )
+        .inspect_err(|error| tracing::error!(%error, "StarsSystem::on_end_phase returned an error"))
+        .ok();
 
         SystemFixedUpdatePhaseEvents::on_end_phase(
             &mut self.events,

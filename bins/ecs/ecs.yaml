@@ -117,6 +117,22 @@ systems:
     outputs:
       - TimeOfDay
 
+  - name: Sun
+    phase: FixedUpdate
+    inputs:
+      - TimeOfDay
+    outputs:
+      - Sun
+      - Skydome
+      - AmbientLight
+
+  - name: Stars
+    phase: FixedUpdate
+    inputs:
+      - TimeOfDay
+    outputs:
+      - Stars
+
   - name: Physics
     phase: FixedUpdate
     context: true

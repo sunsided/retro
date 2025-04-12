@@ -25,6 +25,38 @@ pub enum SystemId {
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
     TimeOfDay = 2,
+    /// The [`Sun`](SunSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`TimeOfDayComponent`]
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`SunComponent`]
+    /// - [`SkydomeComponent`]
+    /// - [`AmbientLightComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
+    Sun = 3,
+    /// The [`Stars`](StarsSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`TimeOfDayComponent`]
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`StarsComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
+    Stars = 4,
     /// The [`Physics`](PhysicsSystem) system.
     ///
     /// ### Reads
@@ -40,7 +72,7 @@ pub enum SystemId {
     /// 
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
     /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
-    Physics = 3,
+    Physics = 5,
     /// The [`BackgroundColorCycle`](BackgroundColorCycleSystem) system.
     ///
     /// ### Mutates
@@ -51,7 +83,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    BackgroundColorCycle = 4,
+    BackgroundColorCycle = 6,
     /// The [`CameraRender`](CameraRenderSystem) system.
     ///
     /// ### Reads
@@ -62,7 +94,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
-    CameraRender = 5,
+    CameraRender = 7,
     /// The [`FrameGlobals`](FrameGlobalsSystem) system.
     ///
     /// ### Reads
@@ -80,7 +112,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    FrameGlobals = 6,
+    FrameGlobals = 8,
     /// The [`RenderBackground`](RenderBackgroundSystem) system.
     ///
     /// ### Reads
@@ -91,7 +123,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    RenderBackground = 7,
+    RenderBackground = 9,
     /// The [`RenderSky`](RenderSkySystem) system.
     ///
     /// ### Reads
@@ -102,7 +134,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    RenderSky = 8,
+    RenderSky = 10,
     /// The [`Render`](RenderSystem) system.
     ///
     /// ### Reads
@@ -115,7 +147,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
-    Render = 9,
+    Render = 11,
     /// The [`DynamicLight`](DynamicLightSystem) system.
     ///
     /// ### Reads
@@ -130,7 +162,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
-    DynamicLight = 10,
+    DynamicLight = 12,
     /// If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
     ///
     /// For details, see the [`VgaBlitSystem`](VgaBlitSystem) Struct.
@@ -143,7 +175,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    VgaBlit = 11,
+    VgaBlit = 13,
 }
 
 impl SystemId {
@@ -151,24 +183,28 @@ impl SystemId {
     pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::TimeOfDay`](SystemId::TimeOfDay) system.
     pub const TIME_OF_DAY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Sun`](SystemId::Sun) system.
+    pub const SUN_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Stars`](SystemId::Stars) system.
+    pub const STARS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Physics`](SystemId::Physics) system.
-    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::BackgroundColorCycle`](SystemId::BackgroundColorCycle) system.
-    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::CameraRender`](SystemId::CameraRender) system.
-    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::FrameGlobals`](SystemId::FrameGlobals) system.
-    pub const FRAME_GLOBALS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const FRAME_GLOBALS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderBackground`](SystemId::RenderBackground) system.
-    pub const RENDER_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const RENDER_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderSky`](SystemId::RenderSky) system.
-    pub const RENDER_SKY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    pub const RENDER_SKY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Render`](SystemId::Render) system.
-    pub const RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
+    pub const RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::DynamicLight`](SystemId::DynamicLight) system.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::VgaBlit`](SystemId::VgaBlit) system.
-    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
 }
 
 impl SystemId {
@@ -177,6 +213,8 @@ impl SystemId {
         match self {
             Self::Camera => Self::CAMERA_ID_VALUE,
             Self::TimeOfDay => Self::TIME_OF_DAY_ID_VALUE,
+            Self::Sun => Self::SUN_ID_VALUE,
+            Self::Stars => Self::STARS_ID_VALUE,
             Self::Physics => Self::PHYSICS_ID_VALUE,
             Self::BackgroundColorCycle => Self::BACKGROUND_COLOR_CYCLE_ID_VALUE,
             Self::CameraRender => Self::CAMERA_RENDER_ID_VALUE,
@@ -218,15 +256,17 @@ impl core::fmt::Display for SystemId {
         match self {
             Self::Camera => write!(f, "Camera (ID 1)"),
             Self::TimeOfDay => write!(f, "TimeOfDay (ID 2)"),
-            Self::Physics => write!(f, "Physics (ID 3)"),
-            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 4)"),
-            Self::CameraRender => write!(f, "CameraRender (ID 5)"),
-            Self::FrameGlobals => write!(f, "FrameGlobals (ID 6)"),
-            Self::RenderBackground => write!(f, "RenderBackground (ID 7)"),
-            Self::RenderSky => write!(f, "RenderSky (ID 8)"),
-            Self::Render => write!(f, "Render (ID 9)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 10)"),
-            Self::VgaBlit => write!(f, "VgaBlit (ID 11)"),
+            Self::Sun => write!(f, "Sun (ID 3)"),
+            Self::Stars => write!(f, "Stars (ID 4)"),
+            Self::Physics => write!(f, "Physics (ID 5)"),
+            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 6)"),
+            Self::CameraRender => write!(f, "CameraRender (ID 7)"),
+            Self::FrameGlobals => write!(f, "FrameGlobals (ID 8)"),
+            Self::RenderBackground => write!(f, "RenderBackground (ID 9)"),
+            Self::RenderSky => write!(f, "RenderSky (ID 10)"),
+            Self::Render => write!(f, "Render (ID 11)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 12)"),
+            Self::VgaBlit => write!(f, "VgaBlit (ID 13)"),
         }
     }
 }
@@ -307,7 +347,7 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<FrameGlobalsSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
+pub trait CreateSystems: CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<SunSystem> + CreateSystem<StarsSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<FrameGlobalsSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
 { }
 
 #[automatically_derived]
@@ -315,6 +355,8 @@ impl<T> CreateSystems for T
 where
     T: CreateSystem<CameraSystem>
      + CreateSystem<TimeOfDaySystem>
+     + CreateSystem<SunSystem>
+     + CreateSystem<StarsSystem>
      + CreateSystem<PhysicsSystem>
      + CreateSystem<BackgroundColorCycleSystem>
      + CreateSystem<CameraRenderSystem>
@@ -930,6 +972,414 @@ impl core::ops::Deref for TimeOfDaySystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for TimeOfDaySystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplySunSystem`] trait.
+/// See also [`SunData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`TimeOfDayComponent`]
+///
+/// ### Mutates
+/// 
+/// - [`SunComponent`]
+/// - [`SkydomeComponent`]
+/// - [`AmbientLightComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
+#[derive(Debug)]
+pub struct SunSystem(SunSystemData);
+
+/// Implements the business logic for the [`SunSystem`] system.
+#[allow(dead_code)]
+pub trait ApplySunSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A reference to the input component of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `sun`: A mutable reference to the component of type [`SunComponent`].
+    /// - `skydome`: A mutable reference to the component of type [`SkydomeComponent`].
+    /// - `ambient_light`: A mutable reference to the component of type [`AmbientLightComponent`].
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        time_of_day: &TimeOfDayComponent,
+        sun: &mut SunComponent,
+        skydome: &mut SkydomeComponent,
+        ambient_light: &mut AmbientLightComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `sun`: A mutable slice of the components of type [`SunComponent`].
+    /// - `skydome`: A mutable slice of the components of type [`SkydomeComponent`].
+    /// - `ambient_light`: A mutable slice of the components of type [`AmbientLightComponent`].
+    fn apply_many(
+        &mut self,
+        time_of_daies: &[TimeOfDayComponent],
+        suns: &mut [SunComponent],
+        skydomes: &mut [SkydomeComponent],
+        ambient_lights: &mut [AmbientLightComponent],
+    ) {
+        let zipped_iter = time_of_daies.iter().zip(suns.iter_mut().zip(skydomes.iter_mut().zip(ambient_lights.iter_mut())));
+        for (time_of_day, (sun, (skydome, ambient_light))) in zipped_iter {
+            self.apply_single(
+                time_of_day,
+                sun,
+                skydome,
+                ambient_light,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl SunSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        time_of_day: &TimeOfDayComponent,
+        sun: &mut SunComponent,
+        skydome: &mut SkydomeComponent,
+        ambient_light: &mut AmbientLightComponent,
+    ) {
+        ApplySunSystem::apply_single(
+            self,
+            time_of_day,
+            sun,
+            skydome,
+            ambient_light,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `sun`: A mutable slice of the components of type [`SunComponent`].
+    /// - `skydome`: A mutable slice of the components of type [`SkydomeComponent`].
+    /// - `ambient_light`: A mutable slice of the components of type [`AmbientLightComponent`].
+    #[inline]
+    fn apply_many(
+        &mut self,
+        time_of_daies: &[TimeOfDayComponent],
+        suns: &mut [SunComponent],
+        skydomes: &mut [SkydomeComponent],
+        ambient_lights: &mut [AmbientLightComponent],
+    ) {
+        ApplySunSystem::apply_many(
+            self,
+            time_of_daies,
+            suns,
+            skydomes,
+            ambient_lights,
+        );
+    }
+
+    /// Applies this system to the [`EnvironmentArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_environment(
+        &mut self,
+        archetype: &mut EnvironmentArchetype,
+    ) {
+        self.apply_many(
+            &archetype.time_of_daies,
+            &mut archetype.suns,
+            &mut archetype.skydomes,
+            &mut archetype.ambient_lights,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for SunSystem {
+    const ID: SystemId = SystemId::Sun;
+}
+
+impl PartialEq<SystemId> for SunSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<SunSystemData> for SunSystem {
+    fn from(data: SunSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for SunSystem {
+    type Target = SunSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for SunSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplyStarsSystem`] trait.
+/// See also [`StarsData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`TimeOfDayComponent`]
+///
+/// ### Mutates
+/// 
+/// - [`StarsComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
+#[derive(Debug)]
+pub struct StarsSystem(StarsSystemData);
+
+/// Implements the business logic for the [`StarsSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyStarsSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A reference to the input component of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `stars`: A mutable reference to the component of type [`StarsComponent`].
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        time_of_day: &TimeOfDayComponent,
+        stars: &mut StarsComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `stars`: A mutable slice of the components of type [`StarsComponent`].
+    fn apply_many(
+        &mut self,
+        time_of_daies: &[TimeOfDayComponent],
+        stars: &mut [StarsComponent],
+    ) {
+        let zipped_iter = time_of_daies.iter().zip(stars.iter_mut());
+        for (time_of_day, stars) in zipped_iter {
+            self.apply_single(
+                time_of_day,
+                stars,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl StarsSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        time_of_day: &TimeOfDayComponent,
+        stars: &mut StarsComponent,
+    ) {
+        ApplyStarsSystem::apply_single(
+            self,
+            time_of_day,
+            stars,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `stars`: A mutable slice of the components of type [`StarsComponent`].
+    #[inline]
+    fn apply_many(
+        &mut self,
+        time_of_daies: &[TimeOfDayComponent],
+        stars: &mut [StarsComponent],
+    ) {
+        ApplyStarsSystem::apply_many(
+            self,
+            time_of_daies,
+            stars,
+        );
+    }
+
+    /// Applies this system to the [`EnvironmentArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_environment(
+        &mut self,
+        archetype: &mut EnvironmentArchetype,
+    ) {
+        self.apply_many(
+            &archetype.time_of_daies,
+            &mut archetype.stars,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for StarsSystem {
+    const ID: SystemId = SystemId::Stars;
+}
+
+impl PartialEq<SystemId> for StarsSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<StarsSystemData> for StarsSystem {
+    fn from(data: StarsSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for StarsSystem {
+    type Target = StarsSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for StarsSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

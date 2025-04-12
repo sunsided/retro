@@ -13,6 +13,8 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`TimeOfDaySystem`] ([`SystemId::TimeOfDay`])
+    /// - [`SunSystem`] ([`SystemId::Sun`])
+    /// - [`StarsSystem`] ([`SystemId::Stars`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     TimeOfDay = 1,
     /// The [`Sun`](SunComponent) component.
@@ -25,6 +27,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
+    /// - [`SunSystem`] ([`SystemId::Sun`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     Sun = 2,
     /// The [`Skydome`](SkydomeComponent) component.
@@ -37,6 +40,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
+    /// - [`SunSystem`] ([`SystemId::Sun`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     /// - [`RenderSkySystem`] ([`SystemId::RenderSky`])
     Skydome = 3,
@@ -50,6 +54,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
+    /// - [`SunSystem`] ([`SystemId::Sun`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     AmbientLight = 4,
     /// The [`Stars`](StarsComponent) component.
@@ -62,6 +67,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
+    /// - [`StarsSystem`] ([`SystemId::Stars`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     Stars = 5,
     /// The [`Camera`](CameraComponent) component.
@@ -378,6 +384,8 @@ pub trait Component: 'static + Send + Sync {
 /// This component is used by the following systems:
 /// 
 /// - [`TimeOfDaySystem`] ([`SystemId::TimeOfDay`])
+/// - [`SunSystem`] ([`SystemId::Sun`])
+/// - [`StarsSystem`] ([`SystemId::Stars`])
 /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
 #[derive(Debug, Clone)]
 pub struct TimeOfDayComponent(TimeOfDayData);
@@ -469,6 +477,7 @@ impl core::borrow::BorrowMut<TimeOfDayData> for TimeOfDayComponent {
 /// # System Use
 /// This component is used by the following systems:
 /// 
+/// - [`SunSystem`] ([`SystemId::Sun`])
 /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
 #[derive(Debug, Clone)]
 pub struct SunComponent(SunData);
@@ -560,6 +569,7 @@ impl core::borrow::BorrowMut<SunData> for SunComponent {
 /// # System Use
 /// This component is used by the following systems:
 /// 
+/// - [`SunSystem`] ([`SystemId::Sun`])
 /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
 /// - [`RenderSkySystem`] ([`SystemId::RenderSky`])
 #[derive(Debug, Clone)]
@@ -652,6 +662,7 @@ impl core::borrow::BorrowMut<SkydomeData> for SkydomeComponent {
 /// # System Use
 /// This component is used by the following systems:
 /// 
+/// - [`SunSystem`] ([`SystemId::Sun`])
 /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
 #[derive(Debug, Clone)]
 pub struct AmbientLightComponent(AmbientLightData);
@@ -743,6 +754,7 @@ impl core::borrow::BorrowMut<AmbientLightData> for AmbientLightComponent {
 /// # System Use
 /// This component is used by the following systems:
 /// 
+/// - [`StarsSystem`] ([`SystemId::Stars`])
 /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
 #[derive(Debug, Clone)]
 pub struct StarsComponent(StarsData);
