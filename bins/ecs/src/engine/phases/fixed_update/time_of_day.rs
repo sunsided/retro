@@ -4,6 +4,7 @@ use crate::engine::{
 };
 use std::convert::Infallible;
 use std::fmt::Debug;
+use tracing::debug;
 
 #[derive(Debug, Default)]
 pub struct TimeOfDaySystemData;
@@ -25,7 +26,20 @@ impl ApplyTimeOfDaySystem for TimeOfDaySystem {
 
     fn apply_single(&mut self, context: &FrameContext, time_of_day: &mut TimeOfDayComponent) {
         // Loops through one day in 24 seconds.
-        time_of_day.time_of_day += context.fixed_time_secs;
+        const HOURS_PER_DAY: f32 = 24.0; // hours
+        const HOURS_PER_SECOND: f32 = 1.0;
+        const DAYS_PER_SECOND: f32 = HOURS_PER_DAY / HOURS_PER_SECOND;
+
+        let time_increase = context.fixed_time_secs / HOURS_PER_SECOND;
+        let day_increase = context.fixed_time_secs / DAYS_PER_SECOND;
+
+        time_of_day.time_of_day += time_increase;
         time_of_day.time_of_day %= 24.0;
+
+        if (time_of_day.day + day_increase).floor() > time_of_day.day.floor() {
+            debug!("Day: {}", time_of_day.day);
+        }
+
+        time_of_day.day += day_increase;
     }
 }

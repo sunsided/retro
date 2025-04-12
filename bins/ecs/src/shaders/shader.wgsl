@@ -2,6 +2,7 @@
 
 struct FrameGlobalUniform {
     time_of_day: f32,
+    day: f32,
     star_visibility: f32,
     sun_dir: vec3<f32>,
     sun_visibility: f32,
