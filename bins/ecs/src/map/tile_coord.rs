@@ -1,5 +1,5 @@
 use crate::map::dense_tile_chunk::DenseTileChunk;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::ops::Add;
 
 /// The local coordinates of a tile within a [`DenseTileChunk`](DenseTileChunk).
@@ -22,7 +22,7 @@ pub struct WorldTileCoord {
 
 /// The coordinates of a [`DenseTileChunk`](DenseTileChunk)
 /// in chunk-world space.
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct ChunkCoord {
     pub x: i32,
     pub y: i32,
@@ -77,29 +77,9 @@ impl Add<ChunkCoord> for LocalTileCoord {
     }
 }
 
-impl Hash for ChunkCoord {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        // Morton encoding (Z-order curve)
-        let x = self.x as u32;
-        let y = self.y as u32;
-        fn part1by1(n: u32) -> u32 {
-            let mut n = n & 0x0000ffff;
-            n = (n | (n << 8)) & 0x00FF00FF;
-            n = (n | (n << 4)) & 0x0F0F0F0F;
-            n = (n | (n << 2)) & 0x33333333;
-            n = (n | (n << 1)) & 0x55555555;
-            n
-        }
-        let morton = (part1by1(y) << 1) | part1by1(x);
-        morton.hash(state);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::map::identity_hasher::IdentityHasher;
-    use std::hash::DefaultHasher;
 
     #[test]
     fn local_tile_indexing_is_correct() {
@@ -143,83 +123,5 @@ mod tests {
                 assert_eq!(original, recovered);
             }
         }
-    }
-
-    #[test]
-    fn morton_hash_consistency() {
-        let a = ChunkCoord { x: 5, y: 10 };
-        let b = ChunkCoord { x: 5, y: 10 };
-        let mut hasher_a = IdentityHasher::new();
-        let mut hasher_b = IdentityHasher::new();
-        a.hash(&mut hasher_a);
-        b.hash(&mut hasher_b);
-        assert_eq!(hasher_a.finish(), hasher_b.finish());
-    }
-
-    #[test]
-    fn morton_spatial_locality() {
-        let origin = ChunkCoord { x: 17, y: 23 };
-        let neighbors = [
-            ChunkCoord { x: 17, y: 24 },
-            ChunkCoord { x: 18, y: 23 },
-            ChunkCoord { x: 18, y: 24 },
-            ChunkCoord { x: 16, y: 23 },
-            ChunkCoord { x: 17, y: 22 },
-            ChunkCoord { x: 10, y: 11 },
-            ChunkCoord { x: 11, y: 10 },
-            ChunkCoord { x: 11, y: 11 },
-            ChunkCoord { x: 9, y: 10 },
-            ChunkCoord { x: 10, y: 9 },
-        ];
-
-        let mut origin_hash = IdentityHasher::new();
-        origin.hash(&mut origin_hash);
-        let origin_value = origin_hash.finish();
-        let origin_bucket = origin_value % 64; // Simulate hash map bucket size
-
-        for neighbor in neighbors.iter() {
-            let mut h = IdentityHasher::new();
-            neighbor.hash(&mut h);
-            let value = h.finish();
-            let popdiff = origin_value.count_ones().abs_diff(value.count_ones());
-            assert!(
-                popdiff <= 2,
-                "Hash popcount diff too high for neighbor {:?}: {}",
-                neighbor,
-                popdiff
-            );
-
-            let bucket = value % 64;
-            let bucket_diff = origin_bucket.abs_diff(bucket);
-
-            // Allow neighbor to land within ±1 bucket of origin
-            assert!(
-                bucket_diff <= 1,
-                "Neighbor {:?} landed too far in bucket space: {} vs {} (diff {})",
-                neighbor,
-                origin_bucket,
-                bucket,
-                bucket_diff
-            );
-        }
-
-        let far = ChunkCoord { x: 1000, y: 1000 };
-        let mut far_hash = IdentityHasher::new();
-        far.hash(&mut far_hash);
-        let far_value = far_hash.finish();
-        let far_bucket = far_value % 64;
-
-        let popdiff = origin_value.count_ones().abs_diff(far_value.count_ones());
-        assert!(
-            popdiff >= 5,
-            "Far chunk hash popcount unexpectedly close: {}",
-            popdiff
-        );
-        assert!(
-            origin_bucket.abs_diff(far_bucket) > 1,
-            "Far chunk should land far from origin bucket but didn't: {} vs {}",
-            origin_bucket,
-            far_bucket
-        );
     }
 }
