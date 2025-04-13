@@ -1,23 +1,32 @@
-use crate::engine::components::TileData;
+use crate::map::tile::Tile;
+use crate::map::tile_coord::LocalTileCoord;
 
-/// A [`DenseTileChunk`] is a densely-packed are of [`TileData`]
+/// A [`DenseTileChunk`] is a densely-packed are of [`Tile`] instances.
 #[derive(Debug, Clone)]
 pub struct DenseTileChunk {
-    pub tiles: [TileData; DenseTileChunk::COUNT],
+    pub tiles: [Tile; DenseTileChunk::COUNT],
 }
 
 impl DenseTileChunk {
-    const WIDTH: usize = 16;
-    const HEIGHT: usize = 16;
-    const COUNT: usize = Self::WIDTH * Self::HEIGHT;
+    pub const WIDTH: usize = 16;
+    pub const HEIGHT: usize = 16;
+    pub const COUNT: usize = Self::WIDTH * Self::HEIGHT;
 
+    /// Creates a new chunk pre-filled with empty tiles.
     #[inline]
-    pub fn get(&self, x: usize, y: usize) -> &TileData {
-        &self.tiles[y * Self::WIDTH + x]
+    pub const fn empty() -> Self {
+        Self {
+            tiles: [Tile::new(); DenseTileChunk::COUNT],
+        }
     }
 
     #[inline]
-    pub fn set(&mut self, x: usize, y: usize, tile: TileData) {
-        self.tiles[y * Self::WIDTH + x] = tile;
+    pub fn get(&self, coord: LocalTileCoord) -> &Tile {
+        &self.tiles[coord.to_dense_tile_chunk_index()]
+    }
+
+    #[inline]
+    pub fn set(&mut self, coord: LocalTileCoord, tile: Tile) {
+        self.tiles[coord.to_dense_tile_chunk_index()] = tile;
     }
 }
