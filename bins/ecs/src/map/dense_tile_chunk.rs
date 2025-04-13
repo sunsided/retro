@@ -1,5 +1,8 @@
 use crate::map::tile::Tile;
-use crate::map::tile_coord::ChunkLocalTileCoord;
+use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
+use crate::map::world_region::{
+    ChunkIter, ChunkIterMut, ChunkWithCoordIter, ChunkWithCoordIterMut,
+};
 
 /// A [`DenseTileChunk`] is a densely-packed are of [`Tile`] instances.
 #[derive(Debug, Clone)]
@@ -29,4 +32,44 @@ impl DenseTileChunk {
     pub fn set(&mut self, coord: ChunkLocalTileCoord, tile: Tile) {
         self.tiles[coord.to_dense_tile_chunk_index()] = tile;
     }
+
+    #[inline]
+    pub fn iter(&self) -> TileIter {
+        self.tiles.iter()
+    }
+
+    #[inline]
+    pub fn iter_mut(&mut self) -> TileIterMut {
+        self.tiles.iter_mut()
+    }
+
+    #[inline]
+    pub fn iter_with_coords(&self) -> TileWithCoordIter<'_> {
+        self.tiles.iter().enumerate().map(|(i, chunk)| {
+            let coord = ChunkLocalTileCoord::from_dense_tile_chunk_index(i);
+            (coord, chunk)
+        })
+    }
+
+    #[inline]
+    pub fn iter_mut_with_coords(&mut self) -> TileWithCoordIterMut<'_> {
+        self.tiles.iter_mut().enumerate().map(|(i, chunk)| {
+            let coord = ChunkLocalTileCoord::from_dense_tile_chunk_index(i);
+            (coord, chunk)
+        })
+    }
 }
+
+pub type TileIter<'a> = core::slice::Iter<'a, Tile>;
+
+pub type TileIterMut<'a> = core::slice::IterMut<'a, Tile>;
+
+pub type TileWithCoordIter<'a> = core::iter::Map<
+    core::iter::Enumerate<core::slice::Iter<'a, Tile>>,
+    fn((usize, &Tile)) -> (ChunkLocalTileCoord, &Tile),
+>;
+
+pub type TileWithCoordIterMut<'a> = core::iter::Map<
+    core::iter::Enumerate<core::slice::IterMut<'a, Tile>>,
+    fn((usize, &mut Tile)) -> (ChunkLocalTileCoord, &mut Tile),
+>;
