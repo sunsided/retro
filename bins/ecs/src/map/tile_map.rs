@@ -13,6 +13,7 @@ pub type TileCoordY = u16;
 pub type TileCoordZ = u8;
 
 #[derive(Debug, Clone)]
+#[deprecated(note = "Replaced by TileWorld")]
 pub struct SparseTileMap {
     pub base: HashMap<TileCoord2D, Tile>,
     pub stacks: HashMap<TileCoord2D, HashMap<TileCoordZ, Tile>>, // (x, y) → z → tile

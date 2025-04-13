@@ -11,6 +11,7 @@ use crate::engine::{
 };
 use crate::map::tile::{CeilingType, FloorType, Tile, WallType};
 use crate::map::tile_map::SparseTileMap;
+use crate::map::world_builder::WorldBuilder;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
@@ -85,6 +86,8 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             }
         }
          */
+
+        let world = WorldBuilder::flat_floor();
 
         let mut tilemap = SparseTileMap::new();
 

@@ -1,5 +1,5 @@
-use crate::map::tile_coord::WorldGlobalRegionCoord;
-use crate::map::world_region::WorldRegion;
+use crate::map::tile_coord::{RegionLocalChunkCoord, WorldGlobalRegionCoord};
+use crate::map::world_region::{ChunkWithCoordIter, ChunkWithCoordIterMut, WorldRegion};
 use ahash::HashMapExt;
 use fxhash::FxHashMap;
 
@@ -29,14 +29,30 @@ impl TileWorld {
     }
 
     pub fn iter_regions(&self) -> RegionIter {
-        self.chunks.iter()
+        self.chunks.values()
     }
 
     pub fn iter_regions_mut(&mut self) -> RegionIterMut {
+        self.chunks.values_mut()
+    }
+
+    #[inline]
+    pub fn iter_with_coords(&self) -> RegionWithCoordIter<'_> {
+        self.chunks.iter()
+    }
+
+    #[inline]
+    pub fn iter_mut_with_coords(&mut self) -> RegionWithCoordIterMut<'_> {
         self.chunks.iter_mut()
     }
 }
 
-pub type RegionIter<'a> = std::collections::hash_map::Iter<'a, WorldGlobalRegionCoord, WorldRegion>;
+pub type RegionIter<'a> =
+    std::collections::hash_map::Values<'a, WorldGlobalRegionCoord, WorldRegion>;
 pub type RegionIterMut<'a> =
+    std::collections::hash_map::ValuesMut<'a, WorldGlobalRegionCoord, WorldRegion>;
+
+pub type RegionWithCoordIter<'a> =
+    std::collections::hash_map::Iter<'a, WorldGlobalRegionCoord, WorldRegion>;
+pub type RegionWithCoordIterMut<'a> =
     std::collections::hash_map::IterMut<'a, WorldGlobalRegionCoord, WorldRegion>;

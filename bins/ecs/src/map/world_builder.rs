@@ -8,6 +8,8 @@ pub struct WorldBuilder;
 
 impl WorldBuilder {
     pub fn flat_floor() -> TileWorld {
+        // TODO: Add walls around the entire world if requested
+
         // Create 2x2 regions in the world.
         let mut world = TileWorld::with_capacity(4);
         for (wy, wx) in (-1..1).zip(-1..1) {
