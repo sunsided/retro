@@ -31,6 +31,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
 winit = "0.30.9"
 wgpu = "25.0.0"
+ahash = "0.8.11"
 
 # Necessary to fix a breaking issue with deranged on Rust 2024
 [dependencies.time]

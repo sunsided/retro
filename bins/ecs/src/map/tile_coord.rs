@@ -1,34 +1,110 @@
 use crate::map::dense_tile_chunk::DenseTileChunk;
+use crate::map::world_region::WorldRegion;
 use std::hash::Hash;
 use std::ops::Add;
 
-/// The local coordinates of a tile within a [`DenseTileChunk`](DenseTileChunk).
+/// The local coordinates of a [`Tile`](super::tile::Tile) within a [`DenseTileChunk`](DenseTileChunk).
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct LocalTileCoord {
+#[repr(C)]
+pub struct ChunkLocalTileCoord {
     pub x: u8,
     pub y: u8,
 }
 
-/// The world coordinates of a tile after applying transformations from both
-/// [`ChunkCoord`] and [`LocalTileCoord`].
+/// The local coordinate of a [`DenseTileChunk`](DenseTileChunk) in a [`WorldRegion`].
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[repr(C)]
+pub struct RegionLocalChunkCoord {
+    pub x: u8,
+    pub y: u8,
+}
+
+/// The translated local coordinate of a [`Tile`](super::tile::Tile) in a [`WorldRegion`].
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[repr(C)]
+pub struct RegionLocalTileCoord {
+    pub x: u16,
+    pub y: u16,
+}
+
+/// The local coordinate of a [`WorldRegion`] within the world.
+#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
+#[repr(C)]
+pub struct WorldGlobalRegionCoord {
+    pub x: i8,
+    pub y: i8,
+}
+
+/// The translated local coordinate of a [`DenseTileChunk`] within the world.
+/// Marks the global coordinate offset of the chunk's base coordinate in world space.
 ///
-/// Note that these coordinates still do not reflect actual 3D world coordinates
-/// as these are governed by transformations performed by the ECS.
+/// This is typically the outcome of adding region offset and chunk offset. For construction
+/// of the map, you're likely more interested in [`WorldGlobalRegionCoord`].
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct WorldTileCoord {
+#[repr(C)]
+pub struct WorldGlobalChunkCoord {
     pub x: i32,
     pub y: i32,
 }
 
-/// The coordinates of a [`DenseTileChunk`](DenseTileChunk)
-/// in chunk-world space.
+/// The translated local coordinate of a [`Tile`](super::tile::Tile) within the world.
+/// Marks the global coordinate the tile coordinate in world space.
+///
+/// This is typically the outcome of adding region offset, chunk offset and tile offset.
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
-pub struct ChunkCoord {
+#[repr(C)]
+pub struct WorldGlobalTileCoord {
     pub x: i32,
     pub y: i32,
 }
 
-impl LocalTileCoord {
+impl Add<ChunkLocalTileCoord> for RegionLocalChunkCoord {
+    type Output = RegionLocalTileCoord;
+
+    fn add(self, rhs: ChunkLocalTileCoord) -> Self::Output {
+        RegionLocalTileCoord {
+            x: self.x as u16 * DenseTileChunk::WIDTH as u16 + rhs.x as u16,
+            y: self.y as u16 * DenseTileChunk::HEIGHT as u16 + rhs.y as u16,
+        }
+    }
+}
+
+impl Add<RegionLocalTileCoord> for WorldGlobalRegionCoord {
+    type Output = WorldGlobalTileCoord;
+
+    fn add(self, rhs: RegionLocalTileCoord) -> Self::Output {
+        WorldGlobalTileCoord {
+            x: self.x as i32 * WorldRegion::WIDTH as i32 + rhs.x as i32,
+            y: self.y as i32 * WorldRegion::HEIGHT as i32 + rhs.y as i32,
+        }
+    }
+}
+
+impl Add<RegionLocalChunkCoord> for WorldGlobalRegionCoord {
+    type Output = WorldGlobalChunkCoord;
+
+    fn add(self, rhs: RegionLocalChunkCoord) -> Self::Output {
+        WorldGlobalChunkCoord {
+            x: self.x as i32 * WorldRegion::WIDTH as i32
+                + rhs.x as i32 * DenseTileChunk::WIDTH as i32,
+            y: self.y as i32 * WorldRegion::HEIGHT as i32
+                + rhs.y as i32 * DenseTileChunk::HEIGHT as i32,
+        }
+    }
+}
+
+impl Add<ChunkLocalTileCoord> for WorldGlobalChunkCoord {
+    type Output = WorldGlobalTileCoord;
+
+    fn add(self, rhs: ChunkLocalTileCoord) -> Self::Output {
+        WorldGlobalTileCoord {
+            x: self.x + rhs.x as i32,
+            y: self.y + rhs.y as i32,
+        }
+    }
+}
+
+impl ChunkLocalTileCoord {
     #[inline(always)]
     pub const fn new(x: u8, y: u8) -> Self {
         debug_assert!(x < DenseTileChunk::WIDTH as u8);
@@ -43,37 +119,39 @@ impl LocalTileCoord {
 
     #[inline(always)]
     pub const fn from_dense_tile_chunk_index(index: usize) -> Self {
-        debug_assert!(index < DenseTileChunk::COUNT);
+        debug_assert!(index < DenseTileChunk::TILE_COUNT);
         let x = (index % DenseTileChunk::WIDTH) as u8;
         let y = (index / DenseTileChunk::WIDTH) as u8;
         Self { x, y }
     }
 }
 
-impl ChunkCoord {
+impl RegionLocalChunkCoord {
     #[inline(always)]
-    pub const fn add(self, rhs: LocalTileCoord) -> WorldTileCoord {
-        let x = self.x + rhs.x as i32;
-        let y = self.y + rhs.y as i32;
-        WorldTileCoord { x, y }
+    pub const fn new(x: u8, y: u8) -> Self {
+        debug_assert!(x < WorldRegion::WIDTH as u8);
+        debug_assert!(y < WorldRegion::HEIGHT as u8);
+        Self { x, y }
+    }
+
+    #[inline(always)]
+    pub const fn to_dense_region_index(self) -> usize {
+        (self.y as usize) * WorldRegion::WIDTH + (self.x as usize)
+    }
+
+    #[inline(always)]
+    pub const fn from_dense_region_index(index: usize) -> Self {
+        debug_assert!(index < WorldRegion::CHUNK_COUNT);
+        let x = (index % WorldRegion::WIDTH) as u8;
+        let y = (index / WorldRegion::WIDTH) as u8;
+        Self { x, y }
     }
 }
 
-impl Add<LocalTileCoord> for ChunkCoord {
-    type Output = WorldTileCoord;
-
+impl WorldGlobalRegionCoord {
     #[inline(always)]
-    fn add(self, rhs: LocalTileCoord) -> Self::Output {
-        ChunkCoord::add(self, rhs)
-    }
-}
-
-impl Add<ChunkCoord> for LocalTileCoord {
-    type Output = WorldTileCoord;
-
-    #[inline(always)]
-    fn add(self, rhs: ChunkCoord) -> Self::Output {
-        ChunkCoord::add(rhs, self)
+    pub const fn new(x: i8, y: i8) -> Self {
+        Self { x, y }
     }
 }
 
@@ -83,45 +161,44 @@ mod tests {
 
     #[test]
     fn local_tile_indexing_is_correct() {
-        let coord = LocalTileCoord::new(3, 2);
+        let coord = ChunkLocalTileCoord::new(3, 2);
         let index = coord.to_dense_tile_chunk_index();
         assert_eq!(index, 2 * DenseTileChunk::WIDTH + 3);
-    }
-
-    #[test]
-    fn world_tile_coord_from_chunk_and_local_addition() {
-        let chunk = ChunkCoord { x: 16, y: 32 };
-        let local = LocalTileCoord::new(5, 7);
-        let world = chunk + local;
-
-        assert_eq!(world, WorldTileCoord { x: 21, y: 39 });
-
-        let reverse = local + chunk;
-        assert_eq!(reverse, world);
-    }
-
-    #[test]
-    fn chunk_and_local_add_symmetry() {
-        let chunk = ChunkCoord { x: -16, y: -8 };
-        let local = LocalTileCoord::new(15, 15);
-
-        let a = chunk + local;
-        let b = local + chunk;
-
-        assert_eq!(a, b);
-        assert_eq!(a.x, -1);
-        assert_eq!(a.y, 7);
     }
 
     #[test]
     fn index_roundtrip() {
         for y in 0..DenseTileChunk::HEIGHT {
             for x in 0..DenseTileChunk::WIDTH {
-                let original = LocalTileCoord::new(x as u8, y as u8);
+                let original = ChunkLocalTileCoord::new(x as u8, y as u8);
                 let index = original.to_dense_tile_chunk_index();
-                let recovered = LocalTileCoord::from_dense_tile_chunk_index(index);
+                let recovered = ChunkLocalTileCoord::from_dense_tile_chunk_index(index);
                 assert_eq!(original, recovered);
             }
         }
+    }
+
+    #[test]
+    fn coordinate_transforms_work() {
+        // A region is e.g. 2x2 chunks
+        let world_coord = WorldGlobalRegionCoord::new(-4, 7);
+
+        // A chunk is e.g. 16x16 tiles
+        let chunk_coord = RegionLocalChunkCoord::new(0, 1);
+
+        // Some random tile.
+        let tile_coord = ChunkLocalTileCoord::new(3, 2);
+
+        let coord = world_coord + (chunk_coord + tile_coord);
+        let coord2 = (world_coord + chunk_coord) + tile_coord;
+        assert_eq!(coord, coord2);
+        assert_eq!(
+            coord.x,
+            -4 * WorldRegion::WIDTH as i32 + 0 * DenseTileChunk::WIDTH as i32 + 3
+        );
+        assert_eq!(
+            coord.y,
+            7 * WorldRegion::HEIGHT as i32 + 1 * DenseTileChunk::HEIGHT as i32 + 2
+        );
     }
 }
