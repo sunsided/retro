@@ -1,5 +1,5 @@
-use crate::map::dense_tile_chunk::DenseTileChunk;
 use crate::map::tile::{FloorType, Tile};
+use crate::map::tile_chunk::TileChunk;
 use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord, WorldGlobalRegionCoord};
 use crate::map::tile_world::TileWorld;
 use crate::map::world_region::WorldRegion;
@@ -15,8 +15,8 @@ impl WorldBuilder {
             let mut region = WorldRegion::empty();
             for (cy, cx) in (0..WorldRegion::HEIGHT).zip(0..WorldRegion::HEIGHT) {
                 // For each chunk, create flat floors.
-                let mut chunk = DenseTileChunk::new_empty();
-                for (ty, tx) in (0..DenseTileChunk::HEIGHT).zip(0..DenseTileChunk::HEIGHT) {
+                let mut chunk = TileChunk::new_empty();
+                for (ty, tx) in (0..TileChunk::HEIGHT).zip(0..TileChunk::HEIGHT) {
                     let tile = Tile::new()
                         // TODO: Fix when tile atlas is ready
                         .with_floor(FloorType::Empty);

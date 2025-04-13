@@ -1,16 +1,13 @@
 use crate::map::tile::Tile;
-use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
-use crate::map::world_region::{
-    ChunkIter, ChunkIterMut, ChunkWithCoordIter, ChunkWithCoordIterMut,
-};
+use crate::map::tile_coord::ChunkLocalTileCoord;
 
-/// A [`DenseTileChunk`] is a densely-packed are of [`Tile`] instances.
+/// A [`TileChunk`] is a densely-packed are of [`Tile`] instances.
 #[derive(Debug, Clone)]
-pub struct DenseTileChunk {
-    pub tiles: [Tile; DenseTileChunk::TILE_COUNT],
+pub struct TileChunk {
+    pub tiles: [Tile; TileChunk::TILE_COUNT],
 }
 
-impl DenseTileChunk {
+impl TileChunk {
     pub const WIDTH: usize = 16;
     pub const HEIGHT: usize = 16;
     pub const TILE_COUNT: usize = Self::WIDTH * Self::HEIGHT;
@@ -19,7 +16,7 @@ impl DenseTileChunk {
     #[inline]
     pub const fn new_empty() -> Self {
         Self {
-            tiles: [Tile::new(); DenseTileChunk::TILE_COUNT],
+            tiles: [Tile::new(); TileChunk::TILE_COUNT],
         }
     }
 

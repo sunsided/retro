@@ -1,4 +1,4 @@
-pub mod dense_tile_chunk;
+pub mod tile_chunk;
 pub mod tile;
 pub mod tile_coord;
 pub mod tile_instance;

@@ -1,9 +1,9 @@
-use crate::map::dense_tile_chunk::DenseTileChunk;
+use crate::map::tile_chunk::TileChunk;
 use crate::map::world_region::WorldRegion;
 use std::hash::Hash;
 use std::ops::Add;
 
-/// The local coordinates of a [`Tile`](super::tile::Tile) within a [`DenseTileChunk`](DenseTileChunk).
+/// The local coordinates of a [`Tile`](super::tile::Tile) within a [`DenseTileChunk`](TileChunk).
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(C)]
 pub struct ChunkLocalTileCoord {
@@ -11,7 +11,7 @@ pub struct ChunkLocalTileCoord {
     pub y: u8,
 }
 
-/// The local coordinate of a [`DenseTileChunk`](DenseTileChunk) in a [`WorldRegion`].
+/// The local coordinate of a [`DenseTileChunk`](TileChunk) in a [`WorldRegion`].
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(C)]
 pub struct RegionLocalChunkCoord {
@@ -35,7 +35,7 @@ pub struct WorldGlobalRegionCoord {
     pub y: i8,
 }
 
-/// The translated local coordinate of a [`DenseTileChunk`] within the world.
+/// The translated local coordinate of a [`TileChunk`] within the world.
 /// Marks the global coordinate offset of the chunk's base coordinate in world space.
 ///
 /// This is typically the outcome of adding region offset and chunk offset. For construction
@@ -63,8 +63,8 @@ impl Add<ChunkLocalTileCoord> for RegionLocalChunkCoord {
 
     fn add(self, rhs: ChunkLocalTileCoord) -> Self::Output {
         RegionLocalTileCoord {
-            x: self.x as u16 * DenseTileChunk::WIDTH as u16 + rhs.x as u16,
-            y: self.y as u16 * DenseTileChunk::HEIGHT as u16 + rhs.y as u16,
+            x: self.x as u16 * TileChunk::WIDTH as u16 + rhs.x as u16,
+            y: self.y as u16 * TileChunk::HEIGHT as u16 + rhs.y as u16,
         }
     }
 }
@@ -85,10 +85,8 @@ impl Add<RegionLocalChunkCoord> for WorldGlobalRegionCoord {
 
     fn add(self, rhs: RegionLocalChunkCoord) -> Self::Output {
         WorldGlobalChunkCoord {
-            x: self.x as i32 * WorldRegion::WIDTH as i32
-                + rhs.x as i32 * DenseTileChunk::WIDTH as i32,
-            y: self.y as i32 * WorldRegion::HEIGHT as i32
-                + rhs.y as i32 * DenseTileChunk::HEIGHT as i32,
+            x: self.x as i32 * WorldRegion::WIDTH as i32 + rhs.x as i32 * TileChunk::WIDTH as i32,
+            y: self.y as i32 * WorldRegion::HEIGHT as i32 + rhs.y as i32 * TileChunk::HEIGHT as i32,
         }
     }
 }
@@ -107,21 +105,21 @@ impl Add<ChunkLocalTileCoord> for WorldGlobalChunkCoord {
 impl ChunkLocalTileCoord {
     #[inline(always)]
     pub const fn new(x: u8, y: u8) -> Self {
-        debug_assert!(x < DenseTileChunk::WIDTH as u8);
-        debug_assert!(y < DenseTileChunk::HEIGHT as u8);
+        debug_assert!(x < TileChunk::WIDTH as u8);
+        debug_assert!(y < TileChunk::HEIGHT as u8);
         Self { x, y }
     }
 
     #[inline(always)]
     pub const fn to_dense_tile_chunk_index(self) -> usize {
-        (self.y as usize) * DenseTileChunk::WIDTH + (self.x as usize)
+        (self.y as usize) * TileChunk::WIDTH + (self.x as usize)
     }
 
     #[inline(always)]
     pub const fn from_dense_tile_chunk_index(index: usize) -> Self {
-        debug_assert!(index < DenseTileChunk::TILE_COUNT);
-        let x = (index % DenseTileChunk::WIDTH) as u8;
-        let y = (index / DenseTileChunk::WIDTH) as u8;
+        debug_assert!(index < TileChunk::TILE_COUNT);
+        let x = (index % TileChunk::WIDTH) as u8;
+        let y = (index / TileChunk::WIDTH) as u8;
         Self { x, y }
     }
 }
@@ -163,13 +161,13 @@ mod tests {
     fn local_tile_indexing_is_correct() {
         let coord = ChunkLocalTileCoord::new(3, 2);
         let index = coord.to_dense_tile_chunk_index();
-        assert_eq!(index, 2 * DenseTileChunk::WIDTH + 3);
+        assert_eq!(index, 2 * TileChunk::WIDTH + 3);
     }
 
     #[test]
     fn index_roundtrip() {
-        for y in 0..DenseTileChunk::HEIGHT {
-            for x in 0..DenseTileChunk::WIDTH {
+        for y in 0..TileChunk::HEIGHT {
+            for x in 0..TileChunk::WIDTH {
                 let original = ChunkLocalTileCoord::new(x as u8, y as u8);
                 let index = original.to_dense_tile_chunk_index();
                 let recovered = ChunkLocalTileCoord::from_dense_tile_chunk_index(index);
@@ -194,11 +192,11 @@ mod tests {
         assert_eq!(coord, coord2);
         assert_eq!(
             coord.x,
-            -4 * WorldRegion::WIDTH as i32 + 0 * DenseTileChunk::WIDTH as i32 + 3
+            -4 * WorldRegion::WIDTH as i32 + 0 * TileChunk::WIDTH as i32 + 3
         );
         assert_eq!(
             coord.y,
-            7 * WorldRegion::HEIGHT as i32 + 1 * DenseTileChunk::HEIGHT as i32 + 2
+            7 * WorldRegion::HEIGHT as i32 + 1 * TileChunk::HEIGHT as i32 + 2
         );
     }
 }
