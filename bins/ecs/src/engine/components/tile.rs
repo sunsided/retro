@@ -1,78 +1,125 @@
-#[derive(Clone, Copy, Debug)]
-#[repr(transparent)]
-pub struct TileData(pub u32);
+use bitfield_struct::bitfield;
 
-impl TileData {
-    pub fn floor_layer(&self) -> u8 {
-        (self.0 & 0xFF) as u8
-    }
-
-    pub fn wall_layer(&self) -> u8 {
-        ((self.0 >> 8) & 0xFF) as u8
-    }
-
-    pub fn ceiling_layer(&self) -> u8 {
-        ((self.0 >> 16) & 0xFF) as u8
-    }
-
-    pub fn flags(&self) -> TileFlags {
-        TileFlags::from_bits_truncate((self.0 >> 24) as u16)
-    }
-
-    pub fn middle_layer(&self) -> u32 {
-        self.wall_layer() as u32
-    }
-
-    pub fn has_wall_north(&self) -> bool {
-        self.flags().contains(TileFlags::WALL_N)
-    }
-
-    pub fn has_wall_south(&self) -> bool {
-        self.flags().contains(TileFlags::WALL_S)
-    }
-
-    pub fn has_wall_east(&self) -> bool {
-        self.flags().contains(TileFlags::WALL_E)
-    }
-
-    pub fn has_wall_west(&self) -> bool {
-        self.flags().contains(TileFlags::WALL_W)
-    }
-
-    pub fn has_ceiling(&self) -> bool {
-        self.flags().contains(TileFlags::CEILING) || self.ceiling_layer() != self.floor_layer()
-    }
-
-    pub fn has_ceiling_variant(&self) -> bool {
-        self.flags().contains(TileFlags::CEILING_VARIANT)
-    }
-
-    pub fn is_special(&self) -> bool {
-        self.flags().contains(TileFlags::SPECIAL)
-    }
-
-    pub fn each_wall<F: FnMut(WallDirection)>(&self, mut f: F) {
-        if self.has_wall_north() {
-            f(WallDirection::North);
-        }
-        if self.has_wall_south() {
-            f(WallDirection::South);
-        }
-        if self.has_wall_east() {
-            f(WallDirection::East);
-        }
-        if self.has_wall_west() {
-            f(WallDirection::West);
-        }
-    }
+#[bitfield(u32)]
+pub struct TileData {
+    #[bits(4)]
+    pub dungeon: DungeonType,
+    #[bits(4)]
+    pub biome: BiomeType,
+    #[bits(4)]
+    pub floor: FloorType,
+    #[bits(4)]
+    pub wall: WallType,
+    #[bits(1)]
+    pub wall_north: bool,
+    #[bits(1)]
+    pub wall_south: bool,
+    #[bits(1)]
+    pub wall_east: bool,
+    #[bits(1)]
+    pub wall_west: bool,
+    #[bits(2)]
+    pub ceiling: CeilingType,
+    #[bits(3)]
+    pub door: DoorType,
+    #[bits(1)]
+    pub map_special: bool,
+    #[bits(1)]
+    pub trigger: bool,
+    #[bits(5)]
+    pub reserved: u8,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[repr(u8)]
 pub enum WallDirection {
+    North = 0,
+    East = 1,
+    South = 2,
+    West = 3,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DungeonType {
+    Outdoors = 0,
+    City = 1,
+    Basement = 2,
+    Cave = 3,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BiomeType {
+    Nature = 0,
+    Winter = 1,
+    Desert = 2,
+    Fire = 3,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FloorType {
+    Empty = 0,
+    Grass = 1,
+    Stone = 2,
+    Water = 3,
+    Lava = 4,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WallType {
+    None = 0,
+    Brick = 1,
+    Metal = 2,
+    Door = 3,
+    Secret = 4,
+}
+
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CeilingType {
+    None = 0,
+    CopyFloor = 1,
+    CopyWall = 2,
+    Special = 3,
+}
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum DoorType {
+    None,
     North,
     East,
     South,
     West,
+    Up,
+    Down,
+}
+
+impl TileData {
+    pub fn has_ceiling(&self) -> bool {
+        self.ceiling() != CeilingType::None
+    }
+
+    pub fn has_ceiling_variant(&self) -> bool {
+        self.ceiling() != CeilingType::Special
+    }
+
+    pub fn each_wall<F: FnMut(WallDirection)>(&self, mut f: F) {
+        if self.wall_north() {
+            f(WallDirection::North);
+        }
+        if self.wall_south() {
+            f(WallDirection::South);
+        }
+        if self.wall_east() {
+            f(WallDirection::East);
+        }
+        if self.wall_west() {
+            f(WallDirection::West);
+        }
+    }
 }
 
 impl WallDirection {
@@ -96,87 +143,112 @@ impl WallDirection {
     }
 }
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug)]
-pub enum FloorType {
-    Empty = 0,
-    Grass = 1,
-    Stone = 2,
-    Water = 3,
-    Lava = 4,
-}
+impl WallDirection {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
 
-#[repr(u8)]
-#[derive(Clone, Copy, Debug)]
-pub enum WallType {
-    None = 0,
-    Brick = 1,
-    Metal = 2,
-    Door = 3,
-    Secret = 4,
-}
-
-bitflags::bitflags! {
-    #[derive(Debug, Clone, Copy)]
-    pub struct TileFlags: u16 {
-        const NONE      = 0b0000_0000;
-        const DOOR      = 0b0000_0001;
-        const TRIGGER   = 0b0000_0010;
-        const HIDDEN    = 0b0000_0100;
-        const RESERVED  = 0b0000_1000;
-
-        const WALL_N    = 0b0001_0000;
-        const WALL_E    = 0b0010_0000;
-        const WALL_S    = 0b0100_0000;
-        const WALL_W    = 0b1000_0000;
-
-        const CEILING           = 0b0000_0001_0000_0000;
-        const CEILING_VARIANT   = 0b0000_0010_0000_0000;
-        const SPECIAL           = 0b0000_0100_0000_0000;
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::North,
+            1 => Self::East,
+            2 => Self::South,
+            _ => Self::West,
+        }
     }
 }
 
-#[macro_export]
-macro_rules! tile {
-    (
-        floor: $floor:expr,
-        wall: $wall:expr,
-        ceiling: $ceiling:expr,
-        flags: $flags:expr $(,)?
-    ) => {
-        TileData(
-            (($flags.bits() as u32) << 24) |
-            (($ceiling as u32) << 16) |
-            (($wall as u32) << 8) |
-            ($floor as u32)
-        )
-    };
+impl DungeonType {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
 
-    (
-        floor: $floor:expr,
-        wall: $wall:expr,
-        flags: $flags:expr $(,)?
-    ) => {
-        tile!(floor: $floor, wall: $wall, ceiling: $floor, flags: $flags)
-    };
-
-    (
-        floor: $floor:expr,
-        wall: $wall:expr $(,)?
-    ) => {
-        tile!(floor: $floor, wall: $wall, ceiling: $floor, flags: TileFlags::NONE)
-    };
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::Outdoors,
+            1 => Self::City,
+            2 => Self::Basement,
+            _ => Self::Cave,
+        }
+    }
 }
 
-impl std::fmt::Display for TileData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Tile(floor: {}, wall: {}, ceiling: {}, flags: {:?})",
-            self.floor_layer(),
-            self.wall_layer(),
-            self.ceiling_layer(),
-            self.flags(),
-        )
+impl BiomeType {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
+
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::Nature,
+            1 => Self::Winter,
+            2 => Self::Desert,
+            _ => Self::Fire,
+        }
+    }
+}
+
+impl FloorType {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
+
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::Empty,
+            1 => Self::Grass,
+            2 => Self::Stone,
+            3 => Self::Water,
+            _ => Self::Lava,
+        }
+    }
+}
+
+impl WallType {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
+
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::None,
+            1 => Self::Brick,
+            2 => Self::Metal,
+            3 => Self::Door,
+            _ => Self::Secret,
+        }
+    }
+}
+
+impl CeilingType {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
+
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::None,
+            1 => Self::CopyFloor,
+            2 => Self::CopyWall,
+            _ => Self::Special,
+        }
+    }
+}
+
+impl DoorType {
+    const fn into_bits(self) -> u8 {
+        self as _
+    }
+
+    const fn from_bits(value: u8) -> Self {
+        match value {
+            0 => Self::None,
+            1 => Self::North,
+            2 => Self::East,
+            3 => Self::South,
+            4 => Self::West,
+            5 => Self::Up,
+            _ => Self::Down,
+        }
     }
 }

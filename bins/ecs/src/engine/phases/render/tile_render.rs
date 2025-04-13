@@ -47,7 +47,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
 
             floors.push(TileInstance {
                 transform,
-                tile_index: tile.floor_layer() as u32,
+                tile_index: tile.0.floor() as u32,
                 decoration_index: 0,
                 entity_id: floor_id,
             });
@@ -56,11 +56,14 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 let ceiling_transform =
                     Matrix4::from_translation(Vector3::new(pos.x, pos.y + 1.0, pos.z))
                         * Matrix4::from_angle_x(Rad(std::f32::consts::PI)); // flip upside down
-                let index = if tile.has_ceiling_variant() {
-                    tile.ceiling_layer() as u32
+                let _index = if tile.has_ceiling_variant() {
+                    tile.ceiling() as u32
                 } else {
-                    tile.floor_layer() as u32
+                    tile.floor() as u32
                 };
+
+                // TODO: Implement proper texture atlas
+                let index = 0;
 
                 ceilings.push(TileInstance {
                     transform: ceiling_transform.into(),
@@ -127,7 +130,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                         usage: wgpu::BufferUsages::VERTEX,
                     });
 
-            pass.set_bind_group(3, &device.bind_groups().stonepath, &[]);
+            pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
             pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
             pass.set_vertex_buffer(1, ceiling_buffer.slice(..));
             pass.draw_indexed(0..6, 0, 0..ceilings.len() as u32);
@@ -161,7 +164,7 @@ pub fn spawn_wall_instances_from_tile(
 
         out.push(TileInstance {
             transform: transform.into(),
-            tile_index: tile.wall_layer() as u32,
+            tile_index: tile.wall() as u32,
             decoration_index: 0,
             entity_id,
         });

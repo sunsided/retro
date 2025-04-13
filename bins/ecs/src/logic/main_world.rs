@@ -1,6 +1,6 @@
 use crate::engine::components::{
-    AmbientLightData, CameraData, ColorData, DynamicLightData, FloorType, PositionData,
-    SkydomeData, StarsData, SunData, TileData, TileFlags, TimeOfDayData, WallType,
+    AmbientLightData, CameraData, CeilingType, ColorData, DynamicLightData, FloorType,
+    PositionData, SkydomeData, StarsData, SunData, TileData, TimeOfDayData, WallType,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::TileEntityData;
@@ -10,7 +10,6 @@ use crate::engine::{
     PositionComponent, SceneBackgroundEntityData,
 };
 use crate::map::tile_map::SparseTileMap;
-use crate::tile;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
@@ -92,27 +91,22 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         for y in 0..5 {
             for x in 0..5 {
                 let is_edge = x == 0 || y == 0 || x == 4 || y == 4;
+                let mut tile = TileData::default().with_floor(FloorType::Empty);
+
                 let tile = if is_edge {
-                    let mut flags = TileFlags::NONE;
-
-                    if y == 0 {
-                        flags |= TileFlags::WALL_S;
-                    }
-                    if y == 4 {
-                        flags |= TileFlags::WALL_N;
-                    }
-                    if x == 0 {
-                        flags |= TileFlags::WALL_W;
-                    }
-                    if x == 4 {
-                        flags |= TileFlags::WALL_E;
-                    }
-
-                    flags |= TileFlags::CEILING;
-                    tile!(floor: FloorType::Empty, wall: WallType::None, ceiling: FloorType::Stone, flags: flags)
+                    tile.set_wall_south(y == 0);
+                    tile.set_wall_north(y == 4);
+                    tile.set_wall_west(x == 0);
+                    tile.set_wall_east(x == 4);
+                    tile.set_ceiling(CeilingType::CopyWall);
+                    tile
                 } else {
-                    // tile!(floor: FloorType::Grass, wall: WallType::None)
-                    tile!(floor: FloorType::Empty, wall: WallType::None)
+                    if x < 2 || x > 2 || y < 2 || y > 2 {
+                        tile.set_ceiling(CeilingType::CopyWall);
+                        tile
+                    } else {
+                        tile
+                    }
                 };
                 tilemap.set(x, y, 0, tile);
 
@@ -133,13 +127,17 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             2,
             2,
             1,
-            tile!(floor: FloorType::Stone, wall: WallType::Brick),
+            TileData::default()
+                .with_floor(FloorType::Stone)
+                .with_wall(WallType::Brick),
         );
         tilemap.set(
             2,
             2,
             2,
-            tile!(floor: FloorType::Stone, wall: WallType::Brick),
+            TileData::default()
+                .with_floor(FloorType::Stone)
+                .with_wall(WallType::Brick),
         );
     }
 }
