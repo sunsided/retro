@@ -32,6 +32,7 @@ tracing-appender = "0.2.3"
 winit = "0.30.9"
 wgpu = "25.0.0"
 ahash = "0.8.11"
+itertools = "0.14.0"
 
 # Necessary to fix a breaking issue with deranged on Rust 2024
 [dependencies.time]

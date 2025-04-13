@@ -85,8 +85,10 @@ impl Add<RegionLocalChunkCoord> for WorldGlobalRegionCoord {
 
     fn add(self, rhs: RegionLocalChunkCoord) -> Self::Output {
         WorldGlobalChunkCoord {
-            x: self.x as i32 * WorldRegion::WIDTH as i32 + rhs.x as i32 * TileChunk::WIDTH as i32,
-            y: self.y as i32 * WorldRegion::HEIGHT as i32 + rhs.y as i32 * TileChunk::HEIGHT as i32,
+            x: self.x as i32 * (WorldRegion::WIDTH * TileChunk::WIDTH) as i32
+                + rhs.x as i32 * TileChunk::WIDTH as i32,
+            y: self.y as i32 * (WorldRegion::HEIGHT * TileChunk::HEIGHT) as i32
+                + rhs.y as i32 * TileChunk::HEIGHT as i32,
         }
     }
 }
