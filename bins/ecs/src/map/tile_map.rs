@@ -1,4 +1,5 @@
 use crate::engine::components::TileData;
+use crate::map::tile::Tile;
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -13,8 +14,8 @@ pub type TileCoordZ = u8;
 
 #[derive(Debug, Clone)]
 pub struct SparseTileMap {
-    pub base: HashMap<TileCoord2D, TileData>,
-    pub stacks: HashMap<TileCoord2D, HashMap<TileCoordZ, TileData>>, // (x, y) → z → tile
+    pub base: HashMap<TileCoord2D, Tile>,
+    pub stacks: HashMap<TileCoord2D, HashMap<TileCoordZ, Tile>>, // (x, y) → z → tile
 }
 
 impl SparseTileMap {
@@ -25,7 +26,7 @@ impl SparseTileMap {
         }
     }
 
-    pub fn set(&mut self, x: TileCoordX, y: TileCoordY, z: TileCoordZ, tile: TileData) {
+    pub fn set(&mut self, x: TileCoordX, y: TileCoordY, z: TileCoordZ, tile: Tile) {
         if z == 0 {
             self.base.insert(TileCoord2D { x, y }, tile);
         } else {
@@ -36,7 +37,7 @@ impl SparseTileMap {
         }
     }
 
-    pub fn get(&self, x: u16, y: u16, z: u8) -> Option<TileData> {
+    pub fn get(&self, x: u16, y: u16, z: u8) -> Option<Tile> {
         if z == 0 {
             self.base.get(&TileCoord2D { x, y }).copied()
         } else {
@@ -47,7 +48,7 @@ impl SparseTileMap {
         }
     }
 
-    pub fn all_instances(&self) -> impl Iterator<Item = (u16, u16, u8, TileData)> + '_ {
+    pub fn all_instances(&self) -> impl Iterator<Item = (u16, u16, u8, Tile)> + '_ {
         let base_iter = self
             .base
             .iter()
