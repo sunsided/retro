@@ -1,4 +1,5 @@
 use crate::engine::components::TileData;
+use crate::engine::phases::render::frame_state::FrameEntityIds;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
     ApplyTileRenderSystem, CreateSystem, PositionComponent, SystemFactory, TileComponent,
@@ -34,9 +35,6 @@ impl ApplyTileRenderSystem for TileRenderSystem {
         };
 
         let frame_entity_ids = frame_state.per_frame_entity_ids();
-        let floor_id = frame_entity_ids.next();
-        let wall_id = frame_entity_ids.next();
-        let ceil_id = frame_entity_ids.next();
 
         let mut floors = Vec::with_capacity(tiles.len());
         let mut walls = Vec::with_capacity(tiles.len());
@@ -44,6 +42,8 @@ impl ApplyTileRenderSystem for TileRenderSystem {
 
         for (tile, pos) in tiles.iter().zip(positions) {
             let transform = compute_tile_transform(pos);
+
+            let floor_id = frame_entity_ids.next();
 
             floors.push(TileInstance {
                 transform,
@@ -53,6 +53,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             });
 
             if tile.has_ceiling() {
+                let ceil_id = frame_entity_ids.next();
                 let ceiling_transform =
                     Matrix4::from_translation(Vector3::new(pos.x, pos.y + 1.0, pos.z))
                         * Matrix4::from_angle_x(Rad(std::f32::consts::PI)); // flip upside down
@@ -73,7 +74,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 });
             }
 
-            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, wall_id, &mut walls);
+            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, &frame_entity_ids, &mut walls);
         }
 
         if floors.is_empty() {
@@ -147,7 +148,7 @@ pub fn spawn_wall_instances_from_tile(
     tile: &TileData,
     tile_x: f32,
     tile_z: f32,
-    entity_id: u32,
+    entity_id: &FrameEntityIds,
     out: &mut Vec<TileInstance>,
 ) {
     tile.each_wall(|dir| {
@@ -162,6 +163,7 @@ pub fn spawn_wall_instances_from_tile(
 
         let transform = translate * rotate * upright;
 
+        let entity_id = entity_id.next();
         out.push(TileInstance {
             transform: transform.into(),
             tile_index: tile.wall() as u32,

@@ -129,6 +129,6 @@ fn fs_main(
 
     var out: FragmentOutput;
     out.color = vec4<f32>(result, tile_color.a);
-    out.entity_id = 0u;
+    out.entity_id = in.entity_id;
     return out;
 }
