@@ -45,17 +45,17 @@ impl DenseTileChunk {
 
     #[inline]
     pub fn iter_with_coords(&self) -> TileWithCoordIter<'_> {
-        self.tiles.iter().enumerate().map(|(i, chunk)| {
+        self.tiles.iter().enumerate().map(|(i, tile)| {
             let coord = ChunkLocalTileCoord::from_dense_tile_chunk_index(i);
-            (coord, chunk)
+            (coord, tile)
         })
     }
 
     #[inline]
     pub fn iter_mut_with_coords(&mut self) -> TileWithCoordIterMut<'_> {
-        self.tiles.iter_mut().enumerate().map(|(i, chunk)| {
+        self.tiles.iter_mut().enumerate().map(|(i, tile)| {
             let coord = ChunkLocalTileCoord::from_dense_tile_chunk_index(i);
-            (coord, chunk)
+            (coord, tile)
         })
     }
 }
