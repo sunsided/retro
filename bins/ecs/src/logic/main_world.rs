@@ -88,6 +88,29 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
          */
 
         let world = WorldBuilder::flat_floor();
+        world
+            .iter_with_coords()
+            .flat_map(|(wrc, region)| {
+                region
+                    .iter_with_coords()
+                    .map(move |(rcc, chunk)| (*wrc + rcc, chunk))
+            })
+            .flat_map(|(wcc, chunk)| {
+                chunk
+                    .iter_with_coords()
+                    .map(move |(ctc, chunk)| (wcc + ctc, chunk))
+            })
+            .for_each(|(wtc, tile)| {
+                self.spawn_tile(TileEntityData {
+                    tile: TileData::from(tile).into(),
+                    position: PositionData {
+                        x: wtc.x as f32 - 2.0,
+                        y: 0.0,
+                        z: -(wtc.y as f32) + 2.0,
+                    }
+                    .into(),
+                });
+            });
 
         let mut tilemap = SparseTileMap::new();
 

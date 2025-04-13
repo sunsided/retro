@@ -21,6 +21,12 @@ impl From<Tile> for TileData {
     }
 }
 
+impl From<&Tile> for TileData {
+    fn from(tile: &Tile) -> Self {
+        (*tile).into()
+    }
+}
+
 impl From<TileData> for Tile {
     fn from(tile_data: TileData) -> Self {
         tile_data.tile
