@@ -68,6 +68,7 @@ pub mod frame_globals;
 mod frame_state;
 pub mod render;
 pub mod render_sky;
+pub mod tile_render;
 pub mod vga_blit;
 mod wgpu_render_state;
 

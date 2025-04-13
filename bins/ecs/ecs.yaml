@@ -28,6 +28,7 @@ worlds:
       - Camera
       - Cube
       - Player
+      - Tile
       - ForegroundObject
       - BackgroundObject
       - SceneBackground
@@ -44,6 +45,7 @@ components:
   - name: Position
   - name: Transform
   - name: Velocity
+  - name: Tile
   - name: Health
   - name: Collider
   - name: Model
@@ -71,6 +73,11 @@ archetypes:
     components:
       - DynamicLight
       - Color
+      - Position
+
+  - name: Tile
+    components:
+      - Tile
       - Position
 
   - name: Cube
@@ -197,6 +204,17 @@ systems:
       - Position
       - Transform
       - Model
+    states:
+      - use: WgpuRender
+        write: true
+
+  - name: TileRender
+    phase: Render
+    run_after:
+      - Render
+    inputs:
+      - Tile
+      - Position
     states:
       - use: WgpuRender
         write: true

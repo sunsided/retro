@@ -185,6 +185,7 @@ pub struct MainWorldStates {
     /// - [`RenderBackgroundSystem`]
     /// - [`RenderSkySystem`]
     /// - [`RenderSystem`]
+    /// - [`TileRenderSystem`]
     /// - [`DynamicLightSystem`]
     /// - [`VgaBlitSystem`]
     pub wgpu_render: WgpuRenderState,
@@ -206,6 +207,7 @@ struct MainWorldArchetypes {
     pub environment: EnvironmentArchetype,
     pub camera: CameraArchetype,
     pub dynamic_light: DynamicLightArchetype,
+    pub tile: TileArchetype,
     pub cube: CubeArchetype,
     pub player: PlayerArchetype,
     pub foreground_object: ForegroundObjectArchetype,
@@ -224,6 +226,7 @@ pub struct MainWorldSystems {
     camera: CameraSystem,
     camera_render: CameraRenderSystem,
     dynamic_light: DynamicLightSystem,
+    tile_render: TileRenderSystem,
     physics: PhysicsSystem,
     render: RenderSystem,
     background_color_cycle: BackgroundColorCycleSystem,
@@ -343,6 +346,20 @@ impl MainWorldSystems {
     pub fn as_dynamic_light_mut(&mut self) -> &mut DynamicLightSystemData {
         use core::ops::DerefMut;
         self.dynamic_light.deref_mut()
+    }
+
+    /// Gives immutable access to the [`TileRenderSystemData`] of the [`TileRenderSystem`].
+    #[inline]
+    pub fn as_tile_render_ref(&self) -> &TileRenderSystemData {
+        use core::ops::Deref;
+        self.tile_render.deref()
+    }
+
+    /// Gives mutable access to the [`TileRenderSystemData`] of the [`TileRenderSystem`].
+    #[inline]
+    pub fn as_tile_render_mut(&mut self) -> &mut TileRenderSystemData {
+        use core::ops::DerefMut;
+        self.tile_render.deref_mut()
     }
 
     /// Gives immutable access to the [`PhysicsSystemData`] of the [`PhysicsSystem`].
@@ -528,6 +545,20 @@ impl AsMut<DynamicLightSystemData> for MainWorldSystems {
     }
 }
 
+impl AsRef<TileRenderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &TileRenderSystemData {
+        self.as_tile_render_ref()
+    }
+}
+
+impl AsMut<TileRenderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut TileRenderSystemData {
+        self.as_tile_render_mut()
+    }
+}
+
 impl AsRef<PhysicsSystemData> for MainWorldSystems {
     #[inline]
     fn as_ref(&self) -> &PhysicsSystemData {
@@ -626,6 +657,15 @@ impl<E, Q> Spawn<DynamicLightEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<TileEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: TileEntityData) -> EntityId {
+        self.spawn_tile(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<CubeEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
@@ -719,6 +759,7 @@ impl<E, Q> MainWorld<E, Q> {
          + CreateSystem<CameraSystem>
          + CreateSystem<CameraRenderSystem>
          + CreateSystem<DynamicLightSystem>
+         + CreateSystem<TileRenderSystem>
          + CreateSystem<PhysicsSystem>
          + CreateSystem<RenderSystem>
          + CreateSystem<BackgroundColorCycleSystem>
@@ -739,6 +780,7 @@ impl<E, Q> MainWorld<E, Q> {
                 camera: CreateSystem::<CameraSystem>::create(create_systems),
                 camera_render: CreateSystem::<CameraRenderSystem>::create(create_systems),
                 dynamic_light: CreateSystem::<DynamicLightSystem>::create(create_systems),
+                tile_render: CreateSystem::<TileRenderSystem>::create(create_systems),
                 physics: CreateSystem::<PhysicsSystem>::create(create_systems),
                 render: CreateSystem::<RenderSystem>::create(create_systems),
                 background_color_cycle: CreateSystem::<BackgroundColorCycleSystem>::create(create_systems),
@@ -894,6 +936,42 @@ impl<E, Q> MainWorld<E, Q> {
             .spawn_with(
                 dynamic_light,
                 color,
+                position,
+                Registry(&mut self.entity_locations)
+            )
+    }
+
+    /// Spawn a new `Tile` entity into the world given its [`TileEntityData`].
+    #[inline]
+    pub fn spawn_tile(
+        &mut self,
+        tile: TileEntityData
+    ) -> EntityId {
+        self.spawn_tile_with(
+            tile.tile,
+            tile.position,
+        )
+    }
+
+    /// Spawn a new `Tile` entity into the world.
+    pub fn spawn_tile_with(
+        &mut self,
+        tile: TileComponent,
+        position: PositionComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.tile
+            .spawn_with(
+                tile,
                 position,
                 Registry(&mut self.entity_locations)
             )
@@ -1858,7 +1936,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 7
+        // System group 1 of 8
         let is_ready = self.systems.frame_globals.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1884,7 +1962,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 7
+        // System group 2 of 8
         let is_ready = self.systems.render_background.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1906,7 +1984,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 7
+        // System group 3 of 8
         let is_ready = self.systems.render_sky.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1928,7 +2006,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 4 of 7
+        // System group 4 of 8
         let is_ready = self.systems.render.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -1952,7 +2030,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 5 of 7
+        // System group 5 of 8
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                &mut self.states.wgpu_render,
@@ -1979,7 +2057,30 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 6 of 7
+        // System group 6 of 8
+        let is_ready = self.systems.tile_render.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.tile_render.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply TileRenderSystem to TileArchetype
+            self.systems.tile_render.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.tile.tiles,
+                &self.archetypes.tile.positions,
+            );
+
+            self.systems.tile_render.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 7 of 8
         let is_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -2001,7 +2102,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 7 of 7
+        // System group 8 of 8
         let is_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -2231,6 +2332,39 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 6
+        let is_tile_render_ready = self.systems.tile_render.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_tile_render_ready = is_tile_render_ready &
+            self.systems.tile_render.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_tile_render_ready {
+                    s.spawn(|_| {
+                        // Apply TileRenderSystem to TileArchetype
+                        self.systems.tile_render.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.tile.tiles,
+                            &self.archetypes.tile.positions,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.tile_render.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 7
         let is_vga_blit_ready = self.systems.vga_blit.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -2262,7 +2396,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 7
+        // System group 8
         let is_camera_render_ready = self.systems.camera_render.is_ready(
                &self.states.wgpu_render,
                &mut self.states.active_camera,
@@ -2350,6 +2484,10 @@ impl<E, Q> MainWorld<E, Q> {
                 let id = self.spawn_dynamic_light(data);
                 tracing::trace!(%id, "Spawned DynamicLight entity");
             },
+            ArchetypeEntityData::Tile(data) => {
+                let id = self.spawn_tile(data);
+                tracing::trace!(%id, "Spawned Tile entity");
+            },
             ArchetypeEntityData::Cube(data) => {
                 let id = self.spawn_cube(data);
                 tracing::trace!(%id, "Spawned Cube entity");
@@ -2396,6 +2534,12 @@ impl<E, Q> MainWorld<E, Q> {
                         .dynamic_light
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, DynamicLightArchetype::ID))?
+                }
+                TileArchetype::ID => {
+                    self.archetypes
+                        .tile
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, TileArchetype::ID))?
                 }
                 CubeArchetype::ID => {
                     self.archetypes
@@ -2535,6 +2679,12 @@ impl<E, Q> MainWorld<E, Q> {
             },
             ArchetypeId::DynamicLight => {
                 self.frontload_dynamic_lights_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
+            ArchetypeId::Tile => {
+                self.frontload_tiles_by_indices_sorted(
                     indices_to_frontload,
                     previous_frontload_pivot
                 )
@@ -2756,6 +2906,68 @@ impl<E, Q> MainWorld<E, Q> {
     {
         self.archetypes
             .dynamic_light
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_tiles(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .tile
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_tiles_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .tile
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_tiles_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&TileEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .tile
             .frontload_scan(
                 &mut self.entity_locations,
                 should_frontload

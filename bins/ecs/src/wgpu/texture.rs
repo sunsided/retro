@@ -64,8 +64,8 @@ pub enum TextureError {
 }
 
 impl Texture {
-    pub const VGA_WIDTH: u32 = 320;
-    pub const VGA_HEIGHT: u32 = 200;
+    pub const VGA_WIDTH: u32 = 320 * 6 / 4;
+    pub const VGA_HEIGHT: u32 = 200 * 6 / 4;
     #[allow(dead_code)]
     pub const VGA_BYTES_PER_PIXEL: u32 = 4; // 32 bpp (RGBA)
     #[allow(dead_code)]

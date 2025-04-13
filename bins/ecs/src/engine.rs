@@ -15,7 +15,6 @@
 mod command_queue;
 pub mod components;
 pub mod input_state;
-mod main_world;
 mod phase_events;
 pub mod phases;
 
@@ -32,6 +31,7 @@ use crate::engine::phases::render::{
     frame_globals::FrameGlobalsSystemData,
     render::RenderSystemData,
     render_sky::RenderSkySystemData,
+    tile_render::TileRenderSystemData,
     vga_blit::VgaBlitSystemData,
     WgpuRenderState,
 };
@@ -39,7 +39,6 @@ use crate::engine::phases::update::{
     camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData,
 };
 pub use command_queue::CommandQueue;
-pub use main_world::InitializeMainWorld;
 pub use phase_events::PhaseEvents;
 
 /// The hash map used for entity lookups.

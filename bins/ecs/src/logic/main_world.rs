@@ -1,18 +1,15 @@
-use crate::camera::Projection;
 use crate::engine::components::{
-    AmbientLightData, CameraData, ColorData, DynamicLightData, PositionData, SkydomeData,
-    StarsData, SunData, TimeOfDayData, VelocityData,
+    AmbientLightData, CameraData, CeilingType, ColorData, DynamicLightData, FloorType,
+    PositionData, SkydomeData, StarsData, SunData, TileData, TimeOfDayData, WallType,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
+use crate::engine::TileEntityData;
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
-    CubeEntityData, DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData,
-    MainWorld, ModelComponent, PositionComponent, SceneBackgroundEntityData, TimeOfDayComponent,
-    TransformComponent, VelocityComponent,
+    DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
+    PositionComponent, SceneBackgroundEntityData,
 };
-use cgmath::{InnerSpace, Rotation3, Zero};
-use parking_lot::Mutex;
-use std::sync::Arc;
+use crate::map::tile_map::SparseTileMap;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
@@ -35,28 +32,29 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         });
 
         self.spawn_camera(CameraEntityData {
-            camera: CameraComponent(CameraData {
+            camera: CameraComponent::new(CameraData {
                 active: true,
                 ..Default::default()
             }),
-            camera_fps_controller: CameraFpsControllerComponent(Default::default()),
+            camera_fps_controller: CameraFpsControllerComponent::new(Default::default()),
         });
 
         self.spawn_dynamic_light(DynamicLightEntityData {
-            dynamic_light: DynamicLightComponent(DynamicLightData::default()),
-            color: ColorComponent(ColorData {
+            dynamic_light: DynamicLightComponent::new(DynamicLightData::default()),
+            color: ColorComponent::new(ColorData {
                 r: 1.0,
                 g: 0.84,
                 b: 0.7,
                 a: 1.0,
             }),
-            position: PositionComponent(PositionData {
+            position: PositionComponent::new(PositionData {
                 x: 2.0,
                 y: 2.0,
                 z: 2.0,
             }),
         });
 
+        /*
         const NUM_INSTANCES_PER_ROW: u32 = 10;
         const SPACE_BETWEEN: f32 = 3.0;
         // Spawn some cubes.
@@ -85,5 +83,61 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 });
             }
         }
+         */
+
+        let mut tilemap = SparseTileMap::new();
+
+        // Create a floor with walls around the edge
+        for y in 0..5 {
+            for x in 0..5 {
+                let is_edge = x == 0 || y == 0 || x == 4 || y == 4;
+                let mut tile = TileData::default().with_floor(FloorType::Empty);
+
+                let tile = if is_edge {
+                    tile.set_wall_south(y == 0);
+                    tile.set_wall_north(y == 4);
+                    tile.set_wall_west(x == 0);
+                    tile.set_wall_east(x == 4);
+                    tile.set_ceiling(CeilingType::CopyWall);
+                    tile
+                } else {
+                    if x < 2 || x > 2 || y < 2 || y > 2 {
+                        tile.set_ceiling(CeilingType::CopyWall);
+                        tile
+                    } else {
+                        tile
+                    }
+                };
+                tilemap.set(x, y, 0, tile);
+
+                self.spawn_tile(TileEntityData {
+                    tile: tile.into(),
+                    position: PositionData {
+                        x: x as f32 - 2.0,
+                        y: 0.0,
+                        z: -(y as f32) + 2.0,
+                    }
+                    .into(),
+                });
+            }
+        }
+
+        // Add a tower in the center, stacked vertically
+        tilemap.set(
+            2,
+            2,
+            1,
+            TileData::default()
+                .with_floor(FloorType::Stone)
+                .with_wall(WallType::Brick),
+        );
+        tilemap.set(
+            2,
+            2,
+            2,
+            TileData::default()
+                .with_floor(FloorType::Stone)
+                .with_wall(WallType::Brick),
+        );
     }
 }
