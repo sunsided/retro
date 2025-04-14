@@ -60,8 +60,8 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         uniform.sun_visibility = sun.intensity;
 
         resources
-            .buffers()
-            .frame_global_uniform
+            .neo
+            .frame_globals
             .send_to_device(device.queue(), uniform);
     }
 }

@@ -89,11 +89,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             });
 
         let mut pass = frame_state.render_pass_with(&resources.pipelines().tile);
-        pass.set_bind_group(
-            0,
-            &resources.bind_groups().uniforms.frame_global_uniform,
-            &[],
-        );
+        pass.set_bind_group(0, &resources.neo.frame_globals.bind_group, &[]);
         pass.set_bind_group(1, &resources.bind_groups().uniforms.camera_uniform, &[]);
         pass.set_bind_group(2, &resources.bind_groups().uniforms.light_uniforms, &[]);
         // The texture atlas

@@ -5,7 +5,6 @@ use wgpu::BindGroup;
 
 #[derive(Debug)]
 pub struct UniformBindGroups {
-    pub frame_global_uniform: BindGroup,
     pub camera_uniform: BindGroup,
     pub light_uniforms: BindGroup,
 }
@@ -17,30 +16,12 @@ impl UniformBindGroups {
         layouts: &BindGroupLayouts,
         buffers: &Buffers,
     ) -> Self {
-        let frame_global_uniform = Self::create_frame_global_uniform(device, layouts, buffers);
         let camera_uniform = Self::create_camera_uniform(device, layouts, buffers);
         let light_uniforms = Self::create_light_uniform(device, layouts, buffers);
         Self {
-            frame_global_uniform,
             camera_uniform,
             light_uniforms,
         }
-    }
-
-    #[instrument(skip_all)]
-    fn create_frame_global_uniform(
-        device: &wgpu::Device,
-        layouts: &BindGroupLayouts,
-        buffers: &Buffers,
-    ) -> BindGroup {
-        device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("frame_global"),
-            layout: &layouts.frame_global_uniform,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffers.frame_global_uniform.as_entire_binding(),
-            }],
-        })
     }
 
     #[instrument(skip_all)]

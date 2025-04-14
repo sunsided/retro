@@ -8,7 +8,6 @@ use wgpu::{BindingResource, Buffer, BufferAddress, BufferSlice, Queue};
 
 #[derive(Debug)]
 pub struct Buffers {
-    pub frame_global_uniform: FrameGlobalUniformBuffer,
     pub camera_uniform: CameraUniformBuffer,
     pub light_uniforms: LightUniformBuffer,
     pub instances: InstanceBuffer,
@@ -20,7 +19,6 @@ pub struct Buffers {
 impl Buffers {
     #[instrument(skip(device))]
     pub fn create_from(device: &wgpu::Device) -> Self {
-        let frame_global_uniform = FrameGlobalUniformBuffer::create(device);
         let camera_uniform = CameraUniformBuffer::create(device);
         let light_uniforms = LightUniformBuffer::create(device);
         let instances = InstanceBuffer::create(device);
@@ -28,7 +26,6 @@ impl Buffers {
         let tile_vertex = TileVertexBuffer::create(device);
         let tile_index = TileIndexBuffer::create(device);
         Self {
-            frame_global_uniform,
             camera_uniform,
             light_uniforms,
             instances,
@@ -36,48 +33,6 @@ impl Buffers {
             tile_vertex,
             tile_index,
         }
-    }
-}
-
-/// The frame-global uniforms are updated once per frame.
-#[derive(Debug)]
-pub struct FrameGlobalUniformBuffer {
-    buffer: Buffer,
-}
-
-impl FrameGlobalUniformBuffer {
-    #[instrument(skip(device))]
-    fn create(device: &wgpu::Device) -> Self {
-        let frame_global_uniform = FrameGlobalUniform::new(12.0);
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("frame_global_uniform"),
-            contents: bytemuck::cast_slice(&[frame_global_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-        Self { buffer }
-    }
-
-    /// Update the buffer on device with a new [`FrameGlobalUniform`].
-    #[inline]
-    pub fn send_to_device(&self, queue: &Queue, uniform: FrameGlobalUniform) {
-        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
-    }
-
-    #[inline]
-    pub fn as_entire_binding(&self) -> BindingResource<'_> {
-        self.buffer.as_entire_binding()
-    }
-
-    #[inline]
-    #[allow(dead_code)]
-    pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
-        self.buffer.slice(bounds)
-    }
-}
-
-impl AsRef<Buffer> for FrameGlobalUniformBuffer {
-    fn as_ref(&self) -> &Buffer {
-        &self.buffer
     }
 }
 

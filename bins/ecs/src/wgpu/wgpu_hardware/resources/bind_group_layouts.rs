@@ -1,15 +1,8 @@
-use crate::wgpu::uniforms::FrameGlobalUniform;
 use tracing::instrument;
 use wgpu::BindGroupLayout;
 
 #[derive(Debug)]
 pub struct BindGroupLayouts {
-    /// Frame-global uniforms.
-    ///
-    /// ## Bindings
-    /// - `@binding(0)`: The frame-global uniforms
-    pub frame_global_uniform: BindGroupLayout,
-
     /// A texture bind group layout with four bindings:
     ///
     /// ## Bindings
@@ -43,34 +36,16 @@ pub struct BindGroupLayouts {
 impl BindGroupLayouts {
     #[instrument(skip_all)]
     pub fn create_from(device: &wgpu::Device) -> Self {
-        let frame_global_uniform = Self::create_frame_global(device);
         let diffuse_and_normal = Self::create_diffuse_and_normal(&device);
         let camera_uniforms = Self::create_camera_buffer_uniforms(&device);
         let lighting_uniforms = Self::create_lighting_uniforms(&device);
         let vga_fullscreen = Self::create_vga_fullscreen(&device);
         Self {
-            frame_global_uniform,
             diffuse_and_normal,
             camera_uniforms,
             lighting_uniforms,
             vga_fullscreen,
         }
-    }
-
-    fn create_frame_global(device: &wgpu::Device) -> BindGroupLayout {
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("frame_global"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(size_of::<FrameGlobalUniform>() as _),
-                },
-                count: None,
-            }],
-        })
     }
 
     #[instrument(skip_all)]

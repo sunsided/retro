@@ -89,7 +89,7 @@ impl ApplyRenderSystem for RenderSystem {
                 render_pass.draw_model_instanced(
                     &resources.models().cube,
                     0..num_instances,
-                    &resources.bind_groups().uniforms.frame_global_uniform,
+                    &resources.neo.frame_globals.bind_group,
                     &resources.bind_groups().uniforms.camera_uniform,
                     &resources.bind_groups().uniforms.light_uniforms,
                 );
@@ -106,7 +106,7 @@ impl ApplyRenderSystem for RenderSystem {
             render_pass.draw_model_instanced(
                 &resources.models().cube,
                 0..num_instances,
-                &resources.bind_groups().uniforms.frame_global_uniform,
+                &resources.neo.frame_globals.bind_group,
                 &resources.bind_groups().uniforms.camera_uniform,
                 &resources.bind_groups().uniforms.light_uniforms,
             );

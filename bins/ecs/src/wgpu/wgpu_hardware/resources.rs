@@ -8,6 +8,7 @@ pub mod shaders;
 pub mod texture_samplers;
 pub mod textures;
 
+use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniform;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::BindGroups;
 use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
@@ -33,10 +34,20 @@ pub struct WgpuResources {
     _shaders: Shaders,
     models: Models,
     textures: Textures,
+    pub neo: NeoResources,
+}
+
+#[derive(Debug)]
+pub struct NeoResources {
+    pub frame_globals: FrameGlobalUniform,
 }
 
 impl WgpuResources {
     pub(super) fn new(device: &Device, queue: &Queue, config: &SurfaceConfiguration) -> Self {
+        let neo = NeoResources {
+            frame_globals: FrameGlobalUniform::new(device),
+        };
+
         let samplers = TextureSamplers::create_from(device);
         let textures = Textures::create_from(device, queue, config);
         let buffers = Buffers::create_from(device);
@@ -51,8 +62,13 @@ impl WgpuResources {
             &samplers,
             &depths,
         );
-        let pipelines =
-            RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
+        let pipelines = RenderPipelines::create_from(
+            &device,
+            &bind_group_layouts,
+            config.format,
+            &shaders,
+            &neo.frame_globals,
+        );
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
         Self {
             samplers,
@@ -64,6 +80,7 @@ impl WgpuResources {
             _shaders: shaders,
             models,
             textures,
+            neo,
         }
     }
 
