@@ -384,5 +384,9 @@ mod tests {
             region,
             WorldGlobalRegionCoord::new(expected_region_x as i8, expected_region_y as i8)
         );
+
+        // Sanity check
+        assert_eq!(expected_region_x, -1);
+        assert_eq!(expected_region_y, -1);
     }
 }
