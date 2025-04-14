@@ -10,19 +10,15 @@ pub struct WorldBuilder;
 
 impl WorldBuilder {
     pub fn flat_floor(with_walls: bool) -> TileWorld {
-        // TODO: Add walls around the entire world if requested
-
         // Create 2x2 regions in the world.
         let mut world = TileWorld::with_capacity(4);
         for (wy, wx) in Range2D::new(-1..1, -1..1) {
             let region = WorldRegion::from_fn(|_coord| {
-                let mut chunk = TileChunk::new_empty();
-                chunk.visit_mut(|coord, tile| {
-                    *tile = Tile::new()
+                TileChunk::from_fn(|_coord| {
+                    Tile::new()
                         // TODO: Fix when tile atlas is ready
                         .with_floor(FloorType::Empty)
-                });
-                chunk
+                })
             });
 
             world.insert(WorldGlobalRegionCoord::new(wx as i8, wy as i8), region);
