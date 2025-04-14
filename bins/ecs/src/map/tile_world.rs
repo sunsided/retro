@@ -1,5 +1,5 @@
 use crate::map::tile_coord::{
-    RegionLocalChunkCoord, WorldGlobalChunkCoord, WorldGlobalRegionCoord,
+    ChunkRect, RegionLocalChunkCoord, WorldGlobalChunkCoord, WorldGlobalRegionCoord,
 };
 use crate::map::world_region::{ChunkWithCoordIter, ChunkWithCoordIterMut, WorldRegion};
 use ahash::HashMapExt;
@@ -7,26 +7,6 @@ use fxhash::FxHashMap;
 
 pub struct TileWorld {
     pub chunks: FxHashMap<WorldGlobalRegionCoord, WorldRegion>,
-}
-
-pub struct ChunkRect {
-    pub min: WorldGlobalChunkCoord,
-    pub max: WorldGlobalChunkCoord, // inclusive
-}
-
-impl ChunkRect {
-    pub fn union(self, other: ChunkRect) -> ChunkRect {
-        ChunkRect {
-            min: WorldGlobalChunkCoord {
-                x: self.min.x.min(other.min.x),
-                y: self.min.y.min(other.min.y),
-            },
-            max: WorldGlobalChunkCoord {
-                x: self.max.x.max(other.max.x),
-                y: self.max.y.max(other.max.y),
-            },
-        }
-    }
 }
 
 impl TileWorld {
@@ -51,31 +31,15 @@ impl TileWorld {
     }
 
     pub fn global_chunk_bounds(&self) -> Option<ChunkRect> {
-        let mut bounds: Option<ChunkRect> = None;
+        let mut iter = self.iter_regions_with_coords();
+        let (first_coord, _) = iter.next()?;
+        let mut bounds = first_coord.chunk_extent();
 
-        for (region_coord, _region) in self.iter_regions_with_coords() {
-            let base_chunk_x = region_coord.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32;
-            let base_chunk_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32;
-
-            let region_chunk_rect = ChunkRect {
-                min: WorldGlobalChunkCoord {
-                    x: base_chunk_x,
-                    y: base_chunk_y,
-                },
-                max: WorldGlobalChunkCoord {
-                    x: base_chunk_x + WorldRegion::WIDTH_IN_CHUNKS as i32 - 1,
-                    y: base_chunk_y + WorldRegion::HEIGHT_IN_CHUNKS as i32 - 1,
-                },
-            };
-
-            bounds = Some(if let Some(current) = bounds {
-                current.union(region_chunk_rect)
-            } else {
-                region_chunk_rect
-            });
+        for (coord, _) in iter {
+            bounds = bounds.union(coord.chunk_extent());
         }
 
-        bounds
+        Some(bounds)
     }
 
     pub fn iter_regions(&self) -> RegionIter {

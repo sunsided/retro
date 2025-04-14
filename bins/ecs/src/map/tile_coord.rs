@@ -75,6 +75,26 @@ impl RegionLocalChunkCoord {
     }
 }
 
+impl RegionLocalTileCoord {
+    /// Decomposes a [`RegionLocalTileCoord`] into its [`RegionLocalChunkCoord`]
+    /// and [`ChunkLocalTileCoord`] within the region.
+    #[inline(always)]
+    pub const fn decompose(self) -> (RegionLocalChunkCoord, ChunkLocalTileCoord) {
+        const CHUNK_WIDTH_IN_TILES: u16 = TileChunk::WIDTH_IN_TILES as u16;
+        const CHUNK_HEIGHT_IN_TILES: u16 = TileChunk::HEIGHT_IN_TILES as u16;
+
+        let chunk_x = self.x / CHUNK_WIDTH_IN_TILES;
+        let chunk_y = self.y / CHUNK_HEIGHT_IN_TILES;
+        let chunk = RegionLocalChunkCoord::new(chunk_x as u8, chunk_y as u8);
+
+        let tile_x = self.x % CHUNK_WIDTH_IN_TILES;
+        let tile_y = self.y % CHUNK_HEIGHT_IN_TILES;
+        let tile = ChunkLocalTileCoord::new(tile_x as u8, tile_y as u8);
+
+        (chunk, tile)
+    }
+}
+
 impl Add<ChunkLocalTileCoord> for RegionLocalChunkCoord {
     type Output = RegionLocalTileCoord;
 
@@ -125,6 +145,23 @@ impl WorldGlobalRegionCoord {
                 + coord.x as i32 * TileChunk::WIDTH_IN_TILES as i32,
             y: self.y as i32 * WorldRegion::HEIGHT_IN_TILES as i32
                 + coord.y as i32 * TileChunk::HEIGHT_IN_TILES as i32,
+        }
+    }
+
+    /// Returns the bounding `ChunkRect` in global chunk space for this region.
+    pub fn chunk_extent(self) -> ChunkRect {
+        let base_chunk_x = self.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32;
+        let base_chunk_y = self.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32;
+
+        ChunkRect {
+            min: WorldGlobalChunkCoord {
+                x: base_chunk_x,
+                y: base_chunk_y,
+            },
+            max: WorldGlobalChunkCoord {
+                x: base_chunk_x + WorldRegion::WIDTH_IN_CHUNKS as i32 - 1,
+                y: base_chunk_y + WorldRegion::HEIGHT_IN_CHUNKS as i32 - 1,
+            },
         }
     }
 }
@@ -213,24 +250,6 @@ impl RegionLocalTileCoord {
         debug_assert!(y < WorldRegion::HEIGHT_IN_TILES as u16);
         Self { x, y }
     }
-
-    /// Decomposes a [`RegionLocalTileCoord`] into its [`RegionLocalChunkCoord`]
-    /// and [`ChunkLocalTileCoord`] within the region.
-    #[inline(always)]
-    pub const fn decompose(self) -> (RegionLocalChunkCoord, ChunkLocalTileCoord) {
-        const CHUNK_WIDTH_IN_TILES: u16 = TileChunk::WIDTH_IN_TILES as u16;
-        const CHUNK_HEIGHT_IN_TILES: u16 = TileChunk::HEIGHT_IN_TILES as u16;
-
-        let chunk_x = self.x / CHUNK_WIDTH_IN_TILES;
-        let chunk_y = self.y / CHUNK_HEIGHT_IN_TILES;
-        let chunk = RegionLocalChunkCoord::new(chunk_x as u8, chunk_y as u8);
-
-        let tile_x = self.x % CHUNK_WIDTH_IN_TILES;
-        let tile_y = self.y % CHUNK_HEIGHT_IN_TILES;
-        let tile = ChunkLocalTileCoord::new(tile_x as u8, tile_y as u8);
-
-        (chunk, tile)
-    }
 }
 
 impl RegionLocalChunkCoord {
@@ -306,6 +325,26 @@ impl WorldGlobalTileCoord {
         let tile = ChunkLocalTileCoord::new(tile_x as u8, tile_y as u8);
 
         (region, chunk, tile)
+    }
+}
+
+pub struct ChunkRect {
+    pub min: WorldGlobalChunkCoord,
+    pub max: WorldGlobalChunkCoord, // inclusive
+}
+
+impl ChunkRect {
+    pub fn union(self, other: ChunkRect) -> ChunkRect {
+        ChunkRect {
+            min: WorldGlobalChunkCoord {
+                x: self.min.x.min(other.min.x),
+                y: self.min.y.min(other.min.y),
+            },
+            max: WorldGlobalChunkCoord {
+                x: self.max.x.max(other.max.x),
+                y: self.max.y.max(other.max.y),
+            },
+        }
     }
 }
 
