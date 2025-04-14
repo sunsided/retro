@@ -1,6 +1,5 @@
 use crate::map::tile_instance::TileVertex;
 use crate::wgpu::instance::InstanceRaw;
-use crate::wgpu::uniforms::RetroUniform;
 use std::ops::RangeBounds;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
@@ -9,7 +8,6 @@ use wgpu::{BindingResource, Buffer, BufferAddress, BufferSlice, Queue};
 #[derive(Debug)]
 pub struct Buffers {
     pub instances: InstanceBuffer,
-    pub retro_uniform: RetroUniformBuffer,
     pub tile_vertex: TileVertexBuffer,
     pub tile_index: TileIndexBuffer,
 }
@@ -18,12 +16,10 @@ impl Buffers {
     #[instrument(skip(device))]
     pub fn create_from(device: &wgpu::Device) -> Self {
         let instances = InstanceBuffer::create(device);
-        let retro_uniform = RetroUniformBuffer::create(device);
         let tile_vertex = TileVertexBuffer::create(device);
         let tile_index = TileIndexBuffer::create(device);
         Self {
             instances,
-            retro_uniform,
             tile_vertex,
             tile_index,
         }
@@ -88,48 +84,6 @@ impl InstanceBuffer {
     #[inline]
     pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
         self.buffer.slice(bounds)
-    }
-}
-
-#[derive(Debug)]
-pub struct RetroUniformBuffer {
-    buffer: Buffer,
-}
-
-impl RetroUniformBuffer {
-    #[instrument(skip(device))]
-    fn create(device: &wgpu::Device) -> Self {
-        let light_uniform = RetroUniform::default();
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("retro_uniform"),
-            contents: bytemuck::cast_slice(&[light_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-        Self { buffer }
-    }
-
-    /// Update the buffer on device with a new [`RetroUniform`].
-    #[inline]
-    #[allow(dead_code)]
-    pub fn send_to_device(&self, queue: &Queue, uniform: RetroUniform) {
-        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
-    }
-
-    #[inline]
-    pub fn as_entire_binding(&self) -> BindingResource<'_> {
-        self.buffer.as_entire_binding()
-    }
-
-    #[inline]
-    #[allow(dead_code)]
-    pub fn slice<S: RangeBounds<BufferAddress>>(&self, bounds: S) -> BufferSlice<'_> {
-        self.buffer.slice(bounds)
-    }
-}
-
-impl AsRef<Buffer> for RetroUniformBuffer {
-    fn as_ref(&self) -> &Buffer {
-        &self.buffer
     }
 }
 

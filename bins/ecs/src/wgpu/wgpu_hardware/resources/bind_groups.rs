@@ -1,10 +1,10 @@
 pub mod render_targets;
 pub mod textures;
 
+use crate::wgpu::wgpu_hardware::resource::retro_uniform::RetroUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::render_targets::RenderTargetBindGroups;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::textures::TextureBindGroups;
-use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
 use crate::wgpu::wgpu_hardware::resources::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::resources::textures::Textures;
@@ -21,15 +21,14 @@ impl BindGroups {
     pub fn create_from(
         device: &wgpu::Device,
         layouts: &BindGroupLayouts,
-        buffers: &Buffers,
         textures: &Textures,
         samplers: &TextureSamplers,
         depths: &DepthBuffers,
+        retro: &RetroUniformResource,
     ) -> Self {
         let textures_bgs = TextureBindGroups::create_from(device, layouts, textures, samplers);
-        let render_targets = RenderTargetBindGroups::create_from(
-            device, layouts, buffers, textures, samplers, depths,
-        );
+        let render_targets =
+            RenderTargetBindGroups::create_from(device, layouts, textures, samplers, depths, retro);
         Self {
             textures: textures_bgs,
             render_targets,

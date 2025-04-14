@@ -1,5 +1,5 @@
+use crate::wgpu::wgpu_hardware::resource::retro_uniform::RetroUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
 use crate::wgpu::wgpu_hardware::resources::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::resources::textures::Textures;
@@ -16,13 +16,13 @@ impl RenderTargetBindGroups {
     pub fn create_from(
         device: &wgpu::Device,
         layouts: &BindGroupLayouts,
-        buffers: &Buffers,
         textures: &Textures,
         samplers: &TextureSamplers,
         depths: &DepthBuffers,
+        retro: &RetroUniformResource,
     ) -> Self {
         let vga_fullscreen =
-            Self::create_vga_fullscreen(device, layouts, textures, samplers, buffers, depths);
+            Self::create_vga_fullscreen(device, layouts, textures, samplers, depths, retro);
         Self { vga_fullscreen }
     }
 
@@ -32,8 +32,8 @@ impl RenderTargetBindGroups {
         layouts: &BindGroupLayouts,
         textures: &Textures,
         samplers: &TextureSamplers,
-        buffers: &Buffers,
         depths: &DepthBuffers,
+        retro: &RetroUniformResource,
     ) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("vga_fullscreen"),
@@ -41,7 +41,7 @@ impl RenderTargetBindGroups {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: buffers.retro_uniform.as_entire_binding(),
+                    resource: retro.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,

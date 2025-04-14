@@ -192,8 +192,9 @@ impl WgpuRenderState {
 
         debug!("Updating retro uniform");
         resources
-            .buffers()
-            .retro_uniform
+            .neo
+            .uniforms
+            .retro
             .send_to_device(device.queue(), self.retro.uniform);
     }
 
