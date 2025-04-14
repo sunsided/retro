@@ -35,7 +35,7 @@ impl ApplyRenderSkySystem for RenderSkySystem {
             return;
         };
 
-        let mut render_pass = frame_state.render_pass_with(&resources.pipelines().sky);
+        let mut render_pass = frame_state.render_pass_with(&resources.renderers().sky);
         render_pass.set_bind_group(0, &resources.neo.uniforms.frame_globals, &[]);
         render_pass.set_bind_group(1, &resources.neo.uniforms.camera, &[]);
 

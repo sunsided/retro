@@ -98,7 +98,13 @@ impl WgpuResources {
             &neo.uniforms.light,
         );
         let models = Models::create_from(&device, &queue, &standard_render, &samplers);
-        let renderers = Renderers::new(device, config, &standard_render);
+        let renderers = Renderers::new(
+            device,
+            config,
+            &standard_render,
+            &neo.uniforms.frame_globals,
+            &neo.uniforms.camera,
+        );
         Self {
             samplers,
             buffers,

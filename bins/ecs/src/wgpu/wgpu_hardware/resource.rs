@@ -4,7 +4,7 @@ use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 pub mod camera_uniform;
 pub mod frame_global_uniform;
 pub mod light_uniform;
-mod sky_renderer;
+pub mod sky_renderer;
 pub mod tile_renderer;
 
 #[allow(dead_code)]

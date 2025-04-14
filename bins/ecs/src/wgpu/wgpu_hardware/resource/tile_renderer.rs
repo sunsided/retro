@@ -32,27 +32,28 @@ impl TileRendererResource {
     ) -> Self {
         let vertex_buffers = &[TileVertex::desc(), TileInstance::desc()];
 
-        // Render to a texture.
-        let texture_target = Some(wgpu::ColorTargetState {
-            format: config.format,
-            blend: Some(wgpu::BlendState {
-                alpha: wgpu::BlendComponent::REPLACE,
-                color: wgpu::BlendComponent::REPLACE,
+        let targets = [
+            // Render to a texture
+            Some(wgpu::ColorTargetState {
+                format: config.format,
+                blend: Some(wgpu::BlendState {
+                    alpha: wgpu::BlendComponent::REPLACE,
+                    color: wgpu::BlendComponent::REPLACE,
+                }),
+                write_mask: wgpu::ColorWrites::ALL,
             }),
-            write_mask: wgpu::ColorWrites::ALL,
-        });
-
-        // Render to an entity ID target
-        let entity_id_target = Some(wgpu::ColorTargetState {
-            format: TextureFormat::R32Uint, // entity ID target
-            blend: None,
-            write_mask: wgpu::ColorWrites::ALL,
-        });
+            // Render to an entity ID target
+            Some(wgpu::ColorTargetState {
+                format: TextureFormat::R32Uint, // entity ID target
+                blend: None,
+                write_mask: wgpu::ColorWrites::ALL,
+            }),
+        ];
 
         let render_mode = RenderMode::Filled; // TODO: Support wireframe
 
         let shader = wgpu::ShaderModuleDescriptor {
-            label: Some("Tile Shader"),
+            label: Some(wgpu_label!("tile.wgsl")),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/tile.wgsl").into()),
         };
         let shader = device.create_shader_module(shader);
@@ -69,7 +70,7 @@ impl TileRendererResource {
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
-                targets: &[texture_target, entity_id_target],
+                targets: &targets,
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState {

@@ -12,7 +12,6 @@ use wgpu::{Device, PipelineLayout, RenderPipeline, TextureFormat};
 
 #[derive(Debug)]
 pub struct RenderPipelines {
-    pub sky: RenderPipeline,
     pub textured_render: RenderPipeline,
     pub flat_render: RenderPipeline,
     pub flat_entity_render: RenderPipeline,
@@ -103,9 +102,7 @@ impl RenderPipelines {
             surface_format,
             shaders,
         );
-        let sky = Self::create_sky_pipeline(&device, surface_format, shaders, frame_global, camera);
         Self {
-            sky,
             textured_render,
             flat_render,
             flat_entity_render,
@@ -113,61 +110,6 @@ impl RenderPipelines {
             light: light_rp,
             vga_fullscreen,
         }
-    }
-
-    #[instrument(skip_all)]
-    fn create_sky_pipeline(
-        device: &Device,
-        config_format: TextureFormat,
-        shaders: &Shaders,
-        frame_global: &FrameGlobalUniformResource,
-        camera: &CameraUniformResource,
-    ) -> RenderPipeline {
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some(wgpu_label!("sky_pipeline")),
-            bind_group_layouts: &[&frame_global.layout, &camera.layout],
-            push_constant_ranges: &[],
-        });
-
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some(wgpu_label!("sky_pipeline")),
-            layout: Some(&pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shaders.sky.vertex_shader().module(),
-                entry_point: Some("vs_main"),
-                // We'll use a full-screen triangle—no vertex buffer needed
-                compilation_options: Default::default(),
-                buffers: &[],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shaders.sky.fragment_shader().module(),
-                entry_point: Some("fs_main"),
-                compilation_options: Default::default(),
-                targets: &[
-                    Some(wgpu::ColorTargetState {
-                        format: config_format,
-                        blend: Some(wgpu::BlendState::REPLACE),
-                        write_mask: wgpu::ColorWrites::ALL,
-                    }),
-                    Some(wgpu::ColorTargetState {
-                        format: TextureFormat::R32Uint, // entity ID target
-                        blend: None,
-                        write_mask: wgpu::ColorWrites::ALL,
-                    }),
-                ],
-            }),
-            primitive: wgpu::PrimitiveState::default(),
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::LessEqual,
-                stencil: wgpu::StencilState::default(),
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-            cache: None,
-        })
     }
 
     #[instrument(skip_all)]
