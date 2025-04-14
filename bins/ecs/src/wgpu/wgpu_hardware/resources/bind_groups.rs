@@ -24,17 +24,10 @@ impl BindGroups {
         textures: &Textures,
         samplers: &TextureSamplers,
         depths: &DepthBuffers,
-        frame_global: &FrameGlobalUniformResource,
     ) -> Self {
         let textures_bgs = TextureBindGroups::create_from(device, layouts, textures, samplers);
-        let render_targets = RenderTargetBindGroups::create_from(
-            device,
-            layouts,
-            textures,
-            samplers,
-            depths,
-            frame_global,
-        );
+        let render_targets =
+            RenderTargetBindGroups::create_from(device, layouts, textures, samplers, depths);
         Self {
             textures: textures_bgs,
             render_targets,

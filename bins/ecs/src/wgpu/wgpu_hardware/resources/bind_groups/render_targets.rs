@@ -19,10 +19,9 @@ impl RenderTargetBindGroups {
         textures: &Textures,
         samplers: &TextureSamplers,
         depths: &DepthBuffers,
-        frame_global: &FrameGlobalUniformResource,
     ) -> Self {
         let vga_fullscreen =
-            Self::create_vga_fullscreen(device, layouts, textures, samplers, depths, frame_global);
+            Self::create_vga_fullscreen(device, layouts, textures, samplers, depths);
         Self { vga_fullscreen }
     }
 
@@ -33,33 +32,27 @@ impl RenderTargetBindGroups {
         textures: &Textures,
         samplers: &TextureSamplers,
         depths: &DepthBuffers,
-        frame_global: &FrameGlobalUniformResource,
     ) -> BindGroup {
         device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("vga_fullscreen"),
+            label: Some(wgpu_label!("vga_fullscreen")),
             layout: &layouts.vga_fullscreen,
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: frame_global.as_entire_binding(),
-                },
-                // TODO: Add group 1 and 2 even if unused in the shader
-                wgpu::BindGroupEntry {
-                    binding: 1,
                     resource: wgpu::BindingResource::TextureView(&textures.vga_offscreen.view),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 2,
+                    binding: 1,
                     resource: wgpu::BindingResource::Sampler(&samplers.retro),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 3,
+                    binding: 2,
                     resource: wgpu::BindingResource::TextureView(
                         &textures.vga_frame_entity_id.view,
                     ),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 4,
+                    binding: 3,
                     resource: wgpu::BindingResource::TextureView(&depths.vga_offscreen.view),
                 },
             ],

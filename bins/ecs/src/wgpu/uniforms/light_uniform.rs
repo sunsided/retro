@@ -34,6 +34,7 @@ pub trait DrawLight<'model> {
     fn draw_light_mesh(
         &mut self,
         mesh: &'model Mesh,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     );
@@ -42,6 +43,7 @@ pub trait DrawLight<'model> {
         &mut self,
         mesh: &'model Mesh,
         instances: Range<u32>,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     );
@@ -49,6 +51,7 @@ pub trait DrawLight<'model> {
     fn draw_light_model(
         &mut self,
         model: &'model Model,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     );
@@ -56,6 +59,7 @@ pub trait DrawLight<'model> {
         &mut self,
         model: &'model Model,
         instances: Range<u32>,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     );
@@ -68,39 +72,56 @@ where
     fn draw_light_mesh(
         &mut self,
         mesh: &'model Mesh,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     ) {
-        self.draw_light_mesh_instanced(mesh, 0..1, camera_bind_group, light_bind_group);
+        self.draw_light_mesh_instanced(
+            mesh,
+            0..1,
+            frame_global,
+            camera_bind_group,
+            light_bind_group,
+        );
     }
 
     fn draw_light_mesh_instanced(
         &mut self,
         mesh: &'model Mesh,
         instances: Range<u32>,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     ) {
         self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         self.set_index_buffer(mesh.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
-        self.set_bind_group(0, camera_bind_group, &[]);
-        self.set_bind_group(1, light_bind_group, &[]);
+        self.set_bind_group(0, frame_global, &[]); // TODO: Needed?
+        self.set_bind_group(1, camera_bind_group, &[]);
+        self.set_bind_group(2, light_bind_group, &[]);
         self.draw_indexed(0..mesh.num_elements, 0, instances);
     }
 
     fn draw_light_model(
         &mut self,
         model: &'model Model,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     ) {
-        self.draw_light_model_instanced(model, 0..1, camera_bind_group, light_bind_group);
+        self.draw_light_model_instanced(
+            model,
+            0..1,
+            frame_global,
+            camera_bind_group,
+            light_bind_group,
+        );
     }
 
     fn draw_light_model_instanced(
         &mut self,
         model: &'model Model,
         instances: Range<u32>,
+        frame_global: &'model wgpu::BindGroup,
         camera_bind_group: &'model wgpu::BindGroup,
         light_bind_group: &'model wgpu::BindGroup,
     ) {
@@ -108,6 +129,7 @@ where
             self.draw_light_mesh_instanced(
                 mesh,
                 instances.clone(),
+                frame_global,
                 camera_bind_group,
                 light_bind_group,
             );

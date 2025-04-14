@@ -76,9 +76,23 @@ impl RenderPipelines {
             Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
         let wireframe_render =
             Self::create_wireframe_render(&device, &layout, surface_format, shaders);
-        let light = Self::create_light(&device, surface_format, shaders, camera, light);
-        let vga_fullscreen =
-            Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
+        let light_rp = Self::create_light(
+            &device,
+            surface_format,
+            shaders,
+            frame_global,
+            camera,
+            light,
+        );
+        let vga_fullscreen = Self::create_vga_fullscreen(
+            &device,
+            frame_global,
+            camera,
+            light,
+            bind_group_layouts,
+            surface_format,
+            shaders,
+        );
         let sky = Self::create_sky_pipeline(&device, surface_format, shaders, frame_global, camera);
         let tile = Self::create_tile_render(&device, &layout, surface_format, shaders);
         Self {
@@ -87,7 +101,7 @@ impl RenderPipelines {
             flat_render,
             flat_entity_render,
             wireframe_render,
-            light,
+            light: light_rp,
             vga_fullscreen,
             tile,
         }
@@ -102,13 +116,13 @@ impl RenderPipelines {
         camera: &CameraUniformResource,
     ) -> RenderPipeline {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("sky_pipeline"),
+            label: Some(wgpu_label!("sky_pipeline")),
             bind_group_layouts: &[&frame_global.layout, &camera.layout],
             push_constant_ranges: &[],
         });
 
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("sky_pipeline"),
+            label: Some(wgpu_label!("sky_pipeline")),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shaders.sky.vertex_shader().module(),
@@ -151,18 +165,26 @@ impl RenderPipelines {
     #[instrument(skip_all)]
     fn create_vga_fullscreen(
         device: &Device,
+        frame_global: &FrameGlobalUniformResource,
+        camera: &CameraUniformResource,
+        light: &LightUniformResource,
         bind_group_layouts: &BindGroupLayouts,
         surface_format: TextureFormat,
         shaders: &Shaders,
     ) -> RenderPipeline {
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("vga_fullscreen"),
-            bind_group_layouts: &[&bind_group_layouts.vga_fullscreen],
+            label: Some(wgpu_label!("vga_fullscreen")),
+            bind_group_layouts: &[
+                &frame_global.layout,               // `@group(0)` in the shader
+                &camera.layout,                     // `@group(1)` in the shader
+                &light.layout,                      // `@group(2)` in the shader
+                &bind_group_layouts.vga_fullscreen, // `@group(3)` in the shader
+            ],
             push_constant_ranges: &[],
         });
 
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("vga_fullscreen"),
+            label: Some(wgpu_label!("vga_fullscreen")),
             layout: Some(&layout),
             vertex: wgpu::VertexState {
                 module: shaders.vga.vertex_shader().module(),
@@ -199,14 +221,16 @@ impl RenderPipelines {
         device: &Device,
         surface_format: TextureFormat,
         shaders: &Shaders,
+        frame_global: &FrameGlobalUniformResource,
         camera: &CameraUniformResource,
         light: &LightUniformResource,
     ) -> RenderPipeline {
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("light"),
+            label: Some(wgpu_label!("light")),
             bind_group_layouts: &[
-                &camera.layout, // `@group(0)` in the shader
-                &light.layout,  // `@group(1)` in the shader
+                &frame_global.layout, // `@group(0)` in the shader
+                &camera.layout,       // `@group(1)` in the shader
+                &light.layout,        // `@group(2)` in the shader
             ],
             push_constant_ranges: &[],
         });
@@ -221,7 +245,7 @@ impl RenderPipelines {
             Some(Texture::DEPTH_FORMAT),
             &[ModelVertex::desc()],
             RenderMode::Filled,
-            "light",
+            wgpu_label!("light"),
         )
     }
 
@@ -234,7 +258,7 @@ impl RenderPipelines {
         light: &LightUniformResource,
     ) -> PipelineLayout {
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("render_layout"),
+            label: Some(wgpu_label!("render_layout")),
             bind_group_layouts: &[
                 &frame_global.layout,                   // `@group(0)` in the shader
                 &camera.layout,                         // `@group(1)` in the shader
@@ -262,7 +286,7 @@ impl RenderPipelines {
             Some(Texture::DEPTH_FORMAT),
             &[ModelVertex::desc(), InstanceRaw::desc()],
             RenderMode::Filled,
-            "textured_render",
+            wgpu_label!("textured_render"),
         )
     }
 
@@ -290,7 +314,7 @@ impl RenderPipelines {
             Some(Texture::DEPTH_FORMAT),
             &[ModelVertex::desc(), InstanceRaw::desc()],
             RenderMode::Wireframe,
-            "wireframe_render",
+            wgpu_label!("wireframe_render"),
         );
 
         Some(pipeline)
@@ -313,7 +337,7 @@ impl RenderPipelines {
             Some(Texture::DEPTH_FORMAT),
             &[ModelVertex::desc(), InstanceRaw::desc()],
             RenderMode::Filled,
-            "flat_render",
+            wgpu_label!("flat_render"),
         )
     }
 
@@ -334,7 +358,7 @@ impl RenderPipelines {
             Some(Texture::DEPTH_FORMAT),
             &[ModelVertex::desc(), InstanceRaw::desc()],
             RenderMode::Filled,
-            "flat_entity_render",
+            wgpu_label!("flat_entity_render"),
         )
     }
 
@@ -355,7 +379,7 @@ impl RenderPipelines {
             Some(Texture::DEPTH_FORMAT),
             &[TileVertex::desc(), TileInstance::desc()],
             RenderMode::Filled,
-            "tile_render",
+            wgpu_label!("tile_render"),
         )
     }
 

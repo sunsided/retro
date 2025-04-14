@@ -67,14 +67,8 @@ impl WgpuResources {
         let depths = DepthBuffers::create_from(device, config);
         let shaders = Shaders::create_from(device);
         let bind_group_layouts = BindGroupLayouts::create_from(device);
-        let bind_groups = BindGroups::create_from(
-            device,
-            &bind_group_layouts,
-            &textures,
-            &samplers,
-            &depths,
-            &neo.uniforms.frame_globals,
-        );
+        let bind_groups =
+            BindGroups::create_from(device, &bind_group_layouts, &textures, &samplers, &depths);
         let pipelines = RenderPipelines::create_from(
             &device,
             &bind_group_layouts,

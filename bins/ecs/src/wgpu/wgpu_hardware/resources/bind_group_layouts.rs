@@ -80,22 +80,11 @@ impl BindGroupLayouts {
     #[instrument(skip_all)]
     fn create_vga_fullscreen(device: &wgpu::Device) -> BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("vga_fullscreen"),
+            label: Some(wgpu_label!("vga_fullscreen")),
             entries: &[
-                // Binding 0: the uniform
+                // Binding 0 = texture
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                // Binding 1 = texture
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
@@ -104,16 +93,16 @@ impl BindGroupLayouts {
                     },
                     count: None,
                 },
-                // Binding 2 = sampler
+                // Binding 1 = sampler
                 wgpu::BindGroupLayoutEntry {
-                    binding: 2,
+                    binding: 1,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                     count: None,
                 },
-                // Binding 3 = (per-frame) entity ID
+                // Binding 2 = (per-frame) entity ID
                 wgpu::BindGroupLayoutEntry {
-                    binding: 3,
+                    binding: 2,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,
@@ -122,9 +111,9 @@ impl BindGroupLayouts {
                     },
                     count: None,
                 },
-                // Binding 4 = depth buffer
+                // Binding 3 = depth buffer
                 wgpu::BindGroupLayoutEntry {
-                    binding: 4,
+                    binding: 3,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
                         multisampled: false,

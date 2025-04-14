@@ -41,8 +41,11 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
         let background_color = background_color.dim(0.5);
         if let Some(mut pass) = frame_state.passes.final_pass(&background_color) {
             pass.set_pipeline(&resources.pipelines().vga_fullscreen);
+            pass.set_bind_group(0, &resources.neo.uniforms.frame_globals, &[]);
+            pass.set_bind_group(1, &resources.neo.uniforms.camera, &[]);
+            pass.set_bind_group(2, &resources.neo.uniforms.light, &[]);
             pass.set_bind_group(
-                0,
+                3,
                 &resources.bind_groups().render_targets.vga_fullscreen,
                 &[],
             );

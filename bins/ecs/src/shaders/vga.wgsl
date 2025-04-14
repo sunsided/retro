@@ -17,16 +17,16 @@ struct FrameGlobalUniform {
 @group(0) @binding(0)
 var<uniform> frame: FrameGlobalUniform;
 
-@group(0) @binding(1)
+@group(3) @binding(0)
 var t_color: texture_2d<f32>;
 
-@group(0) @binding(2)
+@group(3) @binding(1)
 var s_color: sampler;
 
-@group(0) @binding(3)
+@group(3) @binding(2)
 var t_entity: texture_2d<u32>;
 
-@group(0) @binding(4)
+@group(3) @binding(3)
 var t_depth: texture_depth_2d;
 
 struct VertexOutput {

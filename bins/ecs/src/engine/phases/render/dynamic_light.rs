@@ -42,6 +42,7 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
             // Render the light.
             render_pass.draw_light_model(
                 &resources.models().cube,
+                &resources.neo.uniforms.frame_globals.bind_group,
                 &resources.neo.uniforms.camera.bind_group,
                 &resources.neo.uniforms.light.bind_group,
             )
