@@ -3,15 +3,6 @@ use wgpu::BindGroupLayout;
 
 #[derive(Debug)]
 pub struct BindGroupLayouts {
-    /// A texture bind group layout with four bindings:
-    ///
-    /// ## Bindings
-    /// - `@binding(0)`: The diffuse texture
-    /// - `@binding(1)`: The diffuse texture sampler
-    /// - `@binding(2)`: The normal map texture
-    /// - `@binding(3)`: The normal map sampler
-    pub diffuse_and_normal: BindGroupLayout,
-
     /// Bind group for the VGA fullscreen shader.
     ///
     /// ## Bindings
@@ -24,57 +15,8 @@ pub struct BindGroupLayouts {
 impl BindGroupLayouts {
     #[instrument(skip_all)]
     pub fn create_from(device: &wgpu::Device) -> Self {
-        let diffuse_and_normal = Self::create_diffuse_and_normal(&device);
         let vga_fullscreen = Self::create_vga_fullscreen(&device);
-        Self {
-            diffuse_and_normal,
-            vga_fullscreen,
-        }
-    }
-
-    #[instrument(skip_all)]
-    fn create_diffuse_and_normal(device: &wgpu::Device) -> BindGroupLayout {
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                // Diffuse texture
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,                               // @binding(0)
-                    visibility: wgpu::ShaderStages::FRAGMENT, // NONE, VERTEX, FRAGMENT or COMPUTE
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1, // @binding(1)
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    // This should match the filterable field of the
-                    // corresponding Texture entry above.
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-                // normal map
-                wgpu::BindGroupLayoutEntry {
-                    binding: 2, // @binding(2)
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        multisampled: false,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 3, // @binding(3)
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-            label: Some("diffuse_and_normal"),
-        })
+        Self { vga_fullscreen }
     }
 
     #[instrument(skip_all)]

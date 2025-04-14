@@ -1,4 +1,5 @@
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::resources::textures::Textures;
 use tracing::instrument;
@@ -16,13 +17,13 @@ impl TextureBindGroups {
     #[instrument(skip_all)]
     pub fn create_from(
         device: &wgpu::Device,
-        layouts: &BindGroupLayouts,
+        layout: &StandardRenderLayout,
         textures: &Textures,
         samplers: &TextureSamplers,
     ) -> Self {
-        let cover_tex = Self::create_cover(device, layouts, textures, samplers);
-        let bricks = Self::create_bricks(device, layouts, textures, samplers);
-        let stonepath = Self::create_stonepath(device, layouts, textures, samplers);
+        let cover_tex = Self::create_cover(device, layout, textures, samplers);
+        let bricks = Self::create_bricks(device, layout, textures, samplers);
+        let stonepath = Self::create_stonepath(device, layout, textures, samplers);
         Self {
             cover_tex,
             bricks,
@@ -33,13 +34,13 @@ impl TextureBindGroups {
     #[instrument(skip_all)]
     fn create_cover(
         device: &wgpu::Device,
-        layouts: &BindGroupLayouts,
+        layout: &StandardRenderLayout,
         textures: &Textures,
         samplers: &TextureSamplers,
     ) -> BindGroup {
         Self::create_diffuse_and_normal(
             device,
-            &layouts.diffuse_and_normal,
+            &layout.texture_bind_group,
             &textures.cover.view,
             &samplers.linear,
             &textures.fallback_normals.view,
@@ -51,13 +52,13 @@ impl TextureBindGroups {
     #[instrument(skip_all)]
     fn create_bricks(
         device: &wgpu::Device,
-        layouts: &BindGroupLayouts,
+        layout: &StandardRenderLayout,
         textures: &Textures,
         samplers: &TextureSamplers,
     ) -> BindGroup {
         Self::create_diffuse_and_normal(
             device,
-            &layouts.diffuse_and_normal,
+            &layout.texture_bind_group,
             &textures.bricks_diffuse.view,
             &samplers.tile,
             &textures.bricks_normal.view,
@@ -69,13 +70,13 @@ impl TextureBindGroups {
     #[instrument(skip_all)]
     fn create_stonepath(
         device: &wgpu::Device,
-        layouts: &BindGroupLayouts,
+        layout: &StandardRenderLayout,
         textures: &Textures,
         samplers: &TextureSamplers,
     ) -> BindGroup {
         Self::create_diffuse_and_normal(
             device,
-            &layouts.diffuse_and_normal,
+            &layout.texture_bind_group,
             &textures.stonepath_diffuse.view,
             &samplers.tile,
             &textures.stonepath_normal.view,

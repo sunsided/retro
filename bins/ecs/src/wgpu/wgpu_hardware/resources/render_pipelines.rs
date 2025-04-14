@@ -7,6 +7,7 @@ use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUnifo
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
+use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use tracing::instrument;
 use wgpu::{Device, PipelineLayout, RenderPipeline, TextureFormat};
 
@@ -56,26 +57,37 @@ impl RenderPipelines {
     pub fn create_from(
         device: &Device,
         bind_group_layouts: &BindGroupLayouts,
+        render_pipeline_layouts: &StandardRenderLayout,
         surface_format: TextureFormat,
         shaders: &Shaders,
         frame_global: &FrameGlobalUniformResource,
         camera: &CameraUniformResource,
         light: &LightUniformResource,
     ) -> Self {
-        let layout = Self::create_standard_render_layout(
+        let textured_render = Self::create_textured_render(
             &device,
-            bind_group_layouts,
-            frame_global,
-            camera,
-            light,
+            &render_pipeline_layouts.pipeline,
+            surface_format,
+            shaders,
         );
-        let textured_render =
-            Self::create_textured_render(&device, &layout, surface_format, shaders);
-        let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
-        let flat_entity_render =
-            Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
-        let wireframe_render =
-            Self::create_wireframe_render(&device, &layout, surface_format, shaders);
+        let flat_render = Self::create_flat_render(
+            &device,
+            &render_pipeline_layouts.pipeline,
+            surface_format,
+            shaders,
+        );
+        let flat_entity_render = Self::create_flat_entity_render(
+            &device,
+            &render_pipeline_layouts.pipeline,
+            surface_format,
+            shaders,
+        );
+        let wireframe_render = Self::create_wireframe_render(
+            &device,
+            &render_pipeline_layouts.pipeline,
+            surface_format,
+            shaders,
+        );
         let light_rp = Self::create_light(
             &device,
             surface_format,
@@ -94,7 +106,12 @@ impl RenderPipelines {
             shaders,
         );
         let sky = Self::create_sky_pipeline(&device, surface_format, shaders, frame_global, camera);
-        let tile = Self::create_tile_render(&device, &layout, surface_format, shaders);
+        let tile = Self::create_tile_render(
+            &device,
+            &render_pipeline_layouts.pipeline,
+            surface_format,
+            shaders,
+        );
         Self {
             sky,
             textured_render,
@@ -247,26 +264,6 @@ impl RenderPipelines {
             RenderMode::Filled,
             wgpu_label!("light"),
         )
-    }
-
-    #[instrument(skip_all)]
-    fn create_standard_render_layout(
-        device: &Device,
-        bind_group_layouts: &BindGroupLayouts,
-        frame_global: &FrameGlobalUniformResource,
-        camera: &CameraUniformResource,
-        light: &LightUniformResource,
-    ) -> PipelineLayout {
-        device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some(wgpu_label!("render_layout")),
-            bind_group_layouts: &[
-                &frame_global.layout,                   // `@group(0)` in the shader
-                &camera.layout,                         // `@group(1)` in the shader
-                &light.layout,                          // `@group(2)` in the shader
-                &bind_group_layouts.diffuse_and_normal, // `@group(3)` in the shader
-            ],
-            push_constant_ranges: &[],
-        })
     }
 
     #[instrument(skip_all)]

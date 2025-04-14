@@ -5,6 +5,7 @@ pub mod depth_buffers;
 pub mod models;
 pub mod render_pipelines;
 pub mod shaders;
+pub mod standard_render_layout;
 pub mod texture_samplers;
 pub mod textures;
 
@@ -20,6 +21,7 @@ use crate::wgpu::wgpu_hardware::resources::render_pipelines::{
     RenderPipelineSelector, RenderPipelines,
 };
 use crate::wgpu::wgpu_hardware::resources::shaders::Shaders;
+use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::resources::textures::Textures;
 use tracing::instrument;
@@ -32,6 +34,7 @@ pub struct WgpuResources {
     depths: DepthBuffers,
     _bind_group_layouts: BindGroupLayouts,
     bind_groups: BindGroups,
+    standard_render: StandardRenderLayout,
     pipelines: RenderPipelines,
     shaders: Shaders,
     models: Models,
@@ -67,26 +70,40 @@ impl WgpuResources {
         let depths = DepthBuffers::create_from(device, config);
         let shaders = Shaders::create_from(device);
         let bind_group_layouts = BindGroupLayouts::create_from(device);
-        let bind_groups =
-            BindGroups::create_from(device, &bind_group_layouts, &textures, &samplers, &depths);
+        let standard_render = StandardRenderLayout::create_from(
+            device,
+            &neo.uniforms.frame_globals,
+            &neo.uniforms.camera,
+            &neo.uniforms.light,
+        );
+        let bind_groups = BindGroups::create_from(
+            device,
+            &bind_group_layouts,
+            &standard_render,
+            &textures,
+            &samplers,
+            &depths,
+        );
         let pipelines = RenderPipelines::create_from(
             &device,
             &bind_group_layouts,
+            &standard_render,
             config.format,
             &shaders,
             &neo.uniforms.frame_globals,
             &neo.uniforms.camera,
             &neo.uniforms.light,
         );
-        let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
+        let models = Models::create_from(&device, &queue, &standard_render, &samplers);
         Self {
             samplers,
             buffers,
             depths,
             _bind_group_layouts: bind_group_layouts,
             bind_groups,
+            standard_render,
             pipelines,
-            shaders: shaders,
+            shaders,
             models,
             textures,
             neo,
@@ -123,6 +140,10 @@ impl WgpuResources {
 
     pub const fn buffers(&self) -> &Buffers {
         &self.buffers
+    }
+
+    pub const fn standard_render(&self) -> &StandardRenderLayout {
+        &self.standard_render
     }
 
     pub const fn pipelines(&self) -> &RenderPipelines {

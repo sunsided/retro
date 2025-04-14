@@ -6,6 +6,7 @@ use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::render_targets::RenderTargetBindGroups;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::textures::TextureBindGroups;
 use crate::wgpu::wgpu_hardware::resources::depth_buffers::DepthBuffers;
+use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::resources::textures::Textures;
 use tracing::instrument;
@@ -21,11 +22,13 @@ impl BindGroups {
     pub fn create_from(
         device: &wgpu::Device,
         layouts: &BindGroupLayouts,
+        standard_render: &StandardRenderLayout,
         textures: &Textures,
         samplers: &TextureSamplers,
         depths: &DepthBuffers,
     ) -> Self {
-        let textures_bgs = TextureBindGroups::create_from(device, layouts, textures, samplers);
+        let textures_bgs =
+            TextureBindGroups::create_from(device, standard_render, textures, samplers);
         let render_targets =
             RenderTargetBindGroups::create_from(device, layouts, textures, samplers, depths);
         Self {

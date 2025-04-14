@@ -7,7 +7,6 @@ use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use wgpu::{Device, PipelineLayout, RenderPipeline, TextureFormat};
 
 pub struct TileRendererResource {
-    pub layout: PipelineLayout,
     pub pipeline: RenderPipeline,
 }
 
@@ -88,24 +87,11 @@ impl TileRendererResource {
                     label: Some("diffuse_and_normal"),
                 });
 
-        let layout = device
-            .device()
-            .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some(wgpu_label!("render_layout")),
-                bind_group_layouts: &[
-                    &resources.neo.uniforms.frame_globals.layout, // `@group(0)` in the shader
-                    &resources.neo.uniforms.camera.layout,        // `@group(1)` in the shader
-                    &resources.neo.uniforms.light.layout,         // `@group(2)` in the shader
-                    &diffuse_and_normal,                          // `@group(3)` in the shader
-                ],
-                push_constant_ranges: &[],
-            });
-
         let pipeline = device
             .device()
             .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                 label: Some(wgpu_label!("tile_render")),
-                layout: Some(&layout),
+                layout: Some(&resources.standard_render().pipeline),
                 vertex: wgpu::VertexState {
                     module: vertex.module(),
                     entry_point: vertex.entry_point(),
@@ -146,6 +132,6 @@ impl TileRendererResource {
                 cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
             });
 
-        Self { layout, pipeline }
+        Self { pipeline }
     }
 }
