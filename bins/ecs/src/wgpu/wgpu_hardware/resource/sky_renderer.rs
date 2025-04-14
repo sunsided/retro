@@ -4,7 +4,7 @@ use wgpu::Device;
 pub struct SkyRenderer {}
 
 impl SkyRenderer {
-    pub fn create(device: &Device, bind_group_layouts: &BindGroupLayouts) -> Self {
+    pub fn create(_device: &Device, _bind_group_layouts: &BindGroupLayouts) -> Self {
         todo!()
     }
 }

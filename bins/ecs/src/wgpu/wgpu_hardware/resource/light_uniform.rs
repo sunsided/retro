@@ -71,9 +71,3 @@ impl LightUniformResource {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
 }
-
-impl AsRef<BindGroup> for LightUniformResource {
-    fn as_ref(&self) -> &BindGroup {
-        &self.bind_group
-    }
-}

@@ -8,7 +8,6 @@ pub mod shaders;
 pub mod texture_samplers;
 pub mod textures;
 
-use crate::wgpu::uniforms::LightUniform;
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;

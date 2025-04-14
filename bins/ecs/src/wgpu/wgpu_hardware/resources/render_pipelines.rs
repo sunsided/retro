@@ -52,7 +52,7 @@ impl RenderPipelines {
 }
 
 impl RenderPipelines {
-    #[instrument(skip(device, bind_group_layouts, shaders))]
+    #[instrument(skip_all)]
     pub fn create_from(
         device: &Device,
         bind_group_layouts: &BindGroupLayouts,
@@ -76,24 +76,10 @@ impl RenderPipelines {
             Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
         let wireframe_render =
             Self::create_wireframe_render(&device, &layout, surface_format, shaders);
-        let light = Self::create_light(
-            &device,
-            bind_group_layouts,
-            surface_format,
-            shaders,
-            camera,
-            light,
-        );
+        let light = Self::create_light(&device, surface_format, shaders, camera, light);
         let vga_fullscreen =
             Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
-        let sky = Self::create_sky_pipeline(
-            &device,
-            surface_format,
-            bind_group_layouts,
-            shaders,
-            frame_global,
-            camera,
-        );
+        let sky = Self::create_sky_pipeline(&device, surface_format, shaders, frame_global, camera);
         let tile = Self::create_tile_render(&device, &layout, surface_format, shaders);
         Self {
             sky,
@@ -107,10 +93,10 @@ impl RenderPipelines {
         }
     }
 
+    #[instrument(skip_all)]
     fn create_sky_pipeline(
         device: &Device,
         config_format: TextureFormat,
-        bind_group_layouts: &BindGroupLayouts,
         shaders: &Shaders,
         frame_global: &FrameGlobalUniformResource,
         camera: &CameraUniformResource,
@@ -162,7 +148,7 @@ impl RenderPipelines {
         })
     }
 
-    #[instrument(skip(device, bind_group_layouts, shaders))]
+    #[instrument(skip_all)]
     fn create_vga_fullscreen(
         device: &Device,
         bind_group_layouts: &BindGroupLayouts,
@@ -208,10 +194,9 @@ impl RenderPipelines {
         })
     }
 
-    #[instrument(skip(device, bind_group_layouts, shaders))]
+    #[instrument(skip_all)]
     fn create_light(
         device: &Device,
-        bind_group_layouts: &BindGroupLayouts,
         surface_format: TextureFormat,
         shaders: &Shaders,
         camera: &CameraUniformResource,

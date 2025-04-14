@@ -1,6 +1,6 @@
 use crate::map::tile_instance::TileVertex;
 use crate::wgpu::instance::InstanceRaw;
-use crate::wgpu::uniforms::{CameraUniform, FrameGlobalUniform, LightUniform, RetroUniform};
+use crate::wgpu::uniforms::RetroUniform;
 use std::ops::RangeBounds;
 use tracing::instrument;
 use wgpu::util::DeviceExt;
