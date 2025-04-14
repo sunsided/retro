@@ -5,7 +5,8 @@ use crate::engine::{
 };
 use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::model::DrawModel;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, InstanceBuffer, RenderPipelineSelector};
+use crate::wgpu::wgpu_hardware::resources::buffers::InstanceBuffer;
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use tracing::{debug, trace, warn};
 use wgpu::{RenderPass, TextureView};
 
@@ -53,18 +54,18 @@ impl ApplyRenderSystem for RenderSystem {
             return;
         }
 
-        let Ok((device, frame_state)) = wgpu_render.for_rendering() else {
+        let Ok((device, resources, frame_state)) = wgpu_render.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
 
         let frame_entity_ids = frame_state.per_frame_entity_ids();
-        let mut render_pass = frame_state.render_pass(&device);
+        let mut render_pass = frame_state.render_pass(&resources);
 
         // Enable the instance buffer.
-        render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
+        render_pass.set_vertex_buffer(1, resources.buffers().instances.slice(..));
 
-        let max_instances = device.buffers().instances.len();
+        let max_instances = resources.buffers().instances.len();
 
         // Fetch the (local) instance buffer and clear it in case something went wrong.
         let instance_buf = &mut self.instance_buffer;
@@ -81,16 +82,16 @@ impl ApplyRenderSystem for RenderSystem {
 
             // Render, then clear the local buffer.
             if instance_buf.len() >= max_instances {
-                let num_instances = device
+                let num_instances = resources
                     .buffers()
                     .instances
                     .send_to_device(&device.queue(), &instance_buf);
                 render_pass.draw_model_instanced(
-                    &device.models().cube,
+                    &resources.models().cube,
                     0..num_instances,
-                    &device.bind_groups().frame_global_uniform,
-                    &device.bind_groups().camera_uniform,
-                    &device.bind_groups().light_uniforms,
+                    &resources.bind_groups().frame_global_uniform,
+                    &resources.bind_groups().camera_uniform,
+                    &resources.bind_groups().light_uniforms,
                 );
                 instance_buf.clear();
             }
@@ -98,16 +99,16 @@ impl ApplyRenderSystem for RenderSystem {
 
         // Render the rest.
         if instance_buf.len() > 0 {
-            let num_instances = device
+            let num_instances = resources
                 .buffers()
                 .instances
                 .send_to_device(&device.queue(), &instance_buf);
             render_pass.draw_model_instanced(
-                &device.models().cube,
+                &resources.models().cube,
                 0..num_instances,
-                &device.bind_groups().frame_global_uniform,
-                &device.bind_groups().camera_uniform,
-                &device.bind_groups().light_uniforms,
+                &resources.bind_groups().frame_global_uniform,
+                &resources.bind_groups().camera_uniform,
+                &resources.bind_groups().light_uniforms,
             );
             instance_buf.clear();
         }

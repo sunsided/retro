@@ -74,6 +74,11 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
             return;
         };
 
+        let Some(resources) = wgpu_render.hardware().resources() else {
+            warn!("Skipping camera rendering because no resources are set.");
+            return;
+        };
+
         // Pick the active camera.
         let Some(camera) = cameras.iter().find(|c| c.active) else {
             warn!("Skipping camera rendering because no active camera was found.");
@@ -84,7 +89,7 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
         active_camera
             .uniform
             .update_view_proj(&camera.camera, &camera.projection);
-        device
+        resources
             .buffers()
             .camera_uniform
             .send_to_device(&device.queue(), active_camera.uniform);

@@ -6,7 +6,7 @@ use crate::engine::{
 };
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
@@ -32,7 +32,7 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
         wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
-        let Ok((device, frame_state)) = wgpu_render.for_rendering() else {
+        let Ok((device, resources, frame_state)) = wgpu_render.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
@@ -40,8 +40,8 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
         // Second pass: Presenting the VGA offscreen buffer to screen.
         let background_color = background_color.dim(0.5);
         if let Some(mut pass) = frame_state.passes.final_pass(&background_color) {
-            pass.set_pipeline(&device.pipelines().vga_fullscreen);
-            pass.set_bind_group(0, &device.bind_groups().vga_fullscreen, &[]);
+            pass.set_pipeline(&resources.pipelines().vga_fullscreen);
+            pass.set_bind_group(0, &resources.bind_groups().vga_fullscreen, &[]);
 
             // Draw exactly 3 vertices – no vertex buffer
             pass.draw(0..6, 0..1);

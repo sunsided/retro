@@ -1,13 +1,3 @@
-use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::wgpu_hardware::bind_groups::BindGroups;
-use crate::wgpu::wgpu_hardware::buffers::Buffers;
-use crate::wgpu::wgpu_hardware::depth_buffers::DepthBuffers;
-use crate::wgpu::wgpu_hardware::models::Models;
-use crate::wgpu::wgpu_hardware::render_pipelines::RenderPipelines;
-use crate::wgpu::wgpu_hardware::shaders::Shaders;
-use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
-use crate::wgpu::wgpu_hardware::textures::Textures;
-use crate::wgpu::wgpu_hardware::RenderPipelineSelector;
 use tracing::instrument;
 use wgpu::{Device, Queue, Surface, SurfaceConfiguration};
 use winit::dpi::PhysicalSize;
@@ -18,15 +8,6 @@ pub struct DeviceAndQueue {
     device: Device,
     queue: Queue,
     config: SurfaceConfiguration,
-    samplers: TextureSamplers,
-    buffers: Buffers,
-    depths: DepthBuffers,
-    bind_group_layouts: BindGroupLayouts,
-    bind_groups: BindGroups,
-    pipelines: RenderPipelines,
-    shaders: Shaders,
-    models: Models,
-    textures: Textures,
 }
 
 impl DeviceAndQueue {
@@ -35,36 +16,10 @@ impl DeviceAndQueue {
         queue: Queue,
         config: SurfaceConfiguration,
     ) -> DeviceAndQueue {
-        let samplers = TextureSamplers::create_from(&device);
-        let textures = Textures::create_from(&device, &queue, &config);
-        let buffers = Buffers::create_from(&device);
-        let depths = DepthBuffers::create_from(&device, &config);
-        let shaders = Shaders::create_from(&device);
-        let bind_group_layouts = BindGroupLayouts::create_from(&device);
-        let bind_groups = BindGroups::create_from(
-            &device,
-            &bind_group_layouts,
-            &buffers,
-            &textures,
-            &samplers,
-            &depths,
-        );
-        let pipelines =
-            RenderPipelines::create_from(&device, &bind_group_layouts, config.format, &shaders);
-        let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
         Self {
             device,
             queue,
             config,
-            samplers,
-            buffers,
-            depths,
-            bind_group_layouts,
-            bind_groups,
-            pipelines,
-            shaders,
-            models,
-            textures,
         }
     }
 
@@ -87,28 +42,11 @@ impl DeviceAndQueue {
         self.config.width = new_size.width;
         self.config.height = new_size.height;
         surface.configure(&self.device, &self.config);
-        self.recreate_surface_dependent_buffers();
     }
 
     #[instrument(skip(self, config))]
     pub fn set_config(&mut self, config: SurfaceConfiguration) {
         self.config = config;
-        self.recreate_surface_dependent_buffers();
-    }
-
-    #[instrument(skip(self))]
-    pub fn recreate_surface_dependent_buffers(&mut self) {
-        self.depths.recreate(&self.device, &self.config);
-        self.textures.recreate(&self.device, &self.config);
-    }
-
-    pub fn apply_render_pipeline_to_pass(
-        &self,
-        render_pass: &mut wgpu::RenderPass,
-        pipeline_selector: RenderPipelineSelector,
-    ) {
-        let pipeline = self.pipelines.render_pipeline(pipeline_selector);
-        render_pass.set_pipeline(&pipeline);
     }
 
     pub const fn device(&self) -> &Device {
@@ -121,34 +59,5 @@ impl DeviceAndQueue {
 
     pub const fn config(&self) -> &SurfaceConfiguration {
         &self.config
-    }
-
-    #[allow(dead_code)]
-    pub const fn samplers(&self) -> &TextureSamplers {
-        &self.samplers
-    }
-
-    pub const fn depths(&self) -> &DepthBuffers {
-        &self.depths
-    }
-
-    pub const fn buffers(&self) -> &Buffers {
-        &self.buffers
-    }
-
-    pub const fn pipelines(&self) -> &RenderPipelines {
-        &self.pipelines
-    }
-
-    pub const fn models(&self) -> &Models {
-        &self.models
-    }
-
-    pub const fn bind_groups(&self) -> &BindGroups {
-        &self.bind_groups
-    }
-
-    pub const fn textures(&self) -> &Textures {
-        &self.textures
     }
 }

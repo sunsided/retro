@@ -1,7 +1,7 @@
 use crate::resources;
 use crate::wgpu::model::Model;
-use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
+use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use tracing::instrument;
 use wgpu::Queue;
 

@@ -1,4 +1,5 @@
 use crate::engine::BackgroundColorComponent;
+use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::ops::{Deref, DerefMut};
 use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
@@ -31,17 +32,18 @@ impl DerefMut for RenderPasses {
 
 impl RenderPasses {
     pub fn new(
-        device: &DeviceAndQueue,
+        resources: &WgpuResources,
         retro_enabled: bool,
         encoder: CommandEncoder,
         surface_tex: SurfaceTexture,
         surface_view: TextureView,
     ) -> Self {
-        let surface_depth_view = device.depths().screen.view.clone();
-        let surface_frame_entity_id_view = device.textures().surface_frame_entity_id.view.clone();
-        let vga_frame_entity_id_view = device.textures().vga_frame_entity_id.view.clone();
-        let vga_offscreen_view = device.textures().vga_offscreen.view.clone();
-        let vga_depth_view = device.depths().vga_offscreen.view.clone();
+        let surface_depth_view = resources.depths().screen.view.clone();
+        let surface_frame_entity_id_view =
+            resources.textures().surface_frame_entity_id.view.clone();
+        let vga_frame_entity_id_view = resources.textures().vga_frame_entity_id.view.clone();
+        let vga_offscreen_view = resources.textures().vga_offscreen.view.clone();
+        let vga_depth_view = resources.depths().vga_offscreen.view.clone();
 
         Self {
             encoder,

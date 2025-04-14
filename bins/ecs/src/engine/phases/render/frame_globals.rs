@@ -8,7 +8,7 @@ use crate::engine::{
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
 use crate::wgpu::uniforms::FrameGlobalUniform;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
@@ -45,6 +45,11 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
             return;
         };
 
+        let Some(resources) = gpu.hardware().resources() else {
+            warn!("Skipping frame globals setup because resources are not ready.");
+            return;
+        };
+
         let mut uniform = FrameGlobalUniform::new(time_of_day.time_of_day);
         uniform.star_visibility = stars.intensity;
         uniform.star_speed = stars.rotational_speed;
@@ -54,7 +59,7 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         uniform.sun_color = sun.color.into();
         uniform.sun_visibility = sun.intensity;
 
-        device
+        resources
             .buffers()
             .frame_global_uniform
             .send_to_device(device.queue(), uniform);

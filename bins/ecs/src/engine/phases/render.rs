@@ -145,6 +145,10 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             return Ok(RenderReady::NotReady);
         };
 
+        let Some(resources) = render.hardware().resources() else {
+            return Ok(RenderReady::NotReady);
+        };
+
         // TODO: Refactor
         render.update_retro_uniform();
 
@@ -178,7 +182,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                 });
 
             let passes = RenderPasses::new(
-                &device,
+                &resources,
                 render.retro_enabled(),
                 encoder,
                 frame,

@@ -1,8 +1,8 @@
-use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::wgpu_hardware::buffers::Buffers;
-use crate::wgpu::wgpu_hardware::depth_buffers::DepthBuffers;
-use crate::wgpu::wgpu_hardware::texture_samplers::TextureSamplers;
-use crate::wgpu::wgpu_hardware::textures::Textures;
+use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
+use crate::wgpu::wgpu_hardware::resources::depth_buffers::DepthBuffers;
+use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
+use crate::wgpu::wgpu_hardware::resources::textures::Textures;
 use tracing::instrument;
 use wgpu::{BindGroup, BindGroupLayout, Sampler, TextureView};
 

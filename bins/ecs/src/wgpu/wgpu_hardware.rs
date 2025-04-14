@@ -20,24 +20,18 @@
 //! - **Error Handling**: Provides error enumeration (`WgpuReinitializeWindowError`)
 //!   for better handling of common errors during initialization or reinitialization.
 
-mod bind_group_layouts;
-mod bind_groups;
-mod buffers;
-mod depth_buffers;
 mod device_and_queue;
-mod models;
-mod render_pipelines;
-mod shaders;
+pub mod resource;
+pub mod resources;
 mod surface_id;
 mod surface_wrapper;
-mod texture_samplers;
-mod textures;
 
-pub use self::buffers::InstanceBuffer;
 pub use self::device_and_queue::DeviceAndQueue;
-pub use self::render_pipelines::RenderPipelineSelector;
 pub use self::surface_id::SurfaceId;
-pub use self::surface_wrapper::SurfaceWrapper;
+use crate::engine::phases::render::FrameState;
+use crate::wgpu::wgpu_hardware::resource::WgpuResource;
+use crate::wgpu::wgpu_hardware::resources::WgpuResources;
+use crate::wgpu::wgpu_hardware::surface_wrapper::SurfaceWrapper;
 use std::sync::Arc;
 use tracing::{debug, info, instrument, warn};
 use wgpu::{
@@ -53,6 +47,7 @@ pub struct WgpuHardware {
     surface: SurfaceWrapper,
     adapter: Option<Adapter>,
     device: Option<DeviceAndQueue>,
+    resource: Option<WgpuResources>,
 }
 
 impl WgpuHardware {
@@ -86,6 +81,29 @@ impl WgpuHardware {
     #[inline]
     pub const fn device(&self) -> Option<&DeviceAndQueue> {
         self.device.as_ref()
+    }
+
+    /// Get access to the resources, if configured.
+    #[inline]
+    pub const fn resources(&self) -> Option<&WgpuResources> {
+        self.resource.as_ref()
+    }
+
+    #[instrument(skip(self))]
+    pub fn for_rendering(
+        &mut self,
+    ) -> Result<(&DeviceAndQueue, &mut WgpuResources), WgpuForRenderingError> {
+        let Some(hardware) = self.device.as_ref() else {
+            debug!("Device is not ready yet, cannot render");
+            return Err(WgpuForRenderingError::NoDevice);
+        };
+
+        let Some(resources) = self.resource.as_mut() else {
+            debug!("Resources are not ready yet, cannot render");
+            return Err(WgpuForRenderingError::NoResources);
+        };
+
+        Ok((hardware, resources))
     }
 
     #[inline]
@@ -131,6 +149,16 @@ pub enum WgpuResizeSurfaceError {
     NoSurface,
     #[error("No device available to resize the surface with")]
     NoDevice,
+    #[error("No resources available to resize the surface for")]
+    NoResources,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum WgpuForRenderingError {
+    #[error("No device available")]
+    NoDevice,
+    #[error("No resources available")]
+    NoResources,
 }
 
 impl WgpuHardware {
@@ -163,9 +191,11 @@ impl WgpuHardware {
             let adapter = self.request_adapter(surface)?;
             let (device, queue) = self.request_device(&adapter)?;
             let config = Self::get_surface_config(size, surface, &adapter);
+            let resources = WgpuResources::new(&device, &queue, &config);
 
             self.adapter = Some(adapter);
             self.device = Some(DeviceAndQueue::new(device, queue, config));
+            self.resource = Some(resources);
         } else {
             let Some(adapter) = self.adapter.as_mut() else {
                 unreachable!("The adapter is known to exist");
@@ -197,6 +227,13 @@ impl WgpuHardware {
         };
 
         device.resize_surface(new_size, &mut surface);
+
+        let Some(resources) = self.resource.as_mut() else {
+            return Err(WgpuResizeSurfaceError::NoResources);
+        };
+
+        resources.recreate_surface_dependent_buffers(device.device(), device.config());
+
         Ok(())
     }
 

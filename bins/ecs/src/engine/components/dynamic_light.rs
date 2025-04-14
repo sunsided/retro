@@ -1,5 +1,6 @@
 use crate::seconds::Seconds;
 use crate::wgpu::uniforms::LightUniform;
+use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use cgmath::Rotation3;
 
@@ -34,9 +35,9 @@ impl DynamicLightData {
                 .into();
     }
 
-    pub fn write_to_buffer(&self, gpu: &DeviceAndQueue) {
+    pub fn write_to_buffer(&self, gpu: &DeviceAndQueue, resources: &WgpuResources) {
         gpu.queue().write_buffer(
-            gpu.buffers().light_uniforms.as_ref(),
+            resources.buffers().light_uniforms.as_ref(),
             0,
             bytemuck::cast_slice(&[self.uniform]),
         );

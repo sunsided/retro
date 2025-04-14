@@ -5,7 +5,7 @@ use crate::engine::{
 };
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
@@ -126,7 +126,7 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         gpu: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
-        let Ok((_device, frame_state)) = gpu.for_rendering() else {
+        let Ok((_device, _resources, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };

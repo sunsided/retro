@@ -23,13 +23,13 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
         colors: &[ColorComponent],
         lights: &mut [DynamicLightComponent],
     ) {
-        let Ok((device, frame_state)) = gpu.for_rendering() else {
+        let Ok((device, resources, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
 
-        let mut render_pass = frame_state.render_pass(&device);
-        render_pass.set_pipeline(&device.pipelines().light);
+        let mut render_pass = frame_state.render_pass(&resources);
+        render_pass.set_pipeline(&resources.pipelines().light);
 
         for (light, color) in lights.iter_mut().zip(colors) {
             // TODO: Move this to the update phase
@@ -37,13 +37,13 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
             light.update_color(color.r, color.g, color.b);
 
             // TODO: Keep this in the render phase
-            light.write_to_buffer(&device);
+            light.write_to_buffer(&device, resources);
 
             // Render the light.
             render_pass.draw_light_model(
-                &device.models().cube,
-                &device.bind_groups().camera_uniform,
-                &device.bind_groups().light_uniforms,
+                &resources.models().cube,
+                &resources.bind_groups().camera_uniform,
+                &resources.bind_groups().light_uniforms,
             );
         }
     }

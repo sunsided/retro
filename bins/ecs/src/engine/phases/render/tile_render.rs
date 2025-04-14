@@ -28,7 +28,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
         tiles: &[TileComponent],
         positions: &[PositionComponent],
     ) {
-        let Ok((device, frame_state)) = gpu.for_rendering() else {
+        let Ok((device, resources, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
@@ -88,17 +88,17 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
-        let mut pass = frame_state.render_pass_with(&device.pipelines().tile);
-        pass.set_bind_group(0, &device.bind_groups().frame_global_uniform, &[]);
-        pass.set_bind_group(1, &device.bind_groups().camera_uniform, &[]);
-        pass.set_bind_group(2, &device.bind_groups().light_uniforms, &[]);
+        let mut pass = frame_state.render_pass_with(&resources.pipelines().tile);
+        pass.set_bind_group(0, &resources.bind_groups().frame_global_uniform, &[]);
+        pass.set_bind_group(1, &resources.bind_groups().camera_uniform, &[]);
+        pass.set_bind_group(2, &resources.bind_groups().light_uniforms, &[]);
         // The texture atlas
-        pass.set_bind_group(3, &device.bind_groups().stonepath, &[]);
+        pass.set_bind_group(3, &resources.bind_groups().stonepath, &[]);
         pass.set_index_buffer(
-            device.buffers().tile_index.slice(..),
+            resources.buffers().tile_index.slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+        pass.set_vertex_buffer(0, resources.buffers().tile_vertex.slice(..));
         pass.set_vertex_buffer(1, floor_buffer.slice(..));
         pass.draw_indexed(0..6, 0, 0..floors.len() as u32);
 
@@ -113,8 +113,8 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                         usage: wgpu::BufferUsages::VERTEX,
                     });
 
-            pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
-            pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+            pass.set_bind_group(3, &resources.bind_groups().bricks, &[]);
+            pass.set_vertex_buffer(0, resources.buffers().tile_vertex.slice(..));
             pass.set_vertex_buffer(1, wall_buffer.slice(..));
             pass.draw_indexed(0..6, 0, 0..walls.len() as u32);
         }
@@ -130,8 +130,8 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                         usage: wgpu::BufferUsages::VERTEX,
                     });
 
-            pass.set_bind_group(3, &device.bind_groups().bricks, &[]);
-            pass.set_vertex_buffer(0, device.buffers().tile_vertex.slice(..));
+            pass.set_bind_group(3, &resources.bind_groups().bricks, &[]);
+            pass.set_vertex_buffer(0, resources.buffers().tile_vertex.slice(..));
             pass.set_vertex_buffer(1, ceiling_buffer.slice(..));
             pass.draw_indexed(0..6, 0, 0..ceilings.len() as u32);
         }

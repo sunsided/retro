@@ -1,5 +1,7 @@
 use crate::wgpu::render_passes::RenderPasses;
-use crate::wgpu::wgpu_hardware::{DeviceAndQueue, RenderPipelineSelector};
+use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderPipelineSelector;
+use crate::wgpu::wgpu_hardware::resources::WgpuResources;
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -46,9 +48,9 @@ impl FrameState {
         }
     }
 
-    pub fn render_pass(&mut self, device: &DeviceAndQueue) -> RenderPass {
+    pub fn render_pass(&mut self, resources: &WgpuResources) -> RenderPass {
         let mut pass = self.passes.render_pass();
-        device.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
+        resources.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
         pass
     }
 

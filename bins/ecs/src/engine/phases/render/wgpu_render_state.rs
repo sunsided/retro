@@ -1,7 +1,9 @@
 use crate::engine::phases::render::frame_state::FrameState;
 use crate::wgpu::uniforms::RetroUniform;
+use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderPipelineSelector;
+use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::{
-    DeviceAndQueue, RenderPipelineSelector, WgpuHardware, WgpuReinitializeWindowError,
+    DeviceAndQueue, WgpuForRenderingError, WgpuHardware, WgpuReinitializeWindowError,
     WgpuResizeSurfaceError,
 };
 use std::cell::Cell;
@@ -101,18 +103,15 @@ impl WgpuRenderState {
     #[instrument(skip(self))]
     pub fn for_rendering(
         &mut self,
-    ) -> Result<(&DeviceAndQueue, &mut FrameState), RenderPhaseError> {
-        let Some(hardware) = self.hardware.device() else {
-            debug!("Device is not ready yet, cannot render");
-            return Err(RenderPhaseError::DeviceNotReady);
-        };
+    ) -> Result<(&DeviceAndQueue, &mut WgpuResources, &mut FrameState), RenderPhaseError> {
+        let (hardware, resources) = self.hardware.for_rendering()?;
 
         let Some(frame_state) = &mut self.frame_state else {
             debug!("Frame state is not ready yet, cannot render");
             return Err(RenderPhaseError::FrameStateNotReady);
         };
 
-        Ok((hardware, frame_state))
+        Ok((hardware, resources, frame_state))
     }
 
     #[instrument(skip(self))]
@@ -187,8 +186,12 @@ impl WgpuRenderState {
             return;
         };
 
+        let Some(resources) = self.hardware.resources() else {
+            return;
+        };
+
         debug!("Updating retro uniform");
-        device
+        resources
             .buffers()
             .retro_uniform
             .send_to_device(device.queue(), self.retro.uniform);
@@ -220,6 +223,8 @@ impl Debug for WgpuRenderState {
 pub enum RenderPhaseError {
     #[error("The device is not ready yet")]
     DeviceNotReady,
+    #[error("The device or its resources are not ready yet")]
+    DeviceOrResourcesNotReady(#[from] WgpuForRenderingError),
     #[error("The frame state is not ready yet (e.g., the surface is not initialized yet)")]
     FrameStateNotReady,
 }

@@ -2,8 +2,8 @@ use crate::map::tile_instance::{TileInstance, TileVertex};
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::model::{ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
-use crate::wgpu::wgpu_hardware::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::wgpu_hardware::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
+use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
+use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
 use tracing::instrument;
 use wgpu::{Device, PipelineLayout, RenderPipeline, TextureFormat};
 

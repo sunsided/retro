@@ -68,7 +68,7 @@ impl SkyShaderModule {
     fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("Sky"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/sky.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/sky.wgsl").into()),
         };
 
         Self(device.create_shader_module(shader))
@@ -97,7 +97,7 @@ impl RenderShaderModule {
     fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("Normal Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/shader.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/shader.wgsl").into()),
         };
 
         Self(device.create_shader_module(shader))
@@ -140,7 +140,7 @@ impl LightShaderModule {
     fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("Light Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/light.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/light.wgsl").into()),
         };
 
         Self(device.create_shader_module(shader))
@@ -169,7 +169,7 @@ impl VgaShaderModule {
     fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("VGA Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/vga.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/vga.wgsl").into()),
         };
 
         Self(device.create_shader_module(shader))
@@ -198,7 +198,7 @@ impl TileShaderModule {
     fn create(device: &Device) -> Self {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("Tile Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../shaders/tile.wgsl").into()),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/tile.wgsl").into()),
         };
 
         Self(device.create_shader_module(shader))
