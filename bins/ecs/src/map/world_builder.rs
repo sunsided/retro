@@ -15,13 +15,14 @@ impl WorldBuilder {
         // Create 2x2 regions in the world.
         let mut world = TileWorld::with_capacity(4);
         for (wy, wx) in Range2D::new(-1..1, -1..1) {
-            let mut region = WorldRegion::empty();
-            region.visit_mut(|_coord, chunk| {
+            let region = WorldRegion::from_fn(|_coord| {
+                let mut chunk = TileChunk::new_empty();
                 chunk.visit_mut(|coord, tile| {
                     *tile = Tile::new()
                         // TODO: Fix when tile atlas is ready
                         .with_floor(FloorType::Empty)
                 });
+                chunk
             });
 
             world.insert(WorldGlobalRegionCoord::new(wx as i8, wy as i8), region);

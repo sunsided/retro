@@ -2,6 +2,7 @@ use crate::map::tile::Tile;
 use crate::map::tile_chunk::TileChunk;
 use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
 use std::mem::MaybeUninit;
+use std::ptr;
 
 /// A [`WorldRegion`] is a densely-packed are of [`TileChunk`] instances.
 #[derive(Debug, Clone)]
@@ -39,6 +40,53 @@ impl WorldRegion {
         // SAFETY: All entries were just initialized above
         Self {
             chunks: unsafe { std::mem::transmute::<_, [TileChunk; Self::CHUNK_COUNT]>(chunks) },
+        }
+    }
+
+    #[inline]
+    pub fn from_fn<F>(mut f: F) -> Self
+    where
+        F: FnMut(RegionLocalChunkCoord) -> TileChunk,
+    {
+        // SAFETY: We're creating uninitialized memory for CHUNK_COUNT TileChunks
+        let mut chunks: [MaybeUninit<TileChunk>; Self::CHUNK_COUNT] =
+            unsafe { MaybeUninit::uninit().assume_init() };
+
+        struct Guard {
+            ptr: *mut [MaybeUninit<TileChunk>],
+            initialized: usize,
+        }
+
+        impl Drop for Guard {
+            fn drop(&mut self) {
+                // SAFETY: only the first `initialized` elements are initialized
+                for i in 0..self.initialized {
+                    unsafe {
+                        ptr::drop_in_place((*self.ptr)[i].as_mut_ptr());
+                    }
+                }
+            }
+        }
+
+        let mut guard = Guard {
+            ptr: &mut chunks,
+            initialized: 0,
+        };
+
+        for i in 0..Self::CHUNK_COUNT {
+            let coord = RegionLocalChunkCoord::from_dense_region_index(i);
+            chunks[i] = MaybeUninit::new(f(coord));
+            guard.initialized += 1;
+        }
+
+        // All elements initialized — no need to run Drop
+        std::mem::forget(guard);
+
+        // SAFETY: All chunks have been initialized
+        Self {
+            chunks: unsafe {
+                std::mem::transmute_copy::<_, [TileChunk; Self::CHUNK_COUNT]>(&chunks)
+            },
         }
     }
 
