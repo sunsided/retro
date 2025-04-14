@@ -1,5 +1,5 @@
 use crate::map::tile_chunk::TileChunk;
-use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
+use crate::map::tile_coord::RegionLocalChunkCoord;
 use std::mem::MaybeUninit;
 
 /// A [`WorldRegion`] is a densely-packed are of [`TileChunk`] instances.
