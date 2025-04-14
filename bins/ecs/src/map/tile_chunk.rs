@@ -9,6 +9,7 @@ pub struct TileChunk {
     pub tiles: [Tile; TileChunk::TILE_COUNT],
 }
 
+#[allow(dead_code)]
 impl TileChunk {
     /// The number of tiles this chunk is wide.
     pub const WIDTH_IN_TILES: usize = 16;

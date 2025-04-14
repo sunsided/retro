@@ -28,8 +28,6 @@ mod surface_wrapper;
 
 pub use self::device_and_queue::DeviceAndQueue;
 pub use self::surface_id::SurfaceId;
-use crate::engine::phases::render::FrameState;
-use crate::wgpu::wgpu_hardware::resource::WgpuResource;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::surface_wrapper::SurfaceWrapper;
 use std::sync::Arc;

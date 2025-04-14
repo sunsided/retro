@@ -30,7 +30,7 @@ impl ApplyRenderSkySystem for RenderSkySystem {
     type Error = Infallible;
 
     fn apply_single(&mut self, gpu: &mut WgpuRenderState, _: &SkydomeComponent) {
-        let Ok((device, resources, frame_state)) = gpu.for_rendering() else {
+        let Ok((_device, resources, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };

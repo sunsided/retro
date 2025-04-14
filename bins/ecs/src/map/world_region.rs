@@ -9,6 +9,7 @@ pub struct WorldRegion {
     pub chunks: [TileChunk; WorldRegion::CHUNK_COUNT],
 }
 
+#[allow(dead_code)]
 impl WorldRegion {
     /// The width of a region in terms of chunks.
     pub const WIDTH_IN_CHUNKS: usize = 2;

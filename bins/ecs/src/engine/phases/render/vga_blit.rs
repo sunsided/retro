@@ -32,7 +32,7 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
         wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
-        let Ok((device, resources, frame_state)) = wgpu_render.for_rendering() else {
+        let Ok((_device, resources, frame_state)) = wgpu_render.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
