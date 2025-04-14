@@ -8,8 +8,6 @@ pub struct TextureSamplers {
     /// Sampler for depth textures.
     #[allow(dead_code)]
     pub depth: TextureSampler,
-    /// A retro sampler with jaggy edges.
-    pub retro: TextureSampler,
     pub tile: TextureSampler,
     pub normals: TextureSampler,
 }
@@ -19,29 +17,14 @@ impl TextureSamplers {
     pub fn create_from(device: &wgpu::Device) -> Self {
         let linear = TextureSampler::with_clamp_to_edge_and_linear_filtering(device);
         let depth = TextureSampler::depth_sampler(device);
-        let retro_sampler = Self::create_retro_sampler(device);
         let tile = Self::create_tile(device);
         let normals = Self::create_normals(device);
         Self {
             linear,
             depth,
-            retro: retro_sampler,
             tile,
             normals,
         }
-    }
-
-    #[instrument(skip_all)]
-    pub fn create_retro_sampler(device: &wgpu::Device) -> TextureSampler {
-        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("retro"),
-            mag_filter: wgpu::FilterMode::Nearest, // or .Linear, your choice
-            min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
-            ..Default::default()
-        });
-
-        TextureSampler { sampler }
     }
 
     #[instrument(skip_all)]

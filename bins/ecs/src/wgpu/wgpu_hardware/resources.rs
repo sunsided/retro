@@ -1,5 +1,3 @@
-pub mod bind_group_layouts;
-pub mod bind_groups;
 pub mod buffers;
 pub mod depth_buffers;
 pub mod models;
@@ -7,14 +5,13 @@ pub mod render_pipelines;
 mod renderers;
 pub mod shaders;
 pub mod standard_render_layout;
+pub mod texture_bind_groups;
 pub mod texture_samplers;
 pub mod textures;
 
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
-use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
-use crate::wgpu::wgpu_hardware::resources::bind_groups::BindGroups;
 use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
 use crate::wgpu::wgpu_hardware::resources::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::resources::models::Models;
@@ -24,6 +21,7 @@ use crate::wgpu::wgpu_hardware::resources::render_pipelines::{
 use crate::wgpu::wgpu_hardware::resources::renderers::Renderers;
 use crate::wgpu::wgpu_hardware::resources::shaders::Shaders;
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
+use crate::wgpu::wgpu_hardware::resources::texture_bind_groups::TextureBindGroups;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
 use crate::wgpu::wgpu_hardware::resources::textures::Textures;
 use tracing::instrument;
@@ -34,8 +32,6 @@ pub struct WgpuResources {
     samplers: TextureSamplers,
     buffers: Buffers,
     depths: DepthBuffers,
-    _bind_group_layouts: BindGroupLayouts,
-    bind_groups: BindGroups,
     _standard_render: StandardRenderLayout,
     pipelines: RenderPipelines,
     _shaders: Shaders,
@@ -43,6 +39,7 @@ pub struct WgpuResources {
     textures: Textures,
     pub neo: NeoResources,
     renderers: Renderers,
+    texture_bind_groups: TextureBindGroups,
 }
 
 #[derive(Debug)]
@@ -72,24 +69,16 @@ impl WgpuResources {
         let buffers = Buffers::create_from(device);
         let depths = DepthBuffers::create_from(device, config);
         let shaders = Shaders::create_from(device);
-        let bind_group_layouts = BindGroupLayouts::create_from(device);
         let standard_render = StandardRenderLayout::create_from(
             device,
             &neo.uniforms.frame_globals,
             &neo.uniforms.camera,
             &neo.uniforms.light,
         );
-        let bind_groups = BindGroups::create_from(
-            device,
-            &bind_group_layouts,
-            &standard_render,
-            &textures,
-            &samplers,
-            &depths,
-        );
+        let texture_bind_groups =
+            TextureBindGroups::create_from(device, &standard_render, &textures, &samplers);
         let pipelines = RenderPipelines::create_from(
             &device,
-            &bind_group_layouts,
             &standard_render,
             config.format,
             &shaders,
@@ -104,13 +93,13 @@ impl WgpuResources {
             &standard_render,
             &neo.uniforms.frame_globals,
             &neo.uniforms.camera,
+            &neo.uniforms.light,
         );
         Self {
             samplers,
             buffers,
             depths,
-            _bind_group_layouts: bind_group_layouts,
-            bind_groups,
+            texture_bind_groups,
             _standard_render: standard_render,
             pipelines,
             _shaders: shaders,
@@ -161,15 +150,15 @@ impl WgpuResources {
         &self.models
     }
 
-    pub const fn bind_groups(&self) -> &BindGroups {
-        &self.bind_groups
-    }
-
     pub const fn textures(&self) -> &Textures {
         &self.textures
     }
 
     pub const fn renderers(&self) -> &Renderers {
         &self.renderers
+    }
+
+    pub const fn texture_bind_groups(&self) -> &TextureBindGroups {
+        &self.texture_bind_groups
     }
 }

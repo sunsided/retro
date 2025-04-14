@@ -7,6 +7,7 @@ use crate::engine::{
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
+use std::borrow::Borrow;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
@@ -39,16 +40,12 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
 
         // Second pass: Presenting the VGA offscreen buffer to screen.
         let background_color = background_color.dim(0.5);
-        if let Some(mut pass) = frame_state.passes.final_pass(&background_color) {
-            pass.set_pipeline(&resources.pipelines().vga_fullscreen);
+        if let Some(mut pass) = frame_state.passes.final_pass(&resources, &background_color) {
+            pass.set_pipeline(resources.renderers().vga_fullscreen.pipeline());
             pass.set_bind_group(0, &resources.neo.uniforms.frame_globals, &[]);
             pass.set_bind_group(1, &resources.neo.uniforms.camera, &[]);
             pass.set_bind_group(2, &resources.neo.uniforms.light, &[]);
-            pass.set_bind_group(
-                3,
-                &resources.bind_groups().render_targets.vga_fullscreen,
-                &[],
-            );
+            pass.set_bind_group(3, resources.renderers().vga_fullscreen.bind_group(), &[]);
 
             // Draw exactly 3 vertices – no vertex buffer
             pass.draw(0..6, 0..1);

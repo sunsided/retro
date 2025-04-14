@@ -3,3 +3,4 @@ pub mod frame_global_uniform;
 pub mod light_uniform;
 pub mod sky_renderer;
 pub mod tile_renderer;
+pub mod vga_fullscreen_renderer;

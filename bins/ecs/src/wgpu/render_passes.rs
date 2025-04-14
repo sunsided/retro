@@ -8,12 +8,9 @@ pub struct RenderPasses {
     encoder: CommandEncoder,
     surface_tex: SurfaceTexture,
     surface_view: TextureView,
-    vga_offscreen_view: TextureView,
-    vga_depth_view: TextureView,
     retro_enabled: bool,
     surface_depth_view: TextureView,
     surface_frame_entity_id_view: TextureView,
-    vga_frame_entity_id_view: TextureView,
 }
 
 impl Deref for RenderPasses {
@@ -41,9 +38,6 @@ impl RenderPasses {
         let surface_depth_view = resources.depths().screen.view.clone();
         let surface_frame_entity_id_view =
             resources.textures().surface_frame_entity_id.view.clone();
-        let vga_frame_entity_id_view = resources.textures().vga_frame_entity_id.view.clone();
-        let vga_offscreen_view = resources.textures().vga_offscreen.view.clone();
-        let vga_depth_view = resources.depths().vga_offscreen.view.clone();
 
         Self {
             encoder,
@@ -51,9 +45,6 @@ impl RenderPasses {
             surface_view,
             surface_depth_view,
             surface_frame_entity_id_view,
-            vga_frame_entity_id_view,
-            vga_offscreen_view,
-            vga_depth_view,
             retro_enabled,
         }
     }
@@ -67,17 +58,24 @@ impl RenderPasses {
     pub fn clear_background_pass(
         &mut self,
         background_color: &BackgroundColorComponent,
+        resources: &WgpuResources,
     ) -> RenderPass {
         if self.retro_enabled {
-            self.create_retro_clear_pass(background_color)
+            resources
+                .renderers()
+                .vga_fullscreen
+                .create_retro_clear_pass(&mut self.encoder, background_color)
         } else {
             self.create_quality_clear_pass(background_color)
         }
     }
 
-    pub fn render_pass(&mut self) -> RenderPass {
+    pub fn render_pass(&mut self, resources: &WgpuResources) -> RenderPass {
         if self.retro_enabled {
-            self.create_retro_render_pass()
+            resources
+                .renderers()
+                .vga_fullscreen
+                .create_retro_render_pass(&mut self.encoder)
         } else {
             self.create_quality_render_pass()
         }
@@ -85,10 +83,15 @@ impl RenderPasses {
 
     pub fn final_pass(
         &mut self,
+        resources: &WgpuResources,
         background_color: &BackgroundColorComponent,
     ) -> Option<RenderPass> {
         if self.retro_enabled {
-            Some(self.create_final_pass(background_color))
+            Some(resources.renderers().vga_fullscreen.create_final_pass(
+                &mut self.encoder,
+                &self.surface_view,
+                background_color,
+            ))
         } else {
             None
         }
@@ -108,20 +111,6 @@ impl RenderPasses {
         )
     }
 
-    fn create_retro_clear_pass(
-        &mut self,
-        background_color: &BackgroundColorComponent,
-    ) -> RenderPass {
-        Self::create_render_pass(
-            &mut self.encoder,
-            Some(background_color),
-            &self.vga_offscreen_view,
-            Some(&self.vga_frame_entity_id_view),
-            &self.vga_depth_view,
-            "vga_first_pass",
-        )
-    }
-
     fn create_quality_render_pass(&mut self) -> RenderPass {
         Self::create_render_pass(
             &mut self.encoder,
@@ -130,17 +119,6 @@ impl RenderPasses {
             Some(&self.surface_frame_entity_id_view),
             &self.surface_depth_view,
             "quality_render",
-        )
-    }
-
-    fn create_retro_render_pass(&mut self) -> RenderPass {
-        Self::create_render_pass(
-            &mut self.encoder,
-            None,
-            &self.vga_offscreen_view,
-            Some(&self.vga_frame_entity_id_view),
-            &self.vga_depth_view,
-            "vga_render",
         )
     }
 
@@ -196,23 +174,6 @@ impl RenderPasses {
             }),
             occlusion_query_set: None,
             timestamp_writes: None,
-        })
-    }
-
-    fn create_final_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass {
-        self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("vga_second_pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &self.surface_view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(background_color.as_wgpu_color()),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
         })
     }
 }

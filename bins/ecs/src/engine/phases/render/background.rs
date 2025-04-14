@@ -126,12 +126,14 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         gpu: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
-        let Ok((_device, _resources, frame_state)) = gpu.for_rendering() else {
+        let Ok((_device, resources, frame_state)) = gpu.for_rendering() else {
             warn!("Skipping background rendering because hardware or frame is not ready.");
             return;
         };
 
         // Clear the background
-        let _ = frame_state.passes.clear_background_pass(&background_color);
+        let _ = frame_state
+            .passes
+            .clear_background_pass(&background_color, &resources);
     }
 }

@@ -49,17 +49,24 @@ impl FrameState {
         }
     }
 
-    pub fn render_pass(&mut self, resources: &WgpuResources) -> RenderPass {
-        let mut pass = self.passes.render_pass();
+    pub fn render_pass<'pass, 'resources: 'pass>(
+        &'pass mut self,
+        resources: &'resources WgpuResources,
+    ) -> RenderPass<'pass> {
+        let mut pass = self.passes.render_pass(resources);
         resources.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
         pass
     }
 
-    pub fn render_pass_with<P>(&mut self, pipeline: P) -> RenderPass
+    pub fn render_pass_with<'pass, 'resources: 'pass, P>(
+        &'pass mut self,
+        resources: &'resources WgpuResources,
+        pipeline: P,
+    ) -> RenderPass<'pass>
     where
         P: Borrow<RenderPipeline>,
     {
-        let mut pass = self.passes.render_pass();
+        let mut pass = self.passes.render_pass(resources);
         pass.set_pipeline(pipeline.borrow());
         pass
     }

@@ -4,7 +4,6 @@ use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
-use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use tracing::instrument;
@@ -17,7 +16,6 @@ pub struct RenderPipelines {
     pub flat_entity_render: RenderPipeline,
     pub light: RenderPipeline,
     pub wireframe_render: Option<RenderPipeline>,
-    pub vga_fullscreen: RenderPipeline,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -53,7 +51,6 @@ impl RenderPipelines {
     #[instrument(skip_all)]
     pub fn create_from(
         device: &Device,
-        bind_group_layouts: &BindGroupLayouts,
         render_pipeline_layouts: &StandardRenderLayout,
         surface_format: TextureFormat,
         shaders: &Shaders,
@@ -93,77 +90,13 @@ impl RenderPipelines {
             camera,
             light,
         );
-        let vga_fullscreen = Self::create_vga_fullscreen(
-            &device,
-            frame_global,
-            camera,
-            light,
-            bind_group_layouts,
-            surface_format,
-            shaders,
-        );
         Self {
             textured_render,
             flat_render,
             flat_entity_render,
             wireframe_render,
             light: light_rp,
-            vga_fullscreen,
         }
-    }
-
-    #[instrument(skip_all)]
-    fn create_vga_fullscreen(
-        device: &Device,
-        frame_global: &FrameGlobalUniformResource,
-        camera: &CameraUniformResource,
-        light: &LightUniformResource,
-        bind_group_layouts: &BindGroupLayouts,
-        surface_format: TextureFormat,
-        shaders: &Shaders,
-    ) -> RenderPipeline {
-        let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some(wgpu_label!("vga_fullscreen")),
-            bind_group_layouts: &[
-                &frame_global.layout,               // `@group(0)` in the shader
-                &camera.layout,                     // `@group(1)` in the shader
-                &light.layout,                      // `@group(2)` in the shader
-                &bind_group_layouts.vga_fullscreen, // `@group(3)` in the shader
-            ],
-            push_constant_ranges: &[],
-        });
-
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some(wgpu_label!("vga_fullscreen")),
-            layout: Some(&layout),
-            vertex: wgpu::VertexState {
-                module: shaders.vga.vertex_shader().module(),
-                entry_point: shaders.vga.vertex_shader().entry_point(),
-                buffers: &[], // No vertex buffer needed
-                compilation_options: Default::default(),
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: shaders.vga.fragment_shader().module(),
-                entry_point: shaders.vga.fragment_shader().entry_point(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: surface_format,
-                    blend: Some(wgpu::BlendState {
-                        alpha: wgpu::BlendComponent::REPLACE,
-                        color: wgpu::BlendComponent::REPLACE,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-                compilation_options: Default::default(),
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                ..Default::default()
-            },
-            depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
-            multiview: None,
-            cache: None,
-        })
     }
 
     #[instrument(skip_all)]
