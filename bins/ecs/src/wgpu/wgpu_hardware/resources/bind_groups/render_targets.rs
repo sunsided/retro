@@ -1,4 +1,3 @@
-use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::depth_buffers::DepthBuffers;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;

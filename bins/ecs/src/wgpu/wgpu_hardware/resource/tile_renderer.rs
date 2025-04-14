@@ -2,16 +2,16 @@ use crate::map::tile_instance::{TileInstance, TileVertex};
 use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::resource::WgpuResource;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderMode;
-use crate::wgpu::wgpu_hardware::resources::shaders::Shaders;
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::borrow::Borrow;
-use wgpu::{Device, PipelineLayout, RenderPipeline, SurfaceConfiguration, TextureFormat};
+use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFormat};
 
 #[derive(Debug)]
 pub struct TileRendererResource {
     pub pipeline: RenderPipeline,
+    _shader: ShaderModule,
 }
 
 impl WgpuResource for TileRendererResource {
@@ -19,7 +19,6 @@ impl WgpuResource for TileRendererResource {
         *self = Self::new(
             device.device(),
             device.config(),
-            resources.shaders(),
             resources.standard_render(),
         );
     }
@@ -29,7 +28,6 @@ impl TileRendererResource {
     pub fn new(
         device: &Device,
         config: &SurfaceConfiguration,
-        shaders: &Shaders,
         standard_render: &StandardRenderLayout,
     ) -> Self {
         let vertex_buffers = &[TileVertex::desc(), TileInstance::desc()];
@@ -53,21 +51,24 @@ impl TileRendererResource {
 
         let render_mode = RenderMode::Filled; // TODO: Support wireframe
 
-        let vertex = shaders.tile.vertex_shader();
-        let fragment = shaders.tile.fragment_shader();
+        let shader = wgpu::ShaderModuleDescriptor {
+            label: Some("Tile Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/tile.wgsl").into()),
+        };
+        let shader = device.create_shader_module(shader);
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some(wgpu_label!("tile_render")),
             layout: Some(&standard_render.pipeline),
             vertex: wgpu::VertexState {
-                module: vertex.module(),
-                entry_point: vertex.entry_point(),
+                module: &shader,
+                entry_point: Some("vs_main"),
                 buffers: vertex_buffers,
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
-                module: fragment.module(),
-                entry_point: fragment.entry_point(),
+                module: &shader,
+                entry_point: Some("fs_main"),
                 targets: &[texture_target, entity_id_target],
                 compilation_options: Default::default(),
             }),
@@ -99,7 +100,10 @@ impl TileRendererResource {
             cache: None, // Allows wgpu to cache shader compilation data. Only really useful for Android build targets.
         });
 
-        Self { pipeline }
+        Self {
+            pipeline,
+            _shader: shader,
+        }
     }
 }
 

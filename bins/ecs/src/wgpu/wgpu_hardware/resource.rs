@@ -1,6 +1,5 @@
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
-use wgpu::Device;
 
 pub mod camera_uniform;
 pub mod frame_global_uniform;

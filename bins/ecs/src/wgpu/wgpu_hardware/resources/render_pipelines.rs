@@ -1,11 +1,9 @@
-use crate::map::tile_instance::{TileInstance, TileVertex};
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::model::{ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
-use crate::wgpu::wgpu_hardware::resource::tile_renderer::TileRendererResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;

@@ -7,7 +7,6 @@ pub struct Shaders {
     pub render: RenderShaderModule,
     pub light: LightShaderModule,
     pub vga: VgaShaderModule,
-    pub tile: TileShaderModule,
 }
 
 impl Shaders {
@@ -17,13 +16,11 @@ impl Shaders {
         let render = RenderShaderModule::create(&device);
         let light = LightShaderModule::create(&device);
         let vga = VgaShaderModule::create(&device);
-        let tile = TileShaderModule::create(&device);
         Self {
             sky,
             render,
             light,
             vga,
-            tile,
         }
     }
 }
@@ -170,35 +167,6 @@ impl VgaShaderModule {
         let shader = wgpu::ShaderModuleDescriptor {
             label: Some("VGA Shader"),
             source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/vga.wgsl").into()),
-        };
-
-        Self(device.create_shader_module(shader))
-    }
-
-    pub fn vertex_shader(&self) -> VertexShaderRef {
-        VertexShaderRef {
-            entry_point: "vs_main",
-            module: &self.0,
-        }
-    }
-
-    pub fn fragment_shader(&self) -> FragmentShaderRef {
-        FragmentShaderRef {
-            entry_point: "fs_main",
-            module: &self.0,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct TileShaderModule(ShaderModule);
-
-impl TileShaderModule {
-    #[instrument(skip(device))]
-    fn create(device: &Device) -> Self {
-        let shader = wgpu::ShaderModuleDescriptor {
-            label: Some("Tile Shader"),
-            source: wgpu::ShaderSource::Wgsl(include_str!("../../../shaders/tile.wgsl").into()),
         };
 
         Self(device.create_shader_module(shader))

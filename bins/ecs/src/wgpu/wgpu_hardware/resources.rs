@@ -38,7 +38,7 @@ pub struct WgpuResources {
     bind_groups: BindGroups,
     standard_render: StandardRenderLayout,
     pipelines: RenderPipelines,
-    shaders: Shaders,
+    _shaders: Shaders,
     models: Models,
     textures: Textures,
     pub neo: NeoResources,
@@ -98,7 +98,7 @@ impl WgpuResources {
             &neo.uniforms.light,
         );
         let models = Models::create_from(&device, &queue, &standard_render, &samplers);
-        let renderers = Renderers::new(device, config, &shaders, &standard_render);
+        let renderers = Renderers::new(device, config, &standard_render);
         Self {
             samplers,
             buffers,
@@ -107,7 +107,7 @@ impl WgpuResources {
             bind_groups,
             standard_render,
             pipelines,
-            shaders,
+            _shaders: shaders,
             models,
             textures,
             neo,
@@ -167,9 +167,6 @@ impl WgpuResources {
         &self.textures
     }
 
-    pub const fn shaders(&self) -> &Shaders {
-        &self.shaders
-    }
     pub const fn renderers(&self) -> &Renderers {
         &self.renderers
     }

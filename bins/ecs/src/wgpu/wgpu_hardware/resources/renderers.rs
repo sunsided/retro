@@ -1,6 +1,5 @@
 use crate::wgpu::wgpu_hardware::resource::tile_renderer::TileRendererResource;
 use crate::wgpu::wgpu_hardware::resource::WgpuResource;
-use crate::wgpu::wgpu_hardware::resources::shaders::Shaders;
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
@@ -16,7 +15,6 @@ impl WgpuResource for Renderers {
         *self = Self::new(
             device.device(),
             device.config(),
-            resources.shaders(),
             resources.standard_render(),
         );
     }
@@ -26,11 +24,10 @@ impl Renderers {
     pub fn new(
         device: &Device,
         config: &SurfaceConfiguration,
-        shaders: &Shaders,
         standard_render: &StandardRenderLayout,
     ) -> Self {
         Self {
-            tile: TileRendererResource::new(device, config, shaders, standard_render),
+            tile: TileRendererResource::new(device, config, standard_render),
         }
     }
 }

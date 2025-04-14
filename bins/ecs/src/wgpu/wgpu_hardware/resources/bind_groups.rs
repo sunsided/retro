@@ -1,7 +1,6 @@
 pub mod render_targets;
 pub mod textures;
 
-use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::render_targets::RenderTargetBindGroups;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::textures::TextureBindGroups;
