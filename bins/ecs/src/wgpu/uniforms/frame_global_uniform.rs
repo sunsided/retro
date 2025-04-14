@@ -40,7 +40,7 @@ impl FrameGlobalUniform {
             window_aspect: 1.0,
             retro_aspect: Texture::VGA_WIDTH as f32 / Texture::VGA_HEIGHT as f32,
             fog_distance: 10.0,
-            fog_fade: 0.1,
+            fog_fade: 0.2,
             _pad3: Default::default(),
         }
     }

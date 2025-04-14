@@ -135,8 +135,6 @@ fn fs_main(in: VertexOutput) -> FragmentOutput {
     // Distance → fade
     let dist = length(camera.view_pos.xyz - in.world_position);
     let fade = clamp(dist / max(frame.fog_distance, 0.01), 0.0, 1.0) * frame.fog_fade;
-
-    // Desaturate without affecting brightness
     let softened = mix(lit_color, frame.ambient_light, fade);
 
     var out: FragmentOutput;
@@ -223,8 +221,13 @@ fn fs_lava(in: VertexOutput) -> FragmentOutput {
     let base_color = vec3<f32>(0.212, 0.08, 0.03) / max(fbm_val, 0.0001);
     let final_color = pow(base_color, vec3<f32>(1.5)); // gamma correction / stylization
 
+    // Distance → fade
+    let dist = length(camera.view_pos.xyz - in.world_position);
+    let fade = clamp(dist / max(frame.fog_distance, 0.01), 0.0, 1.0) * frame.fog_fade;
+    let softened = mix(final_color, frame.ambient_light, fade);
+
     var out: FragmentOutput;
-    out.color = vec4<f32>(final_color, 1.0);
+    out.color = vec4<f32>(softened, 1.0);
     out.entity_id = in.entity_id;
     return out;
 }
@@ -242,8 +245,13 @@ fn fs_water(in: VertexOutput) -> FragmentOutput {
     let color = pow(base_color, vec3<f32>(2.5)); // gamma correction / stylization
     let final_color = clamp(color, vec3<f32>(0.0), vec3<f32>(0.5));
 
+    // Distance → fade
+    let dist = length(camera.view_pos.xyz - in.world_position);
+    let fade = clamp(dist / max(frame.fog_distance, 0.01), 0.0, 1.0) * frame.fog_fade;
+    let softened = mix(final_color, frame.ambient_light, fade);
+
     var out: FragmentOutput;
-    out.color = vec4<f32>(final_color, 1.0);
+    out.color = vec4<f32>(softened, 1.0);
     out.entity_id = in.entity_id;
     return out;
 }
@@ -335,8 +343,13 @@ fn fs_grass(in: VertexOutput) -> FragmentOutput {
 
     let grass_color = get_grass_pixel(scaled_uv);
 
+    // Distance → fade
+    let dist = length(camera.view_pos.xyz - in.world_position);
+    let fade = clamp(dist / max(frame.fog_distance, 0.01), 0.0, 1.0) * frame.fog_fade;
+    let softened = mix(grass_color.xyz, frame.ambient_light, fade);
+
     var out: FragmentOutput;
-    out.color = grass_color;
+    out.color = vec4<f32>(softened, grass_color.a);
     out.entity_id = in.entity_id;
     return out;
 }
