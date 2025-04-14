@@ -36,7 +36,7 @@ impl ApplyRenderSkySystem for RenderSkySystem {
         };
 
         let mut render_pass = frame_state.render_pass_with(&resources.pipelines().sky);
-        render_pass.set_bind_group(0, &resources.neo.frame_globals.bind_group, &[]);
+        render_pass.set_bind_group(0, &resources.neo.frame_globals, &[]);
         render_pass.set_bind_group(1, &resources.bind_groups().uniforms.camera_uniform, &[]);
 
         // Draw a full-screen triangle.

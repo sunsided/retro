@@ -14,6 +14,12 @@ pub struct FrameGlobalUniform {
     pub bind_group: BindGroup,
 }
 
+impl<'bg> From<&'bg FrameGlobalUniform> for Option<&'bg BindGroup> {
+    fn from(value: &'bg FrameGlobalUniform) -> Self {
+        Some(&value.bind_group)
+    }
+}
+
 impl WgpuResource for FrameGlobalUniform {
     fn recreate(&mut self, device: &Device) {
         *self = Self::new(device);
