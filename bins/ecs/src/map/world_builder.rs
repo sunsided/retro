@@ -22,16 +22,11 @@ impl WorldBuilder {
             {
                 // For each chunk, create flat floors.
                 let mut chunk = TileChunk::new_empty();
-                for (ty, tx) in
-                    Range2D::full(TileChunk::HEIGHT_IN_TILES, TileChunk::HEIGHT_IN_TILES)
-                {
-                    let tile = Tile::new()
+                chunk.visit_mut(|coord, tile| {
+                    *tile = Tile::new()
                         // TODO: Fix when tile atlas is ready
-                        .with_floor(FloorType::Empty);
-
-                    // TODO: Create a construct-from-iterator function.
-                    chunk.set(ChunkLocalTileCoord::new(tx as u8, ty as u8), tile);
-                }
+                        .with_floor(FloorType::Empty)
+                });
 
                 // TODO: Create a construct-from-iterator function.
                 region.set(RegionLocalChunkCoord::new(cx as u8, cy as u8), chunk);

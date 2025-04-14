@@ -42,6 +42,16 @@ impl TileChunk {
     }
 
     #[inline]
+    pub fn visit_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(ChunkLocalTileCoord, &mut Tile),
+    {
+        for (coord, tile) in self.iter_mut_with_coords() {
+            f(coord, tile)
+        }
+    }
+
+    #[inline]
     pub fn iter(&self) -> TileIter {
         self.tiles.iter()
     }
