@@ -46,24 +46,9 @@ impl WorldBuilder {
     }
 
     fn add_outer_walls(world: &mut TileWorld) {
-        let mut min_chunk_x = i32::MAX;
-        let mut max_chunk_x = i32::MIN;
-        let mut min_chunk_y = i32::MAX;
-        let mut max_chunk_y = i32::MIN;
-
-        for (region_coord, region) in world.iter_regions_with_coords() {
-            for (chunk_coord, _) in region.iter_with_coords() {
-                let chunk_pos_x = region_coord.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32
-                    + chunk_coord.x as i32;
-                let chunk_pos_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32
-                    + chunk_coord.y as i32;
-
-                min_chunk_x = min_chunk_x.min(chunk_pos_x);
-                max_chunk_x = max_chunk_x.max(chunk_pos_x);
-                min_chunk_y = min_chunk_y.min(chunk_pos_y);
-                max_chunk_y = max_chunk_y.max(chunk_pos_y);
-            }
-        }
+        let Some((min_chunk, max_chunk)) = world.global_chunk_bounds() else {
+            return;
+        };
 
         for (region_coord, region) in world.iter_regions_with_coords_mut() {
             for (chunk_coord, chunk) in region.iter_with_coords_mut() {
@@ -72,10 +57,10 @@ impl WorldBuilder {
                 let chunk_pos_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32
                     + chunk_coord.y as i32;
 
-                let is_leftmost = chunk_pos_x == min_chunk_x;
-                let is_rightmost = chunk_pos_x == max_chunk_x;
-                let is_topmost = chunk_pos_y == min_chunk_y;
-                let is_bottommost = chunk_pos_y == max_chunk_y;
+                let is_leftmost = chunk_pos_x == min_chunk.x;
+                let is_rightmost = chunk_pos_x == max_chunk.x;
+                let is_topmost = chunk_pos_y == min_chunk.y;
+                let is_bottommost = chunk_pos_y == max_chunk.y;
 
                 for y in 0..TileChunk::HEIGHT_IN_TILES {
                     for x in 0..TileChunk::WIDTH_IN_TILES {
