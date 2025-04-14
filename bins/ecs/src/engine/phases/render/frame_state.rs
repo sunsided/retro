@@ -2,6 +2,7 @@ use crate::wgpu::render_passes::RenderPasses;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderPipelineSelector;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::DeviceAndQueue;
+use std::borrow::Borrow;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -54,9 +55,12 @@ impl FrameState {
         pass
     }
 
-    pub fn render_pass_with(&mut self, pipeline: &RenderPipeline) -> RenderPass {
+    pub fn render_pass_with<P>(&mut self, pipeline: P) -> RenderPass
+    where
+        P: Borrow<RenderPipeline>,
+    {
         let mut pass = self.passes.render_pass();
-        pass.set_pipeline(pipeline);
+        pass.set_pipeline(pipeline.borrow());
         pass
     }
 

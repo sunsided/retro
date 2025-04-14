@@ -4,6 +4,7 @@ pub mod buffers;
 pub mod depth_buffers;
 pub mod models;
 pub mod render_pipelines;
+mod renderers;
 pub mod shaders;
 pub mod standard_render_layout;
 pub mod texture_samplers;
@@ -20,6 +21,7 @@ use crate::wgpu::wgpu_hardware::resources::models::Models;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::{
     RenderPipelineSelector, RenderPipelines,
 };
+use crate::wgpu::wgpu_hardware::resources::renderers::Renderers;
 use crate::wgpu::wgpu_hardware::resources::shaders::Shaders;
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use crate::wgpu::wgpu_hardware::resources::texture_samplers::TextureSamplers;
@@ -40,6 +42,7 @@ pub struct WgpuResources {
     models: Models,
     textures: Textures,
     pub neo: NeoResources,
+    renderers: Renderers,
 }
 
 #[derive(Debug)]
@@ -95,6 +98,7 @@ impl WgpuResources {
             &neo.uniforms.light,
         );
         let models = Models::create_from(&device, &queue, &standard_render, &samplers);
+        let renderers = Renderers::new(device, config, &shaders, &standard_render);
         Self {
             samplers,
             buffers,
@@ -107,6 +111,7 @@ impl WgpuResources {
             models,
             textures,
             neo,
+            renderers,
         }
     }
 
@@ -164,5 +169,8 @@ impl WgpuResources {
 
     pub const fn shaders(&self) -> &Shaders {
         &self.shaders
+    }
+    pub const fn renderers(&self) -> &Renderers {
+        &self.renderers
     }
 }

@@ -5,6 +5,7 @@ use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
+use crate::wgpu::wgpu_hardware::resource::tile_renderer::TileRendererResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
@@ -20,7 +21,6 @@ pub struct RenderPipelines {
     pub light: RenderPipeline,
     pub wireframe_render: Option<RenderPipeline>,
     pub vga_fullscreen: RenderPipeline,
-    pub tile: RenderPipeline,
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -106,12 +106,6 @@ impl RenderPipelines {
             shaders,
         );
         let sky = Self::create_sky_pipeline(&device, surface_format, shaders, frame_global, camera);
-        let tile = Self::create_tile_render(
-            &device,
-            &render_pipeline_layouts.pipeline,
-            surface_format,
-            shaders,
-        );
         Self {
             sky,
             textured_render,
@@ -120,7 +114,6 @@ impl RenderPipelines {
             wireframe_render,
             light: light_rp,
             vga_fullscreen,
-            tile,
         }
     }
 
@@ -356,27 +349,6 @@ impl RenderPipelines {
             &[ModelVertex::desc(), InstanceRaw::desc()],
             RenderMode::Filled,
             wgpu_label!("flat_entity_render"),
-        )
-    }
-
-    #[instrument(skip_all)]
-    fn create_tile_render(
-        device: &Device,
-        layout: &PipelineLayout,
-        surface_format: TextureFormat,
-        shaders: &Shaders,
-    ) -> RenderPipeline {
-        Self::create_render_pipeline(
-            shaders.tile.vertex_shader(),
-            shaders.tile.fragment_shader(),
-            &device,
-            &layout,
-            surface_format,
-            true,
-            Some(Texture::DEPTH_FORMAT),
-            &[TileVertex::desc(), TileInstance::desc()],
-            RenderMode::Filled,
-            wgpu_label!("tile_render"),
         )
     }
 

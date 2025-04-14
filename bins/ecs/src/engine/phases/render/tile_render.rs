@@ -88,7 +88,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 usage: wgpu::BufferUsages::VERTEX,
             });
 
-        let mut pass = frame_state.render_pass_with(&resources.pipelines().tile);
+        let mut pass = frame_state.render_pass_with(&resources.renderers().tile);
         pass.set_bind_group(0, &resources.neo.uniforms.frame_globals, &[]);
         pass.set_bind_group(1, &resources.neo.uniforms.camera, &[]);
         pass.set_bind_group(2, &resources.neo.uniforms.light, &[]);
