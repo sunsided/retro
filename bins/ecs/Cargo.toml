@@ -11,6 +11,7 @@ webp = ["image/webp"]
 no-tracing = ["tracing/max_level_debug"]
 
 [dependencies]
+ahash = "0.8.11"
 bitfield-struct = "0.10.1"
 bytemuck = "1.22.0"
 cgmath = "0.18.0"
@@ -23,6 +24,7 @@ fxhash = "0.2.1"
 image = { version = "0.25.6", default-features = false }
 parking_lot = { version = "0.12.3", features = ["arc_lock"] }
 pollster = "0.4.0"
+range2d = "0.2.0"
 rayon = "1.10.0"
 thiserror = "2.0.12"
 tobj = "4.0.3"
@@ -31,8 +33,6 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "fmt"] }
 tracing-appender = "0.2.3"
 winit = "0.30.9"
 wgpu = "25.0.0"
-ahash = "0.8.11"
-itertools = "0.14.0"
 
 # Necessary to fix a breaking issue with deranged on Rust 2024
 [dependencies.time]

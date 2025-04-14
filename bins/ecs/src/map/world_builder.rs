@@ -3,7 +3,8 @@ use crate::map::tile_chunk::TileChunk;
 use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord, WorldGlobalRegionCoord};
 use crate::map::tile_world::TileWorld;
 use crate::map::world_region::WorldRegion;
-use itertools::Itertools;
+use range2d::Range2D;
+use std::ops::Range;
 
 pub struct WorldBuilder;
 
@@ -13,16 +14,16 @@ impl WorldBuilder {
 
         // Create 2x2 regions in the world.
         let mut world = TileWorld::with_capacity(4);
-        for (wy, wx) in (-1..1).cartesian_product(-1..1) {
+        for (wy, wx) in Range2D::new(-1..1, -1..1) {
             // For each region, create a chunk.
             let mut region = WorldRegion::empty();
-            for (cy, cx) in (0..WorldRegion::HEIGHT_IN_CHUNKS)
-                .cartesian_product(0..WorldRegion::HEIGHT_IN_CHUNKS)
+            for (cy, cx) in
+                Range2D::full(WorldRegion::HEIGHT_IN_CHUNKS, WorldRegion::HEIGHT_IN_CHUNKS)
             {
                 // For each chunk, create flat floors.
                 let mut chunk = TileChunk::new_empty();
                 for (ty, tx) in
-                    (0..TileChunk::HEIGHT_IN_TILES).cartesian_product(0..TileChunk::HEIGHT_IN_TILES)
+                    Range2D::full(TileChunk::HEIGHT_IN_TILES, TileChunk::HEIGHT_IN_TILES)
                 {
                     let tile = Tile::new()
                         // TODO: Fix when tile atlas is ready
@@ -62,9 +63,7 @@ impl WorldBuilder {
                 let is_topmost = chunk_pos_y == extents.min.y;
                 let is_bottommost = chunk_pos_y == extents.max.y;
 
-                for (y, x) in
-                    (0..TileChunk::HEIGHT_IN_TILES).cartesian_product(0..TileChunk::WIDTH_IN_TILES)
-                {
+                for (y, x) in Range2D::full(TileChunk::HEIGHT_IN_TILES, TileChunk::WIDTH_IN_TILES) {
                     let is_edge_x = (x == 0 && is_leftmost)
                         || (x == TileChunk::WIDTH_IN_TILES - 1 && is_rightmost);
                     let is_edge_y = (y == 0 && is_topmost)
