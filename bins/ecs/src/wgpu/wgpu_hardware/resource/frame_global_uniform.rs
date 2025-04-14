@@ -22,8 +22,15 @@ impl WgpuResource for FrameGlobalUniform {
 
 impl FrameGlobalUniform {
     pub fn new(device: &Device) -> Self {
+        let frame_global_uniform = crate::wgpu::uniforms::FrameGlobalUniform::new(12.0);
+        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some(wgpu_label!("frame_global")),
+            contents: bytemuck::cast_slice(&[frame_global_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("frame_global"),
+            label: Some(wgpu_label!("frame_global")),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
@@ -38,15 +45,8 @@ impl FrameGlobalUniform {
             }],
         });
 
-        let frame_global_uniform = crate::wgpu::uniforms::FrameGlobalUniform::new(12.0);
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("frame_global_uniform"),
-            contents: bytemuck::cast_slice(&[frame_global_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("frame_global"),
+            label: Some(wgpu_label!("frame_global")),
             layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,

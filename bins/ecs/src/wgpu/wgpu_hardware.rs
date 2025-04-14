@@ -20,6 +20,16 @@
 //! - **Error Handling**: Provides error enumeration (`WgpuReinitializeWindowError`)
 //!   for better handling of common errors during initialization or reinitialization.
 
+#[macro_export]
+macro_rules! wgpu_label {
+    () => {
+        concat!(file!(), ":", line!())
+    };
+    ($name:expr) => {
+        concat!($name, " @ ", file!(), ":", line!())
+    };
+}
+
 mod device_and_queue;
 pub mod resource;
 pub mod resources;
