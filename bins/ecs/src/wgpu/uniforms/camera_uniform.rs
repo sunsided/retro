@@ -75,3 +75,9 @@ impl CameraUniform {
         self.camera_rot = rot3x3.into();
     }
 }
+
+impl Default for CameraUniform {
+    fn default() -> Self {
+        Self::new()
+    }
+}

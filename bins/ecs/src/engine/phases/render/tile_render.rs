@@ -89,9 +89,9 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             });
 
         let mut pass = frame_state.render_pass_with(&resources.pipelines().tile);
-        pass.set_bind_group(0, &resources.neo.frame_globals.bind_group, &[]);
-        pass.set_bind_group(1, &resources.bind_groups().uniforms.camera_uniform, &[]);
-        pass.set_bind_group(2, &resources.bind_groups().uniforms.light_uniforms, &[]);
+        pass.set_bind_group(0, &resources.neo.frame_globals, &[]);
+        pass.set_bind_group(1, &resources.neo.camera, &[]);
+        pass.set_bind_group(2, &resources.neo.light, &[]);
         // The texture atlas
         pass.set_bind_group(3, &resources.bind_groups().textures.stonepath, &[]);
         pass.set_index_buffer(

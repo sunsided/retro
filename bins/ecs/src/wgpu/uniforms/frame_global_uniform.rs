@@ -42,3 +42,9 @@ impl FrameGlobalUniform {
         }
     }
 }
+
+impl Default for FrameGlobalUniform {
+    fn default() -> Self {
+        Self::new(12.0)
+    }
+}

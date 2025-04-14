@@ -8,7 +8,10 @@ pub mod shaders;
 pub mod texture_samplers;
 pub mod textures;
 
-use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniform;
+use crate::wgpu::uniforms::LightUniform;
+use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
+use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
+use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::BindGroups;
 use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
@@ -39,13 +42,17 @@ pub struct WgpuResources {
 
 #[derive(Debug)]
 pub struct NeoResources {
-    pub frame_globals: FrameGlobalUniform,
+    pub frame_globals: FrameGlobalUniformResource,
+    pub camera: CameraUniformResource,
+    pub light: LightUniformResource,
 }
 
 impl WgpuResources {
     pub(super) fn new(device: &Device, queue: &Queue, config: &SurfaceConfiguration) -> Self {
         let neo = NeoResources {
-            frame_globals: FrameGlobalUniform::new(device),
+            frame_globals: FrameGlobalUniformResource::new(device),
+            camera: CameraUniformResource::new(device),
+            light: LightUniformResource::new(device),
         };
 
         let samplers = TextureSamplers::create_from(device);
@@ -68,6 +75,8 @@ impl WgpuResources {
             config.format,
             &shaders,
             &neo.frame_globals,
+            &neo.camera,
+            &neo.light,
         );
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
         Self {

@@ -2,7 +2,7 @@ use crate::wgpu::model::{Mesh, Model};
 use std::ops::Range;
 
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct LightUniform {
     pub position: [f32; 3],
     // Due to uniforms requiring 16 byte (4 float) spacing, we need to use a padding field here
@@ -20,6 +20,12 @@ impl LightUniform {
             color,
             _padding2: 0,
         }
+    }
+}
+
+impl Default for LightUniform {
+    fn default() -> Self {
+        Self::new([2.0, 2.0, 2.0], [1.0, 1.0, 1.0])
     }
 }
 

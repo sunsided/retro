@@ -90,8 +90,8 @@ impl ApplyRenderSystem for RenderSystem {
                     &resources.models().cube,
                     0..num_instances,
                     &resources.neo.frame_globals.bind_group,
-                    &resources.bind_groups().uniforms.camera_uniform,
-                    &resources.bind_groups().uniforms.light_uniforms,
+                    &resources.neo.camera.bind_group,
+                    &resources.neo.light.bind_group,
                 );
                 instance_buf.clear();
             }
@@ -107,8 +107,8 @@ impl ApplyRenderSystem for RenderSystem {
                 &resources.models().cube,
                 0..num_instances,
                 &resources.neo.frame_globals.bind_group,
-                &resources.bind_groups().uniforms.camera_uniform,
-                &resources.bind_groups().uniforms.light_uniforms,
+                &resources.neo.camera.bind_group,
+                &resources.neo.light.bind_group,
             );
             instance_buf.clear();
         }

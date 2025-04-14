@@ -37,14 +37,14 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
             light.update_color(color.r, color.g, color.b);
 
             // TODO: Keep this in the render phase
-            light.write_to_buffer(&device, resources);
+            light.update_gpu_buffer(&device, resources);
 
             // Render the light.
             render_pass.draw_light_model(
                 &resources.models().cube,
-                &resources.bind_groups().uniforms.camera_uniform,
-                &resources.bind_groups().uniforms.light_uniforms,
-            );
+                &resources.neo.camera.bind_group,
+                &resources.neo.light.bind_group,
+            )
         }
     }
 }

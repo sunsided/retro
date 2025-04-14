@@ -90,8 +90,8 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
             .uniform
             .update_view_proj(&camera.camera, &camera.projection);
         resources
-            .buffers()
-            .camera_uniform
+            .neo
+            .camera
             .send_to_device(&device.queue(), active_camera.uniform);
     }
 }

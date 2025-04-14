@@ -2,7 +2,9 @@ use crate::map::tile_instance::{TileInstance, TileVertex};
 use crate::wgpu::instance::InstanceRaw;
 use crate::wgpu::model::{ModelVertex, Vertex};
 use crate::wgpu::texture::Texture;
-use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniform;
+use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
+use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
+use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders, VertexShaderRef};
 use tracing::instrument;
@@ -56,9 +58,17 @@ impl RenderPipelines {
         bind_group_layouts: &BindGroupLayouts,
         surface_format: TextureFormat,
         shaders: &Shaders,
-        frame_global: &FrameGlobalUniform,
+        frame_global: &FrameGlobalUniformResource,
+        camera: &CameraUniformResource,
+        light: &LightUniformResource,
     ) -> Self {
-        let layout = Self::create_standard_render_layout(&device, bind_group_layouts, frame_global);
+        let layout = Self::create_standard_render_layout(
+            &device,
+            bind_group_layouts,
+            frame_global,
+            camera,
+            light,
+        );
         let textured_render =
             Self::create_textured_render(&device, &layout, surface_format, shaders);
         let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
@@ -66,7 +76,14 @@ impl RenderPipelines {
             Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
         let wireframe_render =
             Self::create_wireframe_render(&device, &layout, surface_format, shaders);
-        let light = Self::create_light(&device, bind_group_layouts, surface_format, shaders);
+        let light = Self::create_light(
+            &device,
+            bind_group_layouts,
+            surface_format,
+            shaders,
+            camera,
+            light,
+        );
         let vga_fullscreen =
             Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
         let sky = Self::create_sky_pipeline(
@@ -75,6 +92,7 @@ impl RenderPipelines {
             bind_group_layouts,
             shaders,
             frame_global,
+            camera,
         );
         let tile = Self::create_tile_render(&device, &layout, surface_format, shaders);
         Self {
@@ -94,11 +112,12 @@ impl RenderPipelines {
         config_format: TextureFormat,
         bind_group_layouts: &BindGroupLayouts,
         shaders: &Shaders,
-        frame_global: &FrameGlobalUniform,
+        frame_global: &FrameGlobalUniformResource,
+        camera: &CameraUniformResource,
     ) -> RenderPipeline {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("sky_pipeline"),
-            bind_group_layouts: &[&frame_global.layout, &bind_group_layouts.camera_uniforms],
+            bind_group_layouts: &[&frame_global.layout, &camera.layout],
             push_constant_ranges: &[],
         });
 
@@ -195,12 +214,14 @@ impl RenderPipelines {
         bind_group_layouts: &BindGroupLayouts,
         surface_format: TextureFormat,
         shaders: &Shaders,
+        camera: &CameraUniformResource,
+        light: &LightUniformResource,
     ) -> RenderPipeline {
         let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("light"),
             bind_group_layouts: &[
-                &bind_group_layouts.camera_uniforms, // `@group(0)` in the shader
-                &bind_group_layouts.lighting_uniforms, // `@group(1)` in the shader
+                &camera.layout, // `@group(0)` in the shader
+                &light.layout,  // `@group(1)` in the shader
             ],
             push_constant_ranges: &[],
         });
@@ -223,14 +244,16 @@ impl RenderPipelines {
     fn create_standard_render_layout(
         device: &Device,
         bind_group_layouts: &BindGroupLayouts,
-        frame_global: &FrameGlobalUniform,
+        frame_global: &FrameGlobalUniformResource,
+        camera: &CameraUniformResource,
+        light: &LightUniformResource,
     ) -> PipelineLayout {
         device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("render_layout"),
             bind_group_layouts: &[
                 &frame_global.layout,                   // `@group(0)` in the shader
-                &bind_group_layouts.camera_uniforms,    // `@group(1)` in the shader
-                &bind_group_layouts.lighting_uniforms,  // `@group(2)` in the shader
+                &camera.layout,                         // `@group(1)` in the shader
+                &light.layout,                          // `@group(2)` in the shader
                 &bind_group_layouts.diffuse_and_normal, // `@group(3)` in the shader
             ],
             push_constant_ranges: &[],

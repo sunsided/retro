@@ -1,4 +1,4 @@
-use crate::wgpu::uniforms::CameraUniform;
+use crate::wgpu::uniforms::FrameGlobalUniform;
 use crate::wgpu::wgpu_hardware::resource::WgpuResource;
 use wgpu::util::DeviceExt;
 use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, Queue};
@@ -8,27 +8,27 @@ use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, Queue};
 /// ## Bindings
 /// - `@binding(0)`: The frame-global uniforms
 #[derive(Debug)]
-pub struct FrameGlobalUniform {
+pub struct FrameGlobalUniformResource {
     pub layout: BindGroupLayout,
     pub buffer: Buffer,
     pub bind_group: BindGroup,
 }
 
-impl<'bg> From<&'bg FrameGlobalUniform> for Option<&'bg BindGroup> {
-    fn from(value: &'bg FrameGlobalUniform) -> Self {
+impl<'bg> From<&'bg FrameGlobalUniformResource> for Option<&'bg BindGroup> {
+    fn from(value: &'bg FrameGlobalUniformResource) -> Self {
         Some(&value.bind_group)
     }
 }
 
-impl WgpuResource for FrameGlobalUniform {
+impl WgpuResource for FrameGlobalUniformResource {
     fn recreate(&mut self, device: &Device) {
         *self = Self::new(device);
     }
 }
 
-impl FrameGlobalUniform {
+impl FrameGlobalUniformResource {
     pub fn new(device: &Device) -> Self {
-        let frame_global_uniform = crate::wgpu::uniforms::FrameGlobalUniform::new(12.0);
+        let frame_global_uniform = FrameGlobalUniform::default();
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(wgpu_label!("frame_global")),
             contents: bytemuck::cast_slice(&[frame_global_uniform]),
@@ -43,9 +43,7 @@ impl FrameGlobalUniform {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(size_of::<
-                        crate::wgpu::uniforms::FrameGlobalUniform,
-                    >() as _),
+                    min_binding_size: wgpu::BufferSize::new(size_of::<FrameGlobalUniform>() as _),
                 },
                 count: None,
             }],
@@ -67,13 +65,9 @@ impl FrameGlobalUniform {
         }
     }
 
-    /// Update the buffer on device with a new [`FrameGlobalUniform`](crate::wgpu::uniforms::FrameGlobalUniform).
+    /// Update the buffer on device with a new [`FrameGlobalUniform`].
     #[inline]
-    pub fn send_to_device(
-        &self,
-        queue: &Queue,
-        uniform: crate::wgpu::uniforms::FrameGlobalUniform,
-    ) {
+    pub fn send_to_device(&self, queue: &Queue, uniform: FrameGlobalUniform) {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
 }

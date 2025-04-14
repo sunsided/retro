@@ -35,11 +35,10 @@ impl DynamicLightData {
                 .into();
     }
 
-    pub fn write_to_buffer(&self, gpu: &DeviceAndQueue, resources: &WgpuResources) {
-        gpu.queue().write_buffer(
-            resources.buffers().light_uniforms.as_ref(),
-            0,
-            bytemuck::cast_slice(&[self.uniform]),
-        );
+    pub fn update_gpu_buffer(&self, gpu: &DeviceAndQueue, resources: &WgpuResources) {
+        resources
+            .neo
+            .light
+            .send_to_device(gpu.queue(), self.uniform)
     }
 }

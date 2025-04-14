@@ -1,56 +1,56 @@
-use crate::wgpu::uniforms::FrameGlobalUniform;
+use crate::wgpu::uniforms::CameraUniform;
 use crate::wgpu::wgpu_hardware::resource::WgpuResource;
 use wgpu::util::DeviceExt;
 use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, Queue};
 
-/// Frame-global uniforms.
+/// A bind group for the camera uniforms.
 ///
 /// ## Bindings
-/// - `@binding(0)`: The frame-global uniforms
+/// - `@binding(0)`: The camera uniforms
 #[derive(Debug)]
-pub struct FrameGlobalUniformResource {
+pub struct CameraUniformResource {
     pub layout: BindGroupLayout,
     pub buffer: Buffer,
     pub bind_group: BindGroup,
 }
 
-impl<'bg> From<&'bg FrameGlobalUniformResource> for Option<&'bg BindGroup> {
-    fn from(value: &'bg FrameGlobalUniformResource) -> Self {
+impl<'bg> From<&'bg CameraUniformResource> for Option<&'bg BindGroup> {
+    fn from(value: &'bg CameraUniformResource) -> Self {
         Some(&value.bind_group)
     }
 }
 
-impl WgpuResource for FrameGlobalUniformResource {
+impl WgpuResource for CameraUniformResource {
     fn recreate(&mut self, device: &Device) {
         *self = Self::new(device);
     }
 }
 
-impl FrameGlobalUniformResource {
+impl CameraUniformResource {
     pub fn new(device: &Device) -> Self {
-        let frame_global_uniform = FrameGlobalUniform::default();
+        let frame_global_uniform = CameraUniform::default();
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(wgpu_label!("frame_global")),
+            label: Some(wgpu_label!("camera")),
             contents: bytemuck::cast_slice(&[frame_global_uniform]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some(wgpu_label!("frame_global")),
+            label: Some(wgpu_label!("camera")),
             entries: &[wgpu::BindGroupLayoutEntry {
                 binding: 0,
                 visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,
-                    min_binding_size: wgpu::BufferSize::new(size_of::<FrameGlobalUniform>() as _),
+                    min_binding_size: wgpu::BufferSize::new(size_of::<CameraUniform>() as _),
                 },
                 count: None,
             }],
         });
 
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(wgpu_label!("frame_global")),
+            label: Some(wgpu_label!("camera")),
             layout: &layout,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
@@ -65,9 +65,9 @@ impl FrameGlobalUniformResource {
         }
     }
 
-    /// Update the buffer on device with a new [`FrameGlobalUniform`].
+    /// Update the buffer on device with a new [`CameraUniform`].
     #[inline]
-    pub fn send_to_device(&self, queue: &Queue, uniform: FrameGlobalUniform) {
+    pub fn send_to_device(&self, queue: &Queue, uniform: CameraUniform) {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
 }

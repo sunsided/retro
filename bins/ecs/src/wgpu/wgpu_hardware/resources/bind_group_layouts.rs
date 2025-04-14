@@ -12,18 +12,6 @@ pub struct BindGroupLayouts {
     /// - `@binding(3)`: The normal map sampler
     pub diffuse_and_normal: BindGroupLayout,
 
-    /// A bind group for the camera uniforms.
-    ///
-    /// ## Bindings
-    /// - `@binding(0)`: The camera uniforms
-    pub camera_uniforms: BindGroupLayout,
-
-    /// A bind group for the lighting uniforms.
-    ///
-    /// ## Bindings
-    /// - `@binding(0)`: The lighting uniforms
-    pub lighting_uniforms: BindGroupLayout,
-
     /// Bind group for the VGA fullscreen shader.
     ///
     /// ## Bindings
@@ -37,13 +25,9 @@ impl BindGroupLayouts {
     #[instrument(skip_all)]
     pub fn create_from(device: &wgpu::Device) -> Self {
         let diffuse_and_normal = Self::create_diffuse_and_normal(&device);
-        let camera_uniforms = Self::create_camera_buffer_uniforms(&device);
-        let lighting_uniforms = Self::create_lighting_uniforms(&device);
         let vga_fullscreen = Self::create_vga_fullscreen(&device);
         Self {
             diffuse_and_normal,
-            camera_uniforms,
-            lighting_uniforms,
             vga_fullscreen,
         }
     }
@@ -90,40 +74,6 @@ impl BindGroupLayouts {
                 },
             ],
             label: Some("diffuse_and_normal"),
-        })
-    }
-
-    #[instrument(skip_all)]
-    fn create_camera_buffer_uniforms(device: &wgpu::Device) -> BindGroupLayout {
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None, // TODO: Maybe set this later
-                },
-                count: None,
-            }],
-            label: Some("camera_buffer"),
-        })
-    }
-
-    #[instrument(skip_all)]
-    fn create_lighting_uniforms(device: &wgpu::Device) -> BindGroupLayout {
-        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-            label: Some("lighting_uniforms"),
         })
     }
 
