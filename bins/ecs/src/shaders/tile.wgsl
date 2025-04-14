@@ -135,3 +135,106 @@ fn fs_main(
     out.entity_id = in.entity_id;
     return out;
 }
+
+const TAU: f32 = 6.2831853;
+
+fn rot(a: f32) -> mat2x2<f32> {
+    let c = cos(a);
+    let s = sin(a);
+    return mat2x2<f32>(
+        vec2<f32>( c, s),
+        vec2<f32>(-s, c)
+    );
+}
+
+fn hash21(n: vec2<f32>) -> f32 {
+    return fract(cos(dot(n, vec2<f32>(5.9898, 4.1414))) * 65899.89956);
+}
+
+fn noise(n: vec2<f32>) -> f32 {
+    let d = vec2<f32>(0.0, 1.0);
+    let b = floor(n);
+    let f = smoothstep(vec2<f32>(0.0), vec2<f32>(1.0), fract(n));
+
+    let h00 = hash21(b);
+    let h10 = hash21(b + d.yx);
+    let h01 = hash21(b + d.xy);
+    let h11 = hash21(b + d.yy);
+
+    let x1 = mix(h00, h10, f.x);
+    let x2 = mix(h01, h11, f.x);
+    return mix(x1, x2, f.y);
+}
+
+fn mix_noise(p: vec2<f32>) -> vec2<f32> {
+    let epsilon = 0.968785675;
+    let noise_x = noise(vec2<f32>(p.x + epsilon, p.y)) - noise(vec2<f32>(p.x - epsilon, p.y));
+    let noise_y = noise(vec2<f32>(p.x, p.y + epsilon)) - noise(vec2<f32>(p.x, p.y - epsilon));
+    return vec2<f32>(noise_x, noise_y);
+}
+
+fn fbm_fancy(p_: vec2<f32>, time: f32) -> f32 {
+    var p = p_;
+    var amplitude = 3.0;
+    var total = 0.0;
+    var pp = p;
+
+    for (var i = 1.3232; i < 7.45; i = i + 1.0) {
+        var p_offset = p + time * 0.05;
+        pp = pp + time * 0.09;
+
+        var n = mix_noise(i * p_offset * 0.3244243 + time * 0.131321);
+        let angle = time * 0.5 - (0.03456 * p.x + 0.0342322 * p.y) * 50.0;
+        let r = rot(angle);
+        n = r * n;
+
+        p = p + n * 0.5;
+        total = total + (sin(noise(p) * 8.5) * 0.55 + 0.4566) / amplitude;
+
+        p = mix(pp, p, 0.5);
+
+        amplitude = amplitude * 1.3;
+        p = p * 2.007556;
+        pp = pp * 1.6895367;
+    }
+
+    return total;
+}
+
+// https://www.shadertoy.com/view/lslXRS
+@fragment
+fn fs_lava(in: VertexOutput) -> FragmentOutput {
+    // periodic day to avoid jumps
+    let t = sin(fract(frame.day) * TAU );
+
+    let uv = in.world_position.xz / 1.0; // adjust for world scale
+    let fbm_val = fbm_fancy(uv, t);
+
+    let base_color = vec3<f32>(0.212, 0.08, 0.03) / max(fbm_val, 0.0001);
+    let final_color = pow(base_color, vec3<f32>(1.5)); // gamma correction / stylization
+
+    var out: FragmentOutput;
+    out.color = vec4<f32>(final_color, 1.0);
+    out.entity_id = in.entity_id;
+    return out;
+}
+
+// https://www.shadertoy.com/view/lslXRS
+@fragment
+fn fs_water(in: VertexOutput) -> FragmentOutput {
+    // periodic day to avoid jumps
+    let t = sin(fract(frame.day) * TAU * 2) / 2;
+
+    let uv = in.world_position.xz / 0.5; // adjust for world scale
+    let fbm_val = fbm_fancy(uv, t);
+
+    let base_color = vec3<f32>(0.0, 0.08, 0.212) / max(fbm_val, 0.0001);
+    let color = pow(base_color, vec3<f32>(2.5)); // gamma correction / stylization
+    let final_color = clamp(color, vec3<f32>(0.0), vec3<f32>(0.5));
+
+    var out: FragmentOutput;
+    out.color = vec4<f32>(final_color, 1.0);
+    out.entity_id = in.entity_id;
+    return out;
+}
+

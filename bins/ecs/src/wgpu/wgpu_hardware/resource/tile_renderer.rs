@@ -56,7 +56,7 @@ impl TileRendererResource {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: Some("fs_main"),
+                entry_point: Some("fs_water"), // TODO: Use main again!
                 targets: &targets,
                 compilation_options: Default::default(),
             }),
