@@ -1,5 +1,6 @@
+use crate::map::tile::Tile;
 use crate::map::tile_chunk::TileChunk;
-use crate::map::tile_coord::RegionLocalChunkCoord;
+use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
 use std::mem::MaybeUninit;
 
 /// A [`WorldRegion`] is a densely-packed are of [`TileChunk`] instances.
@@ -54,6 +55,16 @@ impl WorldRegion {
     #[inline]
     pub fn set(&mut self, coord: RegionLocalChunkCoord, chunk: TileChunk) {
         self.chunks[coord.to_dense_region_index()] = chunk;
+    }
+
+    #[inline]
+    pub fn visit_mut<F>(&mut self, mut f: F)
+    where
+        F: FnMut(RegionLocalChunkCoord, &mut TileChunk),
+    {
+        for (coord, chunk) in self.iter_with_coords_mut() {
+            f(coord, chunk)
+        }
     }
 
     #[inline]

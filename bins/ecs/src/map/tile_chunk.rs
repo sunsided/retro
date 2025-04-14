@@ -46,7 +46,7 @@ impl TileChunk {
     where
         F: FnMut(ChunkLocalTileCoord, &mut Tile),
     {
-        for (coord, tile) in self.iter_mut_with_coords() {
+        for (coord, tile) in self.iter_with_coords_mut() {
             f(coord, tile)
         }
     }
@@ -70,7 +70,7 @@ impl TileChunk {
     }
 
     #[inline]
-    pub fn iter_mut_with_coords(&mut self) -> TileWithCoordIterMut<'_> {
+    pub fn iter_with_coords_mut(&mut self) -> TileWithCoordIterMut<'_> {
         self.tiles.iter_mut().enumerate().map(|(i, tile)| {
             let coord = ChunkLocalTileCoord::from_dense_tile_chunk_index(i);
             (coord, tile)

@@ -15,22 +15,15 @@ impl WorldBuilder {
         // Create 2x2 regions in the world.
         let mut world = TileWorld::with_capacity(4);
         for (wy, wx) in Range2D::new(-1..1, -1..1) {
-            // For each region, create a chunk.
             let mut region = WorldRegion::empty();
-            for (cy, cx) in
-                Range2D::full(WorldRegion::HEIGHT_IN_CHUNKS, WorldRegion::HEIGHT_IN_CHUNKS)
-            {
-                // For each chunk, create flat floors.
-                let mut chunk = TileChunk::new_empty();
+            region.visit_mut(|_coord, chunk| {
                 chunk.visit_mut(|coord, tile| {
                     *tile = Tile::new()
                         // TODO: Fix when tile atlas is ready
                         .with_floor(FloorType::Empty)
                 });
+            });
 
-                // TODO: Create a construct-from-iterator function.
-                region.set(RegionLocalChunkCoord::new(cx as u8, cy as u8), chunk);
-            }
             world.insert(WorldGlobalRegionCoord::new(wx as i8, wy as i8), region);
         }
 
