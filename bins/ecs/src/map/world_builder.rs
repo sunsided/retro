@@ -16,10 +16,14 @@ impl WorldBuilder {
         for (wy, wx) in (-1..1).cartesian_product(-1..1) {
             // For each region, create a chunk.
             let mut region = WorldRegion::empty();
-            for (cy, cx) in (0..WorldRegion::HEIGHT).cartesian_product(0..WorldRegion::HEIGHT) {
+            for (cy, cx) in (0..WorldRegion::HEIGHT_IN_CHUNKS)
+                .cartesian_product(0..WorldRegion::HEIGHT_IN_CHUNKS)
+            {
                 // For each chunk, create flat floors.
                 let mut chunk = TileChunk::new_empty();
-                for (ty, tx) in (0..TileChunk::HEIGHT).cartesian_product(0..TileChunk::HEIGHT) {
+                for (ty, tx) in
+                    (0..TileChunk::HEIGHT_IN_TILES).cartesian_product(0..TileChunk::HEIGHT_IN_TILES)
+                {
                     let tile = Tile::new()
                         // TODO: Fix when tile atlas is ready
                         .with_floor(FloorType::Empty);

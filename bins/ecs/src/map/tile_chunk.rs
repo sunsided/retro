@@ -8,9 +8,12 @@ pub struct TileChunk {
 }
 
 impl TileChunk {
-    pub const WIDTH: usize = 16;
-    pub const HEIGHT: usize = 16;
-    pub const TILE_COUNT: usize = Self::WIDTH * Self::HEIGHT;
+    /// The number of tiles this chunk is wide.
+    pub const WIDTH_IN_TILES: usize = 16;
+    /// The number of tiles this chunk is high.
+    pub const HEIGHT_IN_TILES: usize = 16;
+    /// The total number of tiles in this chunk, i.e. its area.
+    pub const TILE_COUNT: usize = Self::WIDTH_IN_TILES * Self::HEIGHT_IN_TILES;
 
     /// Creates a new chunk pre-filled with empty tiles.
     #[inline]

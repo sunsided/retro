@@ -9,9 +9,21 @@ pub struct WorldRegion {
 }
 
 impl WorldRegion {
-    pub const WIDTH: usize = 2;
-    pub const HEIGHT: usize = 2;
-    pub const CHUNK_COUNT: usize = Self::WIDTH * Self::HEIGHT;
+    /// The width of a region in terms of chunks.
+    pub const WIDTH_IN_CHUNKS: usize = 2;
+    /// The height of a region in terms of chunks.
+    pub const HEIGHT_IN_CHUNKS: usize = 2;
+    /// The total number of chunks in a region.
+    pub const CHUNK_COUNT: usize = Self::WIDTH_IN_CHUNKS * Self::HEIGHT_IN_CHUNKS;
+
+    /// The width of a region in terms of tiles,
+    /// based on [`WIDTH_IN_CHUNKS`](Self::WIDTH_IN_CHUNKS) and [`TileChunk::WIDTH_IN_TILES`](TileChunk::WIDTH_IN_TILES).
+    pub const WIDTH_IN_TILES: usize = Self::WIDTH_IN_CHUNKS * TileChunk::WIDTH_IN_TILES;
+    /// The height of a region in terms of tiles,
+    /// based on [`HEIGHT_IN_CHUNKS`](Self::HEIGHT_IN_CHUNKS) and [`TileChunk::HEIGHT_IN_TILES`](TileChunk::HEIGHT_IN_TILES).
+    pub const HEIGHT_IN_TILES: usize = Self::HEIGHT_IN_CHUNKS * TileChunk::HEIGHT_IN_TILES;
+    /// The total number of tiles in a region.
+    pub const TILE_COUNT: usize = Self::WIDTH_IN_TILES * Self::HEIGHT_IN_TILES;
 
     /// Creates a new chunk pre-filled with empty chunks.
     #[inline]
