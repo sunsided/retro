@@ -9,6 +9,11 @@ pub struct TileWorld {
     pub chunks: FxHashMap<WorldGlobalRegionCoord, WorldRegion>,
 }
 
+pub struct ChunkRect {
+    pub min: WorldGlobalChunkCoord,
+    pub max: WorldGlobalChunkCoord, // inclusive
+}
+
 impl TileWorld {
     pub fn new() -> Self {
         Self {
@@ -30,7 +35,7 @@ impl TileWorld {
         self.chunks.insert(coord, region)
     }
 
-    pub fn global_chunk_bounds(&self) -> Option<(WorldGlobalChunkCoord, WorldGlobalChunkCoord)> {
+    pub fn global_chunk_bounds(&self) -> Option<ChunkRect> {
         let mut min_chunk_x = i32::MAX;
         let mut max_chunk_x = i32::MIN;
         let mut min_chunk_y = i32::MAX;
@@ -51,16 +56,16 @@ impl TileWorld {
         }
 
         if min_chunk_x <= max_chunk_x && min_chunk_y <= max_chunk_y {
-            Some((
-                WorldGlobalChunkCoord {
+            Some(ChunkRect {
+                min: WorldGlobalChunkCoord {
                     x: min_chunk_x,
                     y: min_chunk_y,
                 },
-                WorldGlobalChunkCoord {
+                max: WorldGlobalChunkCoord {
                     x: max_chunk_x,
                     y: max_chunk_y,
                 },
-            ))
+            })
         } else {
             None
         }

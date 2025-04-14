@@ -46,7 +46,7 @@ impl WorldBuilder {
     }
 
     fn add_outer_walls(world: &mut TileWorld) {
-        let Some((min_chunk, max_chunk)) = world.global_chunk_bounds() else {
+        let Some(extents) = world.global_chunk_bounds() else {
             return;
         };
 
@@ -57,10 +57,10 @@ impl WorldBuilder {
                 let chunk_pos_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32
                     + chunk_coord.y as i32;
 
-                let is_leftmost = chunk_pos_x == min_chunk.x;
-                let is_rightmost = chunk_pos_x == max_chunk.x;
-                let is_topmost = chunk_pos_y == min_chunk.y;
-                let is_bottommost = chunk_pos_y == max_chunk.y;
+                let is_leftmost = chunk_pos_x == extents.min.x;
+                let is_rightmost = chunk_pos_x == extents.max.x;
+                let is_topmost = chunk_pos_y == extents.min.y;
+                let is_bottommost = chunk_pos_y == extents.max.y;
 
                 for y in 0..TileChunk::HEIGHT_IN_TILES {
                     for x in 0..TileChunk::WIDTH_IN_TILES {
