@@ -1,6 +1,6 @@
 use crate::engine::components::{
-    AmbientLightData, CameraData, CeilingType, ColorData, DynamicLightData, FloorType,
-    PositionData, SkydomeData, StarsData, SunData, TileData, TimeOfDayData, WallType,
+    AmbientLightData, CameraData, ColorData, DynamicLightData, PositionData, SkydomeData,
+    StarsData, SunData, TileData, TimeOfDayData,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::TileEntityData;
@@ -9,7 +9,8 @@ use crate::engine::{
     DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
     PositionComponent, SceneBackgroundEntityData,
 };
-use crate::map::tile_map::SparseTileMap;
+use crate::map::tile::{CeilingType, FloorType, Tile};
+use crate::map::world_builder::WorldBuilder;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
@@ -85,13 +86,36 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         }
          */
 
-        let mut tilemap = SparseTileMap::new();
+        let world = WorldBuilder::flat_floor(true);
+        world
+            .iter_regions_with_coords()
+            .flat_map(|(wrc, region)| {
+                region
+                    .iter_with_coords()
+                    .map(move |(rcc, chunk)| (*wrc + rcc, chunk))
+            })
+            .flat_map(|(wcc, chunk)| {
+                chunk
+                    .iter_with_coords()
+                    .map(move |(ctc, chunk)| (wcc + ctc, chunk))
+            })
+            .for_each(|(wtc, tile)| {
+                self.spawn_tile(TileEntityData {
+                    tile: TileData::from(tile).into(),
+                    position: PositionData {
+                        x: wtc.x as f32 - 2.0,
+                        y: 0.0,
+                        z: -(wtc.y as f32) + 2.0,
+                    }
+                    .into(),
+                });
+            });
 
         // Create a floor with walls around the edge
         for y in 0..5 {
             for x in 0..5 {
                 let is_edge = x == 0 || y == 0 || x == 4 || y == 4;
-                let mut tile = TileData::default().with_floor(FloorType::Empty);
+                let mut tile = Tile::default().with_floor(FloorType::Empty);
 
                 let tile = if is_edge {
                     tile.set_wall_south(y == 0);
@@ -108,10 +132,9 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                         tile
                     }
                 };
-                tilemap.set(x, y, 0, tile);
 
                 self.spawn_tile(TileEntityData {
-                    tile: tile.into(),
+                    tile: TileData::from(tile).into(),
                     position: PositionData {
                         x: x as f32 - 2.0,
                         y: 0.0,
@@ -123,11 +146,12 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         }
 
         // Add a tower in the center, stacked vertically
+        /*
         tilemap.set(
             2,
             2,
             1,
-            TileData::default()
+            Tile::default()
                 .with_floor(FloorType::Stone)
                 .with_wall(WallType::Brick),
         );
@@ -135,9 +159,10 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             2,
             2,
             2,
-            TileData::default()
+            Tile::default()
                 .with_floor(FloorType::Stone)
                 .with_wall(WallType::Brick),
         );
+        */
     }
 }

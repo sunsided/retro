@@ -307,6 +307,7 @@ impl TileVertexBuffer {
     }
 
     #[inline]
+    #[allow(dead_code)]
     pub fn as_entire_binding(&self) -> BindingResource<'_> {
         self.buffer.as_entire_binding()
     }
@@ -338,6 +339,7 @@ impl TileIndexBuffer {
     }
 
     #[inline]
+    #[allow(dead_code)]
     pub fn as_entire_binding(&self) -> BindingResource<'_> {
         self.buffer.as_entire_binding()
     }

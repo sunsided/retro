@@ -193,6 +193,7 @@ pub trait Archetype: 'static + Send + Sync {
     fn len(&self) -> usize;
 
     /// Indicates whether this archetype has no entities.
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -618,6 +619,7 @@ impl EnvironmentArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -981,6 +983,7 @@ impl CameraArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -1329,6 +1332,7 @@ impl DynamicLightArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -1660,6 +1664,7 @@ impl TileArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -2041,6 +2046,7 @@ impl CubeArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -2421,6 +2427,7 @@ impl PlayerArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -2752,6 +2759,7 @@ impl ForegroundObjectArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -3034,6 +3042,7 @@ impl BackgroundObjectArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -3300,6 +3309,7 @@ impl SceneBackgroundArchetype {
 
     /// Indicates whether this archetype has no entities.
     #[inline(always)]
+    #[allow(dead_code)]
     pub fn is_empty(&self) -> bool {
         self.entities.is_empty()
     }
@@ -3400,6 +3410,7 @@ pub trait GetEntityRef {
     where
         Self: 'archetype;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool;
 
     #[allow(clippy::needless_lifetimes, dead_code)]
@@ -3648,6 +3659,7 @@ pub trait FrontloadEntitiesScan:
 impl GetEntityRef for EnvironmentArchetype {
     type EntityRef<'archetype> = EnvironmentEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3670,6 +3682,7 @@ impl GetEntityRef for EnvironmentArchetype {
 impl GetEntityRef for CameraArchetype {
     type EntityRef<'archetype> = CameraEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3692,6 +3705,7 @@ impl GetEntityRef for CameraArchetype {
 impl GetEntityRef for DynamicLightArchetype {
     type EntityRef<'archetype> = DynamicLightEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3714,6 +3728,7 @@ impl GetEntityRef for DynamicLightArchetype {
 impl GetEntityRef for TileArchetype {
     type EntityRef<'archetype> = TileEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3736,6 +3751,7 @@ impl GetEntityRef for TileArchetype {
 impl GetEntityRef for CubeArchetype {
     type EntityRef<'archetype> = CubeEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3758,6 +3774,7 @@ impl GetEntityRef for CubeArchetype {
 impl GetEntityRef for PlayerArchetype {
     type EntityRef<'archetype> = PlayerEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3780,6 +3797,7 @@ impl GetEntityRef for PlayerArchetype {
 impl GetEntityRef for ForegroundObjectArchetype {
     type EntityRef<'archetype> = ForegroundObjectEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3802,6 +3820,7 @@ impl GetEntityRef for ForegroundObjectArchetype {
 impl GetEntityRef for BackgroundObjectArchetype {
     type EntityRef<'archetype> = BackgroundObjectEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
@@ -3824,6 +3843,7 @@ impl GetEntityRef for BackgroundObjectArchetype {
 impl GetEntityRef for SceneBackgroundArchetype {
     type EntityRef<'archetype> = SceneBackgroundEntityRef<'archetype>;
 
+    #[allow(dead_code)]
     fn is_empty(&self) -> bool {
        self.is_empty()
     }
