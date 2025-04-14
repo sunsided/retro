@@ -1,9 +1,10 @@
+use crate::map::div_floor;
 use crate::map::tile_chunk::TileChunk;
 use crate::map::world_region::WorldRegion;
 use std::hash::Hash;
 use std::ops::Add;
 
-/// The local coordinates of a [`Tile`](super::tile::Tile) within a [`DenseTileChunk`](TileChunk).
+/// The local coordinates of a [`Tile`](super::tile::Tile) within a [`TileChunk`].
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(C)]
 pub struct ChunkLocalTileCoord {
@@ -11,7 +12,7 @@ pub struct ChunkLocalTileCoord {
     pub y: u8,
 }
 
-/// The local coordinate of a [`DenseTileChunk`](TileChunk) in a [`WorldRegion`].
+/// The local coordinate of a [`TileChunk`] in a [`WorldRegion`].
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(C)]
 pub struct RegionLocalChunkCoord {
@@ -58,14 +59,43 @@ pub struct WorldGlobalTileCoord {
     pub y: i32,
 }
 
+impl RegionLocalChunkCoord {
+    pub const fn add_chunk_local_tile_coord(
+        self,
+        coord: ChunkLocalTileCoord,
+    ) -> RegionLocalTileCoord {
+        RegionLocalTileCoord {
+            x: self.x as u16 * TileChunk::WIDTH_IN_TILES as u16 + coord.x as u16,
+            y: self.y as u16 * TileChunk::HEIGHT_IN_TILES as u16 + coord.y as u16,
+        }
+    }
+
+    pub const fn const_eq(&self, rhs: Self) -> bool {
+        self.x == rhs.x && self.y == rhs.y
+    }
+}
+
 impl Add<ChunkLocalTileCoord> for RegionLocalChunkCoord {
     type Output = RegionLocalTileCoord;
 
     fn add(self, rhs: ChunkLocalTileCoord) -> Self::Output {
-        RegionLocalTileCoord {
-            x: self.x as u16 * TileChunk::WIDTH_IN_TILES as u16 + rhs.x as u16,
-            y: self.y as u16 * TileChunk::HEIGHT_IN_TILES as u16 + rhs.y as u16,
+        self.add_chunk_local_tile_coord(rhs)
+    }
+}
+
+impl WorldGlobalRegionCoord {
+    pub const fn add_region_local_tile_coord(
+        self,
+        coord: RegionLocalTileCoord,
+    ) -> WorldGlobalTileCoord {
+        WorldGlobalTileCoord {
+            x: self.x as i32 * WorldRegion::WIDTH_IN_TILES as i32 + coord.x as i32,
+            y: self.y as i32 * WorldRegion::HEIGHT_IN_TILES as i32 + coord.y as i32,
         }
+    }
+
+    pub const fn const_eq(&self, rhs: Self) -> bool {
+        self.x == rhs.x && self.y == rhs.y
     }
 }
 
@@ -73,9 +103,28 @@ impl Add<RegionLocalTileCoord> for WorldGlobalRegionCoord {
     type Output = WorldGlobalTileCoord;
 
     fn add(self, rhs: RegionLocalTileCoord) -> Self::Output {
-        WorldGlobalTileCoord {
-            x: self.x as i32 * WorldRegion::WIDTH_IN_TILES as i32 + rhs.x as i32,
-            y: self.y as i32 * WorldRegion::HEIGHT_IN_TILES as i32 + rhs.y as i32,
+        self.add_region_local_tile_coord(rhs)
+    }
+}
+
+impl WorldGlobalRegionCoord {
+    pub const fn add(
+        self,
+        rlc: RegionLocalChunkCoord,
+        clc: ChunkLocalTileCoord,
+    ) -> WorldGlobalTileCoord {
+        self.add_region_local_tile_coord(rlc.add_chunk_local_tile_coord(clc))
+    }
+
+    pub const fn add_region_local_chunk_coord(
+        self,
+        coord: RegionLocalChunkCoord,
+    ) -> WorldGlobalChunkCoord {
+        WorldGlobalChunkCoord {
+            x: self.x as i32 * WorldRegion::WIDTH_IN_TILES as i32
+                + coord.x as i32 * TileChunk::WIDTH_IN_TILES as i32,
+            y: self.y as i32 * WorldRegion::HEIGHT_IN_TILES as i32
+                + coord.y as i32 * TileChunk::HEIGHT_IN_TILES as i32,
         }
     }
 }
@@ -84,11 +133,18 @@ impl Add<RegionLocalChunkCoord> for WorldGlobalRegionCoord {
     type Output = WorldGlobalChunkCoord;
 
     fn add(self, rhs: RegionLocalChunkCoord) -> Self::Output {
-        WorldGlobalChunkCoord {
-            x: self.x as i32 * WorldRegion::WIDTH_IN_TILES as i32
-                + rhs.x as i32 * TileChunk::WIDTH_IN_TILES as i32,
-            y: self.y as i32 * WorldRegion::HEIGHT_IN_TILES as i32
-                + rhs.y as i32 * TileChunk::HEIGHT_IN_TILES as i32,
+        self.add_region_local_chunk_coord(rhs)
+    }
+}
+
+impl WorldGlobalChunkCoord {
+    pub const fn add_chunk_local_tile_coord(
+        self,
+        coord: ChunkLocalTileCoord,
+    ) -> WorldGlobalTileCoord {
+        WorldGlobalTileCoord {
+            x: self.x + coord.x as i32,
+            y: self.y + coord.y as i32,
         }
     }
 }
@@ -101,6 +157,30 @@ impl Add<ChunkLocalTileCoord> for WorldGlobalChunkCoord {
             x: self.x + rhs.x as i32,
             y: self.y + rhs.y as i32,
         }
+    }
+}
+
+impl WorldGlobalTileCoord {
+    #[inline(always)]
+    pub const fn add(self, coord: ChunkLocalTileCoord) -> Self {
+        WorldGlobalTileCoord {
+            x: self.x + coord.x as i32,
+            y: self.y + coord.y as i32,
+        }
+    }
+
+    /// Alias for [`add`](Self::add).
+    #[inline(always)]
+    pub const fn add_chunk_local_tile_coord(self, coord: ChunkLocalTileCoord) -> Self {
+        self.add(coord)
+    }
+}
+
+impl Add<ChunkLocalTileCoord> for WorldGlobalTileCoord {
+    type Output = WorldGlobalTileCoord;
+
+    fn add(self, rhs: ChunkLocalTileCoord) -> Self::Output {
+        self.add_chunk_local_tile_coord(rhs)
     }
 }
 
@@ -123,6 +203,33 @@ impl ChunkLocalTileCoord {
         let x = (index % TileChunk::WIDTH_IN_TILES) as u8;
         let y = (index / TileChunk::WIDTH_IN_TILES) as u8;
         Self { x, y }
+    }
+}
+
+impl RegionLocalTileCoord {
+    #[inline(always)]
+    pub const fn new(x: u16, y: u16) -> Self {
+        debug_assert!(x < WorldRegion::WIDTH_IN_TILES as u16);
+        debug_assert!(y < WorldRegion::HEIGHT_IN_TILES as u16);
+        Self { x, y }
+    }
+
+    /// Decomposes a [`RegionLocalTileCoord`] into its [`RegionLocalChunkCoord`]
+    /// and [`ChunkLocalTileCoord`] within the region.
+    #[inline(always)]
+    pub const fn decompose(self) -> (RegionLocalChunkCoord, ChunkLocalTileCoord) {
+        const CHUNK_WIDTH_IN_TILES: u16 = TileChunk::WIDTH_IN_TILES as u16;
+        const CHUNK_HEIGHT_IN_TILES: u16 = TileChunk::HEIGHT_IN_TILES as u16;
+
+        let chunk_x = self.x / CHUNK_WIDTH_IN_TILES;
+        let chunk_y = self.y / CHUNK_HEIGHT_IN_TILES;
+        let chunk = RegionLocalChunkCoord::new(chunk_x as u8, chunk_y as u8);
+
+        let tile_x = self.x % CHUNK_WIDTH_IN_TILES;
+        let tile_y = self.y % CHUNK_HEIGHT_IN_TILES;
+        let tile = ChunkLocalTileCoord::new(tile_x as u8, tile_y as u8);
+
+        (chunk, tile)
     }
 }
 
@@ -199,16 +306,6 @@ impl WorldGlobalTileCoord {
         let tile = ChunkLocalTileCoord::new(tile_x as u8, tile_y as u8);
 
         (region, chunk, tile)
-    }
-}
-
-/// Integer floor division that works for negative numbers like Rust’s `div_euclid` but returns floor.
-#[inline(always)]
-const fn div_floor(a: i32, b: i32) -> i32 {
-    if a >= 0 {
-        a / b
-    } else {
-        (a - b + 1) / b
     }
 }
 

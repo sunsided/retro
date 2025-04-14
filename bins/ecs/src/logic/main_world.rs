@@ -10,7 +10,6 @@ use crate::engine::{
     PositionComponent, SceneBackgroundEntityData,
 };
 use crate::map::tile::{CeilingType, FloorType, Tile, WallType};
-use crate::map::tile_map::SparseTileMap;
 use crate::map::world_builder::WorldBuilder;
 
 pub trait InitializeMainWorld {
@@ -112,8 +111,6 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 });
             });
 
-        let mut tilemap = SparseTileMap::new();
-
         // Create a floor with walls around the edge
         for y in 0..5 {
             for x in 0..5 {
@@ -135,7 +132,6 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                         tile
                     }
                 };
-                tilemap.set(x, y, 0, tile);
 
                 self.spawn_tile(TileEntityData {
                     tile: TileData::from(tile).into(),
@@ -150,6 +146,7 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         }
 
         // Add a tower in the center, stacked vertically
+        /*
         tilemap.set(
             2,
             2,
@@ -166,5 +163,6 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 .with_floor(FloorType::Stone)
                 .with_wall(WallType::Brick),
         );
+        */
     }
 }
