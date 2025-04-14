@@ -1,7 +1,4 @@
 use crate::wgpu::uniforms::FrameGlobalUniform;
-use crate::wgpu::wgpu_hardware::resource::WgpuResource;
-use crate::wgpu::wgpu_hardware::resources::WgpuResources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use wgpu::util::DeviceExt;
 use wgpu::{BindGroup, BindGroupLayout, BindingResource, Buffer, Device, Queue};
 
@@ -19,12 +16,6 @@ pub struct FrameGlobalUniformResource {
 impl<'bg> From<&'bg FrameGlobalUniformResource> for Option<&'bg BindGroup> {
     fn from(value: &'bg FrameGlobalUniformResource) -> Self {
         Some(&value.bind_group)
-    }
-}
-
-impl WgpuResource for FrameGlobalUniformResource {
-    fn recreate(&mut self, device: &DeviceAndQueue, _resources: &WgpuResources) {
-        *self = Self::new(device.device());
     }
 }
 

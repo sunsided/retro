@@ -1,10 +1,7 @@
 use crate::map::tile_instance::{TileInstance, TileVertex};
 use crate::wgpu::texture::Texture;
-use crate::wgpu::wgpu_hardware::resource::WgpuResource;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderMode;
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
-use crate::wgpu::wgpu_hardware::resources::WgpuResources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::borrow::Borrow;
 use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFormat};
 
@@ -12,16 +9,6 @@ use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFo
 pub struct TileRendererResource {
     pub pipeline: RenderPipeline,
     _shader: ShaderModule,
-}
-
-impl WgpuResource for TileRendererResource {
-    fn recreate(&mut self, device: &DeviceAndQueue, resources: &WgpuResources) {
-        *self = Self::new(
-            device.device(),
-            device.config(),
-            resources.standard_render(),
-        );
-    }
 }
 
 impl TileRendererResource {

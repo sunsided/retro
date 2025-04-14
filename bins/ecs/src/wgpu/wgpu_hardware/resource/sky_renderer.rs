@@ -1,9 +1,6 @@
 use crate::wgpu::texture::Texture;
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
-use crate::wgpu::wgpu_hardware::resource::WgpuResource;
-use crate::wgpu::wgpu_hardware::resources::WgpuResources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::borrow::Borrow;
 use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFormat};
 
@@ -11,17 +8,6 @@ use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFo
 pub struct SkyRendererResource {
     pub pipeline: RenderPipeline,
     _shader: ShaderModule,
-}
-
-impl WgpuResource for SkyRendererResource {
-    fn recreate(&mut self, device: &DeviceAndQueue, resources: &WgpuResources) {
-        *self = Self::new(
-            device.device(),
-            device.config(),
-            &resources.neo.uniforms.frame_globals,
-            &resources.neo.uniforms.camera,
-        );
-    }
 }
 
 impl SkyRendererResource {

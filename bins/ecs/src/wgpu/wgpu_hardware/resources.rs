@@ -36,7 +36,7 @@ pub struct WgpuResources {
     depths: DepthBuffers,
     _bind_group_layouts: BindGroupLayouts,
     bind_groups: BindGroups,
-    standard_render: StandardRenderLayout,
+    _standard_render: StandardRenderLayout,
     pipelines: RenderPipelines,
     _shaders: Shaders,
     models: Models,
@@ -111,7 +111,7 @@ impl WgpuResources {
             depths,
             _bind_group_layouts: bind_group_layouts,
             bind_groups,
-            standard_render,
+            _standard_render: standard_render,
             pipelines,
             _shaders: shaders,
             models,
@@ -151,10 +151,6 @@ impl WgpuResources {
 
     pub const fn buffers(&self) -> &Buffers {
         &self.buffers
-    }
-
-    pub const fn standard_render(&self) -> &StandardRenderLayout {
-        &self.standard_render
     }
 
     pub const fn pipelines(&self) -> &RenderPipelines {
