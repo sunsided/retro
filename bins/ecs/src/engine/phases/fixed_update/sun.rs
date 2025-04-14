@@ -1,4 +1,4 @@
-use crate::engine::phases::mix;
+use crate::engine::phases::{mix, mixv};
 use crate::engine::{
     AmbientLightComponent, ApplySunSystem, CreateSystem, FrameContext, PhysicsSystem,
     SkydomeComponent, SunComponent, SunSystem, SystemFactory, TimeOfDayComponent,
@@ -55,8 +55,8 @@ impl ApplySunSystem for SunSystem {
         let sun_color = sun_color_blend(sunset_strength);
         let night_color = Vector3::new(0.03, 0.03, 0.2);
         let day_color = Vector3::new(0.4, 0.75, 1.0);
-        let sky_color = mix(night_color, day_color, cycle);
-        let ambient_color = mix(
+        let sky_color = mixv(night_color, day_color, cycle);
+        let ambient_color = mixv(
             sky_color,
             Vector3::new(1.0, 0.4, 0.2),
             sunset_strength * 0.25,
@@ -74,7 +74,7 @@ impl ApplySunSystem for SunSystem {
 
 #[inline(always)]
 fn sun_color_blend(sunset_strength: f32) -> Vector3<f32> {
-    mix(
+    mixv(
         Vector3::new(1.2, 1.05, 0.85),
         Vector3::new(1.3, 0.5, 0.2),
         sunset_strength,

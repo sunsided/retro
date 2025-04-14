@@ -21,7 +21,7 @@ pub mod phases;
 use crate::engine::components::*;
 pub use crate::engine::input_state::InputState;
 use crate::engine::phases::fixed_update::{
-    physics::PhysicsSystemData, stars::StarsSystemData, sun::SunSystemData,
+    fog::FogSystemData, physics::PhysicsSystemData, stars::StarsSystemData, sun::SunSystemData,
     time_of_day::TimeOfDaySystemData,
 };
 use crate::engine::phases::render::{

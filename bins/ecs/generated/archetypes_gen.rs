@@ -325,6 +325,7 @@ pub struct EnvironmentArchetype {
     pub skydomes: Vec<SkydomeComponent>,
     pub ambient_lights: Vec<AmbientLightComponent>,
     pub stars: Vec<StarsComponent>,
+    pub fogs: Vec<FogComponent>,
 }
 
 /// An entity of the [`EnvironmentArchetype`].
@@ -339,6 +340,7 @@ pub struct EnvironmentEntityData {
     pub skydome: SkydomeComponent,
     pub ambient_light: AmbientLightComponent,
     pub stars: StarsComponent,
+    pub fog: FogComponent,
 }
 
 impl EntityData for EnvironmentEntityData {
@@ -355,6 +357,7 @@ pub struct EnvironmentEntityRef<'archetype> {
     pub skydome: &'archetype SkydomeComponent,
     pub ambient_light: &'archetype AmbientLightComponent,
     pub stars: &'archetype StarsComponent,
+    pub fog: &'archetype FogComponent,
 }
 
 /// A mutable reference to an entity of the [`EnvironmentArchetype`].
@@ -367,6 +370,7 @@ pub struct EnvironmentEntityMut<'archetype> {
     pub skydome: &'archetype mut SkydomeComponent,
     pub ambient_light: &'archetype mut AmbientLightComponent,
     pub stars: &'archetype mut StarsComponent,
+    pub fog: &'archetype mut FogComponent,
 }
 
 /// An iterator for entities in the [`EnvironmentArchetype`].
@@ -428,6 +432,7 @@ impl EnvironmentArchetype {
             skydome: self.skydomes.get_unchecked(index),
             ambient_light: self.ambient_lights.get_unchecked(index),
             stars: self.stars.get_unchecked(index),
+            fog: self.fogs.get_unchecked(index),
         }
     }
 
@@ -441,6 +446,7 @@ impl EnvironmentArchetype {
             skydome: self.skydomes.get_unchecked_mut(index),
             ambient_light: self.ambient_lights.get_unchecked_mut(index),
             stars: self.stars.get_unchecked_mut(index),
+            fog: self.fogs.get_unchecked_mut(index),
         }
     }
 }
@@ -574,6 +580,32 @@ impl HasComponent<StarsComponent> for EnvironmentEntityData {
         &mut self.stars
     }
 }
+
+#[allow(dead_code)]
+impl HasComponent<FogComponent> for EnvironmentEntity {
+    #[inline]
+    fn get(&self) -> &FogComponent {
+        &self.data.fog
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut FogComponent {
+        &mut self.data.fog
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<FogComponent> for EnvironmentEntityData {
+    #[inline]
+    fn get(&self) -> &FogComponent {
+        &self.fog
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut FogComponent {
+        &mut self.fog
+    }
+}
 impl EnvironmentEntityData {
     /// Spawn this entity into the given world.
     #[inline]
@@ -603,12 +635,13 @@ impl core::ops::DerefMut for EnvironmentEntity {
 #[allow(dead_code)]
 impl EnvironmentArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
-    pub const COMPONENTS: [ComponentId; 5] = [
+    pub const COMPONENTS: [ComponentId; 6] = [
         ComponentId::COMPONENT_1,
         ComponentId::COMPONENT_2,
         ComponentId::COMPONENT_3,
         ComponentId::COMPONENT_4,
         ComponentId::COMPONENT_5,
+        ComponentId::COMPONENT_6,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -627,13 +660,13 @@ impl EnvironmentArchetype {
     /// Returns the number of components used by this archetype.
     #[inline(always)]
     pub const fn num_components(&self) -> usize {
-        5
+        6
     }
 
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || false
+        id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id == 6 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -645,6 +678,7 @@ impl EnvironmentArchetype {
         skydome: SkydomeComponent,
         ambient_light: AmbientLightComponent,
         stars: StarsComponent,
+        fog: FogComponent,
         mut world_registry: R
     ) -> EntityId
     where
@@ -655,6 +689,7 @@ impl EnvironmentArchetype {
         self.skydomes.push(skydome);
         self.ambient_lights.push(ambient_light);
         self.stars.push(stars);
+        self.fogs.push(fog);
 
         let entity_id = EntityId::new();
 
@@ -683,6 +718,7 @@ impl EnvironmentArchetype {
         self.skydomes.swap_remove(index);
         self.ambient_lights.swap_remove(index);
         self.stars.swap_remove(index);
+        self.fogs.swap_remove(index);
         if self.entities.is_empty() {
             Ok(None)
         }
@@ -755,6 +791,19 @@ impl HasComponents<StarsComponent> for EnvironmentArchetype {
     /// Returns a mutable slice of all [`StarsComponent`] component values.
     fn get_mut(&mut self) -> &mut [StarsComponent] {
         self.stars.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<FogComponent> for EnvironmentArchetype {
+    /// Returns a slice of all [`FogComponent`] component values.
+    fn get(&self) -> &[FogComponent] {
+        self.fogs.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`FogComponent`] component values.
+    fn get_mut(&mut self) -> &mut [FogComponent] {
+        self.fogs.as_mut_slice()
     }
 }
 
@@ -971,8 +1020,8 @@ impl core::ops::DerefMut for CameraEntity {
 impl CameraArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_6,
         ComponentId::COMPONENT_7,
+        ComponentId::COMPONENT_8,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -997,7 +1046,7 @@ impl CameraArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 6 || id == 7 || false
+        id == 7 || id == 8 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1319,9 +1368,9 @@ impl core::ops::DerefMut for DynamicLightEntity {
 impl DynamicLightArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
-        ComponentId::COMPONENT_8,
-        ComponentId::COMPONENT_15,
-        ComponentId::COMPONENT_17,
+        ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_16,
+        ComponentId::COMPONENT_18,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1346,7 +1395,7 @@ impl DynamicLightArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 15 || id == 17 || false
+        id == 9 || id == 16 || id == 18 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1652,8 +1701,8 @@ impl core::ops::DerefMut for TileEntity {
 impl TileArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_8,
-        ComponentId::COMPONENT_11,
+        ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_12,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -1678,7 +1727,7 @@ impl TileArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 11 || false
+        id == 9 || id == 12 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2032,10 +2081,10 @@ impl core::ops::DerefMut for CubeEntity {
 impl CubeArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 4] = [
-        ComponentId::COMPONENT_8,
         ComponentId::COMPONENT_9,
         ComponentId::COMPONENT_10,
-        ComponentId::COMPONENT_14,
+        ComponentId::COMPONENT_11,
+        ComponentId::COMPONENT_15,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2060,7 +2109,7 @@ impl CubeArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 9 || id == 10 || id == 14 || false
+        id == 9 || id == 10 || id == 11 || id == 15 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2414,9 +2463,9 @@ impl core::ops::DerefMut for PlayerEntity {
 impl PlayerArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 3] = [
-        ComponentId::COMPONENT_8,
-        ComponentId::COMPONENT_10,
-        ComponentId::COMPONENT_12,
+        ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_11,
+        ComponentId::COMPONENT_13,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2441,7 +2490,7 @@ impl PlayerArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 10 || id == 12 || false
+        id == 9 || id == 11 || id == 13 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2747,8 +2796,8 @@ impl core::ops::DerefMut for ForegroundObjectEntity {
 impl ForegroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 2] = [
-        ComponentId::COMPONENT_8,
-        ComponentId::COMPONENT_13,
+        ComponentId::COMPONENT_9,
+        ComponentId::COMPONENT_14,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -2773,7 +2822,7 @@ impl ForegroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 13 || false
+        id == 9 || id == 14 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3031,7 +3080,7 @@ impl core::ops::DerefMut for BackgroundObjectEntity {
 impl BackgroundObjectArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_8,
+        ComponentId::COMPONENT_9,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -3056,7 +3105,7 @@ impl BackgroundObjectArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || false
+        id == 9 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3298,7 +3347,7 @@ impl core::ops::DerefMut for SceneBackgroundEntity {
 impl SceneBackgroundArchetype {
     /// The IDs of the components used by this archetype, in ascending order.
     pub const COMPONENTS: [ComponentId; 1] = [
-        ComponentId::COMPONENT_16,
+        ComponentId::COMPONENT_17,
     ];
 
     /// Returns the number of entities in this archetype.
@@ -3323,7 +3372,7 @@ impl SceneBackgroundArchetype {
     /// Dynamically determines whether this archetype has a specific component.
     pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 16 || false
+        id == 17 || false
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3873,6 +3922,7 @@ impl FrontloadEntities for EnvironmentArchetype {
         self.skydomes.swap(first, second);
         self.ambient_lights.swap(first, second);
         self.stars.swap(first, second);
+        self.fogs.swap(first, second);
     }
 }
 

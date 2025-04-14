@@ -38,6 +38,7 @@ components:
   - name: TimeOfDay
   - name: Sun
   - name: Skydome
+  - name: Fog
   - name: AmbientLight
   - name: Stars
   - name: Camera
@@ -63,6 +64,7 @@ archetypes:
       - Skydome
       - AmbientLight
       - Stars
+      - Fog
 
   - name: Camera
     components:
@@ -133,6 +135,13 @@ systems:
       - Skydome
       - AmbientLight
 
+  - name: Fog
+    phase: FixedUpdate
+    inputs:
+      - TimeOfDay
+    outputs:
+      - Fog
+
   - name: Stars
     phase: FixedUpdate
     inputs:
@@ -169,8 +178,8 @@ systems:
     phase: Render
     inputs:
       - TimeOfDay
-    outputs:
       - Sun
+      - Fog
       - AmbientLight
       - Stars
       - Skydome

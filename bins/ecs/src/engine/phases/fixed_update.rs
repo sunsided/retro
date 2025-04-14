@@ -8,6 +8,7 @@ use crate::engine::{
 use std::convert::Infallible;
 use tracing::trace;
 
+pub mod fog;
 pub mod physics;
 pub mod stars;
 pub mod sun;

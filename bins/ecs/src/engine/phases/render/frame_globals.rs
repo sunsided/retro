@@ -1,7 +1,7 @@
 use crate::engine::phases::render::{FrameState, WgpuRenderState};
 use crate::engine::{
     AmbientLightComponent, ApplyFrameGlobalsSystem, ApplyRenderBackgroundSystem,
-    ApplyRenderSkySystem, BackgroundColorComponent, CreateSystem, FrameGlobalsSystem,
+    ApplyRenderSkySystem, BackgroundColorComponent, CreateSystem, FogComponent, FrameGlobalsSystem,
     RenderBackgroundSystem, RenderSkySystem, SkydomeComponent, StarsComponent, SunComponent,
     SystemFactory, TimeOfDayComponent,
 };
@@ -35,10 +35,11 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         &mut self,
         gpu: &mut WgpuRenderState,
         time_of_day: &TimeOfDayComponent,
-        sun: &mut SunComponent,
-        ambient_light: &mut AmbientLightComponent,
-        stars: &mut StarsComponent,
-        skydome: &mut SkydomeComponent,
+        sun: &SunComponent,
+        fog: &FogComponent,
+        ambient_light: &AmbientLightComponent,
+        stars: &StarsComponent,
+        skydome: &SkydomeComponent,
     ) {
         let Some(device) = gpu.hardware().device() else {
             warn!("Skipping frame globals setup because hardware is not ready.");
@@ -59,6 +60,8 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         uniform.sun_color = sun.color.into();
         uniform.sun_visibility = sun.intensity;
         uniform.window_aspect = gpu.screen_size().aspect_ratio;
+        uniform.fog_distance = fog.fog_distance;
+        uniform.fog_fade = fog.fog_fade;
 
         resources
             .neo

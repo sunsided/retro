@@ -14,6 +14,7 @@ pub enum ComponentId {
     /// 
     /// - [`TimeOfDaySystem`] ([`SystemId::TimeOfDay`])
     /// - [`SunSystem`] ([`SystemId::Sun`])
+    /// - [`FogSystem`] ([`SystemId::Fog`])
     /// - [`StarsSystem`] ([`SystemId::Stars`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     TimeOfDay = 1,
@@ -44,6 +45,19 @@ pub enum ComponentId {
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
     /// - [`RenderSkySystem`] ([`SystemId::RenderSky`])
     Skydome = 3,
+    /// The [`Fog`](FogComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`FogSystem`] ([`SystemId::Fog`])
+    /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
+    Fog = 4,
     /// The [`AmbientLight`](AmbientLightComponent) component.
     ///
     /// # Archetype Use
@@ -56,7 +70,7 @@ pub enum ComponentId {
     /// 
     /// - [`SunSystem`] ([`SystemId::Sun`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
-    AmbientLight = 4,
+    AmbientLight = 5,
     /// The [`Stars`](StarsComponent) component.
     ///
     /// # Archetype Use
@@ -69,7 +83,7 @@ pub enum ComponentId {
     /// 
     /// - [`StarsSystem`] ([`SystemId::Stars`])
     /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
-    Stars = 5,
+    Stars = 6,
     /// The [`Camera`](CameraComponent) component.
     ///
     /// # Archetype Use
@@ -82,7 +96,7 @@ pub enum ComponentId {
     /// 
     /// - [`CameraSystem`] ([`SystemId::Camera`])
     /// - [`CameraRenderSystem`] ([`SystemId::CameraRender`])
-    Camera = 6,
+    Camera = 7,
     /// The [`CameraFpsController`](CameraFpsControllerComponent) component.
     ///
     /// # Archetype Use
@@ -94,7 +108,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`CameraSystem`] ([`SystemId::Camera`])
-    CameraFpsController = 7,
+    CameraFpsController = 8,
     /// The [`Position`](PositionComponent) component.
     ///
     /// # Archetype Use
@@ -113,7 +127,7 @@ pub enum ComponentId {
     /// - [`PhysicsSystem`] ([`SystemId::Physics`])
     /// - [`RenderSystem`] ([`SystemId::Render`])
     /// - [`TileRenderSystem`] ([`SystemId::TileRender`])
-    Position = 8,
+    Position = 9,
     /// The [`Transform`](TransformComponent) component.
     ///
     /// # Archetype Use
@@ -125,7 +139,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`RenderSystem`] ([`SystemId::Render`])
-    Transform = 9,
+    Transform = 10,
     /// The [`Velocity`](VelocityComponent) component.
     ///
     /// # Archetype Use
@@ -138,7 +152,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`PhysicsSystem`] ([`SystemId::Physics`])
-    Velocity = 10,
+    Velocity = 11,
     /// The [`Tile`](TileComponent) component.
     ///
     /// # Archetype Use
@@ -150,7 +164,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`TileRenderSystem`] ([`SystemId::TileRender`])
-    Tile = 11,
+    Tile = 12,
     /// The [`Health`](HealthComponent) component.
     ///
     /// # Archetype Use
@@ -161,7 +175,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
-    Health = 12,
+    Health = 13,
     /// The [`Collider`](ColliderComponent) component.
     ///
     /// # Archetype Use
@@ -172,7 +186,7 @@ pub enum ComponentId {
     /// # System Use
     /// This component is used by the following systems:
     /// 
-    Collider = 13,
+    Collider = 14,
     /// The [`Model`](ModelComponent) component.
     ///
     /// # Archetype Use
@@ -184,7 +198,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`RenderSystem`] ([`SystemId::Render`])
-    Model = 14,
+    Model = 15,
     /// The [`Color`](ColorComponent) component.
     ///
     /// # Archetype Use
@@ -196,7 +210,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
-    Color = 15,
+    Color = 16,
     /// The background color used for clearing the render buffer
     ///
     /// For details, see the [`BackgroundColorComponent`](BackgroundColorComponent) Struct.
@@ -212,7 +226,7 @@ pub enum ComponentId {
     /// - [`BackgroundColorCycleSystem`] ([`SystemId::BackgroundColorCycle`])
     /// - [`RenderBackgroundSystem`] ([`SystemId::RenderBackground`])
     /// - [`VgaBlitSystem`] ([`SystemId::VgaBlit`])
-    BackgroundColor = 16,
+    BackgroundColor = 17,
     /// A marker component for light entities
     ///
     /// For details, see the [`DynamicLightComponent`](DynamicLightComponent) Struct.
@@ -226,7 +240,7 @@ pub enum ComponentId {
     /// This component is used by the following systems:
     /// 
     /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
-    DynamicLight = 17,
+    DynamicLight = 18,
 }
 
 #[allow(dead_code)]
@@ -237,34 +251,36 @@ impl ComponentId {
     pub const SUN_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Skydome`](ComponentId::Skydome) component.
     pub const SKYDOME_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Fog`](ComponentId::Fog) component.
+    pub const FOG_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::AmbientLight`](ComponentId::AmbientLight) component.
-    pub const AMBIENT_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const AMBIENT_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Stars`](ComponentId::Stars) component.
-    pub const STARS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const STARS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Camera`](ComponentId::Camera) component.
-    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::CameraFpsController`](ComponentId::CameraFpsController) component.
-    pub const CAMERA_FPS_CONTROLLER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const CAMERA_FPS_CONTROLLER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Position`](ComponentId::Position) component.
-    pub const POSITION_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    pub const POSITION_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Transform`](ComponentId::Transform) component.
-    pub const TRANSFORM_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
+    pub const TRANSFORM_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Velocity`](ComponentId::Velocity) component.
-    pub const VELOCITY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
+    pub const VELOCITY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Tile`](ComponentId::Tile) component.
-    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Health`](ComponentId::Health) component.
-    pub const HEALTH_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
+    pub const HEALTH_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Collider`](ComponentId::Collider) component.
-    pub const COLLIDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
+    pub const COLLIDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Model`](ComponentId::Model) component.
-    pub const MODEL_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
+    pub const MODEL_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(15).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::Color`](ComponentId::Color) component.
-    pub const COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(15).expect("Error at ECS construction time");
+    pub const COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(16).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::BackgroundColor`](ComponentId::BackgroundColor) component.
-    pub const BACKGROUND_COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(16).expect("Error at ECS construction time");
+    pub const BACKGROUND_COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(17).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::DynamicLight`](ComponentId::DynamicLight) component.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(17).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(18).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -275,34 +291,36 @@ impl ComponentId {
     const COMPONENT_2: ComponentId = ComponentId::Sun;
     /// Compile-time constant lookup of [`ComponentId::Skydome`](ComponentId::Skydome).
     const COMPONENT_3: ComponentId = ComponentId::Skydome;
+    /// Compile-time constant lookup of [`ComponentId::Fog`](ComponentId::Fog).
+    const COMPONENT_4: ComponentId = ComponentId::Fog;
     /// Compile-time constant lookup of [`ComponentId::AmbientLight`](ComponentId::AmbientLight).
-    const COMPONENT_4: ComponentId = ComponentId::AmbientLight;
+    const COMPONENT_5: ComponentId = ComponentId::AmbientLight;
     /// Compile-time constant lookup of [`ComponentId::Stars`](ComponentId::Stars).
-    const COMPONENT_5: ComponentId = ComponentId::Stars;
+    const COMPONENT_6: ComponentId = ComponentId::Stars;
     /// Compile-time constant lookup of [`ComponentId::Camera`](ComponentId::Camera).
-    const COMPONENT_6: ComponentId = ComponentId::Camera;
+    const COMPONENT_7: ComponentId = ComponentId::Camera;
     /// Compile-time constant lookup of [`ComponentId::CameraFpsController`](ComponentId::CameraFpsController).
-    const COMPONENT_7: ComponentId = ComponentId::CameraFpsController;
+    const COMPONENT_8: ComponentId = ComponentId::CameraFpsController;
     /// Compile-time constant lookup of [`ComponentId::Position`](ComponentId::Position).
-    const COMPONENT_8: ComponentId = ComponentId::Position;
+    const COMPONENT_9: ComponentId = ComponentId::Position;
     /// Compile-time constant lookup of [`ComponentId::Transform`](ComponentId::Transform).
-    const COMPONENT_9: ComponentId = ComponentId::Transform;
+    const COMPONENT_10: ComponentId = ComponentId::Transform;
     /// Compile-time constant lookup of [`ComponentId::Velocity`](ComponentId::Velocity).
-    const COMPONENT_10: ComponentId = ComponentId::Velocity;
+    const COMPONENT_11: ComponentId = ComponentId::Velocity;
     /// Compile-time constant lookup of [`ComponentId::Tile`](ComponentId::Tile).
-    const COMPONENT_11: ComponentId = ComponentId::Tile;
+    const COMPONENT_12: ComponentId = ComponentId::Tile;
     /// Compile-time constant lookup of [`ComponentId::Health`](ComponentId::Health).
-    const COMPONENT_12: ComponentId = ComponentId::Health;
+    const COMPONENT_13: ComponentId = ComponentId::Health;
     /// Compile-time constant lookup of [`ComponentId::Collider`](ComponentId::Collider).
-    const COMPONENT_13: ComponentId = ComponentId::Collider;
+    const COMPONENT_14: ComponentId = ComponentId::Collider;
     /// Compile-time constant lookup of [`ComponentId::Model`](ComponentId::Model).
-    const COMPONENT_14: ComponentId = ComponentId::Model;
+    const COMPONENT_15: ComponentId = ComponentId::Model;
     /// Compile-time constant lookup of [`ComponentId::Color`](ComponentId::Color).
-    const COMPONENT_15: ComponentId = ComponentId::Color;
+    const COMPONENT_16: ComponentId = ComponentId::Color;
     /// Compile-time constant lookup of [`ComponentId::BackgroundColor`](ComponentId::BackgroundColor).
-    const COMPONENT_16: ComponentId = ComponentId::BackgroundColor;
+    const COMPONENT_17: ComponentId = ComponentId::BackgroundColor;
     /// Compile-time constant lookup of [`ComponentId::DynamicLight`](ComponentId::DynamicLight).
-    const COMPONENT_17: ComponentId = ComponentId::DynamicLight;
+    const COMPONENT_18: ComponentId = ComponentId::DynamicLight;
 }
 
 #[allow(dead_code)]
@@ -313,6 +331,7 @@ impl ComponentId {
             Self::TimeOfDay => Self::TIME_OF_DAY_ID_VALUE,
             Self::Sun => Self::SUN_ID_VALUE,
             Self::Skydome => Self::SKYDOME_ID_VALUE,
+            Self::Fog => Self::FOG_ID_VALUE,
             Self::AmbientLight => Self::AMBIENT_LIGHT_ID_VALUE,
             Self::Stars => Self::STARS_ID_VALUE,
             Self::Camera => Self::CAMERA_ID_VALUE,
@@ -360,20 +379,21 @@ impl core::fmt::Display for ComponentId {
             Self::TimeOfDay => write!(f, "TimeOfDay (ID 1)"),
             Self::Sun => write!(f, "Sun (ID 2)"),
             Self::Skydome => write!(f, "Skydome (ID 3)"),
-            Self::AmbientLight => write!(f, "AmbientLight (ID 4)"),
-            Self::Stars => write!(f, "Stars (ID 5)"),
-            Self::Camera => write!(f, "Camera (ID 6)"),
-            Self::CameraFpsController => write!(f, "CameraFpsController (ID 7)"),
-            Self::Position => write!(f, "Position (ID 8)"),
-            Self::Transform => write!(f, "Transform (ID 9)"),
-            Self::Velocity => write!(f, "Velocity (ID 10)"),
-            Self::Tile => write!(f, "Tile (ID 11)"),
-            Self::Health => write!(f, "Health (ID 12)"),
-            Self::Collider => write!(f, "Collider (ID 13)"),
-            Self::Model => write!(f, "Model (ID 14)"),
-            Self::Color => write!(f, "Color (ID 15)"),
-            Self::BackgroundColor => write!(f, "BackgroundColor (ID 16)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 17)"),
+            Self::Fog => write!(f, "Fog (ID 4)"),
+            Self::AmbientLight => write!(f, "AmbientLight (ID 5)"),
+            Self::Stars => write!(f, "Stars (ID 6)"),
+            Self::Camera => write!(f, "Camera (ID 7)"),
+            Self::CameraFpsController => write!(f, "CameraFpsController (ID 8)"),
+            Self::Position => write!(f, "Position (ID 9)"),
+            Self::Transform => write!(f, "Transform (ID 10)"),
+            Self::Velocity => write!(f, "Velocity (ID 11)"),
+            Self::Tile => write!(f, "Tile (ID 12)"),
+            Self::Health => write!(f, "Health (ID 13)"),
+            Self::Collider => write!(f, "Collider (ID 14)"),
+            Self::Model => write!(f, "Model (ID 15)"),
+            Self::Color => write!(f, "Color (ID 16)"),
+            Self::BackgroundColor => write!(f, "BackgroundColor (ID 17)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 18)"),
         }
     }
 }
@@ -405,6 +425,7 @@ pub trait Component: 'static + Send + Sync {
 /// 
 /// - [`TimeOfDaySystem`] ([`SystemId::TimeOfDay`])
 /// - [`SunSystem`] ([`SystemId::Sun`])
+/// - [`FogSystem`] ([`SystemId::Fog`])
 /// - [`StarsSystem`] ([`SystemId::Stars`])
 /// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
 #[derive(Debug, Clone)]
@@ -666,6 +687,98 @@ impl core::borrow::Borrow<SkydomeData> for SkydomeComponent {
 #[automatically_derived]
 impl core::borrow::BorrowMut<SkydomeData> for SkydomeComponent {
     fn borrow_mut(&mut self) -> &mut SkydomeData {
+        &mut self.0
+    }
+}
+
+/// A `Fog` component.
+///
+/// See also [`FogData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`FogSystem`] ([`SystemId::Fog`])
+/// - [`FrameGlobalsSystem`] ([`SystemId::FrameGlobals`])
+#[derive(Debug, Clone)]
+pub struct FogComponent(FogData);
+
+#[allow(dead_code)]
+impl FogComponent {
+    /// Creates a new [`FogComponent`] instance from [`FogData`].
+    pub const fn new(data: FogData) -> Self {
+        Self(data)
+    }
+
+    /// Consumes self and returns the inner [`FogData`].
+    pub const fn into_inner(self) -> FogData {
+        self.0
+    }
+}
+
+#[automatically_derived]
+impl Component for FogComponent {
+    const ID: ComponentId = ComponentId::Fog;
+}
+
+impl PartialEq<ComponentId> for FogComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<FogData> for FogComponent {
+    fn from(data: FogData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for FogComponent {
+    type Target = FogData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for FogComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<FogData> for FogComponent {
+    fn as_ref(&self) -> &FogData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<FogData> for FogComponent {
+    fn as_mut(&mut self) -> &mut FogData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<FogData> for FogComponent {
+    fn borrow(&self) -> &FogData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<FogData> for FogComponent {
+    fn borrow_mut(&mut self) -> &mut FogData {
         &mut self.0
     }
 }

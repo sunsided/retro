@@ -23,6 +23,11 @@ pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {
 }
 
 #[inline(always)]
-fn mix(a: Vector3<f32>, b: Vector3<f32>, t: f32) -> Vector3<f32> {
+fn mixv(a: Vector3<f32>, b: Vector3<f32>, t: f32) -> Vector3<f32> {
+    a * (1.0 - t) + b * t
+}
+
+#[inline(always)]
+fn mix(a: f32, b: f32, t: f32) -> f32 {
     a * (1.0 - t) + b * t
 }

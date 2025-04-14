@@ -220,6 +220,7 @@ struct MainWorldArchetypes {
 pub struct MainWorldSystems {
     time_of_day: TimeOfDaySystem,
     sun: SunSystem,
+    fog: FogSystem,
     stars: StarsSystem,
     frame_globals: FrameGlobalsSystem,
     render_sky: RenderSkySystem,
@@ -262,6 +263,20 @@ impl MainWorldSystems {
     pub fn as_sun_mut(&mut self) -> &mut SunSystemData {
         use core::ops::DerefMut;
         self.sun.deref_mut()
+    }
+
+    /// Gives immutable access to the [`FogSystemData`] of the [`FogSystem`].
+    #[inline]
+    pub fn as_fog_ref(&self) -> &FogSystemData {
+        use core::ops::Deref;
+        self.fog.deref()
+    }
+
+    /// Gives mutable access to the [`FogSystemData`] of the [`FogSystem`].
+    #[inline]
+    pub fn as_fog_mut(&mut self) -> &mut FogSystemData {
+        use core::ops::DerefMut;
+        self.fog.deref_mut()
     }
 
     /// Gives immutable access to the [`StarsSystemData`] of the [`StarsSystem`].
@@ -458,6 +473,20 @@ impl AsMut<SunSystemData> for MainWorldSystems {
     #[inline]
     fn as_mut(&mut self) -> &mut SunSystemData {
         self.as_sun_mut()
+    }
+}
+
+impl AsRef<FogSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &FogSystemData {
+        self.as_fog_ref()
+    }
+}
+
+impl AsMut<FogSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut FogSystemData {
+        self.as_fog_mut()
     }
 }
 
@@ -753,6 +782,7 @@ impl<E, Q> MainWorld<E, Q> {
     where
         S: CreateSystem<TimeOfDaySystem>
          + CreateSystem<SunSystem>
+         + CreateSystem<FogSystem>
          + CreateSystem<StarsSystem>
          + CreateSystem<FrameGlobalsSystem>
          + CreateSystem<RenderSkySystem>
@@ -774,6 +804,7 @@ impl<E, Q> MainWorld<E, Q> {
             systems: MainWorldSystems {
                 time_of_day: CreateSystem::<TimeOfDaySystem>::create(create_systems),
                 sun: CreateSystem::<SunSystem>::create(create_systems),
+                fog: CreateSystem::<FogSystem>::create(create_systems),
                 stars: CreateSystem::<StarsSystem>::create(create_systems),
                 frame_globals: CreateSystem::<FrameGlobalsSystem>::create(create_systems),
                 render_sky: CreateSystem::<RenderSkySystem>::create(create_systems),
@@ -833,6 +864,7 @@ impl<E, Q> MainWorld<E, Q> {
             environment.skydome,
             environment.ambient_light,
             environment.stars,
+            environment.fog,
         )
     }
 
@@ -844,6 +876,7 @@ impl<E, Q> MainWorld<E, Q> {
         skydome: SkydomeComponent,
         ambient_light: AmbientLightComponent,
         stars: StarsComponent,
+        fog: FogComponent,
     ) -> EntityId {
         struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
 
@@ -862,6 +895,7 @@ impl<E, Q> MainWorld<E, Q> {
                 skydome,
                 ambient_light,
                 stars,
+                fog,
                 Registry(&mut self.entity_locations)
             )
     }
@@ -1558,6 +1592,25 @@ impl<E, Q> MainWorld<E, Q> {
             .ok();
         }
         // System group 2 of 2
+        let is_ready = self.systems.fog.is_ready(
+           );
+        if is_ready && self.systems.fog.on_begin_phase(
+                )
+                .inspect_err(|error| tracing::error!(?error, "FogSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply FogSystem to EnvironmentArchetype
+            self.systems.fog.apply_many(
+                &self.archetypes.environment.time_of_daies,
+                &mut self.archetypes.environment.fogs,
+            );
+
+            self.systems.fog.on_end_phase(
+            )
+            .inspect_err(|error| tracing::error!(?error, "FogSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 2
         let is_ready = self.systems.stars.is_ready(
            );
         if is_ready && self.systems.stars.on_begin_phase(
@@ -1678,6 +1731,13 @@ impl<E, Q> MainWorld<E, Q> {
             )
             .inspect_err(|error| tracing::error!(%error, "SunSystem::on_begin_phase returned an error"))
             .is_ok();
+        let is_fog_ready = self.systems.fog.is_ready(
+           );
+        let is_fog_ready = is_fog_ready &
+            self.systems.fog.on_begin_phase(
+            )
+            .inspect_err(|error| tracing::error!(%error, "FogSystem::on_begin_phase returned an error"))
+            .is_ok();
         let is_stars_ready = self.systems.stars.is_ready(
            );
         let is_stars_ready = is_stars_ready &
@@ -1700,6 +1760,15 @@ impl<E, Q> MainWorld<E, Q> {
                         );
                     });
                 }
+                if is_fog_ready {
+                    s.spawn(|_| {
+                        // Apply FogSystem to EnvironmentArchetype
+                        self.systems.fog.apply_many(
+                            &self.archetypes.environment.time_of_daies,
+                            &mut self.archetypes.environment.fogs,
+                        );
+                    });
+                }
                 if is_stars_ready {
                     s.spawn(|_| {
                         // Apply StarsSystem to EnvironmentArchetype
@@ -1715,6 +1784,11 @@ impl<E, Q> MainWorld<E, Q> {
         self.systems.sun.on_end_phase(
         )
         .inspect_err(|error| tracing::error!(%error, "SunSystem::on_end_phase returned an error"))
+        .ok();
+
+        self.systems.fog.on_end_phase(
+        )
+        .inspect_err(|error| tracing::error!(%error, "FogSystem::on_end_phase returned an error"))
         .ok();
 
         self.systems.stars.on_end_phase(
@@ -1950,10 +2024,11 @@ impl<E, Q> MainWorld<E, Q> {
             self.systems.frame_globals.apply_many(
                 &mut self.states.wgpu_render,
                 &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.suns,
-                &mut self.archetypes.environment.ambient_lights,
-                &mut self.archetypes.environment.stars,
-                &mut self.archetypes.environment.skydomes,
+                &self.archetypes.environment.suns,
+                &self.archetypes.environment.fogs,
+                &self.archetypes.environment.ambient_lights,
+                &self.archetypes.environment.stars,
+                &self.archetypes.environment.skydomes,
             );
 
             self.systems.frame_globals.on_end_phase(
@@ -2180,10 +2255,11 @@ impl<E, Q> MainWorld<E, Q> {
                         self.systems.frame_globals.apply_many(
                             &mut self.states.wgpu_render,
                             &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.suns,
-                            &mut self.archetypes.environment.ambient_lights,
-                            &mut self.archetypes.environment.stars,
-                            &mut self.archetypes.environment.skydomes,
+                            &self.archetypes.environment.suns,
+                            &self.archetypes.environment.fogs,
+                            &self.archetypes.environment.ambient_lights,
+                            &self.archetypes.environment.stars,
+                            &self.archetypes.environment.skydomes,
                         );
                     });
                 }

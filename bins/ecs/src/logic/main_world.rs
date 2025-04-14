@@ -1,5 +1,5 @@
 use crate::engine::components::{
-    AmbientLightData, CameraData, ColorData, DynamicLightData, PositionData, SkydomeData,
+    AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData,
     StarsData, SunData, TileData, TimeOfDayData,
 };
 use crate::engine::phases::render::background::BackgroundColorData;
@@ -28,6 +28,7 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             time_of_day: TimeOfDayData::default().into(),
             ambient_light: AmbientLightData::default().into(),
             sun: SunData::default().into(),
+            fog: FogData::default().into(),
             stars: StarsData::default().into(),
             skydome: SkydomeData::default().into(),
         });
