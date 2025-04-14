@@ -1,7 +1,7 @@
 use crate::wgpu::uniforms::FrameGlobalUniform;
 use crate::wgpu::wgpu_hardware::resource::WgpuResource;
 use wgpu::util::DeviceExt;
-use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, Queue};
+use wgpu::{BindGroup, BindGroupLayout, BindingResource, Buffer, Device, Queue};
 
 /// Frame-global uniforms.
 ///
@@ -69,5 +69,10 @@ impl FrameGlobalUniformResource {
     #[inline]
     pub fn send_to_device(&self, queue: &Queue, uniform: FrameGlobalUniform) {
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
+    }
+
+    #[inline]
+    pub fn as_entire_binding(&self) -> BindingResource<'_> {
+        self.buffer.as_entire_binding()
     }
 }

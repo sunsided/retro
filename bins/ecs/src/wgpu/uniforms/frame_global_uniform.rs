@@ -1,5 +1,7 @@
 //! Provides the [`FrameGlobalUniform`], a uniform that changes only once per frame.
 
+use crate::wgpu::texture::Texture;
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct FrameGlobalUniform {
@@ -18,9 +20,9 @@ pub struct FrameGlobalUniform {
     pub _pad2: f32,
 
     pub ambient_light: [f32; 3], // RGB ambient lighting (for scene)
-    pub _pad3: f32,
-
-    pub _pad4: [f32; 2],
+    pub window_aspect: f32,
+    pub retro_aspect: f32,
+    pub _pad3: [f32; 3],
 }
 
 impl FrameGlobalUniform {
@@ -35,10 +37,11 @@ impl FrameGlobalUniform {
             ambient_light: [0.2, 0.25, 0.3], // soft daylight ambient
             star_visibility: 0.0,
             star_speed: 0.1,
+            window_aspect: 1.0,
+            retro_aspect: Texture::VGA_WIDTH as f32 / Texture::VGA_HEIGHT as f32,
             _pad1: Default::default(),
             _pad2: Default::default(),
             _pad3: Default::default(),
-            _pad4: Default::default(),
         }
     }
 }

@@ -4,11 +4,14 @@ struct FrameGlobalUniform {
     time_of_day: f32,
     day: f32,
     star_visibility: f32,
+    star_rotational_speed: f32,
     sun_dir: vec3<f32>,
     sun_visibility: f32,
     sun_color: vec3<f32>,
     sky_color: vec3<f32>,
     ambient_light: vec3<f32>,
+    window_aspect: f32,
+    retro_aspect: f32,
 };
 
 @group(0) @binding(0)

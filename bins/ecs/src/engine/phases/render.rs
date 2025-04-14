@@ -149,9 +149,6 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             return Ok(RenderReady::NotReady);
         };
 
-        // TODO: Refactor
-        render.update_retro_uniform();
-
         let Some(surface) = render.hardware().surface().as_ref() else {
             return Ok(RenderReady::NotReady);
         };

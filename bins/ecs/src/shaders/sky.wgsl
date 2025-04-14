@@ -10,6 +10,8 @@ struct FrameGlobalUniform {
     sun_color: vec3<f32>,
     sky_color: vec3<f32>,
     ambient_light: vec3<f32>,
+    window_aspect: f32,
+    retro_aspect: f32,
 };
 
 struct CameraUniform {

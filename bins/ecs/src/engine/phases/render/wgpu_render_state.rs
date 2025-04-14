@@ -1,5 +1,4 @@
 use crate::engine::phases::render::frame_state::FrameState;
-use crate::wgpu::uniforms::RetroUniform;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderPipelineSelector;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::{
@@ -37,15 +36,33 @@ pub struct WgpuRenderState {
     frame_state: Option<FrameState>,
     /// Retro rendering state
     retro: Retro,
+    /// The current size of the screen.
+    screen_size: ScreenSize,
     /// Selects the render pipeline (wireframe, etc.)
     pipeline_selector: RenderPipelineSelector,
+}
+
+#[derive(Debug, Copy, Clone)]
+#[allow(unused)]
+pub struct ScreenSize {
+    pub width: f32,
+    pub height: f32,
+    pub aspect_ratio: f32,
 }
 
 #[derive(Default)]
 pub struct Retro {
     enabled: bool,
-    uniform: RetroUniform,
-    uniform_uploaded: AtomicBool,
+}
+
+impl Default for ScreenSize {
+    fn default() -> Self {
+        Self {
+            width: 300.0,
+            height: 200.0,
+            aspect_ratio: 300.0 / 200.0,
+        }
+    }
 }
 
 impl WgpuRenderState {
@@ -134,11 +151,12 @@ impl WgpuRenderState {
         &mut self,
         window: Arc<Window>,
     ) -> Result<(), WgpuReinitializeWindowError> {
-        self.retro.uniform.resize_surface(window.inner_size());
-        self.retro
-            .uniform_uploaded
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
+        let size = window.inner_size();
+        self.screen_size = ScreenSize {
+            width: size.width as _,
+            height: size.height as _,
+            aspect_ratio: size.width as f32 / size.height as f32,
+        };
         self.hardware.reinitialize_surface(window)
     }
 
@@ -147,11 +165,11 @@ impl WgpuRenderState {
         &mut self,
         new_size: PhysicalSize<u32>,
     ) -> Result<(), WgpuResizeSurfaceError> {
-        self.retro.uniform.resize_surface(new_size);
-        self.retro
-            .uniform_uploaded
-            .store(false, std::sync::atomic::Ordering::Relaxed);
-
+        self.screen_size = ScreenSize {
+            width: new_size.width as _,
+            height: new_size.height as _,
+            aspect_ratio: new_size.width as f32 / new_size.height as f32,
+        };
         self.hardware.resize_surface(new_size)
     }
 
@@ -170,34 +188,6 @@ impl WgpuRenderState {
         self.hardware.wireframe_supported()
     }
 
-    /// Updates the retro uniform on the GPU.
-    // TODO: Refactor
-    pub fn update_retro_uniform(&self) {
-        // Set the flag to uploaded; if it was already uploaded, return.
-        if self
-            .retro
-            .uniform_uploaded
-            .swap(true, std::sync::atomic::Ordering::Relaxed)
-        {
-            return;
-        }
-
-        let Some(device) = self.hardware.device() else {
-            return;
-        };
-
-        let Some(resources) = self.hardware.resources() else {
-            return;
-        };
-
-        debug!("Updating retro uniform");
-        resources
-            .neo
-            .uniforms
-            .retro
-            .send_to_device(device.queue(), self.retro.uniform);
-    }
-
     /// Toggles retro rendering state.
     #[inline]
     pub fn set_retro_enabled(&mut self, enabled: bool) {
@@ -207,6 +197,11 @@ impl WgpuRenderState {
     /// Gets retro rendering state.
     pub const fn retro_enabled(&self) -> bool {
         self.retro.enabled
+    }
+
+    #[inline]
+    pub const fn screen_size(&self) -> ScreenSize {
+        self.screen_size
     }
 }
 

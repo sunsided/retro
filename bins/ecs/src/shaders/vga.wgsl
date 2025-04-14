@@ -1,12 +1,21 @@
 // Vertex Shader
 
-struct RetroUniform {
+struct FrameGlobalUniform {
+    time_of_day: f32,
+    day: f32,
+    star_visibility: f32,
+    star_rotational_speed: f32,
+    sun_dir: vec3<f32>,
+    sun_visibility: f32,
+    sun_color: vec3<f32>,
+    sky_color: vec3<f32>,
+    ambient_light: vec3<f32>,
     window_aspect: f32,
     retro_aspect: f32,
 };
 
 @group(0) @binding(0)
-var<uniform> aspect: RetroUniform;
+var<uniform> frame: FrameGlobalUniform;
 
 @group(0) @binding(1)
 var t_color: texture_2d<f32>;
@@ -56,12 +65,12 @@ fn vs_main(@builtin(vertex_index) i: u32) -> VertexOutput {
 
     // Determine how to scale to preserve 320:200 = 1.6 in a window_aspect of, say, 3.555
     var scale = vec2<f32>(1.0, 1.0);
-    if aspect.window_aspect > aspect.retro_aspect {
+    if frame.window_aspect > frame.retro_aspect {
         // Window is "too wide" => scale X
-        scale.x = aspect.retro_aspect / aspect.window_aspect;
+        scale.x = frame.retro_aspect / frame.window_aspect;
     } else {
         // Window is narrower => scale Y
-        scale.y = aspect.window_aspect / aspect.retro_aspect;
+        scale.y = frame.window_aspect / frame.retro_aspect;
     }
 
     // Scale the triangle so it doesn't fill horizontally if the aspect ratio is too wide.

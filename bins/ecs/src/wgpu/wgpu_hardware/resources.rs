@@ -11,7 +11,6 @@ pub mod textures;
 use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
-use crate::wgpu::wgpu_hardware::resource::retro_uniform::RetroUniformResource;
 use crate::wgpu::wgpu_hardware::resources::bind_group_layouts::BindGroupLayouts;
 use crate::wgpu::wgpu_hardware::resources::bind_groups::BindGroups;
 use crate::wgpu::wgpu_hardware::resources::buffers::Buffers;
@@ -50,7 +49,6 @@ pub struct NeoUniformResources {
     pub frame_globals: FrameGlobalUniformResource,
     pub camera: CameraUniformResource,
     pub light: LightUniformResource,
-    pub retro: RetroUniformResource,
 }
 
 impl WgpuResources {
@@ -59,7 +57,6 @@ impl WgpuResources {
             frame_globals: FrameGlobalUniformResource::new(device),
             camera: CameraUniformResource::new(device),
             light: LightUniformResource::new(device),
-            retro: RetroUniformResource::new(device),
         };
 
         let neo = NeoResources { uniforms };
@@ -76,7 +73,7 @@ impl WgpuResources {
             &textures,
             &samplers,
             &depths,
-            &neo.uniforms.retro,
+            &neo.uniforms.frame_globals,
         );
         let pipelines = RenderPipelines::create_from(
             &device,
