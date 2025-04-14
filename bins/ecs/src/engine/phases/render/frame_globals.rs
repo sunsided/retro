@@ -61,6 +61,7 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
 
         resources
             .neo
+            .uniforms
             .frame_globals
             .send_to_device(device.queue(), uniform);
     }

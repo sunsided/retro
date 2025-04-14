@@ -42,6 +42,11 @@ pub struct WgpuResources {
 
 #[derive(Debug)]
 pub struct NeoResources {
+    pub uniforms: NeoUniformResources,
+}
+
+#[derive(Debug)]
+pub struct NeoUniformResources {
     pub frame_globals: FrameGlobalUniformResource,
     pub camera: CameraUniformResource,
     pub light: LightUniformResource,
@@ -49,11 +54,13 @@ pub struct NeoResources {
 
 impl WgpuResources {
     pub(super) fn new(device: &Device, queue: &Queue, config: &SurfaceConfiguration) -> Self {
-        let neo = NeoResources {
+        let uniforms = NeoUniformResources {
             frame_globals: FrameGlobalUniformResource::new(device),
             camera: CameraUniformResource::new(device),
             light: LightUniformResource::new(device),
         };
+
+        let neo = NeoResources { uniforms };
 
         let samplers = TextureSamplers::create_from(device);
         let textures = Textures::create_from(device, queue, config);
@@ -74,9 +81,9 @@ impl WgpuResources {
             &bind_group_layouts,
             config.format,
             &shaders,
-            &neo.frame_globals,
-            &neo.camera,
-            &neo.light,
+            &neo.uniforms.frame_globals,
+            &neo.uniforms.camera,
+            &neo.uniforms.light,
         );
         let models = Models::create_from(&device, &queue, &bind_group_layouts, &samplers);
         Self {

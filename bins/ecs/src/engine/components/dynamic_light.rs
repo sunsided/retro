@@ -38,6 +38,7 @@ impl DynamicLightData {
     pub fn update_gpu_buffer(&self, gpu: &DeviceAndQueue, resources: &WgpuResources) {
         resources
             .neo
+            .uniforms
             .light
             .send_to_device(gpu.queue(), self.uniform)
     }

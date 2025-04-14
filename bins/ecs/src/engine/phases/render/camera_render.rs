@@ -91,6 +91,7 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
             .update_view_proj(&camera.camera, &camera.projection);
         resources
             .neo
+            .uniforms
             .camera
             .send_to_device(&device.queue(), active_camera.uniform);
     }

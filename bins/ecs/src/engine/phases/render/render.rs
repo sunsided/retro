@@ -89,9 +89,9 @@ impl ApplyRenderSystem for RenderSystem {
                 render_pass.draw_model_instanced(
                     &resources.models().cube,
                     0..num_instances,
-                    &resources.neo.frame_globals.bind_group,
-                    &resources.neo.camera.bind_group,
-                    &resources.neo.light.bind_group,
+                    &resources.neo.uniforms.frame_globals.bind_group,
+                    &resources.neo.uniforms.camera.bind_group,
+                    &resources.neo.uniforms.light.bind_group,
                 );
                 instance_buf.clear();
             }
@@ -106,9 +106,9 @@ impl ApplyRenderSystem for RenderSystem {
             render_pass.draw_model_instanced(
                 &resources.models().cube,
                 0..num_instances,
-                &resources.neo.frame_globals.bind_group,
-                &resources.neo.camera.bind_group,
-                &resources.neo.light.bind_group,
+                &resources.neo.uniforms.frame_globals.bind_group,
+                &resources.neo.uniforms.camera.bind_group,
+                &resources.neo.uniforms.light.bind_group,
             );
             instance_buf.clear();
         }
