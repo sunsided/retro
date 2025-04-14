@@ -14,10 +14,10 @@ pub struct FrameGlobalUniform {
     pub sun_visibility: f32,     // 0.0 (sun below horizon) to 1.0 (fully visible)
 
     pub sun_color: [f32; 3], // RGB tint of sun light (reddish at horizon)
-    pub _pad1: f32,
+    pub fog_distance: f32,
 
     pub sky_color: [f32; 3], // RGB sky dome base color (interpolated day/night)
-    pub _pad2: f32,
+    pub fog_fade: f32,
 
     pub ambient_light: [f32; 3], // RGB ambient lighting (for scene)
     pub window_aspect: f32,
@@ -39,8 +39,8 @@ impl FrameGlobalUniform {
             star_speed: 0.1,
             window_aspect: 1.0,
             retro_aspect: Texture::VGA_WIDTH as f32 / Texture::VGA_HEIGHT as f32,
-            _pad1: Default::default(),
-            _pad2: Default::default(),
+            fog_distance: 10.0,
+            fog_fade: 0.1,
             _pad3: Default::default(),
         }
     }

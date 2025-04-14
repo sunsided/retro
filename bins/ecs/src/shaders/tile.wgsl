@@ -8,7 +8,9 @@ struct FrameGlobalUniform {
     sun_dir: vec3<f32>,
     sun_visibility: f32,
     sun_color: vec3<f32>,
+    fog_distance: f32,
     sky_color: vec3<f32>,
+    fog_fade: f32,
     ambient_light: vec3<f32>,
     window_aspect: f32,
     retro_aspect: f32,
@@ -114,12 +116,13 @@ fn blinn_phong(
 }
 
 @fragment
-fn fs_main(
-    in: VertexOutput
-) -> FragmentOutput {
+fn fs_main(in: VertexOutput) -> FragmentOutput {
     let tile_uv = atlas_uv(in.tile_index, in.tex_coords);
     let tile_color = textureSample(tile_texture, tile_sampler, tile_uv);
-    let tile_normal = vec3<f32>(0.0, 1.0, 0.0); // assume flat upward-facing tile
+
+    // Per-tile normal perturbation to avoid "taxicab lighting"
+    let offset = hash22(in.world_position.xz * 0.1) * 2.0 - vec2<f32>(1.0);
+    let tile_normal = normalize(vec3<f32>(offset.x * 0.1, 1.0, offset.y * 0.1));
 
     let view_dir = normalize(camera.view_pos.xyz - in.world_position);
     let light_dir = normalize(light.position - in.world_position);
@@ -127,14 +130,21 @@ fn fs_main(
 
     let dyn_light = blinn_phong(tile_normal, light_dir, light.color, view_dir, 1.0);
     let sun_light = blinn_phong(tile_normal, sun_dir, frame.sun_color, view_dir, frame.sun_visibility);
+    let lit_color = (frame.ambient_light + dyn_light + sun_light) * tile_color.rgb;
 
-    let result = (frame.ambient_light + dyn_light + sun_light) * tile_color.rgb;
+    // Distance → fade
+    let dist = length(camera.view_pos.xyz - in.world_position);
+    let fade = clamp(dist / max(frame.fog_distance, 0.01), 0.0, 1.0) * frame.fog_fade;
+
+    // Desaturate without affecting brightness
+    let softened = mix(lit_color, frame.ambient_light, fade);
 
     var out: FragmentOutput;
-    out.color = vec4<f32>(result, tile_color.a);
+    out.color = vec4<f32>(softened, tile_color.a);
     out.entity_id = in.entity_id;
     return out;
 }
+
 
 const TAU: f32 = 6.2831853;
 
