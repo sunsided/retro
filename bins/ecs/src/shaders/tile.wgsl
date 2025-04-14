@@ -238,3 +238,95 @@ fn fs_water(in: VertexOutput) -> FragmentOutput {
     return out;
 }
 
+const PI: f32 = 3.1415926;
+const BLADES_SPACING: f32 = 0.004;
+const JITTER_MAX: f32 = 0.004;
+const LOOKUP_DIST: i32 = 5;
+
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    var p3 = fract(vec3<f32>(p.x, p.y, p.x) * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yzx + 19.19);
+    return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn hash32(p: vec2<f32>) -> vec3<f32> {
+    var p3 = fract(vec3<f32>(p.x, p.y, p.x) * vec3<f32>(0.1031, 0.1030, 0.0973));
+    p3 += dot(p3, p3.yxz + 19.19);
+    return fract((p3.xxy + p3.yzz) * p3.zyx);
+}
+
+fn get_grass_color(x: f32) -> vec3<f32> {
+    let a = vec3<f32>(0.2, 0.4, 0.3);
+    let b = vec3<f32>(0.3, 0.5, 0.2);
+    let c = vec3<f32>(0.2, 0.4, 0.2);
+    let d = vec3<f32>(0.66, 0.77, 0.33);
+    return a + b * cos(2.0 * PI * (c * x + d));
+}
+
+fn get_grass_blade(position: vec2<f32>, grass_pos: vec2<f32>) -> vec4<f32> {
+    let grass_vec3 = hash32(grass_pos * 123512.41) * 2.0 - vec3<f32>(1.0);
+    let dir2 = normalize(grass_vec3.xy);
+    let height = grass_vec3.z * 0.2 + 0.2;
+
+    let blade_len = hash12(grass_pos * 102348.7) * 0.01 + 0.012;
+
+    let gv = position - grass_pos;
+    let gx = dot(dir2, gv);
+    let gy = dot(vec2<f32>(-dir2.y, dir2.x), gv);
+    let gxn = gx / blade_len;
+
+    if gxn >= 0.0 && gxn <= 1.0 && abs(gy) <= 0.0008 * (1.0 - gxn * gxn) {
+        let color = get_grass_color(hash12(grass_pos * 2631.6)) * (0.2 + 0.8 * gxn);
+        return vec4<f32>(color, 0.2 + height * gxn); // z stored in alpha
+    }
+
+    return vec4<f32>(0.0);
+}
+
+fn get_grass_pixel(position: vec2<f32>) -> vec4<f32> {
+    let xcount = i32(1.0 / BLADES_SPACING);
+    let ycount = i32(1.0 / BLADES_SPACING);
+
+    let ox = i32(position.x * f32(xcount));
+    let oy = i32(position.y * f32(ycount));
+
+    var max_z = 0.0;
+    var final_color = vec4<f32>(0.0);
+
+    for (var i = -LOOKUP_DIST; i < LOOKUP_DIST; i = i + 1) {
+        for (var j = -LOOKUP_DIST; j < LOOKUP_DIST; j = j + 1) {
+            let upos = vec2<f32>(f32(ox + i), f32(oy + j));
+            let jittered = upos * BLADES_SPACING + hash22(upos) * JITTER_MAX;
+
+            let col = get_grass_blade(position, jittered);
+            if col.a > max_z {
+                max_z = col.a;
+                final_color = vec4<f32>(col.rgb, 1.0);
+            }
+        }
+    }
+
+    return final_color;
+}
+
+// https://www.shadertoy.com/view/WsSGWd
+@fragment
+fn fs_grass(in: VertexOutput) -> FragmentOutput {
+    let uv = in.world_position.xz;
+
+    // Normalize UV to 0..1 across a patch
+    let scaled_uv = fract(uv * 0.1); // or wrap based on tile size
+
+    let grass_color = get_grass_pixel(scaled_uv);
+
+    var out: FragmentOutput;
+    out.color = grass_color;
+    out.entity_id = in.entity_id;
+    return out;
+}
