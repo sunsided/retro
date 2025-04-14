@@ -41,7 +41,11 @@ impl ApplyVgaBlitSystem for VgaBlitSystem {
         let background_color = background_color.dim(0.5);
         if let Some(mut pass) = frame_state.passes.final_pass(&background_color) {
             pass.set_pipeline(&resources.pipelines().vga_fullscreen);
-            pass.set_bind_group(0, &resources.bind_groups().vga_fullscreen, &[]);
+            pass.set_bind_group(
+                0,
+                &resources.bind_groups().render_targets.vga_fullscreen,
+                &[],
+            );
 
             // Draw exactly 3 vertices – no vertex buffer
             pass.draw(0..6, 0..1);

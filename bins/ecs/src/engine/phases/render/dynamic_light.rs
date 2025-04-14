@@ -42,8 +42,8 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
             // Render the light.
             render_pass.draw_light_model(
                 &resources.models().cube,
-                &resources.bind_groups().camera_uniform,
-                &resources.bind_groups().light_uniforms,
+                &resources.bind_groups().uniforms.camera_uniform,
+                &resources.bind_groups().uniforms.light_uniforms,
             );
         }
     }

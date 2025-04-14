@@ -89,11 +89,15 @@ impl ApplyTileRenderSystem for TileRenderSystem {
             });
 
         let mut pass = frame_state.render_pass_with(&resources.pipelines().tile);
-        pass.set_bind_group(0, &resources.bind_groups().frame_global_uniform, &[]);
-        pass.set_bind_group(1, &resources.bind_groups().camera_uniform, &[]);
-        pass.set_bind_group(2, &resources.bind_groups().light_uniforms, &[]);
+        pass.set_bind_group(
+            0,
+            &resources.bind_groups().uniforms.frame_global_uniform,
+            &[],
+        );
+        pass.set_bind_group(1, &resources.bind_groups().uniforms.camera_uniform, &[]);
+        pass.set_bind_group(2, &resources.bind_groups().uniforms.light_uniforms, &[]);
         // The texture atlas
-        pass.set_bind_group(3, &resources.bind_groups().stonepath, &[]);
+        pass.set_bind_group(3, &resources.bind_groups().textures.stonepath, &[]);
         pass.set_index_buffer(
             resources.buffers().tile_index.slice(..),
             wgpu::IndexFormat::Uint16,
@@ -113,7 +117,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                         usage: wgpu::BufferUsages::VERTEX,
                     });
 
-            pass.set_bind_group(3, &resources.bind_groups().bricks, &[]);
+            pass.set_bind_group(3, &resources.bind_groups().textures.bricks, &[]);
             pass.set_vertex_buffer(0, resources.buffers().tile_vertex.slice(..));
             pass.set_vertex_buffer(1, wall_buffer.slice(..));
             pass.draw_indexed(0..6, 0, 0..walls.len() as u32);
@@ -130,7 +134,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                         usage: wgpu::BufferUsages::VERTEX,
                     });
 
-            pass.set_bind_group(3, &resources.bind_groups().bricks, &[]);
+            pass.set_bind_group(3, &resources.bind_groups().textures.bricks, &[]);
             pass.set_vertex_buffer(0, resources.buffers().tile_vertex.slice(..));
             pass.set_vertex_buffer(1, ceiling_buffer.slice(..));
             pass.draw_indexed(0..6, 0, 0..ceilings.len() as u32);
