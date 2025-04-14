@@ -144,10 +144,12 @@ impl WallDirection {
 }
 
 impl WallDirection {
+    #[allow(dead_code)]
     const fn into_bits(self) -> u8 {
         self as _
     }
 
+    #[allow(dead_code)]
     const fn from_bits(value: u8) -> Self {
         match value {
             0 => Self::North,

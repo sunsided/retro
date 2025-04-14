@@ -1,10 +1,9 @@
 use crate::map::tile::{FloorType, Tile};
 use crate::map::tile_chunk::TileChunk;
-use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord, WorldGlobalRegionCoord};
+use crate::map::tile_coord::{ChunkLocalTileCoord, WorldGlobalRegionCoord};
 use crate::map::tile_world::TileWorld;
 use crate::map::world_region::WorldRegion;
 use range2d::Range2D;
-use std::ops::Range;
 
 pub struct WorldBuilder;
 

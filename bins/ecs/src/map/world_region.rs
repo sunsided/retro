@@ -1,6 +1,5 @@
-use crate::map::tile::Tile;
 use crate::map::tile_chunk::TileChunk;
-use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
+use crate::map::tile_coord::RegionLocalChunkCoord;
 use std::mem::MaybeUninit;
 use std::ptr;
 
@@ -142,15 +141,19 @@ impl WorldRegion {
     }
 }
 
+#[allow(dead_code)]
 pub type ChunkIter<'a> = core::slice::Iter<'a, TileChunk>;
 
+#[allow(dead_code)]
 pub type ChunkIterMut<'a> = core::slice::IterMut<'a, TileChunk>;
 
+#[allow(dead_code)]
 pub type ChunkWithCoordIter<'a> = core::iter::Map<
     core::iter::Enumerate<core::slice::Iter<'a, TileChunk>>,
     fn((usize, &TileChunk)) -> (RegionLocalChunkCoord, &TileChunk),
 >;
 
+#[allow(dead_code)]
 pub type ChunkWithCoordIterMut<'a> = core::iter::Map<
     core::iter::Enumerate<core::slice::IterMut<'a, TileChunk>>,
     fn((usize, &mut TileChunk)) -> (RegionLocalChunkCoord, &mut TileChunk),

@@ -9,7 +9,7 @@ use crate::engine::{
     DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
     PositionComponent, SceneBackgroundEntityData,
 };
-use crate::map::tile::{CeilingType, FloorType, Tile, WallType};
+use crate::map::tile::{CeilingType, FloorType, Tile};
 use crate::map::world_builder::WorldBuilder;
 
 pub trait InitializeMainWorld {

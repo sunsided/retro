@@ -2,6 +2,7 @@ use crate::map::navigator::NavigatorStep;
 use crate::map::tile_coord::WorldGlobalTileCoord;
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub struct GridNavigator2D {
     origin: WorldGlobalTileCoord,
     step: NavigatorStep,

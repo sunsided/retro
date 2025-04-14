@@ -1,5 +1,5 @@
 use crate::map::tile::Tile;
-use crate::map::tile_coord::{ChunkLocalTileCoord, RegionLocalChunkCoord};
+use crate::map::tile_coord::ChunkLocalTileCoord;
 use std::mem::MaybeUninit;
 use std::ptr;
 
@@ -125,15 +125,19 @@ impl TileChunk {
     }
 }
 
+#[allow(dead_code)]
 pub type TileIter<'a> = core::slice::Iter<'a, Tile>;
 
+#[allow(dead_code)]
 pub type TileIterMut<'a> = core::slice::IterMut<'a, Tile>;
 
+#[allow(dead_code)]
 pub type TileWithCoordIter<'a> = core::iter::Map<
     core::iter::Enumerate<core::slice::Iter<'a, Tile>>,
     fn((usize, &Tile)) -> (ChunkLocalTileCoord, &Tile),
 >;
 
+#[allow(dead_code)]
 pub type TileWithCoordIterMut<'a> = core::iter::Map<
     core::iter::Enumerate<core::slice::IterMut<'a, Tile>>,
     fn((usize, &mut Tile)) -> (ChunkLocalTileCoord, &mut Tile),

@@ -47,6 +47,7 @@ impl NavigatorStep {
     }
 
     /// Resets the step into a chunk-local step.
+    #[allow(dead_code)]
     pub fn to_local(self) -> Self {
         NavigatorStep::Local {
             tile: match self {

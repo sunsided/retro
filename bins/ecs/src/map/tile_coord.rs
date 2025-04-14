@@ -70,6 +70,7 @@ impl RegionLocalChunkCoord {
         }
     }
 
+    #[allow(dead_code)]
     pub const fn const_eq(&self, rhs: Self) -> bool {
         self.x == rhs.x && self.y == rhs.y
     }
@@ -114,6 +115,7 @@ impl WorldGlobalRegionCoord {
         }
     }
 
+    #[allow(dead_code)]
     pub const fn const_eq(&self, rhs: Self) -> bool {
         self.x == rhs.x && self.y == rhs.y
     }
@@ -122,12 +124,14 @@ impl WorldGlobalRegionCoord {
 impl Add<RegionLocalTileCoord> for WorldGlobalRegionCoord {
     type Output = WorldGlobalTileCoord;
 
+    #[allow(dead_code)]
     fn add(self, rhs: RegionLocalTileCoord) -> Self::Output {
         self.add_region_local_tile_coord(rhs)
     }
 }
 
 impl WorldGlobalRegionCoord {
+    #[allow(dead_code)]
     pub const fn add(
         self,
         rlc: RegionLocalChunkCoord,
@@ -175,6 +179,7 @@ impl Add<RegionLocalChunkCoord> for WorldGlobalRegionCoord {
 }
 
 impl WorldGlobalChunkCoord {
+    #[allow(dead_code)]
     pub const fn add_chunk_local_tile_coord(
         self,
         coord: ChunkLocalTileCoord,
@@ -245,6 +250,7 @@ impl ChunkLocalTileCoord {
 
 impl RegionLocalTileCoord {
     #[inline(always)]
+    #[allow(dead_code)]
     pub const fn new(x: u16, y: u16) -> Self {
         debug_assert!(x < WorldRegion::WIDTH_IN_TILES as u16);
         debug_assert!(y < WorldRegion::HEIGHT_IN_TILES as u16);
@@ -261,6 +267,7 @@ impl RegionLocalChunkCoord {
     }
 
     #[inline(always)]
+    #[allow(dead_code)]
     pub const fn to_dense_region_index(self) -> usize {
         (self.y as usize) * WorldRegion::WIDTH_IN_CHUNKS + (self.x as usize)
     }

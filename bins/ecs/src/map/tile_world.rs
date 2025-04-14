@@ -1,7 +1,5 @@
-use crate::map::tile_coord::{
-    ChunkRect, RegionLocalChunkCoord, WorldGlobalChunkCoord, WorldGlobalRegionCoord,
-};
-use crate::map::world_region::{ChunkWithCoordIter, ChunkWithCoordIterMut, WorldRegion};
+use crate::map::tile_coord::{ChunkRect, WorldGlobalRegionCoord};
+use crate::map::world_region::WorldRegion;
 use ahash::HashMapExt;
 use fxhash::FxHashMap;
 
@@ -10,6 +8,7 @@ pub struct TileWorld {
 }
 
 impl TileWorld {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             chunks: FxHashMap::default(),
@@ -36,10 +35,12 @@ impl TileWorld {
             .reduce(|a, b| a.union(b))
     }
 
+    #[allow(dead_code)]
     pub fn iter_regions(&self) -> RegionIter {
         self.chunks.values()
     }
 
+    #[allow(dead_code)]
     pub fn iter_regions_mut(&mut self) -> RegionIterMut {
         self.chunks.values_mut()
     }
