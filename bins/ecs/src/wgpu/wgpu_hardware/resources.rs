@@ -33,7 +33,7 @@ pub struct WgpuResources {
     _bind_group_layouts: BindGroupLayouts,
     bind_groups: BindGroups,
     pipelines: RenderPipelines,
-    _shaders: Shaders,
+    shaders: Shaders,
     models: Models,
     textures: Textures,
     pub neo: NeoResources,
@@ -86,7 +86,7 @@ impl WgpuResources {
             _bind_group_layouts: bind_group_layouts,
             bind_groups,
             pipelines,
-            _shaders: shaders,
+            shaders: shaders,
             models,
             textures,
             neo,
@@ -139,5 +139,9 @@ impl WgpuResources {
 
     pub const fn textures(&self) -> &Textures {
         &self.textures
+    }
+
+    pub const fn shaders(&self) -> &Shaders {
+        &self.shaders
     }
 }

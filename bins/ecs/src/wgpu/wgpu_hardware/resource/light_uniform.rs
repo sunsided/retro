@@ -1,5 +1,7 @@
 use crate::wgpu::uniforms::LightUniform;
 use crate::wgpu::wgpu_hardware::resource::WgpuResource;
+use crate::wgpu::wgpu_hardware::resources::WgpuResources;
+use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use wgpu::util::DeviceExt;
 use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, Queue};
 
@@ -21,8 +23,8 @@ impl<'bg> From<&'bg LightUniformResource> for Option<&'bg BindGroup> {
 }
 
 impl WgpuResource for LightUniformResource {
-    fn recreate(&mut self, device: &Device) {
-        *self = Self::new(device);
+    fn recreate(&mut self, device: &DeviceAndQueue, _resources: &WgpuResources) {
+        *self = Self::new(device.device());
     }
 }
 
