@@ -31,15 +31,9 @@ impl TileWorld {
     }
 
     pub fn global_chunk_bounds(&self) -> Option<ChunkRect> {
-        let mut iter = self.iter_regions_with_coords();
-        let (first_coord, _) = iter.next()?;
-        let mut bounds = first_coord.chunk_extent();
-
-        for (coord, _) in iter {
-            bounds = bounds.union(coord.chunk_extent());
-        }
-
-        Some(bounds)
+        self.iter_regions_with_coords()
+            .map(|(coord, _)| coord.chunk_extent())
+            .reduce(|a, b| a.union(b))
     }
 
     pub fn iter_regions(&self) -> RegionIter {
