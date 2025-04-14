@@ -14,6 +14,21 @@ pub struct ChunkRect {
     pub max: WorldGlobalChunkCoord, // inclusive
 }
 
+impl ChunkRect {
+    pub fn union(self, other: ChunkRect) -> ChunkRect {
+        ChunkRect {
+            min: WorldGlobalChunkCoord {
+                x: self.min.x.min(other.min.x),
+                y: self.min.y.min(other.min.y),
+            },
+            max: WorldGlobalChunkCoord {
+                x: self.max.x.max(other.max.x),
+                y: self.max.y.max(other.max.y),
+            },
+        }
+    }
+}
+
 impl TileWorld {
     pub fn new() -> Self {
         Self {
@@ -36,39 +51,31 @@ impl TileWorld {
     }
 
     pub fn global_chunk_bounds(&self) -> Option<ChunkRect> {
-        let mut min_chunk_x = i32::MAX;
-        let mut max_chunk_x = i32::MIN;
-        let mut min_chunk_y = i32::MAX;
-        let mut max_chunk_y = i32::MIN;
+        let mut bounds: Option<ChunkRect> = None;
 
-        for (region_coord, region) in self.iter_regions_with_coords() {
-            for (chunk_coord, _) in region.iter_with_coords() {
-                let chunk_pos_x = region_coord.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32
-                    + chunk_coord.x as i32;
-                let chunk_pos_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32
-                    + chunk_coord.y as i32;
+        for (region_coord, _region) in self.iter_regions_with_coords() {
+            let base_chunk_x = region_coord.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32;
+            let base_chunk_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32;
 
-                min_chunk_x = min_chunk_x.min(chunk_pos_x);
-                max_chunk_x = max_chunk_x.max(chunk_pos_x);
-                min_chunk_y = min_chunk_y.min(chunk_pos_y);
-                max_chunk_y = max_chunk_y.max(chunk_pos_y);
-            }
-        }
-
-        if min_chunk_x <= max_chunk_x && min_chunk_y <= max_chunk_y {
-            Some(ChunkRect {
+            let region_chunk_rect = ChunkRect {
                 min: WorldGlobalChunkCoord {
-                    x: min_chunk_x,
-                    y: min_chunk_y,
+                    x: base_chunk_x,
+                    y: base_chunk_y,
                 },
                 max: WorldGlobalChunkCoord {
-                    x: max_chunk_x,
-                    y: max_chunk_y,
+                    x: base_chunk_x + WorldRegion::WIDTH_IN_CHUNKS as i32 - 1,
+                    y: base_chunk_y + WorldRegion::HEIGHT_IN_CHUNKS as i32 - 1,
                 },
-            })
-        } else {
-            None
+            };
+
+            bounds = Some(if let Some(current) = bounds {
+                current.union(region_chunk_rect)
+            } else {
+                region_chunk_rect
+            });
         }
+
+        bounds
     }
 
     pub fn iter_regions(&self) -> RegionIter {
