@@ -24,13 +24,21 @@ impl TileChunk {
     }
 
     #[inline]
-    pub fn get(&self, coord: ChunkLocalTileCoord) -> &Tile {
+    pub const fn get(&self, coord: ChunkLocalTileCoord) -> &Tile {
         &self.tiles[coord.to_dense_tile_chunk_index()]
     }
 
     #[inline]
-    pub fn set(&mut self, coord: ChunkLocalTileCoord, tile: Tile) {
+    pub const fn set(&mut self, coord: ChunkLocalTileCoord, tile: Tile) {
         self.tiles[coord.to_dense_tile_chunk_index()] = tile;
+    }
+
+    #[inline]
+    pub fn apply<F>(&mut self, coord: ChunkLocalTileCoord, mut tile: F)
+    where
+        F: FnMut(&mut Tile),
+    {
+        tile(&mut self.tiles[coord.to_dense_tile_chunk_index()])
     }
 
     #[inline]

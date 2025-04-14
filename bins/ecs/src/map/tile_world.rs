@@ -37,12 +37,12 @@ impl TileWorld {
     }
 
     #[inline]
-    pub fn iter_with_coords(&self) -> RegionWithCoordIter<'_> {
+    pub fn iter_regions_with_coords(&self) -> RegionWithCoordIter<'_> {
         self.chunks.iter()
     }
 
     #[inline]
-    pub fn iter_mut_with_coords(&mut self) -> RegionWithCoordIterMut<'_> {
+    pub fn iter_regions_with_coords_mut(&mut self) -> RegionWithCoordIterMut<'_> {
         self.chunks.iter_mut()
     }
 }

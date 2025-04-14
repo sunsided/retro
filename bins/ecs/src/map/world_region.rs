@@ -75,7 +75,7 @@ impl WorldRegion {
     }
 
     #[inline]
-    pub fn iter_mut_with_coords(&mut self) -> ChunkWithCoordIterMut<'_> {
+    pub fn iter_with_coords_mut(&mut self) -> ChunkWithCoordIterMut<'_> {
         self.chunks.iter_mut().enumerate().map(|(i, chunk)| {
             let coord = RegionLocalChunkCoord::from_dense_region_index(i);
             (coord, chunk)

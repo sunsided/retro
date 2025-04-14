@@ -86,9 +86,9 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         }
          */
 
-        let world = WorldBuilder::flat_floor();
+        let world = WorldBuilder::flat_floor(true);
         world
-            .iter_with_coords()
+            .iter_regions_with_coords()
             .flat_map(|(wrc, region)| {
                 region
                     .iter_with_coords()

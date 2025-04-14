@@ -8,7 +8,7 @@ use itertools::Itertools;
 pub struct WorldBuilder;
 
 impl WorldBuilder {
-    pub fn flat_floor() -> TileWorld {
+    pub fn flat_floor(with_walls: bool) -> TileWorld {
         // TODO: Add walls around the entire world if requested
 
         // Create 2x2 regions in the world.
@@ -38,6 +38,71 @@ impl WorldBuilder {
             world.insert(WorldGlobalRegionCoord::new(wx as i8, wy as i8), region);
         }
 
+        if with_walls {
+            Self::add_outer_walls(&mut world);
+        }
+
         world
+    }
+
+    fn add_outer_walls(world: &mut TileWorld) {
+        let mut min_chunk_x = i32::MAX;
+        let mut max_chunk_x = i32::MIN;
+        let mut min_chunk_y = i32::MAX;
+        let mut max_chunk_y = i32::MIN;
+
+        for (region_coord, region) in world.iter_regions_with_coords() {
+            for (chunk_coord, _) in region.iter_with_coords() {
+                let chunk_pos_x = region_coord.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32
+                    + chunk_coord.x as i32;
+                let chunk_pos_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32
+                    + chunk_coord.y as i32;
+
+                min_chunk_x = min_chunk_x.min(chunk_pos_x);
+                max_chunk_x = max_chunk_x.max(chunk_pos_x);
+                min_chunk_y = min_chunk_y.min(chunk_pos_y);
+                max_chunk_y = max_chunk_y.max(chunk_pos_y);
+            }
+        }
+
+        for (region_coord, region) in world.iter_regions_with_coords_mut() {
+            for (chunk_coord, chunk) in region.iter_with_coords_mut() {
+                let chunk_pos_x = region_coord.x as i32 * WorldRegion::WIDTH_IN_CHUNKS as i32
+                    + chunk_coord.x as i32;
+                let chunk_pos_y = region_coord.y as i32 * WorldRegion::HEIGHT_IN_CHUNKS as i32
+                    + chunk_coord.y as i32;
+
+                let is_leftmost = chunk_pos_x == min_chunk_x;
+                let is_rightmost = chunk_pos_x == max_chunk_x;
+                let is_topmost = chunk_pos_y == min_chunk_y;
+                let is_bottommost = chunk_pos_y == max_chunk_y;
+
+                for y in 0..TileChunk::HEIGHT_IN_TILES {
+                    for x in 0..TileChunk::WIDTH_IN_TILES {
+                        let is_edge_x = (x == 0 && is_leftmost)
+                            || (x == TileChunk::WIDTH_IN_TILES - 1 && is_rightmost);
+                        let is_edge_y = (y == 0 && is_topmost)
+                            || (y == TileChunk::HEIGHT_IN_TILES - 1 && is_bottommost);
+
+                        if is_edge_x || is_edge_y {
+                            chunk.apply(ChunkLocalTileCoord::new(x as u8, y as u8), |tile| {
+                                if is_topmost && y == 0 {
+                                    *tile = tile.with_wall_south(true);
+                                }
+                                if is_bottommost && y == TileChunk::HEIGHT_IN_TILES - 1 {
+                                    *tile = tile.with_wall_north(true);
+                                }
+                                if is_leftmost && x == 0 {
+                                    *tile = tile.with_wall_west(true);
+                                }
+                                if is_rightmost && x == TileChunk::WIDTH_IN_TILES - 1 {
+                                    *tile = tile.with_wall_east(true);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
     }
 }
