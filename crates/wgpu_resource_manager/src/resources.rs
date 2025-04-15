@@ -4,161 +4,162 @@ use crate::surface_info::SurfaceInfo;
 use fxhash::FxHashMap;
 use std::convert::Infallible;
 use std::error::Error;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
 use wgpu::{Texture, TextureView};
 
 type BoxedError = Box<dyn Error + Send + Sync>;
 
-pub trait NewResource {
-    type Error: Send + Sync + 'static;
-    fn recreate<'device>(
-        &mut self,
-        ctx: &GpuContext<'device>,
-        surface_info: &SurfaceInfo,
-    ) -> Result<(), Self::Error>;
+type BoxedNewTextureResourceData = Box<dyn NewTextureResourceData>;
+type BoxedTextureResource<GlobalError> = Box<dyn NewResource<Output = BoxedNewTextureResourceData, Error = GlobalError>>;
+
+pub struct NewGpuContext<'device> {
+    _phantom: PhantomData<&'device ()>,
 }
 
+pub trait NewResource {
+    type Output;
+    type Error: Send + Sync + 'static;
 
-pub trait NewTextureResourceData {
+    fn recreate<'device>(
+        &mut self,
+        ctx: &NewGpuContext<'device>,
+        surface_info: &SurfaceInfo,
+    ) -> Result<Self::Output, Self::Error>;
+}
+
+pub trait NewTextureResourceData: Debug {
     fn texture(&self) -> &Texture;
     fn view(&self) -> &TextureView;
 }
 
-pub trait NewTextureResource: NewResource {
-    type Output: NewTextureResourceData;
-    fn data(&self) -> Option<&Self::Output>;
-}
-
-// TODO: Make T: Resource, E: Error, GlobalError: Error
-pub struct ResourceEntry<T, F, E, GlobalError> {
-    pub data: Option<T>,
-    pub factory: F,
-    pub convert_error: fn(E) -> GlobalError,
-}
-
-pub struct TextureResourceAdapter<T, F, E, GlobalError> {
-    pub entry: ResourceEntry<T, F, E, GlobalError>,
-    _phantom: PhantomData<GlobalError>,
-}
-
-impl<T, F, E, GlobalError> NewResource for TextureResourceAdapter<T, F, E, GlobalError>
-where
-    F: Fn(&GpuContext, &SurfaceInfo) -> Result<T, E>,
-    E: Error + Send + Sync + Into<GlobalError> + 'static,
-    GlobalError: Error + Send + Sync + 'static + From<E>,
-{
-    type Error = GlobalError;
-
-    fn recreate<'device>(
-        &mut self,
-        ctx: &GpuContext<'device>,
-        surface_info: &SurfaceInfo,
-    ) -> Result<(), Self::Error> {
-        match (self.entry.factory)(ctx, surface_info) {
-            Ok(resource) => {
-                self.entry.data = Some(resource);
-                Ok(())
-            }
-            Err(e) => Err((self.entry.convert_error)(e)),
-        }
-    }
-}
-
-impl<T, F, E, GlobalError> NewTextureResource for TextureResourceAdapter<T, F, E, GlobalError>
-where
-    T: NewTextureResourceData,
-    F: Fn(&GpuContext, &SurfaceInfo) -> Result<T, E>,
-    E: Error + Send + Sync + 'static,
-    GlobalError: Error + Send + Sync + 'static + From<E>,
-{
-    type Output = T;
-
-    fn data(&self) -> Option<&Self::Output> {
-        self.entry.data.as_ref()
-    }
+pub struct TextureResourceEntry<GlobalError> {
+    data: Option<BoxedNewTextureResourceData>,
+    resource: BoxedTextureResource<GlobalError>,
 }
 
 pub struct NewResources<GlobalError> {
-    textures: FxHashMap<TextureResourceId, Box<dyn NewTextureResource<Error = GlobalError, Output = dyn NewTextureResourceData>>>,
+    textures: FxHashMap<TextureResourceId, TextureResourceEntry<GlobalError>>,
+    phantom_data: PhantomData<GlobalError>,
 }
 
 impl<GlobalError> NewResources<GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
 {
-    pub fn register_texture<T, F, E>(
-        &mut self,
-        id: TextureResourceId,
-        factory: F,
-        convert_error: fn(E) -> GlobalError,
-    ) where
+    pub fn register_texture<R, T, E>(&mut self, mut resource: R) -> TextureResourceId
+    where
+        R: NewResource<Output = T, Error = E> + 'static,
         T: NewTextureResourceData + 'static,
-        F: Fn(&GpuContext, &SurfaceInfo) -> Result<T, E> + 'static,
-        E: Error + Send + Sync + Into<GlobalError> + 'static,
-        GlobalError: Error + Send + Sync + 'static + From<E>,
+        E: Into<GlobalError> + Error + Send + Sync + 'static,
+        GlobalError: Error + Send + Sync + 'static,
     {
-        let adapter = TextureResourceAdapter {
-            entry: ResourceEntry {
-                data: None,
-                factory,
-                convert_error,
-            },
-            _phantom: Default::default(),
-        };
+        let id = TextureResourceId::next();
 
-        self.textures.insert(id, Box::new(adapter));
+        let wrapped_resource = Box::new(TextureResourceWrapper {
+            inner: resource,
+            _phantom: Default::default(),
+        });
+
+        self.textures.insert(
+            id,
+            TextureResourceEntry {
+                data: None,
+                resource: wrapped_resource,
+            },
+        );
+
+        id
     }
 
-    pub fn get_texture(
+    pub fn get_texture_data(
         &self,
         id: TextureResourceId,
-    ) -> Option<&dyn NewTextureResource<Error = GlobalError, Output = dyn NewTextureResourceData>> {
-        self.textures.get(&id).map(Box::as_ref)
+    ) -> Result<&dyn NewTextureResourceData, GetResourceError> {
+        let entry = self.textures.get(&id).ok_or(GetResourceError::NotFound)?;
+        entry.data.as_deref().ok_or(GetResourceError::Uninitialized)
     }
 
     pub fn recreate(
         &mut self,
-        ctx: &GpuContext,
+        ctx: &NewGpuContext,
         surface_info: &SurfaceInfo,
     ) -> Result<(), GlobalError> {
-        for (_id, resource) in self.textures.iter_mut() {
-            resource.recreate(ctx, surface_info)?;
+        for entry in self.textures.values_mut() {
+            let result = entry.resource.recreate(ctx, surface_info)?;
+            entry.data = Some(result);
         }
         Ok(())
     }
 }
 
+pub struct TextureResourceWrapper<R, GlobalError> {
+    inner: R,
+    _phantom: PhantomData<*const GlobalError>,
+}
+
+impl<R, T, E, GlobalError> NewResource for TextureResourceWrapper<R, GlobalError>
+where
+    R: NewResource<Output = T, Error = E>,
+    T: NewTextureResourceData + 'static,
+    E: Into<GlobalError>,
+    GlobalError: Error + Send + Sync + 'static,
+{
+    type Output = BoxedNewTextureResourceData;
+    type Error = GlobalError;
+
+    fn recreate<'device>(
+        &mut self,
+        ctx: &NewGpuContext<'device>,
+        surface_info: &SurfaceInfo,
+    ) -> Result<Self::Output, Self::Error> {
+        let raw = self.inner.recreate(ctx, surface_info).map_err(Into::into)?;
+        Ok(Box::new(raw))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum GetResourceError {
+    #[error("The resource was not found")]
+    NotFound,
+    #[error("The resource is uninitialized")]
+    Uninitialized,
+}
 
 #[cfg(test)]
 mod tests {
+    use wgpu::TextureFormat;
     use super::*;
 
     #[derive(Debug, thiserror::Error)]
     enum MyError {
         #[error(transparent)]
-        SomeError(#[from] MyTestTextureError)
+        SomeError(#[from] MyTestTextureError),
     }
 
     struct MyTestTexture;
+
+    #[derive(Debug)]
     struct MyTestTextureData;
 
     #[derive(Debug, thiserror::Error)]
     enum MyTestTextureError {
         #[error("bar")]
-        Foo
+        Foo,
     }
 
     impl NewResource for MyTestTexture {
+        type Output = MyTestTextureData;
         type Error = MyTestTextureError;
 
-        fn recreate<'device>(&mut self, ctx: &GpuContext<'device>, surface_info: &SurfaceInfo) -> Result<(), Self::Error> {
-            todo!()
+        fn recreate<'device>(
+            &mut self,
+            _ctx: &NewGpuContext<'device>,
+            _surface_info: &SurfaceInfo,
+        ) -> Result<Self::Output, Self::Error> {
+            Ok(MyTestTextureData)
         }
-    }
-
-    impl NewTextureResource for MyTestTextureData {
-        type Output = MyTestTextureData;
     }
 
     impl NewTextureResourceData for MyTestTextureData {
@@ -175,18 +176,31 @@ mod tests {
     fn new_resources() {
         let mut res: NewResources<MyError> = NewResources {
             textures: Default::default(),
+            phantom_data: Default::default(),
         };
 
         let tex = MyTestTexture;
+        let id = res.register_texture(tex);
 
-        // TODO: I'd rather have `res.register_texture(tex)`
-        res.register_texture(
-            TextureResourceId::next(),
-            |_ctx, _info| Ok(MyTestTextureData),
-            |e| MyError::SomeError(e),
-        );
+        res.get_texture_data(id).expect_err("Should return an error");
+
+        let ctx = NewGpuContext {
+            _phantom: Default::default(),
+        };
+        let info = SurfaceInfo {
+            width: 0,
+            height: 0,
+            format: TextureFormat::R8Unorm,
+            alpha_mode: Default::default(),
+            sample_count: 0,
+        };
+
+        res.recreate(&ctx, &info).expect("Should recreate textures");
+        let outcome = res.get_texture_data(id).expect("Should have created textures");
+        let _ = outcome.texture();
     }
 }
+
 
 
 

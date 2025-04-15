@@ -1,7 +1,6 @@
 use crate::resources::{GpuContext, Resource};
 use crate::surface_info::SurfaceInfo;
 use crate::wgpu_label;
-use std::convert::Infallible;
 use wgpu::{Texture, TextureView};
 
 pub struct FileTexture {
@@ -26,7 +25,7 @@ impl Resource for FileTexture {
         &mut self,
         ctx: &GpuContext,
         _info: &SurfaceInfo,
-        state: &(),
+        _state: &(),
     ) -> Result<(), Self::Error> {
         let bytes = std::fs::read(&self.path)?;
 
