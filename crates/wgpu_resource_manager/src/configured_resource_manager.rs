@@ -1,6 +1,6 @@
 use crate::{
-    AdapterDeviceAndQueue, DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError,
-    SurfaceId, SurfaceWrapper, WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label,
+    AdapterDeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId,
+    SurfaceWrapper, WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label,
 };
 use std::sync::Arc;
 use wgpu::{
@@ -171,8 +171,8 @@ impl WgpuResourceManagerAccessors for ConfiguredWgpuResourceManager {
         Self::adapter(self)
     }
 
-    fn device_and_queue(&self) -> &DeviceAndQueue {
-        Self::device_and_queue(self)
+    fn adapter_device_and_queue(&self) -> &AdapterDeviceAndQueue {
+        Self::adapter_device_and_queue(self)
     }
 
     fn surface(&self) -> &SurfaceWrapper {
@@ -206,8 +206,8 @@ impl ConfiguredWgpuResourceManager {
     }
 
     #[inline]
-    pub const fn device_and_queue(&self) -> &DeviceAndQueue {
-        self.adq.device_and_queue()
+    pub const fn adapter_device_and_queue(&self) -> &AdapterDeviceAndQueue {
+        &self.adq
     }
 
     #[inline]

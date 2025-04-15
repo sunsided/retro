@@ -11,7 +11,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 use wgpu_resource_manager::{
-    ConfiguredWgpuResourceManager, DeviceAndQueue, WgpuResourceManagerInitializeSurfaceError,
+    AdapterDeviceAndQueue, ConfiguredWgpuResourceManager, WgpuResourceManagerInitializeSurfaceError,
 };
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
@@ -126,7 +126,8 @@ impl WgpuRenderState {
     #[instrument(skip(self))]
     pub fn for_rendering(
         &mut self,
-    ) -> Result<(&DeviceAndQueue, &mut WgpuResources, &mut FrameState), RenderPhaseError> {
+    ) -> Result<(&AdapterDeviceAndQueue, &mut WgpuResources, &mut FrameState), RenderPhaseError>
+    {
         let hardware = self
             .hardware
             .as_mut()
@@ -142,7 +143,9 @@ impl WgpuRenderState {
     }
 
     #[instrument(skip(self))]
-    pub fn finish_frame(&mut self) -> Result<(&DeviceAndQueue, FrameState), RenderPhaseError> {
+    pub fn finish_frame(
+        &mut self,
+    ) -> Result<(&AdapterDeviceAndQueue, FrameState), RenderPhaseError> {
         let Some(hardware) = self.hardware.as_ref() else {
             debug!("Device is not ready yet, cannot render");
             return Err(RenderPhaseError::DeviceNotReady);

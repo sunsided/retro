@@ -1,7 +1,8 @@
 use crate::configured_resource_manager::WgpuResourceManagerInitializeSurfaceError;
 use crate::{
-    ConfiguredWgpuResourceManager, DeviceAndQueue, InstanceWrapper, PixelSize, SurfaceWrapper,
-    WgpuResourceManagerId, WgpuResourceManagerRef, WgpuResourceManagerResizeSurfaceError,
+    AdapterDeviceAndQueue, ConfiguredWgpuResourceManager, InstanceWrapper, PixelSize,
+    SurfaceWrapper, WgpuResourceManagerId, WgpuResourceManagerRef,
+    WgpuResourceManagerResizeSurfaceError,
 };
 use std::sync::Arc;
 use wgpu::{
@@ -137,9 +138,9 @@ impl WgpuResourceManager {
     }
 
     #[inline]
-    pub const fn device_and_queue(&self) -> Option<&DeviceAndQueue> {
+    pub const fn adapter_device_and_queue(&self) -> Option<&AdapterDeviceAndQueue> {
         match self.manager.as_ref() {
-            Some(manager) => Some(manager.device_and_queue()),
+            Some(manager) => Some(manager.adapter_device_and_queue()),
             None => None,
         }
     }
@@ -178,8 +179,8 @@ impl WgpuResourceManagerRef for WgpuResourceManager {
         Self::adapter(self)
     }
 
-    fn device_and_queue(&self) -> Option<&DeviceAndQueue> {
-        Self::device_and_queue(self)
+    fn adapter_device_and_queue(&self) -> Option<&AdapterDeviceAndQueue> {
+        Self::adapter_device_and_queue(self)
     }
 
     fn surface(&self) -> Option<&SurfaceWrapper> {

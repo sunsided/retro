@@ -1,6 +1,5 @@
 mod adapter_device_and_queue;
 mod configured_resource_manager;
-mod device_and_queue;
 mod instance_wrapper;
 mod manager_id;
 mod pixel_size;
@@ -12,7 +11,6 @@ mod surface_wrapper;
 
 pub use crate::adapter_device_and_queue::AdapterDeviceAndQueue;
 pub use crate::configured_resource_manager::*;
-pub use crate::device_and_queue::DeviceAndQueue;
 pub use crate::instance_wrapper::InstanceWrapper;
 pub use crate::manager_id::WgpuResourceManagerId;
 pub use crate::pixel_size::*;

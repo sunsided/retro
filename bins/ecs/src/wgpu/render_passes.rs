@@ -2,7 +2,7 @@ use crate::engine::BackgroundColorComponent;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use std::ops::{Deref, DerefMut};
 use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
-use wgpu_resource_manager::DeviceAndQueue;
+use wgpu_resource_manager::AdapterDeviceAndQueue;
 
 pub struct RenderPasses {
     encoder: CommandEncoder,
@@ -49,7 +49,7 @@ impl RenderPasses {
         }
     }
 
-    pub fn finish_and_present(self, device: &DeviceAndQueue) {
+    pub fn finish_and_present(self, device: &AdapterDeviceAndQueue) {
         let command_buffer = self.encoder.finish();
         device.submit_to_queue(command_buffer);
         self.surface_tex.present();
