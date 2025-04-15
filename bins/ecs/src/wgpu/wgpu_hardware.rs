@@ -27,16 +27,16 @@ use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use std::sync::Arc;
 use tracing::{debug, instrument, warn};
 use wgpu::wgt::DeviceDescriptor;
-use wgpu::{Backends, Features, PowerPreference, RequestAdapterError, RequestDeviceError};
+use wgpu::{Features, PowerPreference, RequestAdapterError, RequestDeviceError};
 use wgpu_resource_manager::{
-    wgpu_label, DeviceAndQueue, PixelSize, PixelSizeError, SurfaceWrapper, WgpuResourceManager,
-    WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError,
-    NO_SURFACE_CONFIG,
+    wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, InstanceWrapper, PixelSize,
+    PixelSizeError, SurfaceWrapper, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError,
+    WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG,
 };
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct WgpuHardware {
     manager: WgpuResourceManager,
     resource: Option<WgpuResources>,
@@ -56,32 +56,34 @@ impl WgpuHardware {
     ///   the application to hang. If you encounter this, consider setting the environment
     ///   variable `WGPU_BACKEND=gl` to switch to the OpenGL backend.
     #[instrument(skip_all)]
-    pub fn initialize(backends: Backends) -> WgpuHardware {
-        let manager = WgpuResourceManager::from_backends(backends);
-
-        let resources = Self::try_create_resources(&manager);
+    pub fn initialize<I>(instance: I) -> WgpuHardware
+    where
+        I: Into<InstanceWrapper>,
+    {
         WgpuHardware {
-            manager,
-            resource: resources,
+            manager: WgpuResourceManager::unconfigured(instance),
+            resource: None,
         }
     }
 
     #[instrument(skip_all)]
-    fn try_create_resources(manager: &WgpuResourceManager) -> Option<WgpuResources> {
-        if let Some(dq) = manager.device_and_queue() {
-            if let Some(surface) = manager.surface() {
-                if let Some(config) = surface.config() {
-                    return Some(WgpuResources::new(dq.device(), dq.queue(), config.clone()));
-                }
-            }
+    fn try_create_resources(manager: &ConfiguredWgpuResourceManager) -> Option<WgpuResources> {
+        let dq = manager.device_and_queue();
+        let surface = manager.surface();
+        if let Some(config) = surface.config() {
+            Some(WgpuResources::new(dq.device(), dq.queue(), config.clone()))
+        } else {
+            None
         }
-        None
     }
 
     /// Get access to the device, if configured.
     #[inline]
     pub const fn device(&self) -> Option<&DeviceAndQueue> {
-        self.manager.device_and_queue()
+        match self.manager.as_ref() {
+            None => None,
+            Some(manager) => Some(manager.device_and_queue()),
+        }
     }
 
     /// Get access to the resources, if configured.
@@ -174,7 +176,7 @@ impl WgpuHardware {
         debug!(width = %size.width, height = %size.height, "Creating WGPU surface");
         let size = PixelSize::try_from(size)?;
 
-        pollster::block_on(self.manager.initialize_and_configure_surface(
+        pollster::block_on(self.manager.initialize_and_configure(
             window,
             Some(PowerPreference::HighPerformance),
             Some(DeviceDescriptor {
@@ -188,14 +190,16 @@ impl WgpuHardware {
             NO_SURFACE_CONFIG,
         ))?;
 
-        let Some(device) = self.manager.device_and_queue() else {
+        let Some(manager) = self.manager.as_ref() else {
             return Err(WgpuHardwareInitializeSurfaceError::NoHardware);
         };
+
+        let device = manager.device_and_queue();
 
         if let Some(resources) = self.resource.as_mut() {
             resources.recreate_surface_dependent_buffers(device.device());
         } else {
-            self.resource = Self::try_create_resources(&self.manager);
+            self.resource = Self::try_create_resources(manager);
         }
 
         Ok(())

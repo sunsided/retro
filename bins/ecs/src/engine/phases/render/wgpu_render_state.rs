@@ -11,7 +11,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
 use wgpu_resource_manager::{
-    DeviceAndQueue, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError,
+    ConfiguredWgpuResourceManager, DeviceAndQueue, WgpuResourceManagerInitializeSurfaceError,
 };
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
