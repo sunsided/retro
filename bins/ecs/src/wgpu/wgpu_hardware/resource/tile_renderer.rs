@@ -4,6 +4,7 @@ use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderMode;
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use std::borrow::Borrow;
 use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFormat};
+use wgpu_resource_manager::wgpu_label;
 
 #[derive(Debug)]
 pub struct TileRendererResource {

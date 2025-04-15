@@ -6,7 +6,6 @@ use crate::engine::{
 use crate::wgpu::instance::{Instance, InstanceRaw};
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::wgpu_hardware::resources::buffers::InstanceBuffer;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use tracing::{debug, trace, warn};
 use wgpu::{RenderPass, TextureView};
 

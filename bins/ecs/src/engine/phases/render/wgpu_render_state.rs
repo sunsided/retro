@@ -2,14 +2,17 @@ use crate::engine::phases::render::frame_state::FrameState;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderPipelineSelector;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use crate::wgpu::wgpu_hardware::{
-    DeviceAndQueue, WgpuForRenderingError, WgpuHardware, WgpuReinitializeWindowError,
-    WgpuResizeSurfaceError,
+    WgpuForRenderingError, WgpuHardware, WgpuHardwareInitializeSurfaceError,
+    WgpuReinitializeWindowError, WgpuResizeSurfaceError,
 };
 use std::cell::Cell;
 use std::fmt::{Debug, Formatter};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
+use wgpu_resource_manager::{
+    DeviceAndQueue, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError,
+};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -31,7 +34,7 @@ use winit::window::Window;
 #[derive(Default)]
 pub struct WgpuRenderState {
     /// The hardware abstraction (devices, queues, ...)
-    hardware: WgpuHardware,
+    hardware: Option<WgpuHardware>,
     /// The per-frame state, which contains details for the current frame.
     frame_state: Option<FrameState>,
     /// Retro rendering state
@@ -68,12 +71,15 @@ impl Default for ScreenSize {
 impl WgpuRenderState {
     #[inline]
     pub const fn is_ready(&self) -> bool {
-        self.hardware.is_ready()
+        match self.hardware.as_ref() {
+            None => false,
+            Some(hw) => hw.is_ready(),
+        }
     }
 
     #[inline]
     pub fn set_hardware(&mut self, hardware: WgpuHardware) {
-        self.hardware = hardware;
+        self.hardware = Some(hardware);
     }
 
     #[inline]
@@ -113,27 +119,36 @@ impl WgpuRenderState {
     }
 
     #[inline]
-    pub const fn hardware(&self) -> &WgpuHardware {
-        &self.hardware
+    pub const fn hardware(&self) -> Option<&WgpuHardware> {
+        self.hardware.as_ref()
     }
 
     #[instrument(skip(self))]
     pub fn for_rendering(
         &mut self,
     ) -> Result<(&DeviceAndQueue, &mut WgpuResources, &mut FrameState), RenderPhaseError> {
-        let (hardware, resources) = self.hardware.for_rendering()?;
+        let hardware = self
+            .hardware
+            .as_mut()
+            .ok_or(RenderPhaseError::DeviceNotReady)?;
+        let (dq, resources) = hardware.for_rendering()?;
 
         let Some(frame_state) = &mut self.frame_state else {
             debug!("Frame state is not ready yet, cannot render");
             return Err(RenderPhaseError::FrameStateNotReady);
         };
 
-        Ok((hardware, resources, frame_state))
+        Ok((dq, resources, frame_state))
     }
 
     #[instrument(skip(self))]
     pub fn finish_frame(&mut self) -> Result<(&DeviceAndQueue, FrameState), RenderPhaseError> {
-        let Some(hardware) = self.hardware.device() else {
+        let Some(hardware) = self.hardware.as_ref() else {
+            debug!("Device is not ready yet, cannot render");
+            return Err(RenderPhaseError::DeviceNotReady);
+        };
+
+        let Some(hardware) = hardware.device() else {
             debug!("Device is not ready yet, cannot render");
             return Err(RenderPhaseError::DeviceNotReady);
         };
@@ -150,14 +165,20 @@ impl WgpuRenderState {
     pub fn reinitialize_surface(
         &mut self,
         window: Arc<Window>,
-    ) -> Result<(), WgpuReinitializeWindowError> {
+    ) -> Result<(), WgpuHardwareInitializeSurfaceError> {
         let size = window.inner_size();
         self.screen_size = ScreenSize {
             width: size.width as _,
             height: size.height as _,
             aspect_ratio: size.width as f32 / size.height as f32,
         };
-        self.hardware.reinitialize_surface(window)
+
+        if let Some(hardware) = self.hardware.as_mut() {
+            hardware.reinitialize_surface(window)?;
+            Ok(())
+        } else {
+            Err(WgpuHardwareInitializeSurfaceError::NoHardware)
+        }
     }
 
     #[inline]
@@ -170,22 +191,35 @@ impl WgpuRenderState {
             height: new_size.height as _,
             aspect_ratio: new_size.width as f32 / new_size.height as f32,
         };
-        self.hardware.resize_surface(new_size)
+
+        if let Some(hardware) = self.hardware.as_mut() {
+            hardware.resize_surface(new_size)
+        } else {
+            Err(WgpuResizeSurfaceError::NoHardware)
+        }
     }
 
     /// Gets the size of the configured surface.
     pub fn surface_size(&self) -> Option<PhysicalSize<u32>> {
-        self.hardware.device().map(|dev| {
-            let width = dev.config().width;
-            let height = dev.config().height;
-            PhysicalSize::new(width, height)
-        })
+        self.hardware
+            .as_ref()
+            .map(|hardware| {
+                hardware.resources().and_then(|res| {
+                    let width = res.config().width;
+                    let height = res.config().height;
+                    Some(PhysicalSize::new(width, height))
+                })
+            })
+            .flatten()
     }
 
     /// Indicates whether wireframe rendering is supported by the adapter.
     #[inline]
     pub fn wireframe_supported(&self) -> bool {
-        self.hardware.wireframe_supported()
+        self.hardware
+            .as_ref()
+            .map(|hw| hw.wireframe_supported())
+            .unwrap_or_default()
     }
 
     /// Toggles retro rendering state.
@@ -207,7 +241,8 @@ impl WgpuRenderState {
 
 impl Debug for WgpuRenderState {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        if self.hardware.device().is_some() {
+        let device = self.hardware.as_ref().map(|hw| hw.device()).flatten();
+        if device.is_some() {
             write!(f, "RenderSystemData")
         } else {
             write!(f, "RenderSystemData (uninitialized)")

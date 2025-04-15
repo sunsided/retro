@@ -8,7 +8,6 @@ use crate::engine::{
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
 use crate::wgpu::uniforms::FrameGlobalUniform;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};
@@ -41,12 +40,17 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
         stars: &StarsComponent,
         skydome: &SkydomeComponent,
     ) {
-        let Some(device) = gpu.hardware().device() else {
+        let Some(hardware) = gpu.hardware() else {
             warn!("Skipping frame globals setup because hardware is not ready.");
             return;
         };
 
-        let Some(resources) = gpu.hardware().resources() else {
+        let Some(dq) = hardware.device() else {
+            warn!("Skipping frame globals setup because hardware is not ready.");
+            return;
+        };
+
+        let Some(resources) = hardware.resources() else {
             warn!("Skipping frame globals setup because resources are not ready.");
             return;
         };
@@ -67,6 +71,6 @@ impl ApplyFrameGlobalsSystem for FrameGlobalsSystem {
             .neo
             .uniforms
             .frame_globals
-            .send_to_device(device.queue(), uniform);
+            .send_to_device(dq.queue(), uniform);
     }
 }

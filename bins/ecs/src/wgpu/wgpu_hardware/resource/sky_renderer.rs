@@ -3,6 +3,7 @@ use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use std::borrow::Borrow;
 use wgpu::{Device, RenderPipeline, ShaderModule, SurfaceConfiguration, TextureFormat};
+use wgpu_resource_manager::wgpu_label;
 
 #[derive(Debug)]
 pub struct SkyRendererResource {

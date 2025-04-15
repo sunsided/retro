@@ -69,12 +69,17 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
         active_camera: &mut ActiveCameraState,
         cameras: &[CameraComponent],
     ) {
-        let Some(device) = wgpu_render.hardware().device() else {
+        let Some(hardware) = wgpu_render.hardware() else {
             warn!("Skipping camera rendering because no device is set.");
             return;
         };
 
-        let Some(resources) = wgpu_render.hardware().resources() else {
+        let Some(device) = hardware.device() else {
+            warn!("Skipping camera rendering because no device is set.");
+            return;
+        };
+
+        let Some(resources) = hardware.resources() else {
             warn!("Skipping camera rendering because no resources are set.");
             return;
         };

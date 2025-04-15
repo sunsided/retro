@@ -1,8 +1,8 @@
 use crate::seconds::Seconds;
 use crate::wgpu::uniforms::LightUniform;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use cgmath::Rotation3;
+use wgpu_resource_manager::DeviceAndQueue;
 
 #[derive(Debug, Clone)]
 pub struct DynamicLightData {

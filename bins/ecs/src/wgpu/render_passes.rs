@@ -1,8 +1,8 @@
 use crate::engine::BackgroundColorComponent;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::ops::{Deref, DerefMut};
 use wgpu::{CommandEncoder, RenderPass, SurfaceTexture, TextureView};
+use wgpu_resource_manager::DeviceAndQueue;
 
 pub struct RenderPasses {
     encoder: CommandEncoder,

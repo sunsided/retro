@@ -6,7 +6,6 @@ use crate::engine::{
 use crate::wgpu::model::DrawModel;
 use crate::wgpu::texture::Texture;
 use crate::wgpu::uniforms::FrameGlobalUniform;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::convert::Infallible;
 use tracing::warn;
 use wgpu::{BindGroup, IndexFormat, RenderPass, TextureView};

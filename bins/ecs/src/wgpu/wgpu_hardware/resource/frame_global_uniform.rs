@@ -1,6 +1,7 @@
 use crate::wgpu::uniforms::FrameGlobalUniform;
 use wgpu::util::DeviceExt;
 use wgpu::{BindGroup, BindGroupLayout, BindingResource, Buffer, Device, Queue};
+use wgpu_resource_manager::wgpu_label;
 
 /// Frame-global uniforms.
 ///

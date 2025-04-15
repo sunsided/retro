@@ -9,7 +9,7 @@ use crate::wgpu::wgpu_hardware::WgpuHardware;
 use ::wgpu::Backends;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info, instrument, trace};
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{DeviceEvent, DeviceId, KeyEvent, Modifiers, MouseButton, MouseScrollDelta};
@@ -47,6 +47,7 @@ struct App {
 }
 
 impl App {
+    #[instrument(skip_all)]
     pub fn new(wgpu_hardware: WgpuHardware) -> Self {
         let events = PhaseEvents::default();
         let render_state = WgpuRenderState::default();
@@ -86,6 +87,7 @@ impl App {
         self.frame_duration = frame_duration;
     }
 
+    #[instrument(skip_all)]
     fn reinitialize_window(&mut self, active_event_loop: &ActiveEventLoop) {
         if self.window.is_none() {
             // Initialize if missing.
@@ -130,6 +132,7 @@ impl App {
         self.ecs_world.reset_frame_context();
     }
 
+    #[instrument(skip_all)]
     fn handle_resize_event(&mut self, new_size: PhysicalSize<u32>) {
         debug!("Window resized: {:?}", new_size);
         self.ecs_world
@@ -335,6 +338,7 @@ impl ApplicationHandler for App {
     }
 }
 
+#[instrument(skip_all)]
 fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
     let _logging = setup_logging();

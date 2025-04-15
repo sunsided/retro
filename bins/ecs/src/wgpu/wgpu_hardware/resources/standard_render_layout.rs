@@ -2,6 +2,7 @@ use crate::wgpu::wgpu_hardware::resource::camera_uniform::CameraUniformResource;
 use crate::wgpu::wgpu_hardware::resource::frame_global_uniform::FrameGlobalUniformResource;
 use crate::wgpu::wgpu_hardware::resource::light_uniform::LightUniformResource;
 use wgpu::{BindGroupLayout, Device, PipelineLayout};
+use wgpu_resource_manager::wgpu_label;
 
 #[derive(Debug)]
 pub struct StandardRenderLayout {

@@ -515,7 +515,7 @@ mod tests {
     #[test]
     fn test_decompose_negative_coordinates() {
         let coord = WorldGlobalTileCoord { x: -1, y: -1 };
-        let (region, chunk, tile) = coord.decompose();
+        let (region, _chunk, _tile) = coord.decompose();
 
         let region_width = WorldRegion::WIDTH_IN_CHUNKS as i32 * TileChunk::WIDTH_IN_TILES as i32;
         let region_height =

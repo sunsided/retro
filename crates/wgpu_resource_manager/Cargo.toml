@@ -1,0 +1,18 @@
+[package]
+name = "wgpu_resource_manager"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["tracing_attributes"]
+tracing_attributes = ["tracing/attributes"]
+winit = ["dep:winit"]
+
+[dependencies]
+thiserror = "2.0.12"
+tracing = { version = "0.1.41", features = ["release_max_level_debug"] }
+wgpu = { version = "25.0.0" }
+winit = { version = "0.30.9", optional = true, default-features = false }
+
+[dev-dependencies]
+tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter"] }

@@ -83,7 +83,7 @@ use crate::engine::{
 use crate::engine::{BackgroundColorComponent, ModelComponent};
 use crate::wgpu::render_passes::RenderPasses;
 use crate::wgpu::wgpu_hardware::{
-    DeviceAndQueue, WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError,
+    WgpuHardware, WgpuReinitializeWindowError, WgpuResizeSurfaceError,
 };
 use parking_lot::lock_api::MutexGuard;
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
@@ -141,15 +141,19 @@ impl SystemRenderPhaseEvents for PhaseEvents {
         // TODO: Have the application react to wgpu::SurfaceError::OutOfMemory | wgpu::SurfaceError::Other by exiting
         // TODO: Have the application react to wgpu::SurfaceError::Timeout by hoping for thee best :)
 
-        let Some(device) = render.hardware().device() else {
+        let Some(hardware) = render.hardware() else {
             return Ok(RenderReady::NotReady);
         };
 
-        let Some(resources) = render.hardware().resources() else {
+        let Some(device) = hardware.device() else {
             return Ok(RenderReady::NotReady);
         };
 
-        let Some(surface) = render.hardware().surface().as_ref() else {
+        let Some(resources) = hardware.resources() else {
+            return Ok(RenderReady::NotReady);
+        };
+
+        let Some(surface) = hardware.surface() else {
             return Ok(RenderReady::NotReady);
         };
 
@@ -161,6 +165,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
             // `SurfaceTexture` that we will render to. This can time out, particularly
             // on Vulkan/Wayland/NVIDIA setups. (In that case, use the GL backend, e.g. via `WGPU_BACKEND=gl`).
             let frame = surface
+                .surface()
                 .get_current_texture()
                 .inspect_err(|err| error!(%err, "Failed to obtain texture from surface"))?;
 

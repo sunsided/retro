@@ -8,6 +8,7 @@ use wgpu::{
     BindGroup, BindGroupLayout, CommandEncoder, Device, PipelineLayout, RenderPass, RenderPipeline,
     Sampler, ShaderModule, SurfaceConfiguration, TextureFormat, TextureView,
 };
+use wgpu_resource_manager::wgpu_label;
 
 #[derive(Debug)]
 pub struct VgaFullscreenRendererResource {

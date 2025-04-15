@@ -29,10 +29,10 @@
 //! - [`wgpu`](https://docs.rs/wgpu): A modern graphics API for GPU programming.
 
 use crate::resources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use image::{GenericImageView, ImageError};
 use std::path::Path;
 use wgpu::{Device, Queue, TextureFormat};
+use wgpu_resource_manager::DeviceAndQueue;
 
 /// A struct representing a GPU texture along with its corresponding view.
 ///

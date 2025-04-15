@@ -1,7 +1,6 @@
 use crate::wgpu::render_passes::RenderPasses;
 use crate::wgpu::wgpu_hardware::resources::render_pipelines::RenderPipelineSelector;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
-use crate::wgpu::wgpu_hardware::DeviceAndQueue;
 use std::borrow::Borrow;
 use std::sync::atomic::AtomicU32;
 use std::sync::Arc;

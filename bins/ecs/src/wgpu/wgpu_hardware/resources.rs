@@ -40,6 +40,7 @@ pub struct WgpuResources {
     pub neo: NeoResources,
     renderers: Renderers,
     texture_bind_groups: TextureBindGroups,
+    surface_config: SurfaceConfiguration,
 }
 
 #[derive(Debug)]
@@ -55,7 +56,7 @@ pub struct NeoUniformResources {
 }
 
 impl WgpuResources {
-    pub(super) fn new(device: &Device, queue: &Queue, config: &SurfaceConfiguration) -> Self {
+    pub(super) fn new(device: &Device, queue: &Queue, config: SurfaceConfiguration) -> Self {
         let uniforms = NeoUniformResources {
             frame_globals: FrameGlobalUniformResource::new(device),
             camera: CameraUniformResource::new(device),
@@ -65,9 +66,9 @@ impl WgpuResources {
         let neo = NeoResources { uniforms };
 
         let samplers = TextureSamplers::create_from(device);
-        let textures = Textures::create_from(device, queue, config);
+        let textures = Textures::create_from(device, queue, &config);
         let buffers = Buffers::create_from(device);
-        let depths = DepthBuffers::create_from(device, config);
+        let depths = DepthBuffers::create_from(device, &config);
         let shaders = Shaders::create_from(device);
         let standard_render = StandardRenderLayout::create_from(
             device,
@@ -89,7 +90,7 @@ impl WgpuResources {
         let models = Models::create_from(&device, &queue, &standard_render, &samplers);
         let renderers = Renderers::new(
             device,
-            config,
+            &config,
             &standard_render,
             &neo.uniforms.frame_globals,
             &neo.uniforms.camera,
@@ -107,17 +108,14 @@ impl WgpuResources {
             textures,
             neo,
             renderers,
+            surface_config: config,
         }
     }
 
     #[instrument(skip(self))]
-    pub fn recreate_surface_dependent_buffers(
-        &mut self,
-        device: &Device,
-        config: &SurfaceConfiguration,
-    ) {
-        self.depths.recreate(device, config);
-        self.textures.recreate(device, config);
+    pub fn recreate_surface_dependent_buffers(&mut self, device: &Device) {
+        self.depths.recreate(device, &self.surface_config);
+        self.textures.recreate(device, &self.surface_config);
     }
 
     pub fn apply_render_pipeline_to_pass(
@@ -160,5 +158,14 @@ impl WgpuResources {
 
     pub const fn texture_bind_groups(&self) -> &TextureBindGroups {
         &self.texture_bind_groups
+    }
+
+    pub const fn config(&self) -> &SurfaceConfiguration {
+        &self.surface_config
+    }
+
+    #[instrument(skip(self, config))]
+    pub fn set_config(&mut self, config: SurfaceConfiguration) {
+        self.surface_config = config;
     }
 }

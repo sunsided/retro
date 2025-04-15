@@ -1,6 +1,7 @@
 use crate::wgpu::uniforms::CameraUniform;
 use wgpu::util::DeviceExt;
 use wgpu::{BindGroup, BindGroupLayout, Buffer, Device, Queue};
+use wgpu_resource_manager::wgpu_label;
 
 /// A bind group for the camera uniforms.
 ///

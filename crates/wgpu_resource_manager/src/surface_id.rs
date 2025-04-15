@@ -1,20 +1,22 @@
-use std::fmt::Display;
+use core::fmt::Display;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 /// The ID of a WGPU surface.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SurfaceId(u64);
+pub struct SurfaceId(u32);
 
 impl SurfaceId {
     /// Generates the next unique `SurfaceId`.
     ///
     /// This function uses an atomic counter to ensure that each generated
-    /// `SurfaceId` is unique across threads.
+    /// `SurfaceId` is unique across threads. Defaults to `0` indicating the
+    /// surface is uninitialized.
     ///
     /// # Returns
     /// A new `SurfaceId` with a unique, incremented value.
-    pub fn next() -> Self {
-        static NEXT_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
-        SurfaceId(NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::SeqCst))
+    pub(crate) fn next() -> Self {
+        static NEXT_ID: AtomicU32 = AtomicU32::new(1);
+        SurfaceId(NEXT_ID.fetch_add(1, Ordering::SeqCst))
     }
 
     /// Checks if the `SurfaceId` is uninitialized or has a default value.
@@ -28,7 +30,7 @@ impl SurfaceId {
 }
 
 impl Display for SurfaceId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self.0, f)
     }
 }

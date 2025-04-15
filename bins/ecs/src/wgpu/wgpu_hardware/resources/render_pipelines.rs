@@ -8,6 +8,7 @@ use crate::wgpu::wgpu_hardware::resources::shaders::{FragmentShaderRef, Shaders,
 use crate::wgpu::wgpu_hardware::resources::standard_render_layout::StandardRenderLayout;
 use tracing::instrument;
 use wgpu::{Device, PipelineLayout, RenderPipeline, TextureFormat};
+use wgpu_resource_manager::wgpu_label;
 
 #[derive(Debug)]
 pub struct RenderPipelines {
