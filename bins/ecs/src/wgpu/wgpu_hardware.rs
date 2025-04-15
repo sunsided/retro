@@ -29,7 +29,7 @@ use tracing::{debug, instrument, warn};
 use wgpu::wgt::DeviceDescriptor;
 use wgpu::{Features, PowerPreference, RequestAdapterError, RequestDeviceError};
 use wgpu_resource_manager::{
-    wgpu_label, AdapterDeviceAndQueue, ConfiguredWgpuResourceManager, InstanceWrapper, PixelSize,
+    wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, InstanceWrapper, PixelSize,
     PixelSizeError, SurfaceWrapper, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError,
     WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG,
 };
@@ -68,7 +68,7 @@ impl WgpuHardware {
 
     #[instrument(skip_all)]
     fn try_create_resources(manager: &ConfiguredWgpuResourceManager) -> Option<WgpuResources> {
-        let dq = manager.adapter_device_and_queue();
+        let dq = manager.device_and_queue();
         let surface = manager.surface();
         if let Some(config) = surface.config() {
             Some(WgpuResources::new(dq.device(), dq.queue(), config.clone()))
@@ -79,10 +79,10 @@ impl WgpuHardware {
 
     /// Get access to the device, if configured.
     #[inline]
-    pub const fn device(&self) -> Option<&AdapterDeviceAndQueue> {
+    pub const fn device(&self) -> Option<&DeviceAndQueue> {
         match self.manager.as_ref() {
             None => None,
-            Some(manager) => Some(manager.adapter_device_and_queue()),
+            Some(manager) => Some(manager.device_and_queue()),
         }
     }
 
@@ -95,8 +95,8 @@ impl WgpuHardware {
     #[instrument(skip(self))]
     pub fn for_rendering(
         &mut self,
-    ) -> Result<(&AdapterDeviceAndQueue, &mut WgpuResources), WgpuForRenderingError> {
-        let Some(hardware) = self.manager.adapter_device_and_queue() else {
+    ) -> Result<(&DeviceAndQueue, &mut WgpuResources), WgpuForRenderingError> {
+        let Some(hardware) = self.manager.device_and_queue() else {
             debug!("Device is not ready yet, cannot render");
             return Err(WgpuForRenderingError::NoDevice);
         };
@@ -194,7 +194,7 @@ impl WgpuHardware {
             return Err(WgpuHardwareInitializeSurfaceError::NoHardware);
         };
 
-        let device = manager.adapter_device_and_queue();
+        let device = manager.device_and_queue();
 
         if let Some(resources) = self.resource.as_mut() {
             resources.recreate_surface_dependent_buffers(device.device());

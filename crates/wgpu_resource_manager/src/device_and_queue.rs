@@ -1,32 +1,17 @@
 use crate::SurfaceWrapper;
-use wgpu::{Adapter, CommandBuffer, Device, Queue, SurfaceConfiguration};
+use wgpu::{CommandBuffer, Device, Queue, SurfaceConfiguration};
 
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct AdapterDeviceAndQueue {
-    adapter: Adapter,
+pub struct DeviceAndQueue {
     device: Device,
     queue: Queue,
 }
 
-impl AdapterDeviceAndQueue {
+impl DeviceAndQueue {
     #[inline]
-    pub const fn new_from(adapter: Adapter, device: Device, queue: Queue) -> Self {
-        Self {
-            adapter,
-            device,
-            queue,
-        }
-    }
-
-    #[inline]
-    pub const fn adapter(&self) -> &Adapter {
-        &self.adapter
-    }
-
-    #[inline]
-    pub const fn adapter_mut(&mut self) -> &mut Adapter {
-        &mut self.adapter
+    pub const fn new_from(device: Device, queue: Queue) -> Self {
+        Self { device, queue }
     }
 
     /// Submit a command buffer to the WGPU queue for execution.

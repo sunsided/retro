@@ -1,4 +1,4 @@
-use crate::{AdapterDeviceAndQueue, SurfaceWrapper, WgpuResourceManagerId};
+use crate::{DeviceAndQueue, SurfaceWrapper, WgpuResourceManagerId};
 use wgpu::{Adapter, Instance};
 
 pub trait WgpuResourceManagerAccessors {
@@ -10,7 +10,7 @@ pub trait WgpuResourceManagerAccessors {
 
     fn adapter(&self) -> &Adapter;
 
-    fn adapter_device_and_queue(&self) -> &AdapterDeviceAndQueue;
+    fn device_and_queue(&self) -> &DeviceAndQueue;
 
     fn surface(&self) -> &SurfaceWrapper;
 
@@ -26,7 +26,7 @@ pub trait WgpuResourceManagerRef {
 
     fn adapter(&self) -> Option<&Adapter>;
 
-    fn adapter_device_and_queue(&self) -> Option<&AdapterDeviceAndQueue>;
+    fn device_and_queue(&self) -> Option<&DeviceAndQueue>;
 
     fn surface(&self) -> Option<&SurfaceWrapper>;
 
@@ -53,8 +53,8 @@ where
         Some(self.adapter())
     }
 
-    fn adapter_device_and_queue(&self) -> Option<&AdapterDeviceAndQueue> {
-        Some(self.adapter_device_and_queue())
+    fn device_and_queue(&self) -> Option<&DeviceAndQueue> {
+        Some(self.device_and_queue())
     }
 
     fn surface(&self) -> Option<&SurfaceWrapper> {

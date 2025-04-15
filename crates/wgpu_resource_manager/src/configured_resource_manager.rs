@@ -1,6 +1,6 @@
 use crate::{
-    AdapterDeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId,
-    SurfaceWrapper, WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label,
+    DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId, SurfaceWrapper,
+    WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label,
 };
 use std::sync::Arc;
 use wgpu::{
@@ -14,7 +14,8 @@ pub struct ConfiguredWgpuResourceManager {
     id: WgpuResourceManagerId,
     instance: InstanceWrapper,
     surface_wrapper: SurfaceWrapper,
-    adq: AdapterDeviceAndQueue,
+    adapter: Adapter,
+    dq: DeviceAndQueue,
 }
 
 impl ConfiguredWgpuResourceManager {
@@ -57,13 +58,20 @@ impl ConfiguredWgpuResourceManager {
         let (device, queue) = adapter.request_device(&descriptor).await
             .inspect_err(|error| tracing::error!(%error, %id, surface_id = %surface_id, "Failed to request device"))?;
 
-        let adq = AdapterDeviceAndQueue::new_from(adapter, device, queue);
-        configure_surface(surface_size, surface_config, &mut surface_wrapper, &adq);
+        let dq = DeviceAndQueue::new_from(device, queue);
+        configure_surface(
+            surface_size,
+            surface_config,
+            &mut surface_wrapper,
+            &adapter,
+            &dq,
+        );
 
         Ok(Self {
             id,
             instance,
-            adq,
+            adapter,
+            dq,
             surface_wrapper,
         })
     }
@@ -90,9 +98,7 @@ impl ConfiguredWgpuResourceManager {
 
         // Test whether we already have an adapter, and if we do, whether it is compatible
         // with the new surface.
-        let surface_caps = surface_wrapper
-            .surface()
-            .get_capabilities(self.adq.adapter());
+        let surface_caps = surface_wrapper.surface().get_capabilities(self.adapter());
         let adapter_exists_and_is_compatible = !surface_caps.formats.is_empty();
 
         if adapter_exists_and_is_compatible {
@@ -101,7 +107,8 @@ impl ConfiguredWgpuResourceManager {
                 surface_size,
                 surface_config,
                 &mut surface_wrapper,
-                &self.adq,
+                &self.adapter,
+                &self.dq,
             );
             self.surface_wrapper = surface_wrapper;
             return Ok(());
@@ -125,10 +132,16 @@ impl ConfiguredWgpuResourceManager {
         let (device, queue) = adapter.request_device(&descriptor).await
             .inspect_err(|error| tracing::error!(%error, manager_id = %self.id(), surface_id = %surface_id, "Failed to request device"))?;
 
-        let adq = AdapterDeviceAndQueue::new_from(adapter, device, queue);
-        configure_surface(surface_size, surface_config, &mut surface_wrapper, &adq);
+        let dq = DeviceAndQueue::new_from(device, queue);
+        configure_surface(
+            surface_size,
+            surface_config,
+            &mut surface_wrapper,
+            &adapter,
+            &dq,
+        );
 
-        self.adq = adq;
+        self.dq = dq;
         self.surface_wrapper = surface_wrapper;
         Ok(())
     }
@@ -149,7 +162,7 @@ impl ConfiguredWgpuResourceManager {
         new_size: PixelSize,
     ) -> Result<(), WgpuResourceManagerResizeSurfaceError> {
         self.surface_wrapper
-            .resize_surface(self.adq.device(), new_size)?;
+            .resize_surface(self.dq.device(), new_size)?;
         Ok(())
     }
 }
@@ -171,8 +184,8 @@ impl WgpuResourceManagerAccessors for ConfiguredWgpuResourceManager {
         Self::adapter(self)
     }
 
-    fn adapter_device_and_queue(&self) -> &AdapterDeviceAndQueue {
-        Self::adapter_device_and_queue(self)
+    fn device_and_queue(&self) -> &DeviceAndQueue {
+        Self::device_and_queue(self)
     }
 
     fn surface(&self) -> &SurfaceWrapper {
@@ -202,12 +215,12 @@ impl ConfiguredWgpuResourceManager {
 
     #[inline]
     pub const fn adapter(&self) -> &Adapter {
-        &self.adq.adapter()
+        &self.adapter
     }
 
     #[inline]
-    pub const fn adapter_device_and_queue(&self) -> &AdapterDeviceAndQueue {
-        &self.adq
+    pub const fn device_and_queue(&self) -> &DeviceAndQueue {
+        &self.dq
     }
 
     #[inline]
@@ -236,17 +249,16 @@ fn configure_surface<S>(
     surface_size: PixelSize,
     surface_config: Option<S>,
     surface: &mut SurfaceWrapper,
-    adq: &AdapterDeviceAndQueue,
+    adapter: &Adapter,
+    dq: &DeviceAndQueue,
 ) where
     S: FnOnce(PixelSize, SurfaceCapabilities) -> Option<SurfaceConfiguration>,
 {
     // Configure the surface if possible.
     let surface_config = match surface_config {
-        None => {
-            SurfaceWrapper::default_surface_config(surface_size, surface.surface(), adq.adapter())
-        }
+        None => SurfaceWrapper::default_surface_config(surface_size, surface.surface(), &adapter),
         Some(factory) => {
-            let surface_caps = surface.get_capabilities(adq.adapter());
+            let surface_caps = surface.get_capabilities(&adapter);
             match factory(surface_size, surface_caps) {
                 None => {
                     tracing::warn!(
@@ -259,7 +271,7 @@ fn configure_surface<S>(
         }
     };
 
-    surface.configure_surface(adq.device(), surface_config);
+    surface.configure_surface(dq.device(), surface_config);
 }
 
 #[derive(Debug, thiserror::Error)]

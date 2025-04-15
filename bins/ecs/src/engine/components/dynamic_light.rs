@@ -2,7 +2,7 @@ use crate::seconds::Seconds;
 use crate::wgpu::uniforms::LightUniform;
 use crate::wgpu::wgpu_hardware::resources::WgpuResources;
 use cgmath::Rotation3;
-use wgpu_resource_manager::AdapterDeviceAndQueue;
+use wgpu_resource_manager::DeviceAndQueue;
 
 #[derive(Debug, Clone)]
 pub struct DynamicLightData {
@@ -35,7 +35,7 @@ impl DynamicLightData {
                 .into();
     }
 
-    pub fn update_gpu_buffer(&self, gpu: &AdapterDeviceAndQueue, resources: &WgpuResources) {
+    pub fn update_gpu_buffer(&self, gpu: &DeviceAndQueue, resources: &WgpuResources) {
         resources
             .neo
             .uniforms

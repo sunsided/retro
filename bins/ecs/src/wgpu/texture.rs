@@ -32,7 +32,7 @@ use crate::resources;
 use image::{GenericImageView, ImageError};
 use std::path::Path;
 use wgpu::{Device, Queue, TextureFormat};
-use wgpu_resource_manager::AdapterDeviceAndQueue;
+use wgpu_resource_manager::DeviceAndQueue;
 
 /// A struct representing a GPU texture along with its corresponding view.
 ///
@@ -318,7 +318,7 @@ impl Texture {
     #[allow(dead_code)]
     pub fn from_file<P>(
         path: P,
-        state: &AdapterDeviceAndQueue,
+        state: &DeviceAndQueue,
         ty: TextureType,
         label: Option<&str>,
     ) -> Result<Self, TextureError>
