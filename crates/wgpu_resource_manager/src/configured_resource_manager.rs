@@ -1,3 +1,4 @@
+use crate::device_id::DeviceId;
 use crate::{
     DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId, SurfaceWrapper,
     WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label,
@@ -11,7 +12,8 @@ use wgpu::{
 /// A resource manager that is configured by a valid surface and non-zero surface size.
 #[derive(Debug)]
 pub struct ConfiguredWgpuResourceManager {
-    id: WgpuResourceManagerId,
+    manager_id: WgpuResourceManagerId,
+    device_id: DeviceId,
     instance: InstanceWrapper,
     surface_wrapper: SurfaceWrapper,
     adapter: Adapter,
@@ -21,7 +23,7 @@ pub struct ConfiguredWgpuResourceManager {
 impl ConfiguredWgpuResourceManager {
     #[cfg_attr(feature = "tracing_attributes", tracing::instrument(skip_all))]
     pub(crate) async fn initialize_and_configure_surface<I, W, S>(
-        id: WgpuResourceManagerId,
+        manager_id: WgpuResourceManagerId,
         instance: I,
         window: Arc<W>,
         power_preference: Option<PowerPreference>,
@@ -35,9 +37,9 @@ impl ConfiguredWgpuResourceManager {
         S: FnOnce(PixelSize, SurfaceCapabilities) -> Option<SurfaceConfiguration>,
     {
         let instance = instance.into();
-        let surface = instance
-            .create_surface(window)
-            .inspect_err(|error| tracing::error!(%error, "Failed to create surface"))?;
+        let surface = instance.create_surface(window).inspect_err(
+            |error| tracing::error!(%error, %manager_id, "Failed to create surface"),
+        )?;
         let surface_id = SurfaceId::next();
         let mut surface_wrapper = SurfaceWrapper::new(surface_id, surface);
 
@@ -50,13 +52,15 @@ impl ConfiguredWgpuResourceManager {
                 force_fallback_adapter: false,
             })
             .await
-            .inspect_err(|error| tracing::error!(%error, "Failed to request adapter"))?;
+            .inspect_err(|error| tracing::error!(%error, %manager_id, %surface_id, "Failed to request adapter"))?;
 
         log_selected_adapter_info(&adapter.get_info());
 
         let descriptor = Self::get_descriptor(device_descriptor);
-        let (device, queue) = adapter.request_device(&descriptor).await
-            .inspect_err(|error| tracing::error!(%error, %id, surface_id = %surface_id, "Failed to request device"))?;
+        let (device, queue) = adapter.request_device(&descriptor).await.inspect_err(
+            |error| tracing::error!(%error, %manager_id, %surface_id, "Failed to request device"),
+        )?;
+        let device_id = DeviceId::next();
 
         let dq = DeviceAndQueue::new_from(device, queue);
         configure_surface(
@@ -68,7 +72,8 @@ impl ConfiguredWgpuResourceManager {
         );
 
         Ok(Self {
-            id,
+            manager_id,
+            device_id,
             instance,
             adapter,
             dq,
@@ -81,7 +86,7 @@ impl ConfiguredWgpuResourceManager {
         &mut self,
         window: Arc<W>,
         power_preference: Option<PowerPreference>,
-        device_descriptor: Option<wgpu::DeviceDescriptor<'_>>,
+        device_descriptor: Option<DeviceDescriptor<'_>>,
         surface_size: PixelSize,
         surface_config: Option<S>,
     ) -> Result<(), WgpuResourceManagerInitializeSurfaceError>
@@ -89,10 +94,9 @@ impl ConfiguredWgpuResourceManager {
         Arc<W>: Into<SurfaceTarget<'static>>,
         S: FnOnce(PixelSize, SurfaceCapabilities) -> Option<SurfaceConfiguration>,
     {
-        let surface = self
-            .instance
-            .create_surface(window)
-            .inspect_err(|error| tracing::error!(%error, "Failed to create surface"))?;
+        let surface = self.instance.create_surface(window).inspect_err(
+            |error| tracing::error!(%error, manager_id = %self.id(), "Failed to create surface"),
+        )?;
         let surface_id = SurfaceId::next();
         let mut surface_wrapper = SurfaceWrapper::new(surface_id, surface);
 
@@ -102,7 +106,7 @@ impl ConfiguredWgpuResourceManager {
         let adapter_exists_and_is_compatible = !surface_caps.formats.is_empty();
 
         if adapter_exists_and_is_compatible {
-            tracing::debug!("Adapter already exists and is compatible with the new surface");
+            tracing::debug!(manager_id = %self.id(), %surface_id, "Adapter already exists and is compatible with the new surface");
             configure_surface(
                 surface_size,
                 surface_config,
@@ -124,13 +128,15 @@ impl ConfiguredWgpuResourceManager {
                 force_fallback_adapter: false,
             })
             .await
-            .inspect_err(|error| tracing::error!(%error, "Failed to request adapter"))?;
+            .inspect_err(
+                |error| tracing::error!(%error, manager_id = %self.id(), %surface_id, "Failed to request adapter"),
+            )?;
 
         log_selected_adapter_info(&adapter.get_info());
 
         let descriptor = Self::get_descriptor(device_descriptor);
         let (device, queue) = adapter.request_device(&descriptor).await
-            .inspect_err(|error| tracing::error!(%error, manager_id = %self.id(), surface_id = %surface_id, "Failed to request device"))?;
+            .inspect_err(|error| tracing::error!(%error, manager_id = %self.id(), %surface_id, "Failed to request device"))?;
 
         let dq = DeviceAndQueue::new_from(device, queue);
         configure_surface(
@@ -200,7 +206,7 @@ impl WgpuResourceManagerAccessors for ConfiguredWgpuResourceManager {
 impl ConfiguredWgpuResourceManager {
     #[inline]
     pub fn id(&self) -> WgpuResourceManagerId {
-        self.id
+        self.manager_id
     }
 
     #[inline]

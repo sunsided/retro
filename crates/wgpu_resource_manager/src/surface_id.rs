@@ -16,7 +16,7 @@ impl SurfaceId {
     /// A new `SurfaceId` with a unique, incremented value.
     pub(crate) fn next() -> Self {
         static NEXT_ID: AtomicU32 = AtomicU32::new(1);
-        SurfaceId(NEXT_ID.fetch_add(1, Ordering::SeqCst))
+        Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
     }
 
     /// Checks if the `SurfaceId` is uninitialized or has a default value.

@@ -1,12 +1,16 @@
 mod configured_resource_manager;
 mod device_and_queue;
+mod device_id;
+pub mod examples;
 mod instance_wrapper;
 mod manager_id;
 mod pixel_size;
 mod resource_manager;
 mod resource_manager_accessors;
 mod resource_manager_traits;
+mod resources;
 mod surface_id;
+mod surface_info;
 mod surface_wrapper;
 
 pub use crate::configured_resource_manager::*;
