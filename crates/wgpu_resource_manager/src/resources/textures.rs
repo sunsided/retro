@@ -32,10 +32,7 @@ where
     {
         let id = TextureResourceId::next();
 
-        let wrapped_resource = Box::new(TextureResourceWrapper {
-            inner: resource,
-            _phantom: Default::default(),
-        });
+        let wrapped_resource = TextureResourceWrapper::boxed(resource);
 
         self.textures.insert(
             id,

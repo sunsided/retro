@@ -25,9 +25,24 @@ pub struct Resources<GlobalError> {
     phantom_data: PhantomData<GlobalError>,
 }
 
-pub struct TextureResourceWrapper<R, GlobalError> {
+struct TextureResourceWrapper<R, GlobalError> {
     inner: R,
     _phantom: PhantomData<*const GlobalError>,
+}
+
+impl<R, GlobalError> TextureResourceWrapper<R, GlobalError> {
+    #[inline]
+    pub const fn new(inner: R) -> Self {
+        Self {
+            inner,
+            _phantom: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn boxed(inner: R) -> Box<Self> {
+        Box::new(Self::new(inner))
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
