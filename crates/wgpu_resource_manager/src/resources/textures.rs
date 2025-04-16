@@ -1,6 +1,7 @@
 use std::error::Error;
-use crate::resources::{GetResourceError, GpuContext, Resource, Resources, TextureResourceId, TextureResourceWrapper};
+use crate::resources::{GetResourceError, GpuContext, Resource, Resources, TextureResourceId};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 use wgpu::{Texture, TextureView};
 use crate::surface_info::SurfaceInfo;
 
@@ -11,12 +12,37 @@ pub trait TextureResourceData: Debug {
 }
 
 type BoxedNewTextureResourceData = Box<dyn TextureResourceData>;
-type BoxedTextureResource<GlobalError> =
-    Box<dyn Resource<Output = BoxedNewTextureResourceData, Error = GlobalError>>;
 
-pub struct TextureResourceEntry<GlobalError> {
+/// The [`TextureResourceEntry`] is used in the [`Resources`] manager to type-erase
+/// texture resources.
+pub(super) struct TextureResourceEntry<GlobalError> {
     data: Option<BoxedNewTextureResourceData>,
-    resource: BoxedTextureResource<GlobalError>,
+    factory: Box<dyn Resource<Output = BoxedNewTextureResourceData, Error = GlobalError>>,
+}
+
+/// The [`TextureResourceFactory`] is another layer of type-erasure stored within
+/// the [`BoxedTextureResource`], which in turn is used in the [`TextureResourceEntry`].
+struct TextureResourceFactory<R, GlobalError> {
+    inner: R,
+    /// As annoying as it is, the only reason we carry this phantom around is
+    /// so that we avoid an "unconstrained generic" error in the Resource trait
+    /// implementation for this wrapper.
+    _phantom: PhantomData<*const GlobalError>,
+}
+
+impl<R, GlobalError> TextureResourceFactory<R, GlobalError> {
+    #[inline]
+    pub const fn new(inner: R) -> Self {
+        Self {
+            inner,
+            _phantom: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn boxed(inner: R) -> Box<Self> {
+        Box::new(Self::new(inner))
+    }
 }
 
 impl<GlobalError> Resources<GlobalError>
@@ -32,13 +58,12 @@ where
     {
         let id = TextureResourceId::next();
 
-        let wrapped_resource = TextureResourceWrapper::boxed(resource);
-
+        let factory = TextureResourceFactory::boxed(resource);
         self.textures.insert(
             id,
             TextureResourceEntry {
                 data: None,
-                resource: wrapped_resource,
+                factory,
             },
         );
 
@@ -59,14 +84,14 @@ where
         surface_info: &SurfaceInfo,
     ) -> Result<(), GlobalError> {
         for entry in self.textures.values_mut() {
-            let result = entry.resource.recreate(ctx, surface_info)?;
+            let result = entry.factory.recreate(ctx, surface_info)?;
             entry.data = Some(result);
         }
         Ok(())
     }
 }
 
-impl<R, T, E, GlobalError> Resource for TextureResourceWrapper<R, GlobalError>
+impl<R, T, E, GlobalError> Resource for TextureResourceFactory<R, GlobalError>
 where
     T: TextureResourceData + 'static,
     R: Resource<Output = T, Error = E>,

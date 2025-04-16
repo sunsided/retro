@@ -25,29 +25,6 @@ pub struct Resources<GlobalError> {
     phantom_data: PhantomData<GlobalError>,
 }
 
-struct TextureResourceWrapper<R, GlobalError> {
-    inner: R,
-    /// As annoying as it is, the only reason we carry this phantom around is
-    /// so that we avoid an "unconstrained generic" error in the Resource trait
-    /// implementation for this wrapper.
-    _phantom: PhantomData<*const GlobalError>,
-}
-
-impl<R, GlobalError> TextureResourceWrapper<R, GlobalError> {
-    #[inline]
-    pub const fn new(inner: R) -> Self {
-        Self {
-            inner,
-            _phantom: PhantomData,
-        }
-    }
-
-    #[inline]
-    pub fn boxed(inner: R) -> Box<Self> {
-        Box::new(Self::new(inner))
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum GetResourceError {
     #[error("The resource was not found")]
