@@ -30,10 +30,7 @@ pub struct CommandQueue<UserCommand> {
     receiver: crossbeam_channel::Receiver<WorldCommand<UserCommand>>,
 }
 
-impl<UserCommand> CommandQueue<UserCommand>
-where
-    UserCommand: Send
-{
+impl<UserCommand> CommandQueue<UserCommand>  {
     pub fn new() -> Self {
         let (sender, receiver) = crossbeam_channel::unbounded();
         Self { sender, receiver }
