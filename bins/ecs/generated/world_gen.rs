@@ -180,6 +180,7 @@ pub struct MainWorldStates {
     ///
     /// The state is used in the following systems:
     /// - [`WgpuInitShaderSystem`]
+    /// - [`WgpuInitTextureSystem`]
     /// - [`CameraSystem`]
     /// - [`CameraRenderSystem`]
     /// - [`FrameGlobalsSystem`]
@@ -206,6 +207,7 @@ pub struct MainWorldStates {
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
     pub wgpu_shader: WgpuShaderArchetype,
+    pub wgpu_texture: WgpuTextureArchetype,
     pub environment: EnvironmentArchetype,
     pub camera: CameraArchetype,
     pub dynamic_light: DynamicLightArchetype,
@@ -221,6 +223,7 @@ struct MainWorldArchetypes {
 #[derive(Debug)]
 pub struct MainWorldSystems {
     wgpu_init_shader: WgpuInitShaderSystem,
+    wgpu_init_texture: WgpuInitTextureSystem,
     time_of_day: TimeOfDaySystem,
     sun: SunSystem,
     fog: FogSystem,
@@ -252,6 +255,20 @@ impl MainWorldSystems {
     pub fn as_wgpu_init_shader_mut(&mut self) -> &mut WgpuInitShaderSystemData {
         use core::ops::DerefMut;
         self.wgpu_init_shader.deref_mut()
+    }
+
+    /// Gives immutable access to the [`WgpuInitTextureSystemData`] of the [`WgpuInitTextureSystem`].
+    #[inline]
+    pub fn as_wgpu_init_texture_ref(&self) -> &WgpuInitTextureSystemData {
+        use core::ops::Deref;
+        self.wgpu_init_texture.deref()
+    }
+
+    /// Gives mutable access to the [`WgpuInitTextureSystemData`] of the [`WgpuInitTextureSystem`].
+    #[inline]
+    pub fn as_wgpu_init_texture_mut(&mut self) -> &mut WgpuInitTextureSystemData {
+        use core::ops::DerefMut;
+        self.wgpu_init_texture.deref_mut()
     }
 
     /// Gives immutable access to the [`TimeOfDaySystemData`] of the [`TimeOfDaySystem`].
@@ -479,6 +496,20 @@ impl AsMut<WgpuInitShaderSystemData> for MainWorldSystems {
     }
 }
 
+impl AsRef<WgpuInitTextureSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &WgpuInitTextureSystemData {
+        self.as_wgpu_init_texture_ref()
+    }
+}
+
+impl AsMut<WgpuInitTextureSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut WgpuInitTextureSystemData {
+        self.as_wgpu_init_texture_mut()
+    }
+}
+
 impl AsRef<TimeOfDaySystemData> for MainWorldSystems {
     #[inline]
     fn as_ref(&self) -> &TimeOfDaySystemData {
@@ -699,6 +730,15 @@ impl<E, Q> Spawn<WgpuShaderEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<WgpuTextureEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: WgpuTextureEntityData) -> EntityId {
+        self.spawn_wgpu_texture(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<EnvironmentEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
@@ -821,6 +861,7 @@ impl<E, Q> MainWorld<E, Q> {
         phase_events: E) -> Self
     where
         S: CreateSystem<WgpuInitShaderSystem>
+         + CreateSystem<WgpuInitTextureSystem>
          + CreateSystem<TimeOfDaySystem>
          + CreateSystem<SunSystem>
          + CreateSystem<FogSystem>
@@ -844,6 +885,7 @@ impl<E, Q> MainWorld<E, Q> {
             archetypes: Default::default(),
             systems: MainWorldSystems {
                 wgpu_init_shader: CreateSystem::<WgpuInitShaderSystem>::create(create_systems),
+                wgpu_init_texture: CreateSystem::<WgpuInitTextureSystem>::create(create_systems),
                 time_of_day: CreateSystem::<TimeOfDaySystem>::create(create_systems),
                 sun: CreateSystem::<SunSystem>::create(create_systems),
                 fog: CreateSystem::<FogSystem>::create(create_systems),
@@ -1140,12 +1182,12 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?;
         match ear.archetype {
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at(ear.index),
             TileArchetype::ID => self.archetypes.tile.get_position_component_at(ear.index),
-            CubeArchetype::ID => self.archetypes.cube.get_position_component_at(ear.index),
-            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at(ear.index),
             PlayerArchetype::ID => self.archetypes.player.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.archetypes.cube.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at(ear.index),
             BackgroundObjectArchetype::ID => self.archetypes.background_object.get_position_component_at(ear.index),
+            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -1157,12 +1199,12 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?;
         match ear.archetype {
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at_mut(ear.index),
             TileArchetype::ID => self.archetypes.tile.get_position_component_at_mut(ear.index),
-            CubeArchetype::ID => self.archetypes.cube.get_position_component_at_mut(ear.index),
-            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at_mut(ear.index),
             PlayerArchetype::ID => self.archetypes.player.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.archetypes.cube.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at_mut(ear.index),
             BackgroundObjectArchetype::ID => self.archetypes.background_object.get_position_component_at_mut(ear.index),
+            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -1235,6 +1277,30 @@ impl<E, Q> MainWorld<E, Q> {
         let ear = self.entity_locations.get(&entity_id)?;
         match ear.archetype {
             EnvironmentArchetype::ID => self.archetypes.environment.get_sun_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `TextureSource` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_texture_source_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `TextureSource` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_texture_source_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TextureSourceComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_texture_source_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -1318,8 +1384,8 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?;
         match ear.archetype {
-            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at(ear.index),
             PlayerArchetype::ID => self.archetypes.player.get_velocity_component_at(ear.index),
+            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -1331,8 +1397,8 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?;
         match ear.archetype {
-            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at_mut(ear.index),
             PlayerArchetype::ID => self.archetypes.player.get_velocity_component_at_mut(ear.index),
+            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -1357,6 +1423,30 @@ impl<E, Q> MainWorld<E, Q> {
         let ear = self.entity_locations.get(&entity_id)?;
         match ear.archetype {
             WgpuShaderArchetype::ID => self.archetypes.wgpu_shader.get_wgpu_shader_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `WgpuTexture` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_texture_component(&self, entity_id: EntityId) -> Option<&WgpuTextureComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_wgpu_texture_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `WgpuTexture` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_texture_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuTextureComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_wgpu_texture_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -1421,6 +1511,72 @@ impl<E, Q> MainWorld<E, Q> {
         self.archetypes.wgpu_shader
             .spawn_with(
                 wgpu_shader,
+                Registry(&mut self.entity_locations)
+            )
+    }
+
+    /// Accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    pub fn get_wgpu_texture_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != WgpuTextureArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .wgpu_texture
+            .get_entity_at(ear.index)
+    }
+
+    /// Mutably accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    pub fn get_wgpu_texture_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != WgpuTextureArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .wgpu_texture
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Spawn a new `WgpuTexture` entity into the world given its [`WgpuTextureEntityData`].
+    #[inline]
+    pub fn spawn_wgpu_texture(
+        &mut self,
+        wgpu_texture: WgpuTextureEntityData
+    ) -> EntityId {
+        self.spawn_wgpu_texture_with(
+            wgpu_texture.texture_source,
+            wgpu_texture.wgpu_texture,
+        )
+    }
+
+    /// Spawn a new `WgpuTexture` entity into the world.
+    pub fn spawn_wgpu_texture_with(
+        &mut self,
+        texture_source: TextureSourceComponent,
+        wgpu_texture: WgpuTextureComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.wgpu_texture
+            .spawn_with(
+                texture_source,
+                wgpu_texture,
                 Registry(&mut self.entity_locations)
             )
     }
@@ -2391,7 +2547,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
     {
-        // System group 1 of 1
+        // System group 1 of 2
         let is_ready = self.systems.wgpu_init_shader.is_ready(
                &mut self.states.wgpu_render,
            );
@@ -2412,6 +2568,30 @@ impl<E, Q> MainWorld<E, Q> {
                 &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 2
+        let is_ready = self.systems.wgpu_init_texture.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.wgpu_init_texture.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply WgpuInitTextureSystem to WgpuTextureArchetype
+            self.systems.wgpu_init_texture.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.wgpu_texture.entities,
+                &self.archetypes.wgpu_texture.texture_sources,
+                &mut self.archetypes.wgpu_texture.wgpu_textures,
+            );
+
+            self.systems.wgpu_init_texture.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -2444,8 +2624,73 @@ impl<E, Q> MainWorld<E, Q> {
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
-        // Only one system in this phase; skip spawning thread.
-        self.apply_system_phase_wgpu_reinit_without_events();
+
+        // System group 1
+        let is_wgpu_init_shader_ready = self.systems.wgpu_init_shader.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_wgpu_init_shader_ready = is_wgpu_init_shader_ready &
+            self.systems.wgpu_init_shader.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_wgpu_init_shader_ready {
+                    s.spawn(|_| {
+                        // Apply WgpuInitShaderSystem to WgpuShaderArchetype
+                        self.systems.wgpu_init_shader.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.wgpu_shader.entities,
+                            &mut self.archetypes.wgpu_shader.wgpu_shaders,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.wgpu_init_shader.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 2
+        let is_wgpu_init_texture_ready = self.systems.wgpu_init_texture.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        let is_wgpu_init_texture_ready = is_wgpu_init_texture_ready &
+            self.systems.wgpu_init_texture.on_begin_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_wgpu_init_texture_ready {
+                    s.spawn(|_| {
+                        // Apply WgpuInitTextureSystem to WgpuTextureArchetype
+                        self.systems.wgpu_init_texture.apply_many(
+                            &mut self.states.wgpu_render,
+                            &self.archetypes.wgpu_texture.entities,
+                            &self.archetypes.wgpu_texture.texture_sources,
+                            &mut self.archetypes.wgpu_texture.wgpu_textures,
+                        );
+                    });
+                }
+            });
+        }
+
+        self.systems.wgpu_init_texture.on_end_phase(
+            &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "WgpuInitTextureSystem::on_end_phase returned an error"))
+        .ok();
 
         SystemWgpuReinitPhaseEvents::on_end_phase(
             &mut self.events,
@@ -3545,6 +3790,10 @@ impl<E, Q> MainWorld<E, Q> {
                 let id = self.spawn_wgpu_shader(data);
                 tracing::trace!(%id, "Spawned WgpuShader entity");
             },
+            ArchetypeEntityData::WgpuTexture(data) => {
+                let id = self.spawn_wgpu_texture(data);
+                tracing::trace!(%id, "Spawned WgpuTexture entity");
+            },
             ArchetypeEntityData::Environment(data) => {
                 let id = self.spawn_environment(data);
                 tracing::trace!(%id, "Spawned Environment entity");
@@ -3595,6 +3844,12 @@ impl<E, Q> MainWorld<E, Q> {
                         .wgpu_shader
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, WgpuShaderArchetype::ID))?
+                }
+                WgpuTextureArchetype::ID => {
+                    self.archetypes
+                        .wgpu_texture
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, WgpuTextureArchetype::ID))?
                 }
                 EnvironmentArchetype::ID => {
                     self.archetypes
@@ -3756,6 +4011,12 @@ impl<E, Q> MainWorld<E, Q> {
                     previous_frontload_pivot
                 )
             },
+            ArchetypeId::WgpuTexture => {
+                self.frontload_wgpu_textures_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
             ArchetypeId::Environment => {
                 self.frontload_environments_by_indices_sorted(
                     indices_to_frontload,
@@ -3873,6 +4134,68 @@ impl<E, Q> MainWorld<E, Q> {
     {
         self.archetypes
             .wgpu_shader
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_wgpu_textures(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .wgpu_texture
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_wgpu_textures_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .wgpu_texture
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_wgpu_textures_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&WgpuTextureEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .wgpu_texture
             .frontload_scan(
                 &mut self.entity_locations,
                 should_frontload
@@ -4572,6 +4895,20 @@ pub trait ComponentAccess {
     fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
         None
     }
+
+    /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
+        None
+    }
+
+    /// Gets the [`WgpuTexture`](WgpuTextureComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_component(&self, entity_id: EntityId) -> Option<&WgpuTextureComponent> {
+        None
+    }
 }
 
 pub trait ComponentAccessMut: ComponentAccess {
@@ -4708,6 +5045,20 @@ pub trait ComponentAccessMut: ComponentAccess {
     fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
         None
     }
+
+    /// Mutably gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_texture_source_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TextureSourceComponent> {
+        None
+    }
+
+    /// Mutably gets the [`WgpuTexture`](WgpuTextureComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuTextureComponent> {
+        None
+    }
 }
 
 //noinspection RsSortImplTraitMembers
@@ -4811,6 +5162,13 @@ impl<E, Q> ComponentAccess for MainWorld<E, Q> {
         self.get_sun_component(entity_id)
     }
 
+    /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
+        self.get_texture_source_component(entity_id)
+    }
+
     /// Gets the [`Tile`](TileComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
@@ -4844,6 +5202,13 @@ impl<E, Q> ComponentAccess for MainWorld<E, Q> {
     #[inline]
     fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
         self.get_wgpu_shader_component(entity_id)
+    }
+
+    /// Gets the [`WgpuTexture`](WgpuTextureComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_component(&self, entity_id: EntityId) -> Option<&WgpuTextureComponent> {
+        self.get_wgpu_texture_component(entity_id)
     }
 }
 
@@ -4948,6 +5313,13 @@ impl<E, Q> ComponentAccessMut for MainWorld<E, Q> {
         self.get_sun_component_mut(entity_id)
     }
 
+    /// Mutably gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_texture_source_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TextureSourceComponent> {
+        self.get_texture_source_component_mut(entity_id)
+    }
+
     /// Mutably gets the [`Tile`](TileComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
@@ -4981,5 +5353,12 @@ impl<E, Q> ComponentAccessMut for MainWorld<E, Q> {
     #[inline]
     fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
         self.get_wgpu_shader_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`WgpuTexture`](WgpuTextureComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuTextureComponent> {
+        self.get_wgpu_texture_component_mut(entity_id)
     }
 }

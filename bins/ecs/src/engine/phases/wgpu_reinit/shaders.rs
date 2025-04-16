@@ -27,8 +27,9 @@ impl ApplyWgpuInitShaderSystem for WgpuInitShaderSystem {
             return;
         };
 
-        let device_changed = device.id() != self.device_id;
-        self.device_id = device.id();
+        let current_device_id = device.id();
+        let device_changed = current_device_id != self.device_id;
+        self.device_id = current_device_id;
 
         for (entity_id, shader) in entities.iter().zip(shaders) {
             // Skip over all already initialized shaders.
@@ -36,14 +37,14 @@ impl ApplyWgpuInitShaderSystem for WgpuInitShaderSystem {
                 continue;
             }
 
-            debug_log(device, entity_id, shader);
+            debug_log(entity_id, device, shader);
             let module = device.device().create_shader_module(shader.descriptor.clone());
             shader.module = Some(module);
         }
     }
 }
 
-fn debug_log(device: &DeviceAndQueue, entity_id: &EntityId, shader: &mut WgpuShaderComponent) {
+fn debug_log(entity_id: &EntityId, device: &DeviceAndQueue, shader: &mut WgpuShaderComponent) {
     if tracing::enabled!(tracing::Level::TRACE) {
         debug!( // sic!
             %entity_id,

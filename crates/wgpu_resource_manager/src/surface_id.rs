@@ -19,6 +19,12 @@ impl SurfaceId {
         Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
     }
 
+    /// A constant function to create an unconfigured [`SurfaceId`].
+    #[inline]
+    pub const fn default() -> Self {
+        Self(0)
+    }
+
     /// Checks if the `SurfaceId` is uninitialized or has a default value.
     ///
     /// # Returns

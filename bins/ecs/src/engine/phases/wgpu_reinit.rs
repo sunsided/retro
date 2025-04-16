@@ -2,6 +2,7 @@ use std::convert::Infallible;
 use crate::engine::{FrameContext, PhaseEvents, SystemWgpuReinitPhaseEvents};
 
 pub mod shaders;
+pub mod textures;
 
 impl SystemWgpuReinitPhaseEvents for PhaseEvents {
     type Result = ();

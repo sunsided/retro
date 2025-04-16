@@ -32,6 +32,11 @@ components:
   - name: DynamicLight
     description: A marker component for light entities
   - name: WgpuShader
+    description: A WGPU shader
+  - name: TextureSource
+    description: The source of a texture, e.g. a file, or in-memory buffers
+  - name: WgpuTexture
+    description: A WGPU texture with a default view
 
 worlds:
   - name: Main
@@ -46,11 +51,17 @@ worlds:
       - SceneBackground
       - DynamicLight
       - WgpuShader
+      - WgpuTexture
 
 archetypes:
   - name: WgpuShader
     components:
       - WgpuShader
+
+  - name: WgpuTexture
+    components:
+      - TextureSource
+      - WgpuTexture
 
   - name: Environment
     components:
@@ -128,6 +139,17 @@ systems:
         write: true
     outputs:
       - WgpuShader
+
+  - name: WgpuInitTexture
+    phase: WgpuReinit
+    entities: true
+    states:
+      - use: WgpuRender
+        write: true
+    inputs:
+      - TextureSource
+    outputs:
+      - WgpuTexture
 
   - name: Camera
     phase: Update

@@ -1,8 +1,5 @@
 use crate::configured_resource_manager::WgpuResourceManagerInitializeSurfaceError;
-use crate::{
-    ConfiguredWgpuResourceManager, DeviceAndQueue, InstanceWrapper, PixelSize, SurfaceWrapper,
-    WgpuResourceManagerId, WgpuResourceManagerRef, WgpuResourceManagerResizeSurfaceError,
-};
+use crate::{ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper, PixelSize, SurfaceId, SurfaceWrapper, WgpuResourceManagerId, WgpuResourceManagerRef, WgpuResourceManagerResizeSurfaceError};
 use std::sync::Arc;
 use wgpu::{
     Adapter, Instance, PowerPreference, SurfaceCapabilities, SurfaceConfiguration, SurfaceTarget,
@@ -102,6 +99,22 @@ impl WgpuResourceManager {
         match self.manager.as_ref() {
             Some(manager) => manager.feature_supported(feature),
             None => false,
+        }
+    }
+
+    /// Gets the currently configured device ID, or [`DeviceId::default`](DeviceId::default) if none exists.
+    pub const fn device_id(&self) -> DeviceId {
+        match &self.manager {
+            None => DeviceId::default(),
+            Some(manager) => manager.device_id(),
+        }
+    }
+
+    /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
+    pub const fn surface_id(&self) -> SurfaceId {
+        match &self.manager {
+            None => SurfaceId::default(),
+            Some(manager) => manager.surface_id(),
         }
     }
 }

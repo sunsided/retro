@@ -241,7 +241,9 @@ pub enum ComponentId {
     /// 
     /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
     DynamicLight = 18,
-    /// The [`WgpuShader`](WgpuShaderComponent) component.
+    /// A WGPU shader
+    ///
+    /// For details, see the [`WgpuShaderComponent`](WgpuShaderComponent) Struct.
     ///
     /// # Archetype Use
     /// This component is used by the following archetypes:
@@ -253,6 +255,34 @@ pub enum ComponentId {
     /// 
     /// - [`WgpuInitShaderSystem`] ([`SystemId::WgpuInitShader`])
     WgpuShader = 19,
+    /// The source of a texture, e.g. a file, or in-memory buffers
+    ///
+    /// For details, see the [`TextureSourceComponent`](TextureSourceComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuTextureArchetype`] ([`ArchetypeId::WgpuTexture`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitTextureSystem`] ([`SystemId::WgpuInitTexture`])
+    TextureSource = 20,
+    /// A WGPU texture with a default view
+    ///
+    /// For details, see the [`WgpuTextureComponent`](WgpuTextureComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuTextureArchetype`] ([`ArchetypeId::WgpuTexture`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitTextureSystem`] ([`SystemId::WgpuInitTexture`])
+    WgpuTexture = 21,
 }
 
 #[allow(dead_code)]
@@ -295,6 +325,10 @@ impl ComponentId {
     pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(18).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuShader`](ComponentId::WgpuShader) component.
     pub const WGPU_SHADER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(19).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::TextureSource`](ComponentId::TextureSource) component.
+    pub const TEXTURE_SOURCE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(20).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuTexture`](ComponentId::WgpuTexture) component.
+    pub const WGPU_TEXTURE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(21).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -337,6 +371,10 @@ impl ComponentId {
     const COMPONENT_18: ComponentId = ComponentId::DynamicLight;
     /// Compile-time constant lookup of [`ComponentId::WgpuShader`](ComponentId::WgpuShader).
     const COMPONENT_19: ComponentId = ComponentId::WgpuShader;
+    /// Compile-time constant lookup of [`ComponentId::TextureSource`](ComponentId::TextureSource).
+    const COMPONENT_20: ComponentId = ComponentId::TextureSource;
+    /// Compile-time constant lookup of [`ComponentId::WgpuTexture`](ComponentId::WgpuTexture).
+    const COMPONENT_21: ComponentId = ComponentId::WgpuTexture;
 }
 
 #[allow(dead_code)]
@@ -363,6 +401,8 @@ impl ComponentId {
             Self::BackgroundColor => Self::BACKGROUND_COLOR_ID_VALUE,
             Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
             Self::WgpuShader => Self::WGPU_SHADER_ID_VALUE,
+            Self::TextureSource => Self::TEXTURE_SOURCE_ID_VALUE,
+            Self::WgpuTexture => Self::WGPU_TEXTURE_ID_VALUE,
         }
     }
 
@@ -412,6 +452,8 @@ impl core::fmt::Display for ComponentId {
             Self::BackgroundColor => write!(f, "BackgroundColor (ID 17)"),
             Self::DynamicLight => write!(f, "DynamicLight (ID 18)"),
             Self::WgpuShader => write!(f, "WgpuShader (ID 19)"),
+            Self::TextureSource => write!(f, "TextureSource (ID 20)"),
+            Self::WgpuTexture => write!(f, "WgpuTexture (ID 21)"),
         }
     }
 }
@@ -1996,7 +2038,7 @@ impl core::borrow::BorrowMut<DynamicLightData> for DynamicLightComponent {
     }
 }
 
-/// A `WgpuShader` component.
+/// A WGPU shader
 ///
 /// See also [`WgpuShaderData`] for the actual data.
 ///
@@ -2078,6 +2120,178 @@ impl core::borrow::Borrow<WgpuShaderData> for WgpuShaderComponent {
 #[automatically_derived]
 impl core::borrow::BorrowMut<WgpuShaderData> for WgpuShaderComponent {
     fn borrow_mut(&mut self) -> &mut WgpuShaderData {
+        &mut self.0
+    }
+}
+
+/// The source of a texture, e.g. a file, or in-memory buffers
+///
+/// See also [`TextureSourceData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuTextureArchetype`] ([`ArchetypeId::WgpuTexture`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitTextureSystem`] ([`SystemId::WgpuInitTexture`])
+#[derive(Debug, Clone)]
+pub struct TextureSourceComponent(TextureSourceData);
+
+#[allow(dead_code)]
+impl TextureSourceComponent {
+    /// Creates a new [`TextureSourceComponent`] instance from [`TextureSourceData`].
+    pub const fn new(data: TextureSourceData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for TextureSourceComponent {
+    const ID: ComponentId = ComponentId::TextureSource;
+}
+
+impl PartialEq<ComponentId> for TextureSourceComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<TextureSourceData> for TextureSourceComponent {
+    fn from(data: TextureSourceData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for TextureSourceComponent {
+    type Target = TextureSourceData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for TextureSourceComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<TextureSourceData> for TextureSourceComponent {
+    fn as_ref(&self) -> &TextureSourceData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<TextureSourceData> for TextureSourceComponent {
+    fn as_mut(&mut self) -> &mut TextureSourceData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<TextureSourceData> for TextureSourceComponent {
+    fn borrow(&self) -> &TextureSourceData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<TextureSourceData> for TextureSourceComponent {
+    fn borrow_mut(&mut self) -> &mut TextureSourceData {
+        &mut self.0
+    }
+}
+
+/// A WGPU texture with a default view
+///
+/// See also [`WgpuTextureData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuTextureArchetype`] ([`ArchetypeId::WgpuTexture`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitTextureSystem`] ([`SystemId::WgpuInitTexture`])
+#[derive(Debug, Clone)]
+pub struct WgpuTextureComponent(WgpuTextureData);
+
+#[allow(dead_code)]
+impl WgpuTextureComponent {
+    /// Creates a new [`WgpuTextureComponent`] instance from [`WgpuTextureData`].
+    pub const fn new(data: WgpuTextureData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for WgpuTextureComponent {
+    const ID: ComponentId = ComponentId::WgpuTexture;
+}
+
+impl PartialEq<ComponentId> for WgpuTextureComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<WgpuTextureData> for WgpuTextureComponent {
+    fn from(data: WgpuTextureData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for WgpuTextureComponent {
+    type Target = WgpuTextureData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for WgpuTextureComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<WgpuTextureData> for WgpuTextureComponent {
+    fn as_ref(&self) -> &WgpuTextureData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<WgpuTextureData> for WgpuTextureComponent {
+    fn as_mut(&mut self) -> &mut WgpuTextureData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<WgpuTextureData> for WgpuTextureComponent {
+    fn borrow(&self) -> &WgpuTextureData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<WgpuTextureData> for WgpuTextureComponent {
+    fn borrow_mut(&mut self) -> &mut WgpuTextureData {
         &mut self.0
     }
 }

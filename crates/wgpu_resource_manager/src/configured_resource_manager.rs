@@ -94,7 +94,7 @@ impl ConfiguredWgpuResourceManager {
         S: FnOnce(PixelSize, SurfaceCapabilities) -> Option<SurfaceConfiguration>,
     {
         let surface = self.instance.create_surface(window).inspect_err(
-            |error| tracing::error!(%error, manager_id = %self.id(), "Failed to create surface"),
+            |error| tracing::error!(%error, manager_id = %self.manager_id(), "Failed to create surface"),
         )?;
         let surface_id = SurfaceId::next();
         let mut surface_wrapper = SurfaceWrapper::new(surface_id, surface);
@@ -105,7 +105,7 @@ impl ConfiguredWgpuResourceManager {
         let adapter_exists_and_is_compatible = !surface_caps.formats.is_empty();
 
         if adapter_exists_and_is_compatible {
-            tracing::debug!(manager_id = %self.id(), %surface_id, "Adapter already exists and is compatible with the new surface");
+            tracing::debug!(manager_id = %self.manager_id(), %surface_id, "Adapter already exists and is compatible with the new surface");
             configure_surface(
                 surface_size,
                 surface_config,
@@ -128,14 +128,14 @@ impl ConfiguredWgpuResourceManager {
             })
             .await
             .inspect_err(
-                |error| tracing::error!(%error, manager_id = %self.id(), %surface_id, "Failed to request adapter"),
+                |error| tracing::error!(%error, manager_id = %self.manager_id(), %surface_id, "Failed to request adapter"),
             )?;
 
         log_selected_adapter_info(&adapter.get_info());
 
         let descriptor = Self::get_descriptor(device_descriptor);
         let (device, queue) = adapter.request_device(&descriptor).await
-            .inspect_err(|error| tracing::error!(%error, manager_id = %self.id(), %surface_id, "Failed to request device"))?;
+            .inspect_err(|error| tracing::error!(%error, manager_id = %self.manager_id(), %surface_id, "Failed to request device"))?;
 
         let device_id = DeviceId::next();
         let dq = DeviceAndQueue::new_from(device_id, device, queue);
@@ -175,7 +175,7 @@ impl ConfiguredWgpuResourceManager {
 
 impl WgpuResourceManagerAccessors for ConfiguredWgpuResourceManager {
     fn id(&self) -> WgpuResourceManagerId {
-        Self::id(self)
+        Self::manager_id(self)
     }
 
     fn instance(&self) -> &Instance {
@@ -205,7 +205,7 @@ impl WgpuResourceManagerAccessors for ConfiguredWgpuResourceManager {
 
 impl ConfiguredWgpuResourceManager {
     #[inline]
-    pub fn id(&self) -> WgpuResourceManagerId {
+    pub fn manager_id(&self) -> WgpuResourceManagerId {
         self.manager_id
     }
 
@@ -227,6 +227,18 @@ impl ConfiguredWgpuResourceManager {
     #[inline]
     pub const fn device_and_queue(&self) -> &DeviceAndQueue {
         &self.dq
+    }
+
+    /// Gets the currently configured device ID, or [`DeviceId::default`](DeviceId::default) if none exists.
+    #[inline]
+    pub const fn device_id(&self) -> DeviceId {
+        self.dq.id()
+    }
+
+    /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
+    #[inline]
+    pub const fn surface_id(&self) -> SurfaceId {
+        self.surface_wrapper.id()
     }
 
     #[inline]

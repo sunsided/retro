@@ -13,6 +13,21 @@ pub enum SystemId {
     /// 
     /// - [`WgpuShaderArchetype`] ([`ArchetypeId::WgpuShader`])
     WgpuInitShader = 1,
+    /// The [`WgpuInitTexture`](WgpuInitTextureSystem) system.
+    ///
+    /// ### Reads
+    /// 
+    /// - [`TextureSourceComponent`]
+    ///
+    /// ### Mutates
+    /// 
+    /// - [`WgpuTextureComponent`]
+    ///
+    /// # Archetype Use
+    /// This component processes components in the following archetypes:
+    /// 
+    /// - [`WgpuTextureArchetype`] ([`ArchetypeId::WgpuTexture`])
+    WgpuInitTexture = 2,
     /// The [`Camera`](CameraSystem) system.
     ///
     /// ### Mutates
@@ -24,7 +39,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
-    Camera = 2,
+    Camera = 3,
     /// The [`TimeOfDay`](TimeOfDaySystem) system.
     ///
     /// ### Mutates
@@ -35,7 +50,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    TimeOfDay = 3,
+    TimeOfDay = 4,
     /// The [`Sun`](SunSystem) system.
     ///
     /// ### Reads
@@ -52,7 +67,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    Sun = 4,
+    Sun = 5,
     /// The [`Fog`](FogSystem) system.
     ///
     /// ### Reads
@@ -67,7 +82,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    Fog = 5,
+    Fog = 6,
     /// The [`Stars`](StarsSystem) system.
     ///
     /// ### Reads
@@ -82,7 +97,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    Stars = 6,
+    Stars = 7,
     /// The [`Physics`](PhysicsSystem) system.
     ///
     /// ### Reads
@@ -98,7 +113,7 @@ pub enum SystemId {
     /// 
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
     /// - [`PlayerArchetype`] ([`ArchetypeId::Player`])
-    Physics = 7,
+    Physics = 8,
     /// The [`BackgroundColorCycle`](BackgroundColorCycleSystem) system.
     ///
     /// ### Mutates
@@ -109,7 +124,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    BackgroundColorCycle = 8,
+    BackgroundColorCycle = 9,
     /// The [`CameraRender`](CameraRenderSystem) system.
     ///
     /// ### Reads
@@ -120,7 +135,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`CameraArchetype`] ([`ArchetypeId::Camera`])
-    CameraRender = 9,
+    CameraRender = 10,
     /// The [`FrameGlobals`](FrameGlobalsSystem) system.
     ///
     /// ### Reads
@@ -136,7 +151,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    FrameGlobals = 10,
+    FrameGlobals = 11,
     /// The [`RenderBackground`](RenderBackgroundSystem) system.
     ///
     /// ### Reads
@@ -147,7 +162,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    RenderBackground = 11,
+    RenderBackground = 12,
     /// The [`RenderSky`](RenderSkySystem) system.
     ///
     /// ### Reads
@@ -158,7 +173,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`EnvironmentArchetype`] ([`ArchetypeId::Environment`])
-    RenderSky = 12,
+    RenderSky = 13,
     /// The [`Render`](RenderSystem) system.
     ///
     /// ### Reads
@@ -171,7 +186,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`CubeArchetype`] ([`ArchetypeId::Cube`])
-    Render = 13,
+    Render = 14,
     /// The [`TileRender`](TileRenderSystem) system.
     ///
     /// ### Reads
@@ -183,7 +198,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`TileArchetype`] ([`ArchetypeId::Tile`])
-    TileRender = 14,
+    TileRender = 15,
     /// The [`DynamicLight`](DynamicLightSystem) system.
     ///
     /// ### Reads
@@ -198,7 +213,7 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`DynamicLightArchetype`] ([`ArchetypeId::DynamicLight`])
-    DynamicLight = 15,
+    DynamicLight = 16,
     /// If retro rendering is enabled, this system blits the VGA offscreen buffer to the screen
     ///
     /// For details, see the [`VgaBlitSystem`](VgaBlitSystem) Struct.
@@ -211,42 +226,44 @@ pub enum SystemId {
     /// This component processes components in the following archetypes:
     /// 
     /// - [`SceneBackgroundArchetype`] ([`ArchetypeId::SceneBackground`])
-    VgaBlit = 16,
+    VgaBlit = 17,
 }
 
 impl SystemId {
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::WgpuInitShader`](SystemId::WgpuInitShader) system.
     pub const WGPU_INIT_SHADER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::WgpuInitTexture`](SystemId::WgpuInitTexture) system.
+    pub const WGPU_INIT_TEXTURE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Camera`](SystemId::Camera) system.
-    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::TimeOfDay`](SystemId::TimeOfDay) system.
-    pub const TIME_OF_DAY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    pub const TIME_OF_DAY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Sun`](SystemId::Sun) system.
-    pub const SUN_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const SUN_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Fog`](SystemId::Fog) system.
-    pub const FOG_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const FOG_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Stars`](SystemId::Stars) system.
-    pub const STARS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const STARS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Physics`](SystemId::Physics) system.
-    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const PHYSICS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::BackgroundColorCycle`](SystemId::BackgroundColorCycle) system.
-    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    pub const BACKGROUND_COLOR_CYCLE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::CameraRender`](SystemId::CameraRender) system.
-    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
+    pub const CAMERA_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::FrameGlobals`](SystemId::FrameGlobals) system.
-    pub const FRAME_GLOBALS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
+    pub const FRAME_GLOBALS_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderBackground`](SystemId::RenderBackground) system.
-    pub const RENDER_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+    pub const RENDER_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::RenderSky`](SystemId::RenderSky) system.
-    pub const RENDER_SKY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
+    pub const RENDER_SKY_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::Render`](SystemId::Render) system.
-    pub const RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(13).expect("Error at ECS construction time");
+    pub const RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::TileRender`](SystemId::TileRender) system.
-    pub const TILE_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(14).expect("Error at ECS construction time");
+    pub const TILE_RENDER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(15).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::DynamicLight`](SystemId::DynamicLight) system.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(15).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(16).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`SystemId::VgaBlit`](SystemId::VgaBlit) system.
-    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(16).expect("Error at ECS construction time");
+    pub const VGA_BLIT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(17).expect("Error at ECS construction time");
 }
 
 impl SystemId {
@@ -254,6 +271,7 @@ impl SystemId {
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         match self {
             Self::WgpuInitShader => Self::WGPU_INIT_SHADER_ID_VALUE,
+            Self::WgpuInitTexture => Self::WGPU_INIT_TEXTURE_ID_VALUE,
             Self::Camera => Self::CAMERA_ID_VALUE,
             Self::TimeOfDay => Self::TIME_OF_DAY_ID_VALUE,
             Self::Sun => Self::SUN_ID_VALUE,
@@ -300,21 +318,22 @@ impl core::fmt::Display for SystemId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
             Self::WgpuInitShader => write!(f, "WgpuInitShader (ID 1)"),
-            Self::Camera => write!(f, "Camera (ID 2)"),
-            Self::TimeOfDay => write!(f, "TimeOfDay (ID 3)"),
-            Self::Sun => write!(f, "Sun (ID 4)"),
-            Self::Fog => write!(f, "Fog (ID 5)"),
-            Self::Stars => write!(f, "Stars (ID 6)"),
-            Self::Physics => write!(f, "Physics (ID 7)"),
-            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 8)"),
-            Self::CameraRender => write!(f, "CameraRender (ID 9)"),
-            Self::FrameGlobals => write!(f, "FrameGlobals (ID 10)"),
-            Self::RenderBackground => write!(f, "RenderBackground (ID 11)"),
-            Self::RenderSky => write!(f, "RenderSky (ID 12)"),
-            Self::Render => write!(f, "Render (ID 13)"),
-            Self::TileRender => write!(f, "TileRender (ID 14)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 15)"),
-            Self::VgaBlit => write!(f, "VgaBlit (ID 16)"),
+            Self::WgpuInitTexture => write!(f, "WgpuInitTexture (ID 2)"),
+            Self::Camera => write!(f, "Camera (ID 3)"),
+            Self::TimeOfDay => write!(f, "TimeOfDay (ID 4)"),
+            Self::Sun => write!(f, "Sun (ID 5)"),
+            Self::Fog => write!(f, "Fog (ID 6)"),
+            Self::Stars => write!(f, "Stars (ID 7)"),
+            Self::Physics => write!(f, "Physics (ID 8)"),
+            Self::BackgroundColorCycle => write!(f, "BackgroundColorCycle (ID 9)"),
+            Self::CameraRender => write!(f, "CameraRender (ID 10)"),
+            Self::FrameGlobals => write!(f, "FrameGlobals (ID 11)"),
+            Self::RenderBackground => write!(f, "RenderBackground (ID 12)"),
+            Self::RenderSky => write!(f, "RenderSky (ID 13)"),
+            Self::Render => write!(f, "Render (ID 14)"),
+            Self::TileRender => write!(f, "TileRender (ID 15)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 16)"),
+            Self::VgaBlit => write!(f, "VgaBlit (ID 17)"),
         }
     }
 }
@@ -401,13 +420,14 @@ pub trait CreateSystem<S: System> {
 }
 
 /// Trait for constructing system instances.
-pub trait CreateSystems: CreateSystem<WgpuInitShaderSystem> + CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<SunSystem> + CreateSystem<FogSystem> + CreateSystem<StarsSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<FrameGlobalsSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<TileRenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
+pub trait CreateSystems: CreateSystem<WgpuInitShaderSystem> + CreateSystem<WgpuInitTextureSystem> + CreateSystem<CameraSystem> + CreateSystem<TimeOfDaySystem> + CreateSystem<SunSystem> + CreateSystem<FogSystem> + CreateSystem<StarsSystem> + CreateSystem<PhysicsSystem> + CreateSystem<BackgroundColorCycleSystem> + CreateSystem<CameraRenderSystem> + CreateSystem<FrameGlobalsSystem> + CreateSystem<RenderBackgroundSystem> + CreateSystem<RenderSkySystem> + CreateSystem<RenderSystem> + CreateSystem<TileRenderSystem> + CreateSystem<DynamicLightSystem> + CreateSystem<VgaBlitSystem>
 { }
 
 #[automatically_derived]
 impl<T> CreateSystems for T
 where
     T: CreateSystem<WgpuInitShaderSystem>
+     + CreateSystem<WgpuInitTextureSystem>
      + CreateSystem<CameraSystem>
      + CreateSystem<TimeOfDaySystem>
      + CreateSystem<SunSystem>
@@ -871,6 +891,218 @@ impl core::ops::Deref for WgpuInitShaderSystem {
 
 #[automatically_derived]
 impl core::ops::DerefMut for WgpuInitShaderSystem {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+/// A system operating on multiple [`Component`]s.
+///
+/// The business logic is implemented via the [`ApplyWgpuInitTextureSystem`] trait.
+/// See also [`WgpuInitTextureData`] for the systems-specific data.
+///
+/// ### Reads
+/// 
+/// - [`TextureSourceComponent`]
+///
+/// ### Mutates
+/// 
+/// - [`WgpuTextureComponent`]
+///
+/// # Archetype Use
+/// This component processes components in the following archetypes:
+/// 
+/// - [`WgpuTextureArchetype`] ([`ArchetypeId::WgpuTexture`])
+#[derive(Debug)]
+pub struct WgpuInitTextureSystem(WgpuInitTextureSystemData);
+
+/// Implements the business logic for the [`WgpuInitTextureSystem`] system.
+#[allow(dead_code)]
+pub trait ApplyWgpuInitTextureSystem: System {
+    type Error: core::error::Error;
+
+    /// Indicates whether this system is ready for action.
+    ///
+    /// Always called once per phase before all other functions of this system. If it returns
+    /// `true`, the remaining functions are executed, otherwise the system skips the phase.
+    #[inline]
+    #[allow(unused_variables)]
+    fn is_ready(
+        &self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> bool {
+        true
+    }
+
+    /// Executed at the beginning of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen after this
+    /// function was executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_begin_phase(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Executed at the end of the phase (for this system).
+    ///
+    /// All calls to [`apply_many`](Self::apply_many) and/or [`apply_single`](Self::apply_single) happen before this
+    /// function is executed.
+    #[inline]
+    #[allow(unused_variables)]
+    fn on_end_phase(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+    ) -> Result<(), Self::Error> {
+        Ok(())
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Performance Considerations
+    /// Prefer implementing [`apply_many`](Self::apply_many) directly.
+    ///
+    /// ### Reads
+    /// 
+    /// - `texture_source`: A reference to the input component of type [`TextureSourceComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_texture`: A mutable reference to the component of type [`WgpuTextureComponent`].
+    #[allow(unused_variables)]
+    fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        entity: EntityId,
+        texture_source: &TextureSourceComponent,
+        wgpu_texture: &mut WgpuTextureComponent,
+    ) {
+         // intentionally left blank
+     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `texture_source`: A slice of the input components of type [`TextureSourceComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        entities: &[EntityId],
+        texture_sources: &[TextureSourceComponent],
+        wgpu_textures: &mut [WgpuTextureComponent],
+    ) {
+        let zipped_iter = entities.iter().zip(texture_sources.iter().zip(wgpu_textures.iter_mut()));
+        for (entity, (texture_source, wgpu_texture)) in zipped_iter {
+            self.apply_single(
+                wgpu_render,
+                *entity,
+                texture_source,
+                wgpu_texture,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl WgpuInitTextureSystem {
+    /// Apply the system to the given entity components
+    #[inline]
+    pub fn apply_single(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        entity: EntityId,
+        texture_source: &TextureSourceComponent,
+        wgpu_texture: &mut WgpuTextureComponent,
+    ) {
+        ApplyWgpuInitTextureSystem::apply_single(
+            self,
+            wgpu_render,
+            entity,
+            texture_source,
+            wgpu_texture,
+        );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `texture_source`: A slice of the input components of type [`TextureSourceComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
+    #[inline]
+    fn apply_many(
+        &mut self,
+        wgpu_render: &mut WgpuRenderState,
+        entities: &[EntityId],
+        texture_sources: &[TextureSourceComponent],
+        wgpu_textures: &mut [WgpuTextureComponent],
+    ) {
+        ApplyWgpuInitTextureSystem::apply_many(
+            self,
+            wgpu_render,
+            entities,
+            texture_sources,
+            wgpu_textures,
+        );
+    }
+
+    /// Applies this system to the [`WgpuTextureArchetype`].
+    #[inline]
+    #[deprecated]
+    fn apply_to_wgpu_texture(
+        &mut self,
+        archetype: &mut WgpuTextureArchetype,
+        wgpu_render: &mut WgpuRenderState,
+    ) {
+        self.apply_many(
+            wgpu_render,
+            &archetype.entities,
+            &archetype.texture_sources,
+            &mut archetype.wgpu_textures,
+        );
+    }
+}
+
+#[automatically_derived]
+impl System for WgpuInitTextureSystem {
+    const ID: SystemId = SystemId::WgpuInitTexture;
+}
+
+impl PartialEq<SystemId> for WgpuInitTextureSystem {
+    fn eq(&self, other: &SystemId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<WgpuInitTextureSystemData> for WgpuInitTextureSystem {
+    fn from(data: WgpuInitTextureSystemData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for WgpuInitTextureSystem {
+    type Target = WgpuInitTextureSystemData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for WgpuInitTextureSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

@@ -10,9 +10,7 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
-use wgpu_resource_manager::{
-    ConfiguredWgpuResourceManager, DeviceAndQueue, WgpuResourceManagerInitializeSurfaceError,
-};
+use wgpu_resource_manager::{ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, SurfaceId, WgpuResourceManagerInitializeSurfaceError};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -209,6 +207,16 @@ impl WgpuRenderState {
         } else {
             Err(WgpuResizeSurfaceError::NoHardware)
         }
+    }
+
+    /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
+    pub fn device_id(&self) -> DeviceId {
+        self.hardware.as_ref().map(|h| h.device_id()).unwrap_or_default()
+    }
+
+    /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
+    pub fn surface_id(&self) -> SurfaceId {
+        self.hardware.as_ref().map(|h| h.surface_id()).unwrap_or_default()
     }
 
     /// Gets the size of the configured surface.

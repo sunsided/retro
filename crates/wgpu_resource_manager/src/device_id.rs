@@ -22,6 +22,12 @@ impl DeviceId {
         DeviceId(NEXT_ID.fetch_add(1, Ordering::SeqCst))
     }
 
+    /// A constant function to create an unconfigured [`DeviceId`].
+    #[inline]
+    pub const fn default() -> Self {
+        Self(0)
+    }
+
     /// Checks if the `DeviceId` is uninitialized or has a default value.
     ///
     /// # Returns

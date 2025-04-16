@@ -28,11 +28,7 @@ use std::sync::Arc;
 use tracing::{debug, instrument, warn};
 use wgpu::wgt::DeviceDescriptor;
 use wgpu::{Features, PowerPreference, RequestAdapterError, RequestDeviceError};
-use wgpu_resource_manager::{
-    wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, InstanceWrapper, PixelSize,
-    PixelSizeError, SurfaceWrapper, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError,
-    WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG,
-};
+use wgpu_resource_manager::{wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper, PixelSize, PixelSizeError, SurfaceId, SurfaceWrapper, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -118,6 +114,18 @@ impl WgpuHardware {
     #[inline]
     pub const fn surface(&self) -> Option<&SurfaceWrapper> {
         self.manager.surface()
+    }
+
+    /// Gets the currently configured device ID, or [`DeviceId::default`](DeviceId::default) if none exists.
+    #[inline]
+    pub const fn device_id(&self) -> DeviceId {
+        self.manager.device_id()
+    }
+
+    /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
+    #[inline]
+    pub const fn surface_id(&self) -> SurfaceId {
+        self.manager.surface_id()
     }
 
     /// Indicates whether wireframe rendering is supported by the adapter.
