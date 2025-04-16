@@ -179,6 +179,7 @@ pub struct MainWorldStates {
     /// The WGPU render state; will be initialized in the Render phase hooks
     ///
     /// The state is used in the following systems:
+    /// - [`WgpuInitShaderSystem`]
     /// - [`CameraSystem`]
     /// - [`CameraRenderSystem`]
     /// - [`FrameGlobalsSystem`]
@@ -204,6 +205,7 @@ pub struct MainWorldStates {
 /// The archetypes used in the world.
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
+    pub wgpu_shader: WgpuShaderArchetype,
     pub environment: EnvironmentArchetype,
     pub camera: CameraArchetype,
     pub dynamic_light: DynamicLightArchetype,
@@ -218,6 +220,7 @@ struct MainWorldArchetypes {
 /// The systems.
 #[derive(Debug)]
 pub struct MainWorldSystems {
+    wgpu_init_shader: WgpuInitShaderSystem,
     time_of_day: TimeOfDaySystem,
     sun: SunSystem,
     fog: FogSystem,
@@ -236,6 +239,20 @@ pub struct MainWorldSystems {
 }
 
 impl MainWorldSystems {
+
+    /// Gives immutable access to the [`WgpuInitShaderSystemData`] of the [`WgpuInitShaderSystem`].
+    #[inline]
+    pub fn as_wgpu_init_shader_ref(&self) -> &WgpuInitShaderSystemData {
+        use core::ops::Deref;
+        self.wgpu_init_shader.deref()
+    }
+
+    /// Gives mutable access to the [`WgpuInitShaderSystemData`] of the [`WgpuInitShaderSystem`].
+    #[inline]
+    pub fn as_wgpu_init_shader_mut(&mut self) -> &mut WgpuInitShaderSystemData {
+        use core::ops::DerefMut;
+        self.wgpu_init_shader.deref_mut()
+    }
 
     /// Gives immutable access to the [`TimeOfDaySystemData`] of the [`TimeOfDaySystem`].
     #[inline]
@@ -445,6 +462,20 @@ impl MainWorldSystems {
     pub fn as_vga_blit_mut(&mut self) -> &mut VgaBlitSystemData {
         use core::ops::DerefMut;
         self.vga_blit.deref_mut()
+    }
+}
+
+impl AsRef<WgpuInitShaderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_ref(&self) -> &WgpuInitShaderSystemData {
+        self.as_wgpu_init_shader_ref()
+    }
+}
+
+impl AsMut<WgpuInitShaderSystemData> for MainWorldSystems {
+    #[inline]
+    fn as_mut(&mut self) -> &mut WgpuInitShaderSystemData {
+        self.as_wgpu_init_shader_mut()
     }
 }
 
@@ -659,6 +690,15 @@ impl AsMut<VgaBlitSystemData> for MainWorldSystems {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<WgpuShaderEntityData> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: WgpuShaderEntityData) -> EntityId {
+        self.spawn_wgpu_shader(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<EnvironmentEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
@@ -780,7 +820,8 @@ impl<E, Q> MainWorld<E, Q> {
         command_queue: Q,
         phase_events: E) -> Self
     where
-        S: CreateSystem<TimeOfDaySystem>
+        S: CreateSystem<WgpuInitShaderSystem>
+         + CreateSystem<TimeOfDaySystem>
          + CreateSystem<SunSystem>
          + CreateSystem<FogSystem>
          + CreateSystem<StarsSystem>
@@ -802,6 +843,7 @@ impl<E, Q> MainWorld<E, Q> {
         Self {
             archetypes: Default::default(),
             systems: MainWorldSystems {
+                wgpu_init_shader: CreateSystem::<WgpuInitShaderSystem>::create(create_systems),
                 time_of_day: CreateSystem::<TimeOfDaySystem>::create(create_systems),
                 sun: CreateSystem::<SunSystem>::create(create_systems),
                 fog: CreateSystem::<FogSystem>::create(create_systems),
@@ -852,6 +894,99 @@ impl<E, Q> MainWorld<E, Q> {
         self.handle_despawn_command(id)
     }
 
+    /// Accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    pub fn get_wgpu_shader(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != WgpuShaderArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .wgpu_shader
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    pub fn get_wgpu_shader_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != WgpuShaderArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .wgpu_shader
+            .get_at_mut(ear.index)
+    }
+
+    /// Spawn a new `WgpuShader` entity into the world given its [`WgpuShaderEntityData`].
+    #[inline]
+    pub fn spawn_wgpu_shader(
+        &mut self,
+        wgpu_shader: WgpuShaderEntityData
+    ) -> EntityId {
+        self.spawn_wgpu_shader_with(
+            wgpu_shader.wgpu_shader,
+        )
+    }
+
+    /// Spawn a new `WgpuShader` entity into the world.
+    pub fn spawn_wgpu_shader_with(
+        &mut self,
+        wgpu_shader: WgpuShaderComponent,
+    ) -> EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+
+        impl WorldEntityRegistry for Registry<'_> {
+            #[inline(always)]
+            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+                self.0.insert(id, archetype);
+                id
+            }
+        }
+
+        self.archetypes.wgpu_shader
+            .spawn_with(
+                wgpu_shader,
+                Registry(&mut self.entity_locations)
+            )
+    }
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    pub fn get_environment(
+        &self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != EnvironmentArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .environment
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    pub fn get_environment_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != EnvironmentArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .environment
+            .get_at_mut(ear.index)
+    }
+
     /// Spawn a new `Environment` entity into the world given its [`EnvironmentEntityData`].
     #[inline]
     pub fn spawn_environment(
@@ -900,6 +1035,36 @@ impl<E, Q> MainWorld<E, Q> {
             )
     }
 
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    pub fn get_camera(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != CameraArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .camera
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    pub fn get_camera_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != CameraArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .camera
+            .get_at_mut(ear.index)
+    }
+
     /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
     #[inline]
     pub fn spawn_camera(
@@ -934,6 +1099,36 @@ impl<E, Q> MainWorld<E, Q> {
                 camera_fps_controller,
                 Registry(&mut self.entity_locations)
             )
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    pub fn get_dynamic_light(
+        &self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != DynamicLightArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .dynamic_light
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    pub fn get_dynamic_light_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != DynamicLightArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .dynamic_light
+            .get_at_mut(ear.index)
     }
 
     /// Spawn a new `DynamicLight` entity into the world given its [`DynamicLightEntityData`].
@@ -975,6 +1170,36 @@ impl<E, Q> MainWorld<E, Q> {
             )
     }
 
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    pub fn get_tile(
+        &self,
+        entity_id: EntityId
+    ) -> Option<TileEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != TileArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .tile
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    pub fn get_tile_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<TileEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != TileArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .tile
+            .get_at_mut(ear.index)
+    }
+
     /// Spawn a new `Tile` entity into the world given its [`TileEntityData`].
     #[inline]
     pub fn spawn_tile(
@@ -1009,6 +1234,36 @@ impl<E, Q> MainWorld<E, Q> {
                 position,
                 Registry(&mut self.entity_locations)
             )
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    pub fn get_cube(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != CubeArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .cube
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    pub fn get_cube_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != CubeArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .cube
+            .get_at_mut(ear.index)
     }
 
     /// Spawn a new `Cube` entity into the world given its [`CubeEntityData`].
@@ -1053,6 +1308,36 @@ impl<E, Q> MainWorld<E, Q> {
             )
     }
 
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    pub fn get_player(
+        &self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != PlayerArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .player
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    pub fn get_player_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != PlayerArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .player
+            .get_at_mut(ear.index)
+    }
+
     /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
     #[inline]
     pub fn spawn_player(
@@ -1092,6 +1377,36 @@ impl<E, Q> MainWorld<E, Q> {
             )
     }
 
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    pub fn get_foreground_object(
+        &self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != ForegroundObjectArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .foreground_object
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    pub fn get_foreground_object_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != ForegroundObjectArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .foreground_object
+            .get_at_mut(ear.index)
+    }
+
     /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
     #[inline]
     pub fn spawn_foreground_object(
@@ -1128,6 +1443,36 @@ impl<E, Q> MainWorld<E, Q> {
             )
     }
 
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    pub fn get_background_object(
+        &self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != BackgroundObjectArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .background_object
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    pub fn get_background_object_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != BackgroundObjectArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .background_object
+            .get_at_mut(ear.index)
+    }
+
     /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
     #[inline]
     pub fn spawn_background_object(
@@ -1159,6 +1504,36 @@ impl<E, Q> MainWorld<E, Q> {
                 position,
                 Registry(&mut self.entity_locations)
             )
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    pub fn get_scene_background(
+        &self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityRef> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != SceneBackgroundArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .scene_background
+            .get_at(ear.index)
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    pub fn get_scene_background_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityMut> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        if ear.archetype != SceneBackgroundArchetype::ID {
+            return None;
+        }
+        self
+            .archetypes
+            .scene_background
+            .get_at_mut(ear.index)
     }
 
     /// Spawn a new `SceneBackground` entity into the world given its [`SceneBackgroundEntityData`].
@@ -1230,6 +1605,25 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Runs a per-frame update of the frame context at the start of a frame.
+    fn on_begin_wgpu_reinit_phase(&mut self) {
+        let now = std::time::Instant::now();
+        let previous = self.delta_timers.previous_wgpu_reinit_start;
+        self.delta_timers.current_wgpu_reinit_start = now;
+        self.context.current_frame_start = now;
+        self.context.last_frame_start = previous;
+        if self.context.frame_number == 0 {
+            self.context.delta_time_secs = 0.0;
+        } else {
+            self.context.delta_time_secs = (now - previous).as_secs_f32();
+        }
+    }
+
+    /// Runs a per-frame update of the frame context at the end of a frame.
+    fn on_end_wgpu_reinit_phase(&mut self) {
+        self.delta_timers.previous_wgpu_reinit_start = self.delta_timers.current_wgpu_reinit_start;
+    }
+
+    /// Runs a per-frame update of the frame context at the start of a frame.
     fn on_begin_fixed_update_phase(&mut self) {
         let now = std::time::Instant::now();
         let previous = self.delta_timers.previous_fixed_update_start;
@@ -1291,7 +1685,8 @@ impl<E, Q> MainWorld<E, Q> {
     /// This method executes all system phases in sequence.
     /// The phases are processed in the following order:
     ///
-    /// - `Startup`
+    /// - ~~`Startup`~~ (skipped here, must be executed manually)
+    /// - ~~`WgpuReinit`~~ (skipped here, must be executed manually)
     /// - `FixedUpdate`
     /// - `Update`
     /// - ~~`Render`~~ (skipped here, must be executed manually)
@@ -1305,8 +1700,12 @@ impl<E, Q> MainWorld<E, Q> {
     {
         self.on_begin_frame();
         self.handle_commands();
-        // The Startup phase always runs.
-        self.apply_system_phase_startup();
+
+        // NOTE: The Startup phase is marked manual and will be skipped here.
+        //       self.par_apply_system_phase_startup();
+
+        // NOTE: The WgpuReinit phase is marked manual and will be skipped here.
+        //       self.par_apply_system_phase_wgpu_reinit();
 
         // Apply fixed-time loop for phase FixedUpdate
         self.context.fixed_time_secs = SystemPhase::FIXED_UPDATE_SECS;
@@ -1330,7 +1729,8 @@ impl<E, Q> MainWorld<E, Q> {
     /// This method executes all system phases in sequence, but with parallel execution
     /// of systems within each phase. The phases are processed in the following order:
     ///
-    /// - `Startup`
+    /// - ~~`Startup`~~ (skipped here, must be executed manually)
+    /// - ~~`WgpuReinit`~~ (skipped here, must be executed manually)
     /// - `FixedUpdate`
     /// - `Update`
     /// - ~~`Render`~~ (skipped here, must be executed manually)
@@ -1349,8 +1749,12 @@ impl<E, Q> MainWorld<E, Q> {
     {
         self.on_begin_frame();
         self.handle_commands();
-        // The Startup phase always runs.
-        self.apply_system_phase_startup();
+
+        // NOTE: The Startup phase is marked manual and will be skipped here.
+        //       self.par_apply_system_phase_startup();
+
+        // NOTE: The WgpuReinit phase is marked manual and will be skipped here.
+        //       self.par_apply_system_phase_wgpu_reinit();
 
         // Apply fixed-time loop for phase FixedUpdate
         self.context.fixed_time_secs = SystemPhase::FIXED_UPDATE_SECS;
@@ -1386,7 +1790,7 @@ impl<E, Q> MainWorld<E, Q> {
     ///
     /// # Type Parameters
     /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
-    fn apply_system_phase_startup(&mut self)
+    pub fn apply_system_phase_startup(&mut self)
     where
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
@@ -1440,7 +1844,7 @@ impl<E, Q> MainWorld<E, Q> {
     /// - Systems in each group are spawned as parallel tasks
     /// - Each system operates on its affected archetypes concurrently
     /// - Phase events are triggered at the start and end of execution
-    fn par_apply_system_phase_startup(&mut self)
+    pub fn par_apply_system_phase_startup(&mut self)
     where
         E: SystemPhaseEvents,
         Q: WorldCommandSender + WorldCommandReceiver
@@ -1465,6 +1869,127 @@ impl<E, Q> MainWorld<E, Q> {
         // Process all commands.
         self.handle_commands();
         self.on_end_startup_phase();
+    }
+
+    /// Execute system phase `WgpuReinit`
+    ///
+    /// This method executes all systems scheduled for the `WgpuReinit` phase in sequential order.
+    /// Systems are organized into groups that must be executed in sequence, while systems within each
+    /// group can potentially be parallelized (see `par_apply_system_phase_wgpu_reinit`).
+    ///
+    /// # Execution Flow
+    /// 1. Triggers the phase start event if event handling is enabled
+    /// 2. Sequentially processes each system group
+    /// 3. For each system in a group:
+    ///    - Applies the system to all matching archetypes
+    ///    - Provides read-only access to input components
+    ///    - Provides mutable access to output components
+    /// 4. Triggers the phase end event if event handling is enabled
+    ///
+    /// # Type Parameters
+    /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
+    pub fn apply_system_phase_wgpu_reinit(&mut self)
+    where
+        E: SystemPhaseEvents,
+        Q: WorldCommandSender + WorldCommandReceiver
+    {
+        self.on_begin_wgpu_reinit_phase();
+        let result = SystemWgpuReinitPhaseEvents::on_begin_phase(
+            &mut self.events,
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+        .ok();
+
+        self.apply_system_phase_wgpu_reinit_without_events();
+
+        SystemWgpuReinitPhaseEvents::on_end_phase(
+            &mut self.events,
+            result,
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+        .ok();
+
+        // Process all commands.
+        self.handle_commands();
+        self.on_end_wgpu_reinit_phase();
+    }
+
+    /// Execute system phase `WgpuReinit` without calling events. See [`apply_system_phase_wgpu_reinit`](Self::apply_system_phase_wgpu_reinit).
+    #[inline]
+    fn apply_system_phase_wgpu_reinit_without_events(&mut self)
+    where
+        E: SystemPhaseEvents,
+        Q: WorldCommandSender + WorldCommandReceiver
+    {
+        // System group 1 of 1
+        let is_ready = self.systems.wgpu_init_shader.is_ready(
+               &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.wgpu_init_shader.on_begin_phase(
+                    &mut self.states.wgpu_render,
+                )
+                .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
+                .is_ok()
+        {
+            // Apply WgpuInitShaderSystem to WgpuShaderArchetype
+            self.systems.wgpu_init_shader.apply_many(
+                &mut self.states.wgpu_render,
+                &self.archetypes.wgpu_shader.entities,
+                &mut self.archetypes.wgpu_shader.wgpu_shaders,
+            );
+
+            self.systems.wgpu_init_shader.on_end_phase(
+                &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+
+        // Process all commands.
+        self.handle_commands();
+    }
+
+    /// Applies the specified system phase with parallel execution of systems.
+    ///
+    /// This method uses Rayon's parallel scoping to execute systems concurrently within each system
+    /// group. Systems within a group are executed in parallel while groups themselves are processed
+    /// sequentially.
+    ///
+    /// # Type Parameters
+    /// - `E`: The type implementing `SystemPhaseEvents` for phase lifecycle events
+    ///
+    /// # Notes
+    /// - Systems in each group are spawned as parallel tasks
+    /// - Each system operates on its affected archetypes concurrently
+    /// - Phase events are triggered at the start and end of execution
+    pub fn par_apply_system_phase_wgpu_reinit(&mut self)
+    where
+        E: SystemPhaseEvents,
+        Q: WorldCommandSender + WorldCommandReceiver
+    {
+        self.on_begin_wgpu_reinit_phase();
+        let result = SystemWgpuReinitPhaseEvents::on_begin_phase(
+            &mut self.events,
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
+        .ok();
+        // Only one system in this phase; skip spawning thread.
+        self.apply_system_phase_wgpu_reinit_without_events();
+
+        SystemWgpuReinitPhaseEvents::on_end_phase(
+            &mut self.events,
+            result,
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
+        .ok();
+
+        // Process all commands.
+        self.handle_commands();
+        self.on_end_wgpu_reinit_phase();
     }
 
     /// Execute system phase `FixedUpdate`
@@ -2548,6 +3073,10 @@ impl<E, Q> MainWorld<E, Q> {
     fn handle_spawn_command(&mut self, data: ArchetypeEntityData) {
         match data {
             // Accept only archetypes known to the world
+            ArchetypeEntityData::WgpuShader(data) => {
+                let id = self.spawn_wgpu_shader(data);
+                tracing::trace!(%id, "Spawned WgpuShader entity");
+            },
             ArchetypeEntityData::Environment(data) => {
                 let id = self.spawn_environment(data);
                 tracing::trace!(%id, "Spawned Environment entity");
@@ -2593,6 +3122,12 @@ impl<E, Q> MainWorld<E, Q> {
     fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
          if let Some(loc) = self.entity_locations.remove(&id) {
             let result = match loc.archetype {
+                WgpuShaderArchetype::ID => {
+                    self.archetypes
+                        .wgpu_shader
+                        .drop_at_index(loc.index)
+                        .map_err(|index| DespawnError::InvalidIndexInArchetype(index, WgpuShaderArchetype::ID))?
+                }
                 EnvironmentArchetype::ID => {
                     self.archetypes
                         .environment
@@ -2678,6 +3213,10 @@ struct DeltaTimers {
     current_startup_start: std::time::Instant,
     /// The previous start time for the [`Startup`](StartupPhase) phase.
     previous_startup_start: std::time::Instant,
+    /// The current start time for the [`WgpuReinit`](WgpuReinitPhase) phase.
+    current_wgpu_reinit_start: std::time::Instant,
+    /// The previous start time for the [`WgpuReinit`](WgpuReinitPhase) phase.
+    previous_wgpu_reinit_start: std::time::Instant,
     /// The current start time for the [`FixedUpdate`](FixedUpdatePhase) phase.
     current_fixed_update_start: std::time::Instant,
     /// The previous start time for the [`FixedUpdate`](FixedUpdatePhase) phase.
@@ -2698,6 +3237,8 @@ impl Default for DeltaTimers {
         Self {
             current_startup_start: now,
             previous_startup_start: now,
+            current_wgpu_reinit_start: now,
+            previous_wgpu_reinit_start: now,
             current_fixed_update_start: now,
             previous_fixed_update_start: now,
             current_update_start: now,
@@ -2741,6 +3282,12 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         match archetype {
+            ArchetypeId::WgpuShader => {
+                self.frontload_wgpu_shaders_by_indices_sorted(
+                    indices_to_frontload,
+                    previous_frontload_pivot
+                )
+            },
             ArchetypeId::Environment => {
                 self.frontload_environments_by_indices_sorted(
                     indices_to_frontload,
@@ -2800,6 +3347,68 @@ impl<E, Q> MainWorld<E, Q> {
                 0
             }
         }
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_wgpu_shaders(
+        &mut self,
+        entities_to_frontload: &[EntityId],
+        previous_frontload_pivot: Option<usize>
+    ) -> usize {
+        self.archetypes
+            .wgpu_shader
+            .frontload(
+                &mut self.entity_locations,
+                entities_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities provided by their IDs (e.g., from quadtree results).
+    ///
+    /// This function operates directly on indices and assumes that the index list is sorted
+    /// for coherent cache access. It works with unsorted lists but may have degraded performance.
+    ///
+    /// Returns the count of frontloaded entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_wgpu_shaders_by_indices_sorted<I>(
+        &mut self,
+        indices_to_frontload: I,
+        previous_frontload_pivot: Option<usize>
+    ) -> usize
+    where
+        I: AsRef<[usize]>
+    {
+        self.archetypes
+            .wgpu_shader
+            .frontload_by_indices_sorted(
+                &mut self.entity_locations,
+                indices_to_frontload,
+                previous_frontload_pivot
+            )
+    }
+
+    /// Frontloads entities satisfying `should_frontload`.
+    /// Returns the number of entities frontloaded.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn frontload_wgpu_shaders_by_scan<F>(
+        &mut self,
+        should_frontload: F,
+    ) -> usize
+    where
+        for<'archetype> F: FnMut(&WgpuShaderEntityRef<'archetype>) -> bool,
+    {
+        self.archetypes
+            .wgpu_shader
+            .frontload_scan(
+                &mut self.entity_locations,
+                should_frontload
+            )
     }
 
     /// Frontloads entities provided by their IDs (e.g., from quadtree results).

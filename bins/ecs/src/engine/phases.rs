@@ -15,6 +15,7 @@ pub mod fixed_update;
 pub mod render;
 pub mod startup;
 pub mod update;
+pub mod wgpu_reinit;
 
 #[inline(always)]
 pub fn smoothstep(edge0: f32, edge1: f32, x: f32) -> f32 {

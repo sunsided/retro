@@ -1,9 +1,7 @@
-use crate::engine::components::{
-    AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData,
-    StarsData, SunData, TileData, TimeOfDayData,
-};
+use wgpu::include_wgsl;
+use crate::engine::components::{AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData, StarsData, SunData, TileData, TimeOfDayData, WgpuShaderData};
 use crate::engine::phases::render::background::BackgroundColorData;
-use crate::engine::TileEntityData;
+use crate::engine::{TileEntityData, WgpuShaderEntityData};
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
     DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
@@ -20,6 +18,28 @@ pub trait InitializeMainWorld {
 
 impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
     fn create_initial_entities(&mut self) {
+        let light_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/light.wgsl")).into(),
+        });
+
+        let vga_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/vga.wgsl")).into(),
+        });
+
+        let sky_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/sky.wgsl")).into(),
+        });
+
+        let tile_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/tile.wgsl")).into(),
+        });
+
+        let generic_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/shader.wgsl")).into(),
+        });
+
+        let x = self.get_wgpu_shader(light_shader);
+
         self.spawn_scene_background(SceneBackgroundEntityData {
             background_color: BackgroundColorData::default().into(),
         });

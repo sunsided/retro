@@ -2,6 +2,9 @@ use core::fmt::Display;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// The ID of a WGPU device.
+///
+/// Valid device IDs are nonzero internally, and the [`DeviceId::is_uninitialized`](DeviceId::is_uninitialized)
+/// function can be used to test whether a device ID was actually provided.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DeviceId(u32);
 

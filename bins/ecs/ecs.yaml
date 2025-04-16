@@ -10,30 +10,6 @@ states:
   - name: Input
     description: The device input obtained from the window system.
 
-phases:
-  - name: Startup
-  - name: FixedUpdate
-    fixed: 60Hz
-  - name: Update
-  - name: Render
-    manual: true
-    states:
-      - use: WgpuRender
-        write: true
-
-worlds:
-  - name: Main
-    archetypes:
-      - Environment
-      - Camera
-      - Cube
-      - Player
-      - Tile
-      - ForegroundObject
-      - BackgroundObject
-      - SceneBackground
-      - DynamicLight
-
 components:
   - name: TimeOfDay
   - name: Sun
@@ -55,8 +31,27 @@ components:
     description: The background color used for clearing the render buffer
   - name: DynamicLight
     description: A marker component for light entities
+  - name: WgpuShader
+
+worlds:
+  - name: Main
+    archetypes:
+      - Environment
+      - Camera
+      - Cube
+      - Player
+      - Tile
+      - ForegroundObject
+      - BackgroundObject
+      - SceneBackground
+      - DynamicLight
+      - WgpuShader
 
 archetypes:
+  - name: WgpuShader
+    components:
+      - WgpuShader
+
   - name: Environment
     components:
       - TimeOfDay
@@ -110,7 +105,30 @@ archetypes:
     components:
       - BackgroundColor
 
+phases:
+  - name: Startup  # TODO: put world entity creation here
+    manual: true
+  - name: WgpuReinit
+    manual: true
+  - name: FixedUpdate
+    fixed: 60Hz
+  - name: Update
+  - name: Render
+    manual: true
+    states:
+      - use: WgpuRender
+        write: true
+
 systems:
+  - name: WgpuInitShader
+    phase: WgpuReinit
+    entities: true
+    states:
+      - use: WgpuRender
+        write: true
+    outputs:
+      - WgpuShader
+
   - name: Camera
     phase: Update
     states:

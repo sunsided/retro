@@ -38,6 +38,7 @@ use crate::engine::phases::render::{
 use crate::engine::phases::update::{
     camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData,
 };
+use crate::engine::phases::wgpu_reinit::shaders::WgpuInitShaderSystemData;
 pub use command_queue::CommandQueue;
 pub use phase_events::PhaseEvents;
 

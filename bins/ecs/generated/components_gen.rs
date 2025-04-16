@@ -241,6 +241,18 @@ pub enum ComponentId {
     /// 
     /// - [`DynamicLightSystem`] ([`SystemId::DynamicLight`])
     DynamicLight = 18,
+    /// The [`WgpuShader`](WgpuShaderComponent) component.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuShaderArchetype`] ([`ArchetypeId::WgpuShader`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitShaderSystem`] ([`SystemId::WgpuInitShader`])
+    WgpuShader = 19,
 }
 
 #[allow(dead_code)]
@@ -281,6 +293,8 @@ impl ComponentId {
     pub const BACKGROUND_COLOR_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(17).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::DynamicLight`](ComponentId::DynamicLight) component.
     pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(18).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuShader`](ComponentId::WgpuShader) component.
+    pub const WGPU_SHADER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(19).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -321,6 +335,8 @@ impl ComponentId {
     const COMPONENT_17: ComponentId = ComponentId::BackgroundColor;
     /// Compile-time constant lookup of [`ComponentId::DynamicLight`](ComponentId::DynamicLight).
     const COMPONENT_18: ComponentId = ComponentId::DynamicLight;
+    /// Compile-time constant lookup of [`ComponentId::WgpuShader`](ComponentId::WgpuShader).
+    const COMPONENT_19: ComponentId = ComponentId::WgpuShader;
 }
 
 #[allow(dead_code)]
@@ -346,6 +362,7 @@ impl ComponentId {
             Self::Color => Self::COLOR_ID_VALUE,
             Self::BackgroundColor => Self::BACKGROUND_COLOR_ID_VALUE,
             Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
+            Self::WgpuShader => Self::WGPU_SHADER_ID_VALUE,
         }
     }
 
@@ -394,6 +411,7 @@ impl core::fmt::Display for ComponentId {
             Self::Color => write!(f, "Color (ID 16)"),
             Self::BackgroundColor => write!(f, "BackgroundColor (ID 17)"),
             Self::DynamicLight => write!(f, "DynamicLight (ID 18)"),
+            Self::WgpuShader => write!(f, "WgpuShader (ID 19)"),
         }
     }
 }
@@ -436,11 +454,6 @@ impl TimeOfDayComponent {
     /// Creates a new [`TimeOfDayComponent`] instance from [`TimeOfDayData`].
     pub const fn new(data: TimeOfDayData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`TimeOfDayData`].
-    pub const fn into_inner(self) -> TimeOfDayData {
-        self.0
     }
 }
 
@@ -528,11 +541,6 @@ impl SunComponent {
     /// Creates a new [`SunComponent`] instance from [`SunData`].
     pub const fn new(data: SunData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`SunData`].
-    pub const fn into_inner(self) -> SunData {
-        self.0
     }
 }
 
@@ -622,11 +630,6 @@ impl SkydomeComponent {
     pub const fn new(data: SkydomeData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`SkydomeData`].
-    pub const fn into_inner(self) -> SkydomeData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -713,11 +716,6 @@ impl FogComponent {
     /// Creates a new [`FogComponent`] instance from [`FogData`].
     pub const fn new(data: FogData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`FogData`].
-    pub const fn into_inner(self) -> FogData {
-        self.0
     }
 }
 
@@ -806,11 +804,6 @@ impl AmbientLightComponent {
     pub const fn new(data: AmbientLightData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`AmbientLightData`].
-    pub const fn into_inner(self) -> AmbientLightData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -897,11 +890,6 @@ impl StarsComponent {
     /// Creates a new [`StarsComponent`] instance from [`StarsData`].
     pub const fn new(data: StarsData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`StarsData`].
-    pub const fn into_inner(self) -> StarsData {
-        self.0
     }
 }
 
@@ -990,11 +978,6 @@ impl CameraComponent {
     pub const fn new(data: CameraData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`CameraData`].
-    pub const fn into_inner(self) -> CameraData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1080,11 +1063,6 @@ impl CameraFpsControllerComponent {
     /// Creates a new [`CameraFpsControllerComponent`] instance from [`CameraFpsControllerData`].
     pub const fn new(data: CameraFpsControllerData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`CameraFpsControllerData`].
-    pub const fn into_inner(self) -> CameraFpsControllerData {
-        self.0
     }
 }
 
@@ -1179,11 +1157,6 @@ impl PositionComponent {
     pub const fn new(data: PositionData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`PositionData`].
-    pub const fn into_inner(self) -> PositionData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1269,11 +1242,6 @@ impl TransformComponent {
     /// Creates a new [`TransformComponent`] instance from [`TransformData`].
     pub const fn new(data: TransformData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`TransformData`].
-    pub const fn into_inner(self) -> TransformData {
-        self.0
     }
 }
 
@@ -1362,11 +1330,6 @@ impl VelocityComponent {
     pub const fn new(data: VelocityData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`VelocityData`].
-    pub const fn into_inner(self) -> VelocityData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1453,11 +1416,6 @@ impl TileComponent {
     pub const fn new(data: TileData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`TileData`].
-    pub const fn into_inner(self) -> TileData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1543,11 +1501,6 @@ impl HealthComponent {
     pub const fn new(data: HealthData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`HealthData`].
-    pub const fn into_inner(self) -> HealthData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1632,11 +1585,6 @@ impl ColliderComponent {
     /// Creates a new [`ColliderComponent`] instance from [`ColliderData`].
     pub const fn new(data: ColliderData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`ColliderData`].
-    pub const fn into_inner(self) -> ColliderData {
-        self.0
     }
 }
 
@@ -1724,11 +1672,6 @@ impl ModelComponent {
     pub const fn new(data: ModelData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`ModelData`].
-    pub const fn into_inner(self) -> ModelData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1814,11 +1757,6 @@ impl ColorComponent {
     /// Creates a new [`ColorComponent`] instance from [`ColorData`].
     pub const fn new(data: ColorData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`ColorData`].
-    pub const fn into_inner(self) -> ColorData {
-        self.0
     }
 }
 
@@ -1908,11 +1846,6 @@ impl BackgroundColorComponent {
     pub const fn new(data: BackgroundColorData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`BackgroundColorData`].
-    pub const fn into_inner(self) -> BackgroundColorData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1999,11 +1932,6 @@ impl DynamicLightComponent {
     pub const fn new(data: DynamicLightData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`DynamicLightData`].
-    pub const fn into_inner(self) -> DynamicLightData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -2064,6 +1992,92 @@ impl core::borrow::Borrow<DynamicLightData> for DynamicLightComponent {
 #[automatically_derived]
 impl core::borrow::BorrowMut<DynamicLightData> for DynamicLightComponent {
     fn borrow_mut(&mut self) -> &mut DynamicLightData {
+        &mut self.0
+    }
+}
+
+/// A `WgpuShader` component.
+///
+/// See also [`WgpuShaderData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuShaderArchetype`] ([`ArchetypeId::WgpuShader`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitShaderSystem`] ([`SystemId::WgpuInitShader`])
+#[derive(Debug, Clone)]
+pub struct WgpuShaderComponent(WgpuShaderData);
+
+#[allow(dead_code)]
+impl WgpuShaderComponent {
+    /// Creates a new [`WgpuShaderComponent`] instance from [`WgpuShaderData`].
+    pub const fn new(data: WgpuShaderData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for WgpuShaderComponent {
+    const ID: ComponentId = ComponentId::WgpuShader;
+}
+
+impl PartialEq<ComponentId> for WgpuShaderComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<WgpuShaderData> for WgpuShaderComponent {
+    fn from(data: WgpuShaderData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for WgpuShaderComponent {
+    type Target = WgpuShaderData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for WgpuShaderComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<WgpuShaderData> for WgpuShaderComponent {
+    fn as_ref(&self) -> &WgpuShaderData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<WgpuShaderData> for WgpuShaderComponent {
+    fn as_mut(&mut self) -> &mut WgpuShaderData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<WgpuShaderData> for WgpuShaderComponent {
+    fn borrow(&self) -> &WgpuShaderData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<WgpuShaderData> for WgpuShaderComponent {
+    fn borrow_mut(&mut self) -> &mut WgpuShaderData {
         &mut self.0
     }
 }

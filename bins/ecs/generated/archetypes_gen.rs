@@ -57,49 +57,53 @@ impl core::fmt::Display for EntityId {
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(u32)]
 pub enum ArchetypeId {
+    /// The [`WgpuShader`](WgpuShaderArchetype) archetype.
+    WgpuShader = 1,
     /// The [`Environment`](EnvironmentArchetype) archetype.
-    Environment = 1,
+    Environment = 2,
     /// The [`Camera`](CameraArchetype) archetype.
-    Camera = 2,
+    Camera = 3,
     /// The [`DynamicLight`](DynamicLightArchetype) archetype.
-    DynamicLight = 3,
+    DynamicLight = 4,
     /// The [`Tile`](TileArchetype) archetype.
-    Tile = 4,
+    Tile = 5,
     /// A marching cube :)
     ///
     /// For details, see the [`CubeArchetype`](CubeArchetype) Struct.
-    Cube = 5,
+    Cube = 6,
     /// The [`Player`](PlayerArchetype) archetype.
-    Player = 6,
+    Player = 7,
     /// The [`ForegroundObject`](ForegroundObjectArchetype) archetype.
-    ForegroundObject = 7,
+    ForegroundObject = 8,
     /// The [`BackgroundObject`](BackgroundObjectArchetype) archetype.
-    BackgroundObject = 8,
+    BackgroundObject = 9,
     /// The scene background.
     ///
     /// For details, see the [`SceneBackgroundArchetype`](SceneBackgroundArchetype) Struct.
-    SceneBackground = 9,
+    SceneBackground = 10,
 }
 
 impl ArchetypeId {
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::WgpuShader`](ArchetypeId::WgpuShader) archetype.
+    pub const WGPU_SHADER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Environment`](ArchetypeId::Environment) archetype.
-    pub const ENVIRONMENT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    pub const ENVIRONMENT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Camera`](ArchetypeId::Camera) archetype.
-    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::DynamicLight`](ArchetypeId::DynamicLight) archetype.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Tile`](ArchetypeId::Tile) archetype.
-    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Cube`](ArchetypeId::Cube) archetype.
-    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Player`](ArchetypeId::Player) archetype.
-    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::ForegroundObject`](ArchetypeId::ForegroundObject) archetype.
-    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::BackgroundObject`](ArchetypeId::BackgroundObject) archetype.
-    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::SceneBackground`](ArchetypeId::SceneBackground) archetype.
-    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
+    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -107,6 +111,7 @@ impl ArchetypeId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         match self {
+            Self::WgpuShader => Self::WGPU_SHADER_ID_VALUE,
             Self::Environment => Self::ENVIRONMENT_ID_VALUE,
             Self::Camera => Self::CAMERA_ID_VALUE,
             Self::DynamicLight => Self::DYNAMIC_LIGHT_ID_VALUE,
@@ -146,15 +151,16 @@ impl From<ArchetypeId> for u64 {
 impl core::fmt::Display for ArchetypeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
-            Self::Environment => write!(f, "Environment (ID 1)"),
-            Self::Camera => write!(f, "Camera (ID 2)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 3)"),
-            Self::Tile => write!(f, "Tile (ID 4)"),
-            Self::Cube => write!(f, "Cube (ID 5)"),
-            Self::Player => write!(f, "Player (ID 6)"),
-            Self::ForegroundObject => write!(f, "ForegroundObject (ID 7)"),
-            Self::BackgroundObject => write!(f, "BackgroundObject (ID 8)"),
-            Self::SceneBackground => write!(f, "SceneBackground (ID 9)"),
+            Self::WgpuShader => write!(f, "WgpuShader (ID 1)"),
+            Self::Environment => write!(f, "Environment (ID 2)"),
+            Self::Camera => write!(f, "Camera (ID 3)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 4)"),
+            Self::Tile => write!(f, "Tile (ID 5)"),
+            Self::Cube => write!(f, "Cube (ID 6)"),
+            Self::Player => write!(f, "Player (ID 7)"),
+            Self::ForegroundObject => write!(f, "ForegroundObject (ID 8)"),
+            Self::BackgroundObject => write!(f, "BackgroundObject (ID 9)"),
+            Self::SceneBackground => write!(f, "SceneBackground (ID 10)"),
         }
     }
 }
@@ -223,6 +229,8 @@ pub trait HasComponent<T: Component> {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntity {
+    /// An entity in the [`WgpuShader`](WgpuShaderArchetype) archetype.
+    WgpuShader(WgpuShaderEntity),
     /// An entity in the [`Environment`](EnvironmentArchetype) archetype.
     Environment(EnvironmentEntity),
     /// An entity in the [`Camera`](CameraArchetype) archetype.
@@ -247,6 +255,8 @@ pub enum ArchetypeEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntityData {
+    /// An entity in the [`WgpuShader`](WgpuShaderArchetype) archetype.
+    WgpuShader(WgpuShaderEntityData),
     /// An entity in the [`Environment`](EnvironmentArchetype) archetype.
     Environment(EnvironmentEntityData),
     /// An entity in the [`Camera`](CameraArchetype) archetype.
@@ -272,6 +282,7 @@ impl ArchetypeEntity {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntity`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::WgpuShader(_) => WgpuShaderArchetype::ID,
             Self::Environment(_) => EnvironmentArchetype::ID,
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
@@ -290,6 +301,7 @@ impl ArchetypeEntityData {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntityData`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::WgpuShader(_) => WgpuShaderArchetype::ID,
             Self::Environment(_) => EnvironmentArchetype::ID,
             Self::Camera(_) => CameraArchetype::ID,
             Self::DynamicLight(_) => DynamicLightArchetype::ID,
@@ -314,6 +326,282 @@ pub struct EntityWithIdAndData<Data: EntityData> {
 /// Marker trait for entity data.
 pub trait EntityData {
     const ARCHETYPE_ID: ArchetypeId;
+}
+
+/// An archetype grouping entities with identical components.
+#[derive(Debug, Default, Clone)]
+pub struct WgpuShaderArchetype {
+    pub entities: Vec<EntityId>,
+    pub wgpu_shaders: Vec<WgpuShaderComponent>,
+}
+
+/// An entity of the [`WgpuShaderArchetype`].
+pub type WgpuShaderEntity = EntityWithIdAndData<WgpuShaderEntityData>;
+
+/// An entity of the [`WgpuShaderArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuShaderEntityData {
+    pub wgpu_shader: WgpuShaderComponent,
+}
+
+impl EntityData for WgpuShaderEntityData {
+    const ARCHETYPE_ID: ArchetypeId = WgpuShaderArchetype::ID;
+}
+
+/// A reference to an entity of the [`WgpuShaderArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuShaderEntityRef<'archetype> {
+    pub entity_id: EntityId,
+    pub wgpu_shader: &'archetype WgpuShaderComponent,
+}
+
+/// A mutable reference to an entity of the [`WgpuShaderArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct WgpuShaderEntityMut<'archetype> {
+    pub entity_id: EntityId,
+    pub wgpu_shader: &'archetype mut WgpuShaderComponent,
+}
+
+/// An iterator for entities in the [`WgpuShaderArchetype`].
+pub struct WgpuShaderEntityIterator<'archetype> {
+    archetype: &'archetype WgpuShaderArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> WgpuShaderEntityIterator<'archetype> {
+    fn new(archetype: &'archetype WgpuShaderArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for WgpuShaderEntityIterator<'archetype> {
+    type Item = WgpuShaderEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl WgpuShaderArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> WgpuShaderEntityIterator {
+        WgpuShaderEntityIterator::new(self)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at(&self, index: usize) -> Option<WgpuShaderEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<WgpuShaderEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked(&self, index: usize) -> WgpuShaderEntityRef {
+        WgpuShaderEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            wgpu_shader: self.wgpu_shaders.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> WgpuShaderEntityMut {
+        WgpuShaderEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            wgpu_shader: self.wgpu_shaders.get_unchecked_mut(index),
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuShaderComponent> for WgpuShaderEntity {
+    #[inline]
+    fn get(&self) -> &WgpuShaderComponent {
+        &self.data.wgpu_shader
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuShaderComponent {
+        &mut self.data.wgpu_shader
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuShaderComponent> for WgpuShaderEntityData {
+    #[inline]
+    fn get(&self) -> &WgpuShaderComponent {
+        &self.wgpu_shader
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuShaderComponent {
+        &mut self.wgpu_shader
+    }
+}
+impl WgpuShaderEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<WgpuShaderEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl core::ops::Deref for WgpuShaderEntity {
+    type Target = WgpuShaderEntityData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl core::ops::DerefMut for WgpuShaderEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+#[allow(dead_code)]
+impl WgpuShaderArchetype {
+    /// The IDs of the components used by this archetype, in ascending order.
+    pub const COMPONENTS: [ComponentId; 1] = [
+        ComponentId::COMPONENT_19,
+    ];
+
+    /// Returns the number of entities in this archetype.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Indicates whether this archetype has no entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Returns the number of components used by this archetype.
+    #[inline(always)]
+    pub const fn num_components(&self) -> usize {
+        1
+    }
+
+    /// Dynamically determines whether this archetype has a specific component.
+    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+        let id = id.as_u64();
+        id == 19 || false
+    }
+
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
+        &mut self,
+        wgpu_shader: WgpuShaderComponent,
+        mut world_registry: R
+    ) -> EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.wgpu_shaders.push(wgpu_shader);
+
+        let entity_id = EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.wgpu_shaders.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
+    }
+}
+
+
+#[automatically_derived]
+impl HasComponents<WgpuShaderComponent> for WgpuShaderArchetype {
+    /// Returns a slice of all [`WgpuShaderComponent`] component values.
+    fn get(&self) -> &[WgpuShaderComponent] {
+        self.wgpu_shaders.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`WgpuShaderComponent`] component values.
+    fn get_mut(&mut self) -> &mut [WgpuShaderComponent] {
+        self.wgpu_shaders.as_mut_slice()
+    }
+}
+
+
+#[automatically_derived]
+#[allow(dead_code)]
+impl Archetype for WgpuShaderArchetype {
+    const ID: ArchetypeId = ArchetypeId::WgpuShader;
+
+    fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+}
+
+impl PartialEq<ArchetypeId> for WgpuShaderArchetype {
+    fn eq(&self, other: &ArchetypeId) -> bool {
+        Self::ID.eq(other)
+    }
 }
 
 /// An archetype grouping entities with identical components.
@@ -420,6 +708,15 @@ impl EnvironmentArchetype {
             return None;
         }
         Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<EnvironmentEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
@@ -918,6 +1215,15 @@ impl CameraArchetype {
         Some(unsafe { self.get_at_unchecked(index) })
     }
 
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<CameraEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
     pub unsafe fn get_at_unchecked(&self, index: usize) -> CameraEntityRef {
@@ -1236,6 +1542,15 @@ impl DynamicLightArchetype {
             return None;
         }
         Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<DynamicLightEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
@@ -1599,6 +1914,15 @@ impl TileArchetype {
         Some(unsafe { self.get_at_unchecked(index) })
     }
 
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<TileEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
     pub unsafe fn get_at_unchecked(&self, index: usize) -> TileEntityRef {
@@ -1921,6 +2245,15 @@ impl CubeArchetype {
             return None;
         }
         Some(unsafe { self.get_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<CubeEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
@@ -2333,6 +2666,15 @@ impl PlayerArchetype {
         Some(unsafe { self.get_at_unchecked(index) })
     }
 
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<PlayerEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
     pub unsafe fn get_at_unchecked(&self, index: usize) -> PlayerEntityRef {
@@ -2694,6 +3036,15 @@ impl ForegroundObjectArchetype {
         Some(unsafe { self.get_at_unchecked(index) })
     }
 
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<ForegroundObjectEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
     pub unsafe fn get_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
@@ -3006,6 +3357,15 @@ impl BackgroundObjectArchetype {
         Some(unsafe { self.get_at_unchecked(index) })
     }
 
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<BackgroundObjectEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
     pub unsafe fn get_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
@@ -3273,6 +3633,15 @@ impl SceneBackgroundArchetype {
         Some(unsafe { self.get_at_unchecked(index) })
     }
 
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_at_mut(&mut self, index: usize) -> Option<SceneBackgroundEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_at_unchecked_mut(index) })
+    }
+
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
     pub unsafe fn get_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
@@ -3467,6 +3836,14 @@ pub trait GetEntityRef {
 
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype>;
+}
+
+impl core::ops::Index<usize> for WgpuShaderArchetype {
+    type Output = EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
 }
 
 impl core::ops::Index<usize> for EnvironmentArchetype {
@@ -3705,6 +4082,29 @@ pub trait FrontloadEntitiesScan:
     }
 }
 
+impl GetEntityRef for WgpuShaderArchetype {
+    type EntityRef<'archetype> = WgpuShaderEntityRef<'archetype>;
+
+    #[allow(dead_code)]
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
+    /// See [`WgpuShaderArchetype::get_at`](WgpuShaderArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_at(index)
+    }
+
+    /// See [`WgpuShaderArchetype::get_at_unchecked`](WgpuShaderArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_at_unchecked(index) }
+    }
+}
+
 impl GetEntityRef for EnvironmentArchetype {
     type EntityRef<'archetype> = EnvironmentEntityRef<'archetype>;
 
@@ -3911,6 +4311,17 @@ impl GetEntityRef for SceneBackgroundArchetype {
         unsafe { self.get_at_unchecked(index) }
     }
 }
+
+impl FrontloadEntities for WgpuShaderArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.wgpu_shaders.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for WgpuShaderArchetype { }
 
 impl FrontloadEntities for EnvironmentArchetype {
     #[inline(always)]

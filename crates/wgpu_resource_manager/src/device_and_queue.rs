@@ -1,17 +1,30 @@
 use crate::SurfaceWrapper;
 use wgpu::{CommandBuffer, Device, Queue, SurfaceConfiguration};
+use crate::device_id::DeviceId;
 
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct DeviceAndQueue {
+    id: DeviceId,
     device: Device,
     queue: Queue,
 }
 
 impl DeviceAndQueue {
     #[inline]
-    pub const fn new_from(device: Device, queue: Queue) -> Self {
-        Self { device, queue }
+    pub const fn new_from(id: DeviceId, device: Device, queue: Queue) -> Self {
+        Self {
+            id,
+            device,
+            queue
+        }
+    }
+
+    /// Gets the ID of the current device. A new ID is provided for each device,
+    /// allowing consumers to track device loss and recreations.
+    #[inline]
+    pub const fn id(&self) -> DeviceId {
+        self.id
     }
 
     /// Submit a command buffer to the WGPU queue for execution.

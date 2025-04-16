@@ -62,6 +62,8 @@ impl App {
             events,
         );
         world.states.wgpu_render.set_hardware(wgpu_hardware);
+
+        world.apply_system_phase_startup();
         world.create_initial_entities();
 
         let count = world
@@ -126,6 +128,9 @@ impl App {
                 .wgpu_render
                 .reinitialize_surface(window.clone())
                 .expect("Failed to reinitialize window");
+
+            // TODO: Set the new device and surface ID.
+            self.ecs_world.apply_system_phase_wgpu_reinit();
         }
 
         self.last_update = Instant::now();
@@ -140,6 +145,9 @@ impl App {
             .wgpu_render
             .resize_surface(new_size)
             .expect("Failed to resize window");
+
+        // TODO: Set the new surface size.
+        self.ecs_world.apply_system_phase_wgpu_reinit();
     }
 
     fn handle_key_modifiers_event(&mut self, new_modifiers: Modifiers) {

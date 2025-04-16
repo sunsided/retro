@@ -14,7 +14,6 @@ use wgpu::{
 #[allow(dead_code)]
 pub struct ConfiguredWgpuResourceManager {
     manager_id: WgpuResourceManagerId,
-    device_id: DeviceId,
     instance: InstanceWrapper,
     surface_wrapper: SurfaceWrapper,
     adapter: Adapter,
@@ -63,7 +62,7 @@ impl ConfiguredWgpuResourceManager {
         )?;
         let device_id = DeviceId::next();
 
-        let dq = DeviceAndQueue::new_from(device, queue);
+        let dq = DeviceAndQueue::new_from(device_id, device, queue);
         configure_surface(
             surface_size,
             surface_config,
@@ -74,7 +73,6 @@ impl ConfiguredWgpuResourceManager {
 
         Ok(Self {
             manager_id,
-            device_id,
             instance,
             adapter,
             dq,
@@ -139,7 +137,8 @@ impl ConfiguredWgpuResourceManager {
         let (device, queue) = adapter.request_device(&descriptor).await
             .inspect_err(|error| tracing::error!(%error, manager_id = %self.id(), %surface_id, "Failed to request device"))?;
 
-        let dq = DeviceAndQueue::new_from(device, queue);
+        let device_id = DeviceId::next();
+        let dq = DeviceAndQueue::new_from(device_id, device, queue);
         configure_surface(
             surface_size,
             surface_config,

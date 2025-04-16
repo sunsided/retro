@@ -25,6 +25,7 @@ pub use crate::resource_manager_accessors::*;
 pub use crate::surface_id::SurfaceId;
 pub use crate::surface_wrapper::{ResizeSurfaceError, SurfaceWrapper};
 pub use crate::texture_with_view::TextureWithView;
+pub use crate::device_id::DeviceId;
 
 #[macro_export]
 macro_rules! wgpu_label {

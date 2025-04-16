@@ -124,6 +124,18 @@ impl WgpuRenderState {
     }
 
     #[instrument(skip(self))]
+    pub fn device(
+        &mut self,
+    ) -> Result<&DeviceAndQueue, RenderPhaseError> {
+        let hardware = self
+            .hardware
+            .as_mut()
+            .ok_or(RenderPhaseError::DeviceNotReady)?;
+        let dq = hardware.device().ok_or(RenderPhaseError::DeviceNotReady)?;
+        Ok(dq)
+    }
+
+    #[instrument(skip(self))]
     pub fn for_rendering(
         &mut self,
     ) -> Result<(&DeviceAndQueue, &mut WgpuResources, &mut FrameState), RenderPhaseError> {
