@@ -1299,10 +1299,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "multibuffer"
-version = "0.1.0"
-
-[[package]]
 name = "naga"
 version = "25.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
