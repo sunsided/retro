@@ -24,7 +24,7 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
         gpu.is_ready()
     }
 
-    fn on_end_phase(&mut self, wgpu_render: &mut WgpuRenderState) -> Result<(), Self::Error> {
+    fn on_end_phase(&mut self, _wgpu_render: &mut WgpuRenderState) -> Result<(), Self::Error> {
         // TODO: Collect the created resources into a shared state for later access, e.g. runtime material lookups
         Ok(())
     }

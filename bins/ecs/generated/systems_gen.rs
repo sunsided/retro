@@ -759,6 +759,26 @@ pub trait ApplyWgpuInitShaderSystem: System {
         Ok(())
     }
 
+    /// Inspects all components before the actual operation starts.
+    ///
+    /// This function can be called multiple times, depending on the number of archetypes providing
+    /// the necessary components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Reads output to be mutated by the system
+    /// 
+    /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
+    #[allow(unused_variables)]
+    fn preflight(
+        &mut self,
+        lookup: Box<&dyn WgpuInitShaderComponentLookup>,
+        wgpu_render: &mut WgpuRenderState,
+        entities: &[EntityId],
+        wgpu_shaders: &[WgpuShaderComponent],
+    );
+
     /// Applies the system's business logic to the given entity components.
     ///
     /// ### Performance Considerations
@@ -815,6 +835,7 @@ impl WgpuInitShaderSystem {
         entity: EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
     ) {
+        // Force the implementation of the ApplyWgpuInitShaderSystem trait.
         ApplyWgpuInitShaderSystem::apply_single(
             self,
             wgpu_render,
@@ -838,26 +859,12 @@ impl WgpuInitShaderSystem {
         entities: &[EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
+        // Force the implementation of the ApplyWgpuInitShaderSystem trait.
         ApplyWgpuInitShaderSystem::apply_many(
             self,
             wgpu_render,
             entities,
             wgpu_shaders,
-        );
-    }
-
-    /// Applies this system to the [`WgpuShaderArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_wgpu_shader(
-        &mut self,
-        archetype: &mut WgpuShaderArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.entities,
-            &mut archetype.wgpu_shaders,
         );
     }
 }
@@ -1022,6 +1029,7 @@ impl WgpuInitTextureSystem {
         texture_source: &TextureSourceComponent,
         wgpu_texture: &mut WgpuTextureComponent,
     ) {
+        // Force the implementation of the ApplyWgpuInitTextureSystem trait.
         ApplyWgpuInitTextureSystem::apply_single(
             self,
             wgpu_render,
@@ -1048,28 +1056,13 @@ impl WgpuInitTextureSystem {
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
     ) {
+        // Force the implementation of the ApplyWgpuInitTextureSystem trait.
         ApplyWgpuInitTextureSystem::apply_many(
             self,
             wgpu_render,
             entities,
             texture_sources,
             wgpu_textures,
-        );
-    }
-
-    /// Applies this system to the [`WgpuTextureArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_wgpu_texture(
-        &mut self,
-        archetype: &mut WgpuTextureArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.entities,
-            &archetype.texture_sources,
-            &mut archetype.wgpu_textures,
         );
     }
 }
@@ -1234,6 +1227,7 @@ impl CameraSystem {
         camera: &mut CameraComponent,
         camera_fps_controller: &mut CameraFpsControllerComponent,
     ) {
+        // Force the implementation of the ApplyCameraSystem trait.
         ApplyCameraSystem::apply_single(
             self,
             input,
@@ -1260,29 +1254,13 @@ impl CameraSystem {
         cameras: &mut [CameraComponent],
         camera_fps_controllers: &mut [CameraFpsControllerComponent],
     ) {
+        // Force the implementation of the ApplyCameraSystem trait.
         ApplyCameraSystem::apply_many(
             self,
             input,
             wgpu_render,
             cameras,
             camera_fps_controllers,
-        );
-    }
-
-    /// Applies this system to the [`CameraArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_camera(
-        &mut self,
-        archetype: &mut CameraArchetype,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
-    ) {
-        self.apply_many(
-            input,
-            wgpu_render,
-            &mut archetype.cameras,
-            &mut archetype.camera_fps_controllers,
         );
     }
 }
@@ -1433,6 +1411,7 @@ impl TimeOfDaySystem {
         context: &FrameContext,
         time_of_day: &mut TimeOfDayComponent,
     ) {
+        // Force the implementation of the ApplyTimeOfDaySystem trait.
         ApplyTimeOfDaySystem::apply_single(
             self,
             context,
@@ -1454,24 +1433,11 @@ impl TimeOfDaySystem {
         context: &FrameContext,
         time_of_daies: &mut [TimeOfDayComponent],
     ) {
+        // Force the implementation of the ApplyTimeOfDaySystem trait.
         ApplyTimeOfDaySystem::apply_many(
             self,
             context,
             time_of_daies,
-        );
-    }
-
-    /// Applies this system to the [`EnvironmentArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_environment(
-        &mut self,
-        archetype: &mut EnvironmentArchetype,
-        context: &FrameContext,
-    ) {
-        self.apply_many(
-            &context,
-            &mut archetype.time_of_daies,
         );
     }
 }
@@ -1639,6 +1605,7 @@ impl SunSystem {
         skydome: &mut SkydomeComponent,
         ambient_light: &mut AmbientLightComponent,
     ) {
+        // Force the implementation of the ApplySunSystem trait.
         ApplySunSystem::apply_single(
             self,
             time_of_day,
@@ -1667,27 +1634,13 @@ impl SunSystem {
         skydomes: &mut [SkydomeComponent],
         ambient_lights: &mut [AmbientLightComponent],
     ) {
+        // Force the implementation of the ApplySunSystem trait.
         ApplySunSystem::apply_many(
             self,
             time_of_daies,
             suns,
             skydomes,
             ambient_lights,
-        );
-    }
-
-    /// Applies this system to the [`EnvironmentArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_environment(
-        &mut self,
-        archetype: &mut EnvironmentArchetype,
-    ) {
-        self.apply_many(
-            &archetype.time_of_daies,
-            &mut archetype.suns,
-            &mut archetype.skydomes,
-            &mut archetype.ambient_lights,
         );
     }
 }
@@ -1841,6 +1794,7 @@ impl FogSystem {
         time_of_day: &TimeOfDayComponent,
         fog: &mut FogComponent,
     ) {
+        // Force the implementation of the ApplyFogSystem trait.
         ApplyFogSystem::apply_single(
             self,
             time_of_day,
@@ -1863,23 +1817,11 @@ impl FogSystem {
         time_of_daies: &[TimeOfDayComponent],
         fogs: &mut [FogComponent],
     ) {
+        // Force the implementation of the ApplyFogSystem trait.
         ApplyFogSystem::apply_many(
             self,
             time_of_daies,
             fogs,
-        );
-    }
-
-    /// Applies this system to the [`EnvironmentArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_environment(
-        &mut self,
-        archetype: &mut EnvironmentArchetype,
-    ) {
-        self.apply_many(
-            &archetype.time_of_daies,
-            &mut archetype.fogs,
         );
     }
 }
@@ -2033,6 +1975,7 @@ impl StarsSystem {
         time_of_day: &TimeOfDayComponent,
         stars: &mut StarsComponent,
     ) {
+        // Force the implementation of the ApplyStarsSystem trait.
         ApplyStarsSystem::apply_single(
             self,
             time_of_day,
@@ -2055,23 +1998,11 @@ impl StarsSystem {
         time_of_daies: &[TimeOfDayComponent],
         stars: &mut [StarsComponent],
     ) {
+        // Force the implementation of the ApplyStarsSystem trait.
         ApplyStarsSystem::apply_many(
             self,
             time_of_daies,
             stars,
-        );
-    }
-
-    /// Applies this system to the [`EnvironmentArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_environment(
-        &mut self,
-        archetype: &mut EnvironmentArchetype,
-    ) {
-        self.apply_many(
-            &archetype.time_of_daies,
-            &mut archetype.stars,
         );
     }
 }
@@ -2233,6 +2164,7 @@ impl PhysicsSystem {
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
     ) {
+        // Force the implementation of the ApplyPhysicsSystem trait.
         ApplyPhysicsSystem::apply_single(
             self,
             context,
@@ -2257,41 +2189,12 @@ impl PhysicsSystem {
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
     ) {
+        // Force the implementation of the ApplyPhysicsSystem trait.
         ApplyPhysicsSystem::apply_many(
             self,
             context,
             velocities,
             positions,
-        );
-    }
-
-    /// Applies this system to the [`CubeArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_cube(
-        &mut self,
-        archetype: &mut CubeArchetype,
-        context: &FrameContext,
-    ) {
-        self.apply_many(
-            &context,
-            &archetype.velocities,
-            &mut archetype.positions,
-        );
-    }
-
-    /// Applies this system to the [`PlayerArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_player(
-        &mut self,
-        archetype: &mut PlayerArchetype,
-        context: &FrameContext,
-    ) {
-        self.apply_many(
-            &context,
-            &archetype.velocities,
-            &mut archetype.positions,
         );
     }
 }
@@ -2442,6 +2345,7 @@ impl BackgroundColorCycleSystem {
         context: &FrameContext,
         background_color: &mut BackgroundColorComponent,
     ) {
+        // Force the implementation of the ApplyBackgroundColorCycleSystem trait.
         ApplyBackgroundColorCycleSystem::apply_single(
             self,
             context,
@@ -2463,24 +2367,11 @@ impl BackgroundColorCycleSystem {
         context: &FrameContext,
         background_colors: &mut [BackgroundColorComponent],
     ) {
+        // Force the implementation of the ApplyBackgroundColorCycleSystem trait.
         ApplyBackgroundColorCycleSystem::apply_many(
             self,
             context,
             background_colors,
-        );
-    }
-
-    /// Applies this system to the [`SceneBackgroundArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_scene_background(
-        &mut self,
-        archetype: &mut SceneBackgroundArchetype,
-        context: &FrameContext,
-    ) {
-        self.apply_many(
-            &context,
-            &mut archetype.background_colors,
         );
     }
 }
@@ -2638,6 +2529,7 @@ impl CameraRenderSystem {
         active_camera: &mut ActiveCameraState,
         camera: &CameraComponent,
     ) {
+        // Force the implementation of the ApplyCameraRenderSystem trait.
         ApplyCameraRenderSystem::apply_single(
             self,
             wgpu_render,
@@ -2661,27 +2553,12 @@ impl CameraRenderSystem {
         active_camera: &mut ActiveCameraState,
         cameras: &[CameraComponent],
     ) {
+        // Force the implementation of the ApplyCameraRenderSystem trait.
         ApplyCameraRenderSystem::apply_many(
             self,
             wgpu_render,
             active_camera,
             cameras,
-        );
-    }
-
-    /// Applies this system to the [`CameraArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_camera(
-        &mut self,
-        archetype: &mut CameraArchetype,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            active_camera,
-            &archetype.cameras,
         );
     }
 }
@@ -2867,6 +2744,7 @@ impl FrameGlobalsSystem {
         stars: &StarsComponent,
         skydome: &SkydomeComponent,
     ) {
+        // Force the implementation of the ApplyFrameGlobalsSystem trait.
         ApplyFrameGlobalsSystem::apply_single(
             self,
             wgpu_render,
@@ -2903,6 +2781,7 @@ impl FrameGlobalsSystem {
         stars: &[StarsComponent],
         skydomes: &[SkydomeComponent],
     ) {
+        // Force the implementation of the ApplyFrameGlobalsSystem trait.
         ApplyFrameGlobalsSystem::apply_many(
             self,
             wgpu_render,
@@ -2912,25 +2791,6 @@ impl FrameGlobalsSystem {
             ambient_lights,
             stars,
             skydomes,
-        );
-    }
-
-    /// Applies this system to the [`EnvironmentArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_environment(
-        &mut self,
-        archetype: &mut EnvironmentArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.time_of_daies,
-            &archetype.suns,
-            &archetype.fogs,
-            &archetype.ambient_lights,
-            &archetype.stars,
-            &archetype.skydomes,
         );
     }
 }
@@ -3081,6 +2941,7 @@ impl RenderBackgroundSystem {
         wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
+        // Force the implementation of the ApplyRenderBackgroundSystem trait.
         ApplyRenderBackgroundSystem::apply_single(
             self,
             wgpu_render,
@@ -3102,24 +2963,11 @@ impl RenderBackgroundSystem {
         wgpu_render: &mut WgpuRenderState,
         background_colors: &[BackgroundColorComponent],
     ) {
+        // Force the implementation of the ApplyRenderBackgroundSystem trait.
         ApplyRenderBackgroundSystem::apply_many(
             self,
             wgpu_render,
             background_colors,
-        );
-    }
-
-    /// Applies this system to the [`SceneBackgroundArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_scene_background(
-        &mut self,
-        archetype: &mut SceneBackgroundArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.background_colors,
         );
     }
 }
@@ -3270,6 +3118,7 @@ impl RenderSkySystem {
         wgpu_render: &mut WgpuRenderState,
         skydome: &SkydomeComponent,
     ) {
+        // Force the implementation of the ApplyRenderSkySystem trait.
         ApplyRenderSkySystem::apply_single(
             self,
             wgpu_render,
@@ -3291,24 +3140,11 @@ impl RenderSkySystem {
         wgpu_render: &mut WgpuRenderState,
         skydomes: &[SkydomeComponent],
     ) {
+        // Force the implementation of the ApplyRenderSkySystem trait.
         ApplyRenderSkySystem::apply_many(
             self,
             wgpu_render,
             skydomes,
-        );
-    }
-
-    /// Applies this system to the [`EnvironmentArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_environment(
-        &mut self,
-        archetype: &mut EnvironmentArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.skydomes,
         );
     }
 }
@@ -3473,6 +3309,7 @@ impl RenderSystem {
         transform: &TransformComponent,
         model: &ModelComponent,
     ) {
+        // Force the implementation of the ApplyRenderSystem trait.
         ApplyRenderSystem::apply_single(
             self,
             wgpu_render,
@@ -3500,28 +3337,13 @@ impl RenderSystem {
         transforms: &[TransformComponent],
         models: &[ModelComponent],
     ) {
+        // Force the implementation of the ApplyRenderSystem trait.
         ApplyRenderSystem::apply_many(
             self,
             wgpu_render,
             positions,
             transforms,
             models,
-        );
-    }
-
-    /// Applies this system to the [`CubeArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_cube(
-        &mut self,
-        archetype: &mut CubeArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.positions,
-            &archetype.transforms,
-            &archetype.models,
         );
     }
 }
@@ -3679,6 +3501,7 @@ impl TileRenderSystem {
         tile: &TileComponent,
         position: &PositionComponent,
     ) {
+        // Force the implementation of the ApplyTileRenderSystem trait.
         ApplyTileRenderSystem::apply_single(
             self,
             wgpu_render,
@@ -3703,26 +3526,12 @@ impl TileRenderSystem {
         tiles: &[TileComponent],
         positions: &[PositionComponent],
     ) {
+        // Force the implementation of the ApplyTileRenderSystem trait.
         ApplyTileRenderSystem::apply_many(
             self,
             wgpu_render,
             tiles,
             positions,
-        );
-    }
-
-    /// Applies this system to the [`TileArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_tile(
-        &mut self,
-        archetype: &mut TileArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.tiles,
-            &archetype.positions,
         );
     }
 }
@@ -3890,6 +3699,7 @@ impl DynamicLightSystem {
         color: &ColorComponent,
         dynamic_light: &mut DynamicLightComponent,
     ) {
+        // Force the implementation of the ApplyDynamicLightSystem trait.
         ApplyDynamicLightSystem::apply_single(
             self,
             context,
@@ -3916,29 +3726,13 @@ impl DynamicLightSystem {
         colors: &[ColorComponent],
         dynamic_lights: &mut [DynamicLightComponent],
     ) {
+        // Force the implementation of the ApplyDynamicLightSystem trait.
         ApplyDynamicLightSystem::apply_many(
             self,
             context,
             wgpu_render,
             colors,
             dynamic_lights,
-        );
-    }
-
-    /// Applies this system to the [`DynamicLightArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_dynamic_light(
-        &mut self,
-        archetype: &mut DynamicLightArchetype,
-        context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            &context,
-            wgpu_render,
-            &archetype.colors,
-            &mut archetype.dynamic_lights,
         );
     }
 }
@@ -4090,6 +3884,7 @@ impl VgaBlitSystem {
         wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
+        // Force the implementation of the ApplyVgaBlitSystem trait.
         ApplyVgaBlitSystem::apply_single(
             self,
             wgpu_render,
@@ -4111,24 +3906,11 @@ impl VgaBlitSystem {
         wgpu_render: &mut WgpuRenderState,
         background_colors: &[BackgroundColorComponent],
     ) {
+        // Force the implementation of the ApplyVgaBlitSystem trait.
         ApplyVgaBlitSystem::apply_many(
             self,
             wgpu_render,
             background_colors,
-        );
-    }
-
-    /// Applies this system to the [`SceneBackgroundArchetype`].
-    #[inline]
-    #[deprecated]
-    fn apply_to_scene_background(
-        &mut self,
-        archetype: &mut SceneBackgroundArchetype,
-        wgpu_render: &mut WgpuRenderState,
-    ) {
-        self.apply_many(
-            wgpu_render,
-            &archetype.background_colors,
         );
     }
 }
@@ -4164,5 +3946,23 @@ impl core::ops::Deref for VgaBlitSystem {
 impl core::ops::DerefMut for VgaBlitSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+pub trait WgpuInitShaderComponentLookup {
+    /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent>;
+}
+
+impl<T> WgpuInitShaderComponentLookup for T
+where
+    T: ComponentAccess
+{
+    /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
+        T::get_texture_source_component(self, entity_id)
     }
 }

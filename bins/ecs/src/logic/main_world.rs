@@ -1,3 +1,4 @@
+use crate::engine::EntityAccess;
 use wgpu::include_wgsl;
 use crate::engine::components::{AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData, StarsData, SunData, TextureSource, TextureSourceData, TileData, TimeOfDayData, WgpuShaderData, WgpuTextureData};
 use crate::engine::phases::render::background::BackgroundColorData;

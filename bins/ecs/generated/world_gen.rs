@@ -149,13 +149,6 @@ pub struct MainWorld<E, Q> {
     archetypes: MainWorldArchetypes,
     /// The systems.
     pub systems: MainWorldSystems,
-    /// The entity locator.
-    //
-    // Hashmap type not provided by design. Provide your own implementation such as fxhash::FxHashMap via type alias.
-    // Example:
-    //      type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
-    //
-    entity_locations: EntityLocationMap<EntityId, EntityArchetypeRef>,
     /// The frame context.
     context: FrameContext,
     /// The fixed-time accumulators.
@@ -206,6 +199,20 @@ pub struct MainWorldStates {
 /// The archetypes used in the world.
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
+    /// The entity locator.
+    //
+    // Hashmap type not provided by design. Provide your own implementation such as fxhash::FxHashMap via type alias.
+    // Example:
+    //      type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
+    //
+    entity_locations: EntityLocationMap<EntityId, EntityArchetypeRef>,
+
+    pub collection: MainWorldArchetypeCollection
+}
+
+/// The archetypes used in the world.
+#[derive(Debug, Clone, Default)]
+struct MainWorldArchetypeCollection {
     pub wgpu_shader: WgpuShaderArchetype,
     pub wgpu_texture: WgpuTextureArchetype,
     pub environment: EnvironmentArchetype,
@@ -902,7 +909,6 @@ impl<E, Q> MainWorld<E, Q> {
                 render_background: CreateSystem::<RenderBackgroundSystem>::create(create_systems),
                 vga_blit: CreateSystem::<VgaBlitSystem>::create(create_systems),
             },
-            entity_locations: Default::default(),
             context,
             states: MainWorldStates {
                 wgpu_render,
@@ -923,563 +929,17 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Returns the overall number of entities in this world.
     pub fn len(&self) -> usize {
-        self.entity_locations.len()
+        self.archetypes.entity_locations.len()
     }
 
     /// Indicates whether there are no entities in this world.
     pub fn is_empty(&self) -> bool {
-        self.entity_locations.is_empty()
+        self.archetypes.entity_locations.is_empty()
     }
 
     /// De-spawns an entity given by its [`EntityId`]. Returns an error if the entity was unknown in this world.
     pub fn despawn_by_id(&mut self, id: EntityId) -> Result<(), DespawnError> {
         self.handle_despawn_command(id)
-    }
-
-    /// Gets the `AmbientLight` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_ambient_light_component(&self, entity_id: EntityId) -> Option<&AmbientLightComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_ambient_light_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `AmbientLight` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_ambient_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut AmbientLightComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_ambient_light_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `BackgroundColor` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_background_color_component(&self, entity_id: EntityId) -> Option<&BackgroundColorComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            SceneBackgroundArchetype::ID => self.archetypes.scene_background.get_background_color_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `BackgroundColor` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_background_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut BackgroundColorComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            SceneBackgroundArchetype::ID => self.archetypes.scene_background.get_background_color_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Camera` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_camera_component(&self, entity_id: EntityId) -> Option<&CameraComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CameraArchetype::ID => self.archetypes.camera.get_camera_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Camera` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_camera_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CameraArchetype::ID => self.archetypes.camera.get_camera_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `CameraFpsController` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_camera_fps_controller_component(&self, entity_id: EntityId) -> Option<&CameraFpsControllerComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CameraArchetype::ID => self.archetypes.camera.get_camera_fps_controller_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `CameraFpsController` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_camera_fps_controller_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraFpsControllerComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CameraArchetype::ID => self.archetypes.camera.get_camera_fps_controller_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Collider` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_collider_component(&self, entity_id: EntityId) -> Option<&ColliderComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_collider_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Collider` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_collider_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColliderComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_collider_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Color` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_color_component(&self, entity_id: EntityId) -> Option<&ColorComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_color_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Color` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColorComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_color_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `DynamicLight` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_dynamic_light_component(&self, entity_id: EntityId) -> Option<&DynamicLightComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_dynamic_light_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `DynamicLight` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_dynamic_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut DynamicLightComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_dynamic_light_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Fog` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_fog_component(&self, entity_id: EntityId) -> Option<&FogComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_fog_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Fog` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_fog_component_mut(&mut self, entity_id: EntityId) -> Option<&mut FogComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_fog_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Health` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_health_component(&self, entity_id: EntityId) -> Option<&HealthComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            PlayerArchetype::ID => self.archetypes.player.get_health_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Health` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_health_component_mut(&mut self, entity_id: EntityId) -> Option<&mut HealthComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            PlayerArchetype::ID => self.archetypes.player.get_health_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Model` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_model_component(&self, entity_id: EntityId) -> Option<&ModelComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CubeArchetype::ID => self.archetypes.cube.get_model_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Model` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_model_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ModelComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CubeArchetype::ID => self.archetypes.cube.get_model_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Position` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            TileArchetype::ID => self.archetypes.tile.get_position_component_at(ear.index),
-            PlayerArchetype::ID => self.archetypes.player.get_position_component_at(ear.index),
-            CubeArchetype::ID => self.archetypes.cube.get_position_component_at(ear.index),
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at(ear.index),
-            BackgroundObjectArchetype::ID => self.archetypes.background_object.get_position_component_at(ear.index),
-            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Position` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            TileArchetype::ID => self.archetypes.tile.get_position_component_at_mut(ear.index),
-            PlayerArchetype::ID => self.archetypes.player.get_position_component_at_mut(ear.index),
-            CubeArchetype::ID => self.archetypes.cube.get_position_component_at_mut(ear.index),
-            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at_mut(ear.index),
-            BackgroundObjectArchetype::ID => self.archetypes.background_object.get_position_component_at_mut(ear.index),
-            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Skydome` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_skydome_component(&self, entity_id: EntityId) -> Option<&SkydomeComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_skydome_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Skydome` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_skydome_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SkydomeComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_skydome_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Stars` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_stars_component(&self, entity_id: EntityId) -> Option<&StarsComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_stars_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Stars` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_stars_component_mut(&mut self, entity_id: EntityId) -> Option<&mut StarsComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_stars_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Sun` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_sun_component(&self, entity_id: EntityId) -> Option<&SunComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_sun_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Sun` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_sun_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SunComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_sun_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `TextureSource` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_texture_source_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `TextureSource` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_texture_source_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TextureSourceComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_texture_source_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Tile` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_tile_component(&self, entity_id: EntityId) -> Option<&TileComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            TileArchetype::ID => self.archetypes.tile.get_tile_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Tile` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_tile_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TileComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            TileArchetype::ID => self.archetypes.tile.get_tile_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `TimeOfDay` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_time_of_day_component(&self, entity_id: EntityId) -> Option<&TimeOfDayComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_time_of_day_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `TimeOfDay` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_time_of_day_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TimeOfDayComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            EnvironmentArchetype::ID => self.archetypes.environment.get_time_of_day_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Transform` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_transform_component(&self, entity_id: EntityId) -> Option<&TransformComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CubeArchetype::ID => self.archetypes.cube.get_transform_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Transform` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_transform_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TransformComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            CubeArchetype::ID => self.archetypes.cube.get_transform_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `Velocity` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            PlayerArchetype::ID => self.archetypes.player.get_velocity_component_at(ear.index),
-            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `Velocity` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            PlayerArchetype::ID => self.archetypes.player.get_velocity_component_at_mut(ear.index),
-            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `WgpuShader` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            WgpuShaderArchetype::ID => self.archetypes.wgpu_shader.get_wgpu_shader_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `WgpuShader` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            WgpuShaderArchetype::ID => self.archetypes.wgpu_shader.get_wgpu_shader_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Gets the `WgpuTexture` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_wgpu_texture_component(&self, entity_id: EntityId) -> Option<&WgpuTextureComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_wgpu_texture_component_at(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Mutably gets the `WgpuTexture` component of the specified entity.
-    #[allow(dead_code)]
-    #[inline]
-    pub fn get_wgpu_texture_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuTextureComponent> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        match ear.archetype {
-            WgpuTextureArchetype::ID => self.archetypes.wgpu_texture.get_wgpu_texture_component_at_mut(ear.index),
-            #[allow(dead_code)]
-            _ => None
-        }
-    }
-
-    /// Accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
-    pub fn get_wgpu_shader_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<WgpuShaderEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != WgpuShaderArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .wgpu_shader
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
-    pub fn get_wgpu_shader_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<WgpuShaderEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != WgpuShaderArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .wgpu_shader
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `WgpuShader` entity into the world given its [`WgpuShaderEntityData`].
@@ -1508,41 +968,14 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.wgpu_shader
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .wgpu_shader
             .spawn_with(
                 wgpu_shader,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
-    pub fn get_wgpu_texture_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<WgpuTextureEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != WgpuTextureArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .wgpu_texture
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
-    pub fn get_wgpu_texture_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<WgpuTextureEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != WgpuTextureArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .wgpu_texture
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `WgpuTexture` entity into the world given its [`WgpuTextureEntityData`].
@@ -1573,42 +1006,15 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.wgpu_texture
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .wgpu_texture
             .spawn_with(
                 texture_source,
                 wgpu_texture,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
-    pub fn get_environment_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<EnvironmentEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != EnvironmentArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .environment
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
-    pub fn get_environment_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<EnvironmentEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != EnvironmentArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .environment
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Environment` entity into the world given its [`EnvironmentEntityData`].
@@ -1647,7 +1053,10 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.environment
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .environment
             .spawn_with(
                 time_of_day,
                 sun,
@@ -1655,38 +1064,8 @@ impl<E, Q> MainWorld<E, Q> {
                 ambient_light,
                 stars,
                 fog,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
-    pub fn get_camera_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<CameraEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != CameraArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .camera
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
-    pub fn get_camera_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<CameraEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != CameraArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .camera
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
@@ -1717,42 +1096,15 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.camera
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .camera
             .spawn_with(
                 camera,
                 camera_fps_controller,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
-    pub fn get_dynamic_light_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<DynamicLightEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != DynamicLightArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .dynamic_light
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
-    pub fn get_dynamic_light_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<DynamicLightEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != DynamicLightArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .dynamic_light
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `DynamicLight` entity into the world given its [`DynamicLightEntityData`].
@@ -1785,43 +1137,16 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.dynamic_light
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .dynamic_light
             .spawn_with(
                 dynamic_light,
                 color,
                 position,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
-    pub fn get_tile_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<TileEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != TileArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .tile
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
-    pub fn get_tile_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<TileEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != TileArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .tile
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Tile` entity into the world given its [`TileEntityData`].
@@ -1852,42 +1177,15 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.tile
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .tile
             .spawn_with(
                 tile,
                 position,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
-    pub fn get_cube_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<CubeEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != CubeArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .cube
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
-    pub fn get_cube_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<CubeEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != CubeArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .cube
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Cube` entity into the world given its [`CubeEntityData`].
@@ -1922,44 +1220,17 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.cube
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .cube
             .spawn_with(
                 position,
                 velocity,
                 transform,
                 model,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
-    pub fn get_player_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<PlayerEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != PlayerArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .player
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
-    pub fn get_player_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<PlayerEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != PlayerArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .player
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
@@ -1992,43 +1263,16 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.player
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .player
             .spawn_with(
                 position,
                 velocity,
                 health,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_foreground_object_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<ForegroundObjectEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != ForegroundObjectArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .foreground_object
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_foreground_object_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<ForegroundObjectEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != ForegroundObjectArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .foreground_object
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
@@ -2059,42 +1303,15 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.foreground_object
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .foreground_object
             .spawn_with(
                 position,
                 collider,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_background_object_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<BackgroundObjectEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != BackgroundObjectArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .background_object
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_background_object_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<BackgroundObjectEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != BackgroundObjectArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .background_object
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
@@ -2123,41 +1340,14 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.background_object
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .background_object
             .spawn_with(
                 position,
-                Registry(&mut self.entity_locations)
+                registry
             )
-    }
-
-    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
-    pub fn get_scene_background_entity(
-        &self,
-        entity_id: EntityId
-    ) -> Option<SceneBackgroundEntityRef> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != SceneBackgroundArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .scene_background
-            .get_entity_at(ear.index)
-    }
-
-    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
-    pub fn get_scene_background_entity_mut(
-        &mut self,
-        entity_id: EntityId
-    ) -> Option<SceneBackgroundEntityMut> {
-        let ear = self.entity_locations.get(&entity_id)?;
-        if ear.archetype != SceneBackgroundArchetype::ID {
-            return None;
-        }
-        self
-            .archetypes
-            .scene_background
-            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `SceneBackground` entity into the world given its [`SceneBackgroundEntityData`].
@@ -2186,10 +1376,13 @@ impl<E, Q> MainWorld<E, Q> {
             }
         }
 
-        self.archetypes.scene_background
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .scene_background
             .spawn_with(
                 background_color,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
@@ -2552,17 +1745,36 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.wgpu_init_shader.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply WgpuInitShaderSystem to WgpuShaderArchetype
-            self.systems.wgpu_init_shader.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.wgpu_shader.entities,
-                &mut self.archetypes.wgpu_shader.wgpu_shaders,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // Preflight of WgpuInitShaderSystem for WgpuShaderArchetype
+                self.systems.wgpu_init_shader.preflight(
+                    Box::new(&self.archetypes),
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.wgpu_shader.entities,
+                    &self.archetypes.collection.wgpu_shader.wgpu_shaders,
+                );
+            }
+
+            // Systems
+            {
+                // Apply WgpuInitShaderSystem to WgpuShaderArchetype
+                self.systems.wgpu_init_shader.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.wgpu_shader.entities,
+                    &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.wgpu_init_shader.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -2575,18 +1787,31 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.wgpu_init_texture.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply WgpuInitTextureSystem to WgpuTextureArchetype
-            self.systems.wgpu_init_texture.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.wgpu_texture.entities,
-                &self.archetypes.wgpu_texture.texture_sources,
-                &mut self.archetypes.wgpu_texture.wgpu_textures,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply WgpuInitTextureSystem to WgpuTextureArchetype
+                self.systems.wgpu_init_texture.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.wgpu_texture.entities,
+                    &self.archetypes.collection.wgpu_texture.texture_sources,
+                    &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.wgpu_init_texture.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -2641,12 +1866,31 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_wgpu_init_shader_ready {
                     s.spawn(|_| {
-                        // Apply WgpuInitShaderSystem to WgpuShaderArchetype
-                        self.systems.wgpu_init_shader.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.wgpu_shader.entities,
-                            &mut self.archetypes.wgpu_shader.wgpu_shaders,
-                        );
+                        // Preflight
+                        {
+                            // Preflight of WgpuInitShaderSystem for WgpuShaderArchetype
+                            self.systems.wgpu_init_shader.preflight(
+                                Box::new(&self.archetypes),
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.wgpu_shader.entities,
+                                &self.archetypes.collection.wgpu_shader.wgpu_shaders,
+                            );
+                        }
+
+                        // Systems
+                        {
+                            // Apply WgpuInitShaderSystem to WgpuShaderArchetype
+                            self.systems.wgpu_init_shader.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.wgpu_shader.entities,
+                                &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -2674,13 +1918,26 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_wgpu_init_texture_ready {
                     s.spawn(|_| {
-                        // Apply WgpuInitTextureSystem to WgpuTextureArchetype
-                        self.systems.wgpu_init_texture.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.wgpu_texture.entities,
-                            &self.archetypes.wgpu_texture.texture_sources,
-                            &mut self.archetypes.wgpu_texture.wgpu_textures,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply WgpuInitTextureSystem to WgpuTextureArchetype
+                            self.systems.wgpu_init_texture.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.wgpu_texture.entities,
+                                &self.archetypes.collection.wgpu_texture.texture_sources,
+                                &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -2762,16 +2019,29 @@ impl<E, Q> MainWorld<E, Q> {
                &self.context,
            );
         if is_ready && self.systems.time_of_day.on_begin_phase(
-                    &self.context,
-                )
-                .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply TimeOfDaySystem to EnvironmentArchetype
-            self.systems.time_of_day.apply_many(
                 &self.context,
-                &mut self.archetypes.environment.time_of_daies,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply TimeOfDaySystem to EnvironmentArchetype
+                self.systems.time_of_day.apply_many(
+                    &self.context,
+                    &mut self.archetypes.collection.environment.time_of_daies,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.time_of_day.on_end_phase(
                 &self.context,
@@ -2784,23 +2054,36 @@ impl<E, Q> MainWorld<E, Q> {
                &self.context,
            );
         if is_ready && self.systems.physics.on_begin_phase(
-                    &self.context,
-                )
-                .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_begin_phase returned an error"))
-                .is_ok()
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply PhysicsSystem to CubeArchetype
-            self.systems.physics.apply_many(
-                &self.context,
-                &self.archetypes.cube.velocities,
-                &mut self.archetypes.cube.positions,
-            );
-            // Apply PhysicsSystem to PlayerArchetype
-            self.systems.physics.apply_many(
-                &self.context,
-                &self.archetypes.player.velocities,
-                &mut self.archetypes.player.positions,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply PhysicsSystem to CubeArchetype
+                self.systems.physics.apply_many(
+                    &self.context,
+                    &self.archetypes.collection.cube.velocities,
+                    &mut self.archetypes.collection.cube.positions,
+                );
+                // Apply PhysicsSystem to PlayerArchetype
+                self.systems.physics.apply_many(
+                    &self.context,
+                    &self.archetypes.collection.player.velocities,
+                    &mut self.archetypes.collection.player.positions,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.physics.on_end_phase(
                 &self.context,
@@ -2812,17 +2095,30 @@ impl<E, Q> MainWorld<E, Q> {
         let is_ready = self.systems.sun.is_ready(
            );
         if is_ready && self.systems.sun.on_begin_phase(
-                )
-                .inspect_err(|error| tracing::error!(?error, "SunSystem::on_begin_phase returned an error"))
-                .is_ok()
+            )
+            .inspect_err(|error| tracing::error!(?error, "SunSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply SunSystem to EnvironmentArchetype
-            self.systems.sun.apply_many(
-                &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.suns,
-                &mut self.archetypes.environment.skydomes,
-                &mut self.archetypes.environment.ambient_lights,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply SunSystem to EnvironmentArchetype
+                self.systems.sun.apply_many(
+                    &self.archetypes.collection.environment.time_of_daies,
+                    &mut self.archetypes.collection.environment.suns,
+                    &mut self.archetypes.collection.environment.skydomes,
+                    &mut self.archetypes.collection.environment.ambient_lights,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.sun.on_end_phase(
             )
@@ -2833,15 +2129,28 @@ impl<E, Q> MainWorld<E, Q> {
         let is_ready = self.systems.fog.is_ready(
            );
         if is_ready && self.systems.fog.on_begin_phase(
-                )
-                .inspect_err(|error| tracing::error!(?error, "FogSystem::on_begin_phase returned an error"))
-                .is_ok()
+            )
+            .inspect_err(|error| tracing::error!(?error, "FogSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply FogSystem to EnvironmentArchetype
-            self.systems.fog.apply_many(
-                &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.fogs,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply FogSystem to EnvironmentArchetype
+                self.systems.fog.apply_many(
+                    &self.archetypes.collection.environment.time_of_daies,
+                    &mut self.archetypes.collection.environment.fogs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.fog.on_end_phase(
             )
@@ -2852,15 +2161,28 @@ impl<E, Q> MainWorld<E, Q> {
         let is_ready = self.systems.stars.is_ready(
            );
         if is_ready && self.systems.stars.on_begin_phase(
-                )
-                .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
-                .is_ok()
+            )
+            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply StarsSystem to EnvironmentArchetype
-            self.systems.stars.apply_many(
-                &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.stars,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply StarsSystem to EnvironmentArchetype
+                self.systems.stars.apply_many(
+                    &self.archetypes.collection.environment.time_of_daies,
+                    &mut self.archetypes.collection.environment.stars,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.stars.on_end_phase(
             )
@@ -2923,27 +2245,53 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_time_of_day_ready {
                     s.spawn(|_| {
-                        // Apply TimeOfDaySystem to EnvironmentArchetype
-                        self.systems.time_of_day.apply_many(
-                            &self.context,
-                            &mut self.archetypes.environment.time_of_daies,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply TimeOfDaySystem to EnvironmentArchetype
+                            self.systems.time_of_day.apply_many(
+                                &self.context,
+                                &mut self.archetypes.collection.environment.time_of_daies,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
                 if is_physics_ready {
                     s.spawn(|_| {
-                        // Apply PhysicsSystem to CubeArchetype
-                        self.systems.physics.apply_many(
-                            &self.context,
-                            &self.archetypes.cube.velocities,
-                            &mut self.archetypes.cube.positions,
-                        );
-                        // Apply PhysicsSystem to PlayerArchetype
-                        self.systems.physics.apply_many(
-                            &self.context,
-                            &self.archetypes.player.velocities,
-                            &mut self.archetypes.player.positions,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply PhysicsSystem to CubeArchetype
+                            self.systems.physics.apply_many(
+                                &self.context,
+                                &self.archetypes.collection.cube.velocities,
+                                &mut self.archetypes.collection.cube.positions,
+                            );
+                            // Apply PhysicsSystem to PlayerArchetype
+                            self.systems.physics.apply_many(
+                                &self.context,
+                                &self.archetypes.collection.player.velocities,
+                                &mut self.archetypes.collection.player.positions,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -2989,31 +2337,70 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_sun_ready {
                     s.spawn(|_| {
-                        // Apply SunSystem to EnvironmentArchetype
-                        self.systems.sun.apply_many(
-                            &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.suns,
-                            &mut self.archetypes.environment.skydomes,
-                            &mut self.archetypes.environment.ambient_lights,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply SunSystem to EnvironmentArchetype
+                            self.systems.sun.apply_many(
+                                &self.archetypes.collection.environment.time_of_daies,
+                                &mut self.archetypes.collection.environment.suns,
+                                &mut self.archetypes.collection.environment.skydomes,
+                                &mut self.archetypes.collection.environment.ambient_lights,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
                 if is_fog_ready {
                     s.spawn(|_| {
-                        // Apply FogSystem to EnvironmentArchetype
-                        self.systems.fog.apply_many(
-                            &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.fogs,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply FogSystem to EnvironmentArchetype
+                            self.systems.fog.apply_many(
+                                &self.archetypes.collection.environment.time_of_daies,
+                                &mut self.archetypes.collection.environment.fogs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
                 if is_stars_ready {
                     s.spawn(|_| {
-                        // Apply StarsSystem to EnvironmentArchetype
-                        self.systems.stars.apply_many(
-                            &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.stars,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply StarsSystem to EnvironmentArchetype
+                            self.systems.stars.apply_many(
+                                &self.archetypes.collection.environment.time_of_daies,
+                                &mut self.archetypes.collection.environment.stars,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3105,19 +2492,32 @@ impl<E, Q> MainWorld<E, Q> {
                &self.states.wgpu_render,
            );
         if is_ready && self.systems.camera.on_begin_phase(
-                    &self.states.input,
-                    &self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply CameraSystem to CameraArchetype
-            self.systems.camera.apply_many(
                 &self.states.input,
                 &self.states.wgpu_render,
-                &mut self.archetypes.camera.cameras,
-                &mut self.archetypes.camera.camera_fps_controllers,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply CameraSystem to CameraArchetype
+                self.systems.camera.apply_many(
+                    &self.states.input,
+                    &self.states.wgpu_render,
+                    &mut self.archetypes.collection.camera.cameras,
+                    &mut self.archetypes.collection.camera.camera_fps_controllers,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.camera.on_end_phase(
                 &self.states.input,
@@ -3131,16 +2531,29 @@ impl<E, Q> MainWorld<E, Q> {
                &self.context,
            );
         if is_ready && self.systems.background_color_cycle.on_begin_phase(
-                    &self.context,
-                )
-                .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply BackgroundColorCycleSystem to SceneBackgroundArchetype
-            self.systems.background_color_cycle.apply_many(
                 &self.context,
-                &mut self.archetypes.scene_background.background_colors,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply BackgroundColorCycleSystem to SceneBackgroundArchetype
+                self.systems.background_color_cycle.apply_many(
+                    &self.context,
+                    &mut self.archetypes.collection.scene_background.background_colors,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.background_color_cycle.on_end_phase(
                 &self.context,
@@ -3253,21 +2666,34 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.frame_globals.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply FrameGlobalsSystem to EnvironmentArchetype
-            self.systems.frame_globals.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.environment.time_of_daies,
-                &self.archetypes.environment.suns,
-                &self.archetypes.environment.fogs,
-                &self.archetypes.environment.ambient_lights,
-                &self.archetypes.environment.stars,
-                &self.archetypes.environment.skydomes,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply FrameGlobalsSystem to EnvironmentArchetype
+                self.systems.frame_globals.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.environment.time_of_daies,
+                    &self.archetypes.collection.environment.suns,
+                    &self.archetypes.collection.environment.fogs,
+                    &self.archetypes.collection.environment.ambient_lights,
+                    &self.archetypes.collection.environment.stars,
+                    &self.archetypes.collection.environment.skydomes,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.frame_globals.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -3280,16 +2706,29 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render_background.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply RenderBackgroundSystem to SceneBackgroundArchetype
-            self.systems.render_background.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.scene_background.background_colors,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply RenderBackgroundSystem to SceneBackgroundArchetype
+                self.systems.render_background.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.scene_background.background_colors,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.render_background.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -3302,16 +2741,29 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render_sky.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply RenderSkySystem to EnvironmentArchetype
-            self.systems.render_sky.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.environment.skydomes,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply RenderSkySystem to EnvironmentArchetype
+                self.systems.render_sky.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.environment.skydomes,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.render_sky.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -3324,18 +2776,31 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply RenderSystem to CubeArchetype
-            self.systems.render.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.cube.positions,
-                &self.archetypes.cube.transforms,
-                &self.archetypes.cube.models,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply RenderSystem to CubeArchetype
+                self.systems.render.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.cube.positions,
+                    &self.archetypes.collection.cube.transforms,
+                    &self.archetypes.collection.cube.models,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.render.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -3349,19 +2814,32 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.dynamic_light.on_begin_phase(
-                    &self.context,
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply DynamicLightSystem to DynamicLightArchetype
-            self.systems.dynamic_light.apply_many(
                 &self.context,
                 &mut self.states.wgpu_render,
-                &self.archetypes.dynamic_light.colors,
-                &mut self.archetypes.dynamic_light.dynamic_lights,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply DynamicLightSystem to DynamicLightArchetype
+                self.systems.dynamic_light.apply_many(
+                    &self.context,
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.dynamic_light.colors,
+                    &mut self.archetypes.collection.dynamic_light.dynamic_lights,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.dynamic_light.on_end_phase(
                 &self.context,
@@ -3375,17 +2853,30 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.tile_render.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply TileRenderSystem to TileArchetype
-            self.systems.tile_render.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.tile.tiles,
-                &self.archetypes.tile.positions,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply TileRenderSystem to TileArchetype
+                self.systems.tile_render.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.tile.tiles,
+                    &self.archetypes.collection.tile.positions,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.tile_render.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -3398,16 +2889,29 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.vga_blit.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply VgaBlitSystem to SceneBackgroundArchetype
-            self.systems.vga_blit.apply_many(
                 &mut self.states.wgpu_render,
-                &self.archetypes.scene_background.background_colors,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply VgaBlitSystem to SceneBackgroundArchetype
+                self.systems.vga_blit.apply_many(
+                    &mut self.states.wgpu_render,
+                    &self.archetypes.collection.scene_background.background_colors,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.vga_blit.on_end_phase(
                 &mut self.states.wgpu_render,
@@ -3421,18 +2925,31 @@ impl<E, Q> MainWorld<E, Q> {
                &mut self.states.active_camera,
            );
         if is_ready && self.systems.camera_render.on_begin_phase(
-                    &self.states.wgpu_render,
-                    &mut self.states.active_camera,
-                )
-                .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply CameraRenderSystem to CameraArchetype
-            self.systems.camera_render.apply_many(
                 &self.states.wgpu_render,
                 &mut self.states.active_camera,
-                &self.archetypes.camera.cameras,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                // Apply CameraRenderSystem to CameraArchetype
+                self.systems.camera_render.apply_many(
+                    &self.states.wgpu_render,
+                    &mut self.states.active_camera,
+                    &self.archetypes.collection.camera.cameras,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.camera_render.on_end_phase(
                 &self.states.wgpu_render,
@@ -3489,16 +3006,29 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_frame_globals_ready {
                     s.spawn(|_| {
-                        // Apply FrameGlobalsSystem to EnvironmentArchetype
-                        self.systems.frame_globals.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.environment.time_of_daies,
-                            &self.archetypes.environment.suns,
-                            &self.archetypes.environment.fogs,
-                            &self.archetypes.environment.ambient_lights,
-                            &self.archetypes.environment.stars,
-                            &self.archetypes.environment.skydomes,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply FrameGlobalsSystem to EnvironmentArchetype
+                            self.systems.frame_globals.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.environment.time_of_daies,
+                                &self.archetypes.collection.environment.suns,
+                                &self.archetypes.collection.environment.fogs,
+                                &self.archetypes.collection.environment.ambient_lights,
+                                &self.archetypes.collection.environment.stars,
+                                &self.archetypes.collection.environment.skydomes,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3526,11 +3056,24 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_background_ready {
                     s.spawn(|_| {
-                        // Apply RenderBackgroundSystem to SceneBackgroundArchetype
-                        self.systems.render_background.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.scene_background.background_colors,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply RenderBackgroundSystem to SceneBackgroundArchetype
+                            self.systems.render_background.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.scene_background.background_colors,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3558,11 +3101,24 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_sky_ready {
                     s.spawn(|_| {
-                        // Apply RenderSkySystem to EnvironmentArchetype
-                        self.systems.render_sky.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.environment.skydomes,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply RenderSkySystem to EnvironmentArchetype
+                            self.systems.render_sky.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.environment.skydomes,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3590,13 +3146,26 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_ready {
                     s.spawn(|_| {
-                        // Apply RenderSystem to CubeArchetype
-                        self.systems.render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.cube.positions,
-                            &self.archetypes.cube.transforms,
-                            &self.archetypes.cube.models,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply RenderSystem to CubeArchetype
+                            self.systems.render.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.cube.positions,
+                                &self.archetypes.collection.cube.transforms,
+                                &self.archetypes.collection.cube.models,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3626,13 +3195,26 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_dynamic_light_ready {
                     s.spawn(|_| {
-                        // Apply DynamicLightSystem to DynamicLightArchetype
-                        self.systems.dynamic_light.apply_many(
-                            &self.context,
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.dynamic_light.colors,
-                            &mut self.archetypes.dynamic_light.dynamic_lights,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply DynamicLightSystem to DynamicLightArchetype
+                            self.systems.dynamic_light.apply_many(
+                                &self.context,
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.dynamic_light.colors,
+                                &mut self.archetypes.collection.dynamic_light.dynamic_lights,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3661,12 +3243,25 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_tile_render_ready {
                     s.spawn(|_| {
-                        // Apply TileRenderSystem to TileArchetype
-                        self.systems.tile_render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.tile.tiles,
-                            &self.archetypes.tile.positions,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply TileRenderSystem to TileArchetype
+                            self.systems.tile_render.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.tile.tiles,
+                                &self.archetypes.collection.tile.positions,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3694,11 +3289,24 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_vga_blit_ready {
                     s.spawn(|_| {
-                        // Apply VgaBlitSystem to SceneBackgroundArchetype
-                        self.systems.vga_blit.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.scene_background.background_colors,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply VgaBlitSystem to SceneBackgroundArchetype
+                            self.systems.vga_blit.apply_many(
+                                &mut self.states.wgpu_render,
+                                &self.archetypes.collection.scene_background.background_colors,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3728,12 +3336,25 @@ impl<E, Q> MainWorld<E, Q> {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_camera_render_ready {
                     s.spawn(|_| {
-                        // Apply CameraRenderSystem to CameraArchetype
-                        self.systems.camera_render.apply_many(
-                            &self.states.wgpu_render,
-                            &mut self.states.active_camera,
-                            &self.archetypes.camera.cameras,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            // Apply CameraRenderSystem to CameraArchetype
+                            self.systems.camera_render.apply_many(
+                                &self.states.wgpu_render,
+                                &mut self.states.active_camera,
+                                &self.archetypes.collection.camera.cameras,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -3837,70 +3458,81 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
-         if let Some(loc) = self.entity_locations.remove(&id) {
+         if let Some(loc) = self.archetypes.entity_locations.remove(&id) {
             let result = match loc.archetype {
                 WgpuShaderArchetype::ID => {
                     self.archetypes
+                        .collection
                         .wgpu_shader
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, WgpuShaderArchetype::ID))?
                 }
                 WgpuTextureArchetype::ID => {
                     self.archetypes
+                        .collection
                         .wgpu_texture
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, WgpuTextureArchetype::ID))?
                 }
                 EnvironmentArchetype::ID => {
                     self.archetypes
+                        .collection
                         .environment
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, EnvironmentArchetype::ID))?
                 }
                 CameraArchetype::ID => {
                     self.archetypes
+                        .collection
                         .camera
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CameraArchetype::ID))?
                 }
                 DynamicLightArchetype::ID => {
                     self.archetypes
+                        .collection
                         .dynamic_light
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, DynamicLightArchetype::ID))?
                 }
                 TileArchetype::ID => {
                     self.archetypes
+                        .collection
                         .tile
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, TileArchetype::ID))?
                 }
                 CubeArchetype::ID => {
                     self.archetypes
+                        .collection
                         .cube
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CubeArchetype::ID))?
                 }
                 PlayerArchetype::ID => {
                     self.archetypes
+                        .collection
                         .player
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, PlayerArchetype::ID))?
                 }
                 ForegroundObjectArchetype::ID => {
                     self.archetypes
+                        .collection
                         .foreground_object
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ForegroundObjectArchetype::ID))?
                 }
                 BackgroundObjectArchetype::ID => {
                     self.archetypes
+                        .collection
                         .background_object
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, BackgroundObjectArchetype::ID))?
                 }
                 SceneBackgroundArchetype::ID => {
                     self.archetypes
+                        .collection
                         .scene_background
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, SceneBackgroundArchetype::ID))?
@@ -3911,7 +3543,7 @@ impl<E, Q> MainWorld<E, Q> {
             };
 
             if let Some(moved_entity) = result {
-                self.entity_locations.insert(moved_entity, EntityArchetypeRef {
+                self.archetypes.entity_locations.insert(moved_entity, EntityArchetypeRef {
                     archetype: loc.archetype,
                     index: loc.index
                 });
@@ -4088,9 +3720,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .wgpu_shader
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4113,9 +3746,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .wgpu_shader
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4133,9 +3767,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&WgpuShaderEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .wgpu_shader
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4150,9 +3785,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .wgpu_texture
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4175,9 +3811,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .wgpu_texture
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4195,9 +3832,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&WgpuTextureEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .wgpu_texture
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4212,9 +3850,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .environment
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4237,9 +3876,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .environment
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4257,9 +3897,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&EnvironmentEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .environment
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4274,9 +3915,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .camera
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4299,9 +3941,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .camera
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4319,9 +3962,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&CameraEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .camera
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4336,9 +3980,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .dynamic_light
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4361,9 +4006,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .dynamic_light
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4381,9 +4027,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&DynamicLightEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .dynamic_light
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4398,9 +4045,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .tile
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4423,9 +4071,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .tile
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4443,9 +4092,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&TileEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .tile
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4460,9 +4110,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .cube
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4485,9 +4136,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .cube
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4505,9 +4157,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&CubeEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .cube
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4522,9 +4175,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .player
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4547,9 +4201,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .player
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4567,9 +4222,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&PlayerEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .player
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4584,9 +4240,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .foreground_object
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4609,9 +4266,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .foreground_object
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4629,9 +4287,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&ForegroundObjectEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .foreground_object
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4646,9 +4305,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .background_object
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4671,9 +4331,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .background_object
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4691,9 +4352,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&BackgroundObjectEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .background_object
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -4708,9 +4370,10 @@ impl<E, Q> MainWorld<E, Q> {
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .scene_background
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -4733,9 +4396,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .scene_background
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -4753,9 +4417,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&SceneBackgroundEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .scene_background
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -5061,6 +4726,504 @@ pub trait ComponentAccessMut: ComponentAccess {
     }
 }
 
+pub trait EntityAccess {
+
+    /// Accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<TileEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityRef>
+    {
+        None
+    }
+}
+
+pub trait EntityAccessMut: EntityAccess {
+
+    /// Mutably accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<TileEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityMut>
+    {
+        None
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> EntityAccess for MainWorld<E, Q> {
+
+    /// Accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityRef>
+    {
+        EntityAccess::get_wgpu_shader_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityRef>
+    {
+        EntityAccess::get_wgpu_texture_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityRef>
+    {
+        EntityAccess::get_environment_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityRef>
+    {
+        EntityAccess::get_camera_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityRef>
+    {
+        EntityAccess::get_dynamic_light_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<TileEntityRef>
+    {
+        EntityAccess::get_tile_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityRef>
+    {
+        EntityAccess::get_cube_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityRef>
+    {
+        EntityAccess::get_player_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityRef>
+    {
+        EntityAccess::get_foreground_object_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityRef>
+    {
+        EntityAccess::get_background_object_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityRef>
+    {
+        EntityAccess::get_scene_background_entity(&self.archetypes, entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
+
+    /// Mutably accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityMut>
+    {
+        EntityAccessMut::get_wgpu_shader_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_texture_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityMut>
+    {
+        EntityAccessMut::get_wgpu_texture_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityMut>
+    {
+        EntityAccessMut::get_environment_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityMut>
+    {
+        EntityAccessMut::get_camera_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityMut>
+    {
+        EntityAccessMut::get_dynamic_light_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<TileEntityMut>
+    {
+        EntityAccessMut::get_tile_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityMut>
+    {
+        EntityAccessMut::get_cube_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityMut>
+    {
+        EntityAccessMut::get_player_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityMut>
+    {
+        EntityAccessMut::get_foreground_object_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityMut>
+    {
+        EntityAccessMut::get_background_object_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityMut>
+    {
+        EntityAccessMut::get_scene_background_entity_mut(&mut self.archetypes, entity_id)
+    }
+}
+
 //noinspection RsSortImplTraitMembers
 impl<E, Q> ComponentAccess for MainWorld<E, Q> {
 
@@ -5068,147 +5231,147 @@ impl<E, Q> ComponentAccess for MainWorld<E, Q> {
     #[allow(dead_code, unused)]
     #[inline]
     fn get_ambient_light_component(&self, entity_id: EntityId) -> Option<&AmbientLightComponent> {
-        self.get_ambient_light_component(entity_id)
+        ComponentAccess::get_ambient_light_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_background_color_component(&self, entity_id: EntityId) -> Option<&BackgroundColorComponent> {
-        self.get_background_color_component(entity_id)
+        ComponentAccess::get_background_color_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Camera`](CameraComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_camera_component(&self, entity_id: EntityId) -> Option<&CameraComponent> {
-        self.get_camera_component(entity_id)
+        ComponentAccess::get_camera_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_camera_fps_controller_component(&self, entity_id: EntityId) -> Option<&CameraFpsControllerComponent> {
-        self.get_camera_fps_controller_component(entity_id)
+        ComponentAccess::get_camera_fps_controller_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Collider`](ColliderComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_collider_component(&self, entity_id: EntityId) -> Option<&ColliderComponent> {
-        self.get_collider_component(entity_id)
+        ComponentAccess::get_collider_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Color`](ColorComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_color_component(&self, entity_id: EntityId) -> Option<&ColorComponent> {
-        self.get_color_component(entity_id)
+        ComponentAccess::get_color_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_dynamic_light_component(&self, entity_id: EntityId) -> Option<&DynamicLightComponent> {
-        self.get_dynamic_light_component(entity_id)
+        ComponentAccess::get_dynamic_light_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Fog`](FogComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_fog_component(&self, entity_id: EntityId) -> Option<&FogComponent> {
-        self.get_fog_component(entity_id)
+        ComponentAccess::get_fog_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Health`](HealthComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_health_component(&self, entity_id: EntityId) -> Option<&HealthComponent> {
-        self.get_health_component(entity_id)
+        ComponentAccess::get_health_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Model`](ModelComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_model_component(&self, entity_id: EntityId) -> Option<&ModelComponent> {
-        self.get_model_component(entity_id)
+        ComponentAccess::get_model_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Position`](PositionComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
-        self.get_position_component(entity_id)
+        ComponentAccess::get_position_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Skydome`](SkydomeComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_skydome_component(&self, entity_id: EntityId) -> Option<&SkydomeComponent> {
-        self.get_skydome_component(entity_id)
+        ComponentAccess::get_skydome_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Stars`](StarsComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_stars_component(&self, entity_id: EntityId) -> Option<&StarsComponent> {
-        self.get_stars_component(entity_id)
+        ComponentAccess::get_stars_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Sun`](SunComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_sun_component(&self, entity_id: EntityId) -> Option<&SunComponent> {
-        self.get_sun_component(entity_id)
+        ComponentAccess::get_sun_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
-        self.get_texture_source_component(entity_id)
+        ComponentAccess::get_texture_source_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Tile`](TileComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_tile_component(&self, entity_id: EntityId) -> Option<&TileComponent> {
-        self.get_tile_component(entity_id)
+        ComponentAccess::get_tile_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_time_of_day_component(&self, entity_id: EntityId) -> Option<&TimeOfDayComponent> {
-        self.get_time_of_day_component(entity_id)
+        ComponentAccess::get_time_of_day_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Transform`](TransformComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_transform_component(&self, entity_id: EntityId) -> Option<&TransformComponent> {
-        self.get_transform_component(entity_id)
+        ComponentAccess::get_transform_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`Velocity`](VelocityComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
-        self.get_velocity_component(entity_id)
+        ComponentAccess::get_velocity_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`WgpuShader`](WgpuShaderComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
-        self.get_wgpu_shader_component(entity_id)
+        ComponentAccess::get_wgpu_shader_component(&self.archetypes, entity_id)
     }
 
     /// Gets the [`WgpuTexture`](WgpuTextureComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_wgpu_texture_component(&self, entity_id: EntityId) -> Option<&WgpuTextureComponent> {
-        self.get_wgpu_texture_component(entity_id)
+        ComponentAccess::get_wgpu_texture_component(&self.archetypes, entity_id)
     }
 }
 
@@ -5219,146 +5382,988 @@ impl<E, Q> ComponentAccessMut for MainWorld<E, Q> {
     #[allow(dead_code, unused)]
     #[inline]
     fn get_ambient_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut AmbientLightComponent> {
-        self.get_ambient_light_component_mut(entity_id)
+        ComponentAccessMut::get_ambient_light_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_background_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut BackgroundColorComponent> {
-        self.get_background_color_component_mut(entity_id)
+        ComponentAccessMut::get_background_color_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Camera`](CameraComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_camera_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraComponent> {
-        self.get_camera_component_mut(entity_id)
+        ComponentAccessMut::get_camera_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_camera_fps_controller_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraFpsControllerComponent> {
-        self.get_camera_fps_controller_component_mut(entity_id)
+        ComponentAccessMut::get_camera_fps_controller_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Collider`](ColliderComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_collider_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColliderComponent> {
-        self.get_collider_component_mut(entity_id)
+        ComponentAccessMut::get_collider_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Color`](ColorComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColorComponent> {
-        self.get_color_component_mut(entity_id)
+        ComponentAccessMut::get_color_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_dynamic_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut DynamicLightComponent> {
-        self.get_dynamic_light_component_mut(entity_id)
+        ComponentAccessMut::get_dynamic_light_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Fog`](FogComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_fog_component_mut(&mut self, entity_id: EntityId) -> Option<&mut FogComponent> {
-        self.get_fog_component_mut(entity_id)
+        ComponentAccessMut::get_fog_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Health`](HealthComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_health_component_mut(&mut self, entity_id: EntityId) -> Option<&mut HealthComponent> {
-        self.get_health_component_mut(entity_id)
+        ComponentAccessMut::get_health_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Model`](ModelComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_model_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ModelComponent> {
-        self.get_model_component_mut(entity_id)
+        ComponentAccessMut::get_model_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Position`](PositionComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
-        self.get_position_component_mut(entity_id)
+        ComponentAccessMut::get_position_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Skydome`](SkydomeComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_skydome_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SkydomeComponent> {
-        self.get_skydome_component_mut(entity_id)
+        ComponentAccessMut::get_skydome_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Stars`](StarsComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_stars_component_mut(&mut self, entity_id: EntityId) -> Option<&mut StarsComponent> {
-        self.get_stars_component_mut(entity_id)
+        ComponentAccessMut::get_stars_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Sun`](SunComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_sun_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SunComponent> {
-        self.get_sun_component_mut(entity_id)
+        ComponentAccessMut::get_sun_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_texture_source_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TextureSourceComponent> {
-        self.get_texture_source_component_mut(entity_id)
+        ComponentAccessMut::get_texture_source_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Tile`](TileComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_tile_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TileComponent> {
-        self.get_tile_component_mut(entity_id)
+        ComponentAccessMut::get_tile_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_time_of_day_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TimeOfDayComponent> {
-        self.get_time_of_day_component_mut(entity_id)
+        ComponentAccessMut::get_time_of_day_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Transform`](TransformComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_transform_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TransformComponent> {
-        self.get_transform_component_mut(entity_id)
+        ComponentAccessMut::get_transform_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`Velocity`](VelocityComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
-        self.get_velocity_component_mut(entity_id)
+        ComponentAccessMut::get_velocity_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`WgpuShader`](WgpuShaderComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
-        self.get_wgpu_shader_component_mut(entity_id)
+        ComponentAccessMut::get_wgpu_shader_component_mut(&mut self.archetypes, entity_id)
     }
 
     /// Mutably gets the [`WgpuTexture`](WgpuTextureComponent) component of the specified entity.
     #[allow(dead_code, unused)]
     #[inline]
     fn get_wgpu_texture_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuTextureComponent> {
-        self.get_wgpu_texture_component_mut(entity_id)
+        ComponentAccessMut::get_wgpu_texture_component_mut(&mut self.archetypes, entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl EntityAccess for MainWorldArchetypes {
+
+    /// Accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_wgpu_shader_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != WgpuShaderArchetype::ID {
+            return None;
+        }
+        self.collection
+            .wgpu_shader
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_wgpu_texture_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != WgpuTextureArchetype::ID {
+            return None;
+        }
+        self.collection
+            .wgpu_texture
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_environment_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != EnvironmentArchetype::ID {
+            return None;
+        }
+        self.collection
+            .environment
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_camera_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CameraArchetype::ID {
+            return None;
+        }
+        self.collection
+            .camera
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_dynamic_light_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != DynamicLightArchetype::ID {
+            return None;
+        }
+        self.collection
+            .dynamic_light
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_tile_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<TileEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != TileArchetype::ID {
+            return None;
+        }
+        self.collection
+            .tile
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_cube_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CubeArchetype::ID {
+            return None;
+        }
+        self.collection
+            .cube
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_player_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != PlayerArchetype::ID {
+            return None;
+        }
+        self.collection
+            .player
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_foreground_object_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != ForegroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .foreground_object
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_background_object_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != BackgroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .background_object
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_scene_background_entity(
+        &self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != SceneBackgroundArchetype::ID {
+            return None;
+        }
+        self.collection
+            .scene_background
+            .get_entity_at(ear.index)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl EntityAccessMut for MainWorldArchetypes {
+
+    /// Mutably accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_wgpu_shader_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuShaderEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != WgpuShaderArchetype::ID {
+            return None;
+        }
+        self.collection
+            .wgpu_shader
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `WgpuTexture` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_wgpu_texture_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<WgpuTextureEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != WgpuTextureArchetype::ID {
+            return None;
+        }
+        self.collection
+            .wgpu_texture
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_environment_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<EnvironmentEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != EnvironmentArchetype::ID {
+            return None;
+        }
+        self.collection
+            .environment
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_camera_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CameraEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CameraArchetype::ID {
+            return None;
+        }
+        self.collection
+            .camera
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_dynamic_light_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<DynamicLightEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != DynamicLightArchetype::ID {
+            return None;
+        }
+        self.collection
+            .dynamic_light
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_tile_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<TileEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != TileArchetype::ID {
+            return None;
+        }
+        self.collection
+            .tile
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_cube_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<CubeEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CubeArchetype::ID {
+            return None;
+        }
+        self.collection
+            .cube
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_player_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<PlayerEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != PlayerArchetype::ID {
+            return None;
+        }
+        self.collection
+            .player
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_foreground_object_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<ForegroundObjectEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != ForegroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .foreground_object
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_background_object_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<BackgroundObjectEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != BackgroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .background_object
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_scene_background_entity_mut(
+        &mut self,
+        entity_id: EntityId
+    ) -> Option<SceneBackgroundEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != SceneBackgroundArchetype::ID {
+            return None;
+        }
+        self.collection
+            .scene_background
+            .get_entity_at_mut(ear.index)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl ComponentAccess for MainWorldArchetypes {
+
+    /// Gets the `AmbientLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_ambient_light_component(&self, entity_id: EntityId) -> Option<&AmbientLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_ambient_light_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `BackgroundColor` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_background_color_component(&self, entity_id: EntityId) -> Option<&BackgroundColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            SceneBackgroundArchetype::ID => self.collection.scene_background.get_background_color_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Camera` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_component(&self, entity_id: EntityId) -> Option<&CameraComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `CameraFpsController` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_fps_controller_component(&self, entity_id: EntityId) -> Option<&CameraFpsControllerComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_fps_controller_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Collider` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_collider_component(&self, entity_id: EntityId) -> Option<&ColliderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_collider_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Color` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_color_component(&self, entity_id: EntityId) -> Option<&ColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_color_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `DynamicLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_dynamic_light_component(&self, entity_id: EntityId) -> Option<&DynamicLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_dynamic_light_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Fog` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_fog_component(&self, entity_id: EntityId) -> Option<&FogComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_fog_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Health` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_health_component(&self, entity_id: EntityId) -> Option<&HealthComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_health_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Model` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_model_component(&self, entity_id: EntityId) -> Option<&ModelComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_model_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Position` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Skydome` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_skydome_component(&self, entity_id: EntityId) -> Option<&SkydomeComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_skydome_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Stars` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_stars_component(&self, entity_id: EntityId) -> Option<&StarsComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_stars_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Sun` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_sun_component(&self, entity_id: EntityId) -> Option<&SunComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_sun_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `TextureSource` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.collection.wgpu_texture.get_texture_source_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Tile` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_tile_component(&self, entity_id: EntityId) -> Option<&TileComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            TileArchetype::ID => self.collection.tile.get_tile_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `TimeOfDay` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_time_of_day_component(&self, entity_id: EntityId) -> Option<&TimeOfDayComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_time_of_day_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Transform` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_transform_component(&self, entity_id: EntityId) -> Option<&TransformComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_transform_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Velocity` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_velocity_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `WgpuShader` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            WgpuShaderArchetype::ID => self.collection.wgpu_shader.get_wgpu_shader_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `WgpuTexture` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_wgpu_texture_component(&self, entity_id: EntityId) -> Option<&WgpuTextureComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.collection.wgpu_texture.get_wgpu_texture_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl ComponentAccessMut for MainWorldArchetypes {
+
+    /// Mutably gets the `AmbientLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_ambient_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut AmbientLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_ambient_light_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `BackgroundColor` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_background_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut BackgroundColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            SceneBackgroundArchetype::ID => self.collection.scene_background.get_background_color_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Camera` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `CameraFpsController` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_fps_controller_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_fps_controller_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Collider` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_collider_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColliderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_collider_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Color` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_color_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `DynamicLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_dynamic_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut DynamicLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_dynamic_light_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Fog` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_fog_component_mut(&mut self, entity_id: EntityId) -> Option<&mut FogComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_fog_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Health` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_health_component_mut(&mut self, entity_id: EntityId) -> Option<&mut HealthComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_health_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Model` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_model_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ModelComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_model_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Position` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Skydome` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_skydome_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SkydomeComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_skydome_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Stars` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_stars_component_mut(&mut self, entity_id: EntityId) -> Option<&mut StarsComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_stars_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Sun` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_sun_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SunComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_sun_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `TextureSource` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_texture_source_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TextureSourceComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.collection.wgpu_texture.get_texture_source_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Tile` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_tile_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TileComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            TileArchetype::ID => self.collection.tile.get_tile_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `TimeOfDay` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_time_of_day_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TimeOfDayComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_time_of_day_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Transform` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_transform_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TransformComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_transform_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Velocity` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_velocity_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `WgpuShader` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            WgpuShaderArchetype::ID => self.collection.wgpu_shader.get_wgpu_shader_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `WgpuTexture` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_wgpu_texture_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuTextureComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            WgpuTextureArchetype::ID => self.collection.wgpu_texture.get_wgpu_texture_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
     }
 }
