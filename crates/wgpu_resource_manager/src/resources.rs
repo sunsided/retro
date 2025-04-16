@@ -27,6 +27,9 @@ pub struct Resources<GlobalError> {
 
 struct TextureResourceWrapper<R, GlobalError> {
     inner: R,
+    /// As annoying as it is, the only reason we carry this phantom around is
+    /// so that we avoid an "unconstrained generic" error in the Resource trait
+    /// implementation for this wrapper.
     _phantom: PhantomData<*const GlobalError>,
 }
 
