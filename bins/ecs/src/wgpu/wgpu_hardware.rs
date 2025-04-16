@@ -132,7 +132,7 @@ impl WgpuHardware {
     #[inline]
     pub fn wireframe_supported(&self) -> bool {
         self.manager
-            .feature_supported(wgpu::Features::POLYGON_MODE_LINE)
+            .feature_supported(Features::POLYGON_MODE_LINE)
     }
 }
 

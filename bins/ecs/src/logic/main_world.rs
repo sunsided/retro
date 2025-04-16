@@ -1,4 +1,5 @@
-use crate::engine::EntityAccess;
+use tracing::warn;
+use crate::engine::{EntityAccess, WorldUserCommand, WorldUserCommandHandler};
 use wgpu::include_wgsl;
 use crate::engine::components::{AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData, StarsData, SunData, TextureSource, TextureSourceData, TileData, TimeOfDayData, WgpuShaderData, WgpuTextureData};
 use crate::engine::phases::render::background::BackgroundColorData;
@@ -191,5 +192,14 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 .with_wall(WallType::Brick),
         );
         */
+    }
+}
+
+impl<E, Q> WorldUserCommandHandler for MainWorld<E, Q>
+where
+    Q: WorldUserCommand
+{
+    fn handle_user_command(&mut self, command: Self::UserCommand) {
+        warn!(?command, "Unhandled user command");
     }
 }

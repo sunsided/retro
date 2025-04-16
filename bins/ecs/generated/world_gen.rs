@@ -49,7 +49,7 @@ impl From<WorldId> for u64 {
 
 /// A command in the [`World`].
 #[allow(dead_code)]
-pub enum WorldCommand {
+pub enum WorldCommand<UserCommand> {
     /// Spawn an entity.
     ///
     /// # Note:
@@ -57,35 +57,47 @@ pub enum WorldCommand {
     SpawnEntity(ArchetypeEntityData),
     /// Despawn an entity.
     DespawnEntity(EntityId),
-    // TODO: Allow for user-specified commands.
+    /// A user-specific command.
+    User(UserCommand)
+}
+
+pub trait WorldUserCommand {
+    type UserCommand: core::marker::Send + core::fmt::Debug;
 }
 
 /// Sender of [`WorldCommand`] instances.
 #[allow(dead_code)]
-pub trait WorldCommandSender {
+pub trait WorldCommandSender: WorldUserCommand {
     type Error: core::error::Error;
 
     /// Sends a command. May block until sending is complete.
-    fn send(&self, command: WorldCommand) -> Result<(), Self::Error>;
+    fn send(&self, command: WorldCommand<Self::UserCommand>) -> Result<(), Self::Error>;
 }
 
 /// Sender of [`WorldCommand`] instances.
 #[allow(dead_code)]
-pub trait WorldCommandReceiver {
+pub trait WorldCommandReceiver: WorldUserCommand {
     type Error: core::error::Error;
 
     /// Attempts to receive a message from the channel without blocking.
     /// Returns [`Ok(None)`] if no command was queued.
-    fn recv(&self) -> Result<Option<WorldCommand>, Self::Error>;
+    fn recv(&self) -> Result<Option<WorldCommand<Self::UserCommand>>, Self::Error>;
+}
+
+/// Handler of a [`WorldCommand`]'s user command.
+#[allow(dead_code)]
+pub trait WorldUserCommandHandler: WorldUserCommand {
+    /// Handles a user command.
+    fn handle_user_command(&mut self, command: Self::UserCommand);
 }
 
 /// A sender and receiver of [`WorldCommand`] instances.
 #[allow(dead_code)]
 pub trait WorldCommandQueue: WorldCommandSender + WorldCommandReceiver { }
 
-impl<T> WorldCommandQueue for T
+impl<T, U> WorldCommandQueue for T
 where
-    T: WorldCommandSender + WorldCommandReceiver
+    T: WorldCommandSender<UserCommand = U> + WorldCommandReceiver<UserCommand = U>
 { }
 
 /// A frame context.
@@ -3369,6 +3381,14 @@ impl<E, Q> MainWorld<E, Q> {
         self.on_end_render_phase();
     }
 
+    /// Sends a command.
+    pub fn command(&mut self, command: WorldCommand<Q::UserCommand>) -> Result<(), Q::Error>
+    where
+        Q: WorldCommandSender
+    {
+        self.command_queue.send(command)
+    }
+
     /// Handles all queued commands.
     fn handle_commands(&mut self)
     where
@@ -3380,6 +3400,7 @@ impl<E, Q> MainWorld<E, Q> {
                     match cmd {
                         WorldCommand::SpawnEntity(data) => self.handle_spawn_command(data),
                         WorldCommand::DespawnEntity(id) => self.handle_despawn_command(id).expect("Failed to despawn"),
+                        WorldCommand::User(cmd) => self.handle_user_command(cmd),
                     }
                 }
                 Ok(None) => break,
@@ -3390,6 +3411,15 @@ impl<E, Q> MainWorld<E, Q> {
                 }
             }
         }
+    }
+
+    #[inline]
+    fn handle_user_command(&mut self, data: <Q as WorldUserCommand>::UserCommand)
+    where
+        Q: WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>
+    {
+        WorldUserCommandHandler::handle_user_command(self, data);
     }
 
     fn handle_spawn_command(&mut self, data: ArchetypeEntityData) {
@@ -5992,12 +6022,12 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
             PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
-            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
             BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6233,12 +6263,12 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
             PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
-            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
             BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6354,4 +6384,12 @@ impl ComponentAccessMut for MainWorldArchetypes {
             _ => None
         }
     }
+}
+
+impl<E, Q, U> WorldUserCommand for MainWorld<E, Q>
+where
+    Q: WorldUserCommand<UserCommand = U>,
+    U: core::marker::Send + core::fmt::Debug
+{
+    type UserCommand = U;
 }

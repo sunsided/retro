@@ -1,7 +1,7 @@
 use crate::cli::parse_arguments;
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
-use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory};
+use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory, WorldCommand};
 use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
 use crate::logic::InitializeMainWorld;
@@ -36,7 +36,7 @@ mod wgpu;
 struct App {
     window: Option<Arc<Window>>,
     modifiers: ModifiersState,
-    ecs_world: MainWorld<PhaseEvents, CommandQueue>,
+    ecs_world: MainWorld<PhaseEvents, CommandQueue<()>>,
     last_update: Instant,
     render_fps: FpsCounter,
     render_max_fps: FpsCounter,
@@ -65,6 +65,8 @@ impl App {
 
         world.apply_system_phase_startup();
         world.create_initial_entities();
+
+        world.command(WorldCommand::User(())).ok();
 
         let count = world
             .frontload_cubes_by_scan(|entity| entity.position.x > 7.0 && entity.position.z > 9.0);

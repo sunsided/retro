@@ -25,7 +25,7 @@ bench *ARGS:
 
 # Run in release mode
 run:
-    RUST_LOG=ecs=info cargo run --release --bin ecs
+    RUST_LOG=ecs=debug cargo run --release --bin ecs
 
 # Run with debug logging enabled
 debug:

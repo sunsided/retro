@@ -15,31 +15,45 @@
 //! - [`WorldCommandSender`]: Provides an interface for sending `WorldCommand`s, ensuring safe
 //!   communication between different parts of the system.
 
-use crate::engine::{WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use std::fmt::Debug;
+use crate::engine::{WorldCommand, WorldCommandReceiver, WorldCommandSender, WorldUserCommand, WorldUserCommandHandler};
 use crossbeam_channel::TryRecvError;
 
 /// A command queue for sending and receiving [`WorldCommand`]s within the engine.
 ///
 /// This structure facilitates communication by providing a channel-based mechanism
 /// for dispatching and handling commands in the ECS (Entity-Component-System) context.
-pub struct CommandQueue {
+pub struct CommandQueue<UserCommand> {
     /// The sending end of the command channel.
-    sender: crossbeam_channel::Sender<WorldCommand>,
+    sender: crossbeam_channel::Sender<WorldCommand<UserCommand>>,
     /// The receiving end of the command channel.
-    receiver: crossbeam_channel::Receiver<WorldCommand>,
+    receiver: crossbeam_channel::Receiver<WorldCommand<UserCommand>>,
 }
 
-impl CommandQueue {
+impl<UserCommand> CommandQueue<UserCommand>
+where
+    UserCommand: Send
+{
     pub fn new() -> Self {
         let (sender, receiver) = crossbeam_channel::unbounded();
         Self { sender, receiver }
     }
 }
 
-impl WorldCommandReceiver for CommandQueue {
+impl<UserCommand> WorldUserCommand for CommandQueue<UserCommand>
+where
+    UserCommand: Send + Debug
+{
+    type UserCommand = UserCommand;
+}
+
+impl<UserCommand> WorldCommandReceiver for CommandQueue<UserCommand>
+where
+    UserCommand: Send + Debug
+{
     type Error = TryRecvError;
 
-    fn recv(&self) -> Result<Option<WorldCommand>, Self::Error> {
+    fn recv(&self) -> Result<Option<WorldCommand<Self::UserCommand>>, Self::Error> {
         match self.receiver.try_recv() {
             Ok(cmd) => Ok(Some(cmd)),
             Err(TryRecvError::Empty) => Ok(None),
@@ -48,10 +62,13 @@ impl WorldCommandReceiver for CommandQueue {
     }
 }
 
-impl WorldCommandSender for CommandQueue {
-    type Error = crossbeam_channel::SendError<WorldCommand>;
+impl<UserCommand> WorldCommandSender for CommandQueue<UserCommand>
+where
+    UserCommand: Send + Debug
+{
+    type Error = crossbeam_channel::SendError<WorldCommand<UserCommand>>;
 
-    fn send(&self, command: WorldCommand) -> Result<(), Self::Error> {
+    fn send(&self, command: WorldCommand<Self::UserCommand>) -> Result<(), Self::Error> {
         self.sender.send(command)
     }
 }
