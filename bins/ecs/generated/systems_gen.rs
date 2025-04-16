@@ -759,26 +759,6 @@ pub trait ApplyWgpuInitShaderSystem: System {
         Ok(())
     }
 
-    /// Inspects all components before the actual operation starts.
-    ///
-    /// This function can be called multiple times, depending on the number of archetypes providing
-    /// the necessary components.
-    ///
-    /// ### Reads
-    /// 
-    ///
-    /// ### Reads output to be mutated by the system
-    /// 
-    /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
-    #[allow(unused_variables)]
-    fn preflight(
-        &mut self,
-        lookup: Box<&dyn WgpuInitShaderComponentLookup>,
-        wgpu_render: &mut WgpuRenderState,
-        entities: &[EntityId],
-        wgpu_shaders: &[WgpuShaderComponent],
-    );
-
     /// Applies the system's business logic to the given entity components.
     ///
     /// ### Performance Considerations
@@ -3946,23 +3926,5 @@ impl core::ops::Deref for VgaBlitSystem {
 impl core::ops::DerefMut for VgaBlitSystem {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
-    }
-}
-
-pub trait WgpuInitShaderComponentLookup {
-    /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
-    #[allow(dead_code, unused)]
-    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent>;
-}
-
-impl<T> WgpuInitShaderComponentLookup for T
-where
-    T: ComponentAccess
-{
-    /// Gets the [`TextureSource`](TextureSourceComponent) component of the specified entity.
-    #[allow(dead_code, unused)]
-    #[inline]
-    fn get_texture_source_component(&self, entity_id: EntityId) -> Option<&TextureSourceComponent> {
-        T::get_texture_source_component(self, entity_id)
     }
 }

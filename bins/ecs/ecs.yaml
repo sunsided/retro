@@ -134,9 +134,6 @@ systems:
   - name: WgpuInitShader
     phase: WgpuReinit
     entities: true
-    preflight: true
-    lookup:
-      - TextureSource
     states:
       - use: WgpuRender
         write: true

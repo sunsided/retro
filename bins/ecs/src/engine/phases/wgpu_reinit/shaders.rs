@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use tracing::{debug, trace};
 use wgpu_resource_manager::{DeviceAndQueue, DeviceId};
-use crate::engine::{ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory, SystemWgpuReinitPhaseEvents, WgpuInitShaderComponentLookup, WgpuInitShaderSystem, WgpuShaderComponent};
+use crate::engine::{ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory, SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent};
 use crate::engine::phases::render::WgpuRenderState;
 
 #[derive(Debug, Default)]
@@ -20,10 +20,6 @@ impl ApplyWgpuInitShaderSystem for WgpuInitShaderSystem {
 
     fn is_ready(&self, gpu: &mut WgpuRenderState) -> bool {
         gpu.is_ready()
-    }
-
-    fn preflight(&mut self, lookup: Box<&dyn WgpuInitShaderComponentLookup>, wgpu_render: &mut WgpuRenderState, entities: &[EntityId], wgpu_shaders: &[WgpuShaderComponent]) {
-        todo!()
     }
 
     fn apply_many(&mut self, gpu: &mut WgpuRenderState, entities: &[EntityId], shaders: &mut [WgpuShaderComponent]) {
