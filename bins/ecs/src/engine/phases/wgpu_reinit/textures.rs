@@ -24,10 +24,10 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
         gpu.is_ready()
     }
 
-    fn on_end_phase(&mut self, _wgpu_render: &mut WgpuRenderState) -> Result<(), Self::Error> {
-        // TODO: Collect the created resources into a shared state for later access, e.g. runtime material lookups
-        Ok(())
-    }
+    // TODO: Updating material databases could work multiple ways:
+    //      - as a postflight: This will take a full scan of all resources even if they are unchanged
+    //      - using custom commands: This will only be visible to the following phases, not to systems in this phase
+    //      - using manipulation of this system's state and a phase-end hook: This hook is system-specific and executed before follow-up systems run (unless they are independent)
 
     fn apply_many(&mut self, gpu: &mut WgpuRenderState, _entities: &[EntityId], sources: &[TextureSourceComponent], textures: &mut [WgpuTextureComponent]) {
         let current_surface_id = gpu.surface_id();
