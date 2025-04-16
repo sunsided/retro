@@ -2,7 +2,6 @@ mod textures;
 
 use crate::surface_info::SurfaceInfo;
 use fxhash::FxHashMap;
-use std::convert::Infallible;
 use std::error::Error;
 use std::fmt::Debug;
 use std::marker::PhantomData;
@@ -10,6 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use crate::resources::textures::TextureResourceEntry;
 pub use self::textures::TextureResourceData;
 
+#[allow(dead_code)]
 pub trait Resource {
     type Output: ResourceData;
     type Error: Send + Sync + 'static;
@@ -24,11 +24,13 @@ pub trait Resource {
 #[allow(dead_code)]
 pub trait ResourceData { }
 
+#[allow(dead_code)]
 pub struct Resources<Lifecycle, GlobalError> {
     textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
     phantom_data: PhantomData<GlobalError>,
 }
 
+#[allow(dead_code)]
 impl<Lifecycle, GlobalError> Resources<Lifecycle, GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
@@ -54,6 +56,7 @@ where
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum GetResourceError {
     #[error("The resource was not found")]
@@ -143,6 +146,7 @@ pub struct ResourceId(u64);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextureResourceId(ResourceId);
 
+#[allow(dead_code)]
 impl ResourceId {
     pub fn next() -> Self {
         static NEXT_ID: AtomicU64 = AtomicU64::new(1);
@@ -150,6 +154,7 @@ impl ResourceId {
     }
 }
 
+#[allow(dead_code)]
 impl TextureResourceId {
     pub fn next() -> Self {
         Self(ResourceId::next())

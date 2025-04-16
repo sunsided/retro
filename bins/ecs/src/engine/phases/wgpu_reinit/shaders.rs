@@ -1,6 +1,5 @@
 use std::convert::Infallible;
 use tracing::{debug, trace};
-use wgpu::hal::DynDevice;
 use wgpu_resource_manager::{DeviceAndQueue, DeviceId};
 use crate::engine::{ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory, SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent};
 use crate::engine::phases::render::WgpuRenderState;

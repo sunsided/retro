@@ -2,13 +2,16 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU8;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ResourceStateOwner(Arc<AtomicU8>);
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResourceStateHandle(Arc<AtomicU8>);
 
 #[derive(Debug, Default, Copy, Clone, Eq, PartialEq)]
 #[repr(u8)]
+#[allow(dead_code)]
 pub enum ResourceState {
     #[default]
     Uninitialized = 0,
@@ -40,6 +43,7 @@ impl ResourceState {
     }
 }
 
+#[allow(dead_code)]
 impl ResourceStateOwner {
     pub fn new(state: ResourceState) -> Self {
         Self(Arc::new(AtomicU8::new(state as u8)))
@@ -54,6 +58,7 @@ impl ResourceStateOwner {
     }
 }
 
+#[allow(dead_code)]
 impl ResourceStateHandle {
     pub fn get(&self) -> ResourceState {
         match self.0.load(std::sync::atomic::Ordering::Relaxed) {

@@ -2,7 +2,6 @@ use std::error::Error;
 use crate::resources::{GetResourceError, GpuContext, Resource, ResourceData, Resources, TextureResourceId};
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::process::id;
 use wgpu::{Texture, TextureView};
 use crate::surface_info::SurfaceInfo;
 
@@ -27,6 +26,7 @@ pub(super) struct TextureResourceEntry<Lifecycle, GlobalError> {
 
 /// The [`TextureResourceFactory`] is another layer of type-erasure stored within
 /// the [`BoxedTextureResource`], which in turn is used in the [`TextureResourceEntry`].
+#[allow(dead_code)]
 struct TextureResourceFactory<R, GlobalError> {
     inner: R,
     /// As annoying as it is, the only reason we carry this phantom around is
@@ -35,6 +35,7 @@ struct TextureResourceFactory<R, GlobalError> {
     _phantom: PhantomData<*const GlobalError>,
 }
 
+#[allow(dead_code)]
 impl<R, GlobalError> TextureResourceFactory<R, GlobalError> {
     #[inline]
     pub const fn new(inner: R) -> Self {
@@ -50,6 +51,7 @@ impl<R, GlobalError> TextureResourceFactory<R, GlobalError> {
     }
 }
 
+#[allow(dead_code)]
 impl<Lifecycle, GlobalError> Resources<Lifecycle, GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
