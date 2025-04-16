@@ -129,8 +129,8 @@ impl App {
                 .reinitialize_surface(window.clone())
                 .expect("Failed to reinitialize window");
 
-            // TODO: Set the new device and surface ID.
             self.ecs_world.apply_system_phase_wgpu_reinit();
+            // TODO: Collect the created resources into a shared state for later access, e.g. runtime material lookups
         }
 
         self.last_update = Instant::now();

@@ -8,7 +8,7 @@ use crate::engine::phases::render::WgpuRenderState;
 #[derive(Debug, Default)]
 pub struct WgpuInitTextureSystemData {
     device_id: DeviceId,
-    surface_id: SurfaceId // TODO: Use!
+    surface_id: SurfaceId
 }
 
 impl CreateSystem<WgpuInitTextureSystem> for SystemFactory {
@@ -22,6 +22,11 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
 
     fn is_ready(&self, gpu: &mut WgpuRenderState) -> bool {
         gpu.is_ready()
+    }
+
+    fn on_end_phase(&mut self, wgpu_render: &mut WgpuRenderState) -> Result<(), Self::Error> {
+        // TODO: Collect the created resources into a shared state for later access, e.g. runtime material lookups
+        Ok(())
     }
 
     fn apply_many(&mut self, gpu: &mut WgpuRenderState, _entities: &[EntityId], sources: &[TextureSourceComponent], textures: &mut [WgpuTextureComponent]) {
