@@ -25,10 +25,10 @@ where
 {
     pub fn register_texture<R, T, E>(&mut self, resource: R) -> TextureResourceId
     where
-        R: Resource<Output = T, Error = E> + 'static,
         T: TextureResourceData + 'static,
-        E: Into<GlobalError> + Error + Send + Sync + 'static,
-        GlobalError: Error + Send + Sync + 'static,
+        R: Resource<Output = T, Error = E> + 'static,
+        E: Error + Send + Sync + 'static,
+        GlobalError: From<E>,
     {
         let id = TextureResourceId::next();
 
@@ -68,10 +68,10 @@ where
 
 impl<R, T, E, GlobalError> Resource for TextureResourceWrapper<R, GlobalError>
 where
-    R: Resource<Output = T, Error = E>,
     T: TextureResourceData + 'static,
-    E: Into<GlobalError>,
-    GlobalError: Error + Send + Sync + 'static,
+    R: Resource<Output = T, Error = E>,
+    E: Error + Send + Sync + 'static,
+    GlobalError: Error + Send + Sync + From<E> + 'static,
 {
     type Output = BoxedNewTextureResourceData;
     type Error = GlobalError;
