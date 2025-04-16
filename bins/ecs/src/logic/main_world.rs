@@ -38,7 +38,7 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/shader.wgsl")).into(),
         });
 
-        let x = self.get_wgpu_shader(light_shader);
+        let x = self.get_wgpu_shader_entity(light_shader);
 
         self.spawn_scene_background(SceneBackgroundEntityData {
             background_color: BackgroundColorData::default().into(),

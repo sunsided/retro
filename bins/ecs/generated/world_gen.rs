@@ -894,8 +894,476 @@ impl<E, Q> MainWorld<E, Q> {
         self.handle_despawn_command(id)
     }
 
+    /// Gets the `AmbientLight` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_ambient_light_component(&self, entity_id: EntityId) -> Option<&AmbientLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_ambient_light_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `AmbientLight` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_ambient_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut AmbientLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_ambient_light_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `BackgroundColor` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_background_color_component(&self, entity_id: EntityId) -> Option<&BackgroundColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            SceneBackgroundArchetype::ID => self.archetypes.scene_background.get_background_color_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `BackgroundColor` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_background_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut BackgroundColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            SceneBackgroundArchetype::ID => self.archetypes.scene_background.get_background_color_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Camera` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_component(&self, entity_id: EntityId) -> Option<&CameraComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CameraArchetype::ID => self.archetypes.camera.get_camera_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Camera` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CameraArchetype::ID => self.archetypes.camera.get_camera_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `CameraFpsController` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_fps_controller_component(&self, entity_id: EntityId) -> Option<&CameraFpsControllerComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CameraArchetype::ID => self.archetypes.camera.get_camera_fps_controller_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `CameraFpsController` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_fps_controller_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CameraArchetype::ID => self.archetypes.camera.get_camera_fps_controller_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Collider` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_collider_component(&self, entity_id: EntityId) -> Option<&ColliderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_collider_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Collider` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_collider_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColliderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_collider_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Color` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_color_component(&self, entity_id: EntityId) -> Option<&ColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_color_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Color` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_color_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `DynamicLight` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_dynamic_light_component(&self, entity_id: EntityId) -> Option<&DynamicLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_dynamic_light_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `DynamicLight` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_dynamic_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut DynamicLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_dynamic_light_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Fog` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_fog_component(&self, entity_id: EntityId) -> Option<&FogComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_fog_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Fog` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_fog_component_mut(&mut self, entity_id: EntityId) -> Option<&mut FogComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_fog_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Health` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_health_component(&self, entity_id: EntityId) -> Option<&HealthComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            PlayerArchetype::ID => self.archetypes.player.get_health_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Health` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_health_component_mut(&mut self, entity_id: EntityId) -> Option<&mut HealthComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            PlayerArchetype::ID => self.archetypes.player.get_health_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Model` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_model_component(&self, entity_id: EntityId) -> Option<&ModelComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CubeArchetype::ID => self.archetypes.cube.get_model_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Model` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_model_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ModelComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CubeArchetype::ID => self.archetypes.cube.get_model_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Position` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at(ear.index),
+            TileArchetype::ID => self.archetypes.tile.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.archetypes.cube.get_position_component_at(ear.index),
+            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.archetypes.player.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.archetypes.background_object.get_position_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Position` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.archetypes.dynamic_light.get_position_component_at_mut(ear.index),
+            TileArchetype::ID => self.archetypes.tile.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.archetypes.cube.get_position_component_at_mut(ear.index),
+            ForegroundObjectArchetype::ID => self.archetypes.foreground_object.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.archetypes.player.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.archetypes.background_object.get_position_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Skydome` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_skydome_component(&self, entity_id: EntityId) -> Option<&SkydomeComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_skydome_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Skydome` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_skydome_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SkydomeComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_skydome_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Stars` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_stars_component(&self, entity_id: EntityId) -> Option<&StarsComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_stars_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Stars` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_stars_component_mut(&mut self, entity_id: EntityId) -> Option<&mut StarsComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_stars_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Sun` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_sun_component(&self, entity_id: EntityId) -> Option<&SunComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_sun_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Sun` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_sun_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SunComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_sun_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Tile` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_tile_component(&self, entity_id: EntityId) -> Option<&TileComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            TileArchetype::ID => self.archetypes.tile.get_tile_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Tile` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_tile_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TileComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            TileArchetype::ID => self.archetypes.tile.get_tile_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `TimeOfDay` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_time_of_day_component(&self, entity_id: EntityId) -> Option<&TimeOfDayComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_time_of_day_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `TimeOfDay` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_time_of_day_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TimeOfDayComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.archetypes.environment.get_time_of_day_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Transform` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_transform_component(&self, entity_id: EntityId) -> Option<&TransformComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CubeArchetype::ID => self.archetypes.cube.get_transform_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Transform` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_transform_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TransformComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CubeArchetype::ID => self.archetypes.cube.get_transform_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Velocity` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at(ear.index),
+            PlayerArchetype::ID => self.archetypes.player.get_velocity_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Velocity` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            CubeArchetype::ID => self.archetypes.cube.get_velocity_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.archetypes.player.get_velocity_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `WgpuShader` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            WgpuShaderArchetype::ID => self.archetypes.wgpu_shader.get_wgpu_shader_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `WgpuShader` component of the specified entity.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?;
+        match ear.archetype {
+            WgpuShaderArchetype::ID => self.archetypes.wgpu_shader.get_wgpu_shader_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
     /// Accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
-    pub fn get_wgpu_shader(
+    pub fn get_wgpu_shader_entity(
         &self,
         entity_id: EntityId
     ) -> Option<WgpuShaderEntityRef> {
@@ -906,11 +1374,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .wgpu_shader
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `WgpuShader` entity with the given ID if it exists in this archetype.
-    pub fn get_wgpu_shader_mut(
+    pub fn get_wgpu_shader_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<WgpuShaderEntityMut> {
@@ -921,7 +1389,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .wgpu_shader
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `WgpuShader` entity into the world given its [`WgpuShaderEntityData`].
@@ -958,7 +1426,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
-    pub fn get_environment(
+    pub fn get_environment_entity(
         &self,
         entity_id: EntityId
     ) -> Option<EnvironmentEntityRef> {
@@ -969,11 +1437,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .environment
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
-    pub fn get_environment_mut(
+    pub fn get_environment_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<EnvironmentEntityMut> {
@@ -984,7 +1452,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .environment
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Environment` entity into the world given its [`EnvironmentEntityData`].
@@ -1036,7 +1504,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
-    pub fn get_camera(
+    pub fn get_camera_entity(
         &self,
         entity_id: EntityId
     ) -> Option<CameraEntityRef> {
@@ -1047,11 +1515,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .camera
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
-    pub fn get_camera_mut(
+    pub fn get_camera_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<CameraEntityMut> {
@@ -1062,7 +1530,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .camera
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
@@ -1102,7 +1570,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
-    pub fn get_dynamic_light(
+    pub fn get_dynamic_light_entity(
         &self,
         entity_id: EntityId
     ) -> Option<DynamicLightEntityRef> {
@@ -1113,11 +1581,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .dynamic_light
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
-    pub fn get_dynamic_light_mut(
+    pub fn get_dynamic_light_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<DynamicLightEntityMut> {
@@ -1128,7 +1596,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .dynamic_light
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `DynamicLight` entity into the world given its [`DynamicLightEntityData`].
@@ -1171,7 +1639,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
-    pub fn get_tile(
+    pub fn get_tile_entity(
         &self,
         entity_id: EntityId
     ) -> Option<TileEntityRef> {
@@ -1182,11 +1650,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .tile
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
-    pub fn get_tile_mut(
+    pub fn get_tile_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<TileEntityMut> {
@@ -1197,7 +1665,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .tile
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Tile` entity into the world given its [`TileEntityData`].
@@ -1237,7 +1705,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
-    pub fn get_cube(
+    pub fn get_cube_entity(
         &self,
         entity_id: EntityId
     ) -> Option<CubeEntityRef> {
@@ -1248,11 +1716,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .cube
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
-    pub fn get_cube_mut(
+    pub fn get_cube_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<CubeEntityMut> {
@@ -1263,7 +1731,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .cube
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Cube` entity into the world given its [`CubeEntityData`].
@@ -1309,7 +1777,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `Player` entity with the given ID if it exists in this archetype.
-    pub fn get_player(
+    pub fn get_player_entity(
         &self,
         entity_id: EntityId
     ) -> Option<PlayerEntityRef> {
@@ -1320,11 +1788,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .player
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
-    pub fn get_player_mut(
+    pub fn get_player_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<PlayerEntityMut> {
@@ -1335,7 +1803,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .player
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
@@ -1378,7 +1846,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_foreground_object(
+    pub fn get_foreground_object_entity(
         &self,
         entity_id: EntityId
     ) -> Option<ForegroundObjectEntityRef> {
@@ -1389,11 +1857,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .foreground_object
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_foreground_object_mut(
+    pub fn get_foreground_object_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<ForegroundObjectEntityMut> {
@@ -1404,7 +1872,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .foreground_object
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
@@ -1444,7 +1912,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_background_object(
+    pub fn get_background_object_entity(
         &self,
         entity_id: EntityId
     ) -> Option<BackgroundObjectEntityRef> {
@@ -1455,11 +1923,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .background_object
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
-    pub fn get_background_object_mut(
+    pub fn get_background_object_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<BackgroundObjectEntityMut> {
@@ -1470,7 +1938,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .background_object
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
@@ -1507,7 +1975,7 @@ impl<E, Q> MainWorld<E, Q> {
     }
 
     /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
-    pub fn get_scene_background(
+    pub fn get_scene_background_entity(
         &self,
         entity_id: EntityId
     ) -> Option<SceneBackgroundEntityRef> {
@@ -1518,11 +1986,11 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .scene_background
-            .get_at(ear.index)
+            .get_entity_at(ear.index)
     }
 
     /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
-    pub fn get_scene_background_mut(
+    pub fn get_scene_background_entity_mut(
         &mut self,
         entity_id: EntityId
     ) -> Option<SceneBackgroundEntityMut> {
@@ -1533,7 +2001,7 @@ impl<E, Q> MainWorld<E, Q> {
         self
             .archetypes
             .scene_background
-            .get_at_mut(ear.index)
+            .get_entity_at_mut(ear.index)
     }
 
     /// Spawn a new `SceneBackground` entity into the world given its [`SceneBackgroundEntityData`].
@@ -3967,5 +4435,551 @@ impl<E, Q> MainWorld<E, Q> {
                 &mut self.entity_locations,
                 should_frontload
             )
+    }
+}
+
+pub trait ComponentAccess {
+
+    /// Gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component(&self, entity_id: EntityId) -> Option<&TimeOfDayComponent> {
+        None
+    }
+
+    /// Gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component(&self, entity_id: EntityId) -> Option<&SunComponent> {
+        None
+    }
+
+    /// Gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component(&self, entity_id: EntityId) -> Option<&SkydomeComponent> {
+        None
+    }
+
+    /// Gets the [`Fog`](FogComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_fog_component(&self, entity_id: EntityId) -> Option<&FogComponent> {
+        None
+    }
+
+    /// Gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component(&self, entity_id: EntityId) -> Option<&AmbientLightComponent> {
+        None
+    }
+
+    /// Gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component(&self, entity_id: EntityId) -> Option<&StarsComponent> {
+        None
+    }
+
+    /// Gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component(&self, entity_id: EntityId) -> Option<&CameraComponent> {
+        None
+    }
+
+    /// Gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component(&self, entity_id: EntityId) -> Option<&CameraFpsControllerComponent> {
+        None
+    }
+
+    /// Gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
+        None
+    }
+
+    /// Gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component(&self, entity_id: EntityId) -> Option<&TransformComponent> {
+        None
+    }
+
+    /// Gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
+        None
+    }
+
+    /// Gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component(&self, entity_id: EntityId) -> Option<&TileComponent> {
+        None
+    }
+
+    /// Gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component(&self, entity_id: EntityId) -> Option<&HealthComponent> {
+        None
+    }
+
+    /// Gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component(&self, entity_id: EntityId) -> Option<&ColliderComponent> {
+        None
+    }
+
+    /// Gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component(&self, entity_id: EntityId) -> Option<&ModelComponent> {
+        None
+    }
+
+    /// Gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component(&self, entity_id: EntityId) -> Option<&ColorComponent> {
+        None
+    }
+
+    /// Gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component(&self, entity_id: EntityId) -> Option<&BackgroundColorComponent> {
+        None
+    }
+
+    /// Gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component(&self, entity_id: EntityId) -> Option<&DynamicLightComponent> {
+        None
+    }
+
+    /// Gets the [`WgpuShader`](WgpuShaderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
+        None
+    }
+}
+
+pub trait ComponentAccessMut: ComponentAccess {
+
+    /// Mutably gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TimeOfDayComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SunComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SkydomeComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Fog`](FogComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_fog_component_mut(&mut self, entity_id: EntityId) -> Option<&mut FogComponent> {
+        None
+    }
+
+    /// Mutably gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut AmbientLightComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component_mut(&mut self, entity_id: EntityId) -> Option<&mut StarsComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraComponent> {
+        None
+    }
+
+    /// Mutably gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TransformComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TileComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component_mut(&mut self, entity_id: EntityId) -> Option<&mut HealthComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColliderComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ModelComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColorComponent> {
+        None
+    }
+
+    /// Mutably gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut BackgroundColorComponent> {
+        None
+    }
+
+    /// Mutably gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut DynamicLightComponent> {
+        None
+    }
+
+    /// Mutably gets the [`WgpuShader`](WgpuShaderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
+        None
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> ComponentAccess for MainWorld<E, Q> {
+
+    /// Gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component(&self, entity_id: EntityId) -> Option<&AmbientLightComponent> {
+        self.get_ambient_light_component(entity_id)
+    }
+
+    /// Gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component(&self, entity_id: EntityId) -> Option<&BackgroundColorComponent> {
+        self.get_background_color_component(entity_id)
+    }
+
+    /// Gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component(&self, entity_id: EntityId) -> Option<&CameraComponent> {
+        self.get_camera_component(entity_id)
+    }
+
+    /// Gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component(&self, entity_id: EntityId) -> Option<&CameraFpsControllerComponent> {
+        self.get_camera_fps_controller_component(entity_id)
+    }
+
+    /// Gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component(&self, entity_id: EntityId) -> Option<&ColliderComponent> {
+        self.get_collider_component(entity_id)
+    }
+
+    /// Gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component(&self, entity_id: EntityId) -> Option<&ColorComponent> {
+        self.get_color_component(entity_id)
+    }
+
+    /// Gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component(&self, entity_id: EntityId) -> Option<&DynamicLightComponent> {
+        self.get_dynamic_light_component(entity_id)
+    }
+
+    /// Gets the [`Fog`](FogComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_fog_component(&self, entity_id: EntityId) -> Option<&FogComponent> {
+        self.get_fog_component(entity_id)
+    }
+
+    /// Gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component(&self, entity_id: EntityId) -> Option<&HealthComponent> {
+        self.get_health_component(entity_id)
+    }
+
+    /// Gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component(&self, entity_id: EntityId) -> Option<&ModelComponent> {
+        self.get_model_component(entity_id)
+    }
+
+    /// Gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
+        self.get_position_component(entity_id)
+    }
+
+    /// Gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component(&self, entity_id: EntityId) -> Option<&SkydomeComponent> {
+        self.get_skydome_component(entity_id)
+    }
+
+    /// Gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component(&self, entity_id: EntityId) -> Option<&StarsComponent> {
+        self.get_stars_component(entity_id)
+    }
+
+    /// Gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component(&self, entity_id: EntityId) -> Option<&SunComponent> {
+        self.get_sun_component(entity_id)
+    }
+
+    /// Gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component(&self, entity_id: EntityId) -> Option<&TileComponent> {
+        self.get_tile_component(entity_id)
+    }
+
+    /// Gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component(&self, entity_id: EntityId) -> Option<&TimeOfDayComponent> {
+        self.get_time_of_day_component(entity_id)
+    }
+
+    /// Gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component(&self, entity_id: EntityId) -> Option<&TransformComponent> {
+        self.get_transform_component(entity_id)
+    }
+
+    /// Gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
+        self.get_velocity_component(entity_id)
+    }
+
+    /// Gets the [`WgpuShader`](WgpuShaderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_component(&self, entity_id: EntityId) -> Option<&WgpuShaderComponent> {
+        self.get_wgpu_shader_component(entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> ComponentAccessMut for MainWorld<E, Q> {
+
+    /// Mutably gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut AmbientLightComponent> {
+        self.get_ambient_light_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut BackgroundColorComponent> {
+        self.get_background_color_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraComponent> {
+        self.get_camera_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component_mut(&mut self, entity_id: EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        self.get_camera_fps_controller_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColliderComponent> {
+        self.get_collider_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ColorComponent> {
+        self.get_color_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component_mut(&mut self, entity_id: EntityId) -> Option<&mut DynamicLightComponent> {
+        self.get_dynamic_light_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Fog`](FogComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_fog_component_mut(&mut self, entity_id: EntityId) -> Option<&mut FogComponent> {
+        self.get_fog_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component_mut(&mut self, entity_id: EntityId) -> Option<&mut HealthComponent> {
+        self.get_health_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component_mut(&mut self, entity_id: EntityId) -> Option<&mut ModelComponent> {
+        self.get_model_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
+        self.get_position_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SkydomeComponent> {
+        self.get_skydome_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component_mut(&mut self, entity_id: EntityId) -> Option<&mut StarsComponent> {
+        self.get_stars_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component_mut(&mut self, entity_id: EntityId) -> Option<&mut SunComponent> {
+        self.get_sun_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TileComponent> {
+        self.get_tile_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TimeOfDayComponent> {
+        self.get_time_of_day_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component_mut(&mut self, entity_id: EntityId) -> Option<&mut TransformComponent> {
+        self.get_transform_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
+        self.get_velocity_component_mut(entity_id)
+    }
+
+    /// Mutably gets the [`WgpuShader`](WgpuShaderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_wgpu_shader_component_mut(&mut self, entity_id: EntityId) -> Option<&mut WgpuShaderComponent> {
+        self.get_wgpu_shader_component_mut(entity_id)
     }
 }

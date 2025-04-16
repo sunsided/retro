@@ -405,27 +405,61 @@ impl WgpuShaderArchetype {
         WgpuShaderEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `WgpuShader` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<WgpuShaderEntityRef> {
+    #[inline]
+    pub fn get_wgpu_shader_component_at(&self, index: usize) -> Option<&WgpuShaderComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_wgpu_shader_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `WgpuShader` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_shader_component_at_mut(&mut self, index: usize) -> Option<&mut WgpuShaderComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_shader_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `WgpuShader` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_shader_component_at_unchecked(&self, index: usize) -> &WgpuShaderComponent {
+        self.wgpu_shaders.get_unchecked(index)
+    }
+
+    /// Gets the `WgpuShader` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_shader_component_at_unchecked_mut(&mut self, index: usize) -> &mut WgpuShaderComponent {
+        self.wgpu_shaders.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<WgpuShaderEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<WgpuShaderEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<WgpuShaderEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> WgpuShaderEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> WgpuShaderEntityRef {
         WgpuShaderEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             wgpu_shader: self.wgpu_shaders.get_unchecked(index),
@@ -434,7 +468,7 @@ impl WgpuShaderArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> WgpuShaderEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> WgpuShaderEntityMut {
         WgpuShaderEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             wgpu_shader: self.wgpu_shaders.get_unchecked_mut(index),
@@ -701,27 +735,231 @@ impl EnvironmentArchetype {
         EnvironmentEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `TimeOfDay` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<EnvironmentEntityRef> {
+    #[inline]
+    pub fn get_time_of_day_component_at(&self, index: usize) -> Option<&TimeOfDayComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_time_of_day_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `TimeOfDay` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_time_of_day_component_at_mut(&mut self, index: usize) -> Option<&mut TimeOfDayComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_time_of_day_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `TimeOfDay` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_time_of_day_component_at_unchecked(&self, index: usize) -> &TimeOfDayComponent {
+        self.time_of_daies.get_unchecked(index)
+    }
+
+    /// Gets the `TimeOfDay` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_time_of_day_component_at_unchecked_mut(&mut self, index: usize) -> &mut TimeOfDayComponent {
+        self.time_of_daies.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_sun_component_at(&self, index: usize) -> Option<&SunComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_sun_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_sun_component_at_mut(&mut self, index: usize) -> Option<&mut SunComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_sun_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_sun_component_at_unchecked(&self, index: usize) -> &SunComponent {
+        self.suns.get_unchecked(index)
+    }
+
+    /// Gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_sun_component_at_unchecked_mut(&mut self, index: usize) -> &mut SunComponent {
+        self.suns.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_skydome_component_at(&self, index: usize) -> Option<&SkydomeComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_skydome_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_skydome_component_at_mut(&mut self, index: usize) -> Option<&mut SkydomeComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_skydome_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_skydome_component_at_unchecked(&self, index: usize) -> &SkydomeComponent {
+        self.skydomes.get_unchecked(index)
+    }
+
+    /// Gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_skydome_component_at_unchecked_mut(&mut self, index: usize) -> &mut SkydomeComponent {
+        self.skydomes.get_unchecked_mut(index)
+    }
+
+    /// Gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_ambient_light_component_at(&self, index: usize) -> Option<&AmbientLightComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_ambient_light_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_ambient_light_component_at_mut(&mut self, index: usize) -> Option<&mut AmbientLightComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_ambient_light_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_ambient_light_component_at_unchecked(&self, index: usize) -> &AmbientLightComponent {
+        self.ambient_lights.get_unchecked(index)
+    }
+
+    /// Gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_ambient_light_component_at_unchecked_mut(&mut self, index: usize) -> &mut AmbientLightComponent {
+        self.ambient_lights.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_stars_component_at(&self, index: usize) -> Option<&StarsComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_stars_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_stars_component_at_mut(&mut self, index: usize) -> Option<&mut StarsComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_stars_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_stars_component_at_unchecked(&self, index: usize) -> &StarsComponent {
+        self.stars.get_unchecked(index)
+    }
+
+    /// Gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_stars_component_at_unchecked_mut(&mut self, index: usize) -> &mut StarsComponent {
+        self.stars.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Fog` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_fog_component_at(&self, index: usize) -> Option<&FogComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_fog_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Fog` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_fog_component_at_mut(&mut self, index: usize) -> Option<&mut FogComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_fog_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Fog` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_fog_component_at_unchecked(&self, index: usize) -> &FogComponent {
+        self.fogs.get_unchecked(index)
+    }
+
+    /// Gets the `Fog` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_fog_component_at_unchecked_mut(&mut self, index: usize) -> &mut FogComponent {
+        self.fogs.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<EnvironmentEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<EnvironmentEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<EnvironmentEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
         EnvironmentEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             time_of_day: self.time_of_daies.get_unchecked(index),
@@ -735,7 +973,7 @@ impl EnvironmentArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
         EnvironmentEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             time_of_day: self.time_of_daies.get_unchecked_mut(index),
@@ -1206,27 +1444,95 @@ impl CameraArchetype {
         CameraEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Camera` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<CameraEntityRef> {
+    #[inline]
+    pub fn get_camera_component_at(&self, index: usize) -> Option<&CameraComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_camera_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Camera` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_component_at_mut(&mut self, index: usize) -> Option<&mut CameraComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_camera_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Camera` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_component_at_unchecked(&self, index: usize) -> &CameraComponent {
+        self.cameras.get_unchecked(index)
+    }
+
+    /// Gets the `Camera` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_component_at_unchecked_mut(&mut self, index: usize) -> &mut CameraComponent {
+        self.cameras.get_unchecked_mut(index)
+    }
+
+    /// Gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_fps_controller_component_at(&self, index: usize) -> Option<&CameraFpsControllerComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_camera_fps_controller_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_fps_controller_component_at_mut(&mut self, index: usize) -> Option<&mut CameraFpsControllerComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_camera_fps_controller_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_fps_controller_component_at_unchecked(&self, index: usize) -> &CameraFpsControllerComponent {
+        self.camera_fps_controllers.get_unchecked(index)
+    }
+
+    /// Gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_fps_controller_component_at_unchecked_mut(&mut self, index: usize) -> &mut CameraFpsControllerComponent {
+        self.camera_fps_controllers.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<CameraEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<CameraEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CameraEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> CameraEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CameraEntityRef {
         CameraEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             camera: self.cameras.get_unchecked(index),
@@ -1236,7 +1542,7 @@ impl CameraArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
         CameraEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             camera: self.cameras.get_unchecked_mut(index),
@@ -1535,27 +1841,129 @@ impl DynamicLightArchetype {
         DynamicLightEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `DynamicLight` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
+    #[inline]
+    pub fn get_dynamic_light_component_at(&self, index: usize) -> Option<&DynamicLightComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_dynamic_light_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `DynamicLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_dynamic_light_component_at_mut(&mut self, index: usize) -> Option<&mut DynamicLightComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_dynamic_light_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `DynamicLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_dynamic_light_component_at_unchecked(&self, index: usize) -> &DynamicLightComponent {
+        self.dynamic_lights.get_unchecked(index)
+    }
+
+    /// Gets the `DynamicLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_dynamic_light_component_at_unchecked_mut(&mut self, index: usize) -> &mut DynamicLightComponent {
+        self.dynamic_lights.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_color_component_at(&self, index: usize) -> Option<&ColorComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_color_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_color_component_at_mut(&mut self, index: usize) -> Option<&mut ColorComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_color_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_color_component_at_unchecked(&self, index: usize) -> &ColorComponent {
+        self.colors.get_unchecked(index)
+    }
+
+    /// Gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_color_component_at_unchecked_mut(&mut self, index: usize) -> &mut ColorComponent {
+        self.colors.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<DynamicLightEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<DynamicLightEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
         DynamicLightEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             dynamic_light: self.dynamic_lights.get_unchecked(index),
@@ -1566,7 +1974,7 @@ impl DynamicLightArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
         DynamicLightEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             dynamic_light: self.dynamic_lights.get_unchecked_mut(index),
@@ -1905,27 +2313,95 @@ impl TileArchetype {
         TileEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Tile` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<TileEntityRef> {
+    #[inline]
+    pub fn get_tile_component_at(&self, index: usize) -> Option<&TileComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_tile_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Tile` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_tile_component_at_mut(&mut self, index: usize) -> Option<&mut TileComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_tile_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Tile` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_tile_component_at_unchecked(&self, index: usize) -> &TileComponent {
+        self.tiles.get_unchecked(index)
+    }
+
+    /// Gets the `Tile` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_tile_component_at_unchecked_mut(&mut self, index: usize) -> &mut TileComponent {
+        self.tiles.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<TileEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<TileEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<TileEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> TileEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> TileEntityRef {
         TileEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             tile: self.tiles.get_unchecked(index),
@@ -1935,7 +2411,7 @@ impl TileArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut {
         TileEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             tile: self.tiles.get_unchecked_mut(index),
@@ -2238,27 +2714,163 @@ impl CubeArchetype {
         CubeEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<CubeEntityRef> {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at(&self, index: usize) -> Option<&VelocityComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at_mut(&mut self, index: usize) -> Option<&mut VelocityComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked(&self, index: usize) -> &VelocityComponent {
+        self.velocities.get_unchecked(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked_mut(&mut self, index: usize) -> &mut VelocityComponent {
+        self.velocities.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_transform_component_at(&self, index: usize) -> Option<&TransformComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_transform_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_transform_component_at_mut(&mut self, index: usize) -> Option<&mut TransformComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_transform_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_transform_component_at_unchecked(&self, index: usize) -> &TransformComponent {
+        self.transforms.get_unchecked(index)
+    }
+
+    /// Gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_transform_component_at_unchecked_mut(&mut self, index: usize) -> &mut TransformComponent {
+        self.transforms.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_model_component_at(&self, index: usize) -> Option<&ModelComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_model_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_model_component_at_mut(&mut self, index: usize) -> Option<&mut ModelComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_model_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_model_component_at_unchecked(&self, index: usize) -> &ModelComponent {
+        self.models.get_unchecked(index)
+    }
+
+    /// Gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_model_component_at_unchecked_mut(&mut self, index: usize) -> &mut ModelComponent {
+        self.models.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<CubeEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<CubeEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CubeEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> CubeEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CubeEntityRef {
         CubeEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -2270,7 +2882,7 @@ impl CubeArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
         CubeEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -2657,27 +3269,129 @@ impl PlayerArchetype {
         PlayerEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<PlayerEntityRef> {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at(&self, index: usize) -> Option<&VelocityComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at_mut(&mut self, index: usize) -> Option<&mut VelocityComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked(&self, index: usize) -> &VelocityComponent {
+        self.velocities.get_unchecked(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked_mut(&mut self, index: usize) -> &mut VelocityComponent {
+        self.velocities.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_health_component_at(&self, index: usize) -> Option<&HealthComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_health_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_health_component_at_mut(&mut self, index: usize) -> Option<&mut HealthComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_health_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_health_component_at_unchecked(&self, index: usize) -> &HealthComponent {
+        self.healths.get_unchecked(index)
+    }
+
+    /// Gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_health_component_at_unchecked_mut(&mut self, index: usize) -> &mut HealthComponent {
+        self.healths.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<PlayerEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<PlayerEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<PlayerEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> PlayerEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> PlayerEntityRef {
         PlayerEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -2688,7 +3402,7 @@ impl PlayerArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
         PlayerEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -3027,27 +3741,95 @@ impl ForegroundObjectArchetype {
         ForegroundObjectEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_collider_component_at(&self, index: usize) -> Option<&ColliderComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_collider_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_collider_component_at_mut(&mut self, index: usize) -> Option<&mut ColliderComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_collider_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_collider_component_at_unchecked(&self, index: usize) -> &ColliderComponent {
+        self.colliders.get_unchecked(index)
+    }
+
+    /// Gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_collider_component_at_unchecked_mut(&mut self, index: usize) -> &mut ColliderComponent {
+        self.colliders.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<ForegroundObjectEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<ForegroundObjectEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
         ForegroundObjectEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -3057,7 +3839,7 @@ impl ForegroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
         ForegroundObjectEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -3348,27 +4130,61 @@ impl BackgroundObjectArchetype {
         BackgroundObjectEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<BackgroundObjectEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<BackgroundObjectEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
         BackgroundObjectEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -3377,7 +4193,7 @@ impl BackgroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
         BackgroundObjectEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -3624,27 +4440,61 @@ impl SceneBackgroundArchetype {
         SceneBackgroundEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `BackgroundColor` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
+    #[inline]
+    pub fn get_background_color_component_at(&self, index: usize) -> Option<&BackgroundColorComponent> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_background_color_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `BackgroundColor` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_background_color_component_at_mut(&mut self, index: usize) -> Option<&mut BackgroundColorComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_background_color_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `BackgroundColor` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_background_color_component_at_unchecked(&self, index: usize) -> &BackgroundColorComponent {
+        self.background_colors.get_unchecked(index)
+    }
+
+    /// Gets the `BackgroundColor` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_background_color_component_at_unchecked_mut(&mut self, index: usize) -> &mut BackgroundColorComponent {
+        self.background_colors.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
     }
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_at_mut(&mut self, index: usize) -> Option<SceneBackgroundEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<SceneBackgroundEntityMut> {
         if index > self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked_mut(index) })
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
         SceneBackgroundEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             background_color: self.background_colors.get_unchecked(index),
@@ -3653,7 +4503,7 @@ impl SceneBackgroundArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
         SceneBackgroundEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             background_color: self.background_colors.get_unchecked_mut(index),
@@ -4094,14 +4944,14 @@ impl GetEntityRef for WgpuShaderArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`WgpuShaderArchetype::get_at_unchecked`](WgpuShaderArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4117,14 +4967,14 @@ impl GetEntityRef for EnvironmentArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`EnvironmentArchetype::get_at_unchecked`](EnvironmentArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4140,14 +4990,14 @@ impl GetEntityRef for CameraArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`CameraArchetype::get_at_unchecked`](CameraArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4163,14 +5013,14 @@ impl GetEntityRef for DynamicLightArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`DynamicLightArchetype::get_at_unchecked`](DynamicLightArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4186,14 +5036,14 @@ impl GetEntityRef for TileArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`TileArchetype::get_at_unchecked`](TileArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4209,14 +5059,14 @@ impl GetEntityRef for CubeArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`CubeArchetype::get_at_unchecked`](CubeArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4232,14 +5082,14 @@ impl GetEntityRef for PlayerArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`PlayerArchetype::get_at_unchecked`](PlayerArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4255,14 +5105,14 @@ impl GetEntityRef for ForegroundObjectArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`ForegroundObjectArchetype::get_at_unchecked`](ForegroundObjectArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4278,14 +5128,14 @@ impl GetEntityRef for BackgroundObjectArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`BackgroundObjectArchetype::get_at_unchecked`](BackgroundObjectArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -4301,14 +5151,14 @@ impl GetEntityRef for SceneBackgroundArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`SceneBackgroundArchetype::get_at_unchecked`](SceneBackgroundArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
