@@ -1,17 +1,18 @@
-use crate::resources::{
-    DependentResource, GpuContext, Resource, ResourceId, SurfaceSensitive, TextureResource,
-};
+use crate::resources::{DependentResource, GpuContext, Resource, ResourceId, SurfaceSensitive, TextureResourceData};
 use crate::surface_info::SurfaceInfo;
 use crate::wgpu_label;
 use std::convert::Infallible;
 use wgpu::{Texture, TextureView};
 
-pub struct FallbackNormalTexture {
+pub struct FallbackNormalTexture;
+
+#[derive(Debug)]
+pub struct FallbackNormalTextureData {
     pub texture: Texture,
     pub view: TextureView,
 }
 
-impl TextureResource for FallbackNormalTexture {
+impl TextureResourceData for FallbackNormalTextureData {
     fn texture(&self) -> &Texture {
         &self.texture
     }
@@ -22,15 +23,15 @@ impl TextureResource for FallbackNormalTexture {
 }
 
 impl Resource for FallbackNormalTexture {
-    type State = ();
+    type Output = FallbackNormalTextureData;
+
     type Error = Infallible;
 
     fn recreate<'device>(
         &mut self,
         ctx: &GpuContext<'device>,
         _surface_info: &SurfaceInfo,
-        _state: &Self::State,
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Self::Output, Self::Error> {
         // Flat normal: (0.5, 0.5, 1.0, 1.0) encoded as [128, 128, 255, 255]
         let normal_pixel = [128u8, 128u8, 255u8, 255u8];
 
@@ -40,7 +41,7 @@ impl Resource for FallbackNormalTexture {
             depth_or_array_layers: 1,
         };
 
-        self.texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label: Some(wgpu_label!("fallback_normal_map")),
             size,
             mip_level_count: 1,
@@ -55,7 +56,7 @@ impl Resource for FallbackNormalTexture {
         ctx.queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 aspect: wgpu::TextureAspect::All,
-                texture: &self.texture,
+                texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
@@ -68,11 +69,13 @@ impl Resource for FallbackNormalTexture {
             size,
         );
 
-        self.view = self
-            .texture
+        let view = texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        Ok(())
+        Ok(Self::Output {
+            texture,
+            view
+        })
     }
 }
 

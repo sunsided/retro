@@ -18,4 +18,5 @@ wgpu = { version = "25.0.0" }
 winit = { version = "0.30.9", optional = true, default-features = false }
 
 [dev-dependencies]
+pollster = "0.4.0"
 tracing-subscriber = { version = "0.3.19", features = ["fmt", "env-filter"] }

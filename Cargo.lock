@@ -3098,6 +3098,7 @@ version = "0.1.0"
 dependencies = [
  "fxhash",
  "image",
+ "pollster",
  "thiserror 2.0.12",
  "tracing",
  "tracing-subscriber",

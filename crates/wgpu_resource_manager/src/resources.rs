@@ -9,27 +9,22 @@ use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
 use wgpu::{Texture, TextureView};
 
-type BoxedError = Box<dyn Error + Send + Sync>;
+type BoxedNewTextureResourceData = Box<dyn TextureResourceData>;
+type BoxedTextureResource<GlobalError> = Box<dyn Resource<Output = BoxedNewTextureResourceData, Error = GlobalError>>;
 
-type BoxedNewTextureResourceData = Box<dyn NewTextureResourceData>;
-type BoxedTextureResource<GlobalError> = Box<dyn NewResource<Output = BoxedNewTextureResourceData, Error = GlobalError>>;
 
-pub struct NewGpuContext<'device> {
-    _phantom: PhantomData<&'device ()>,
-}
-
-pub trait NewResource {
+pub trait Resource {
     type Output;
     type Error: Send + Sync + 'static;
 
     fn recreate<'device>(
         &mut self,
-        ctx: &NewGpuContext<'device>,
+        ctx: &GpuContext<'device>,
         surface_info: &SurfaceInfo,
     ) -> Result<Self::Output, Self::Error>;
 }
 
-pub trait NewTextureResourceData: Debug {
+pub trait TextureResourceData: Debug {
     fn texture(&self) -> &Texture;
     fn view(&self) -> &TextureView;
 }
@@ -39,19 +34,19 @@ pub struct TextureResourceEntry<GlobalError> {
     resource: BoxedTextureResource<GlobalError>,
 }
 
-pub struct NewResources<GlobalError> {
+pub struct Resources<GlobalError> {
     textures: FxHashMap<TextureResourceId, TextureResourceEntry<GlobalError>>,
     phantom_data: PhantomData<GlobalError>,
 }
 
-impl<GlobalError> NewResources<GlobalError>
+impl<GlobalError> Resources<GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
 {
     pub fn register_texture<R, T, E>(&mut self, mut resource: R) -> TextureResourceId
     where
-        R: NewResource<Output = T, Error = E> + 'static,
-        T: NewTextureResourceData + 'static,
+        R: Resource<Output = T, Error = E> + 'static,
+        T: TextureResourceData + 'static,
         E: Into<GlobalError> + Error + Send + Sync + 'static,
         GlobalError: Error + Send + Sync + 'static,
     {
@@ -76,14 +71,14 @@ where
     pub fn get_texture_data(
         &self,
         id: TextureResourceId,
-    ) -> Result<&dyn NewTextureResourceData, GetResourceError> {
+    ) -> Result<&dyn TextureResourceData, GetResourceError> {
         let entry = self.textures.get(&id).ok_or(GetResourceError::NotFound)?;
         entry.data.as_deref().ok_or(GetResourceError::Uninitialized)
     }
 
     pub fn recreate(
         &mut self,
-        ctx: &NewGpuContext,
+        ctx: &GpuContext,
         surface_info: &SurfaceInfo,
     ) -> Result<(), GlobalError> {
         for entry in self.textures.values_mut() {
@@ -99,10 +94,10 @@ pub struct TextureResourceWrapper<R, GlobalError> {
     _phantom: PhantomData<*const GlobalError>,
 }
 
-impl<R, T, E, GlobalError> NewResource for TextureResourceWrapper<R, GlobalError>
+impl<R, T, E, GlobalError> Resource for TextureResourceWrapper<R, GlobalError>
 where
-    R: NewResource<Output = T, Error = E>,
-    T: NewTextureResourceData + 'static,
+    R: Resource<Output = T, Error = E>,
+    T: TextureResourceData + 'static,
     E: Into<GlobalError>,
     GlobalError: Error + Send + Sync + 'static,
 {
@@ -111,7 +106,7 @@ where
 
     fn recreate<'device>(
         &mut self,
-        ctx: &NewGpuContext<'device>,
+        ctx: &GpuContext<'device>,
         surface_info: &SurfaceInfo,
     ) -> Result<Self::Output, Self::Error> {
         let raw = self.inner.recreate(ctx, surface_info).map_err(Into::into)?;
@@ -130,62 +125,65 @@ enum GetResourceError {
 #[cfg(test)]
 mod tests {
     use wgpu::TextureFormat;
+    use crate::examples::FallbackNormalTexture;
+    use crate::wgpu_label;
     use super::*;
+
+    async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+        let instance = wgpu::Instance::default();
+
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::LowPower,
+                force_fallback_adapter: true, // Use software renderer if possible
+                compatible_surface: None,     // No window!
+            })
+            .await
+            .expect("No suitable GPU adapters found on the system!");
+
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    label: Some(wgpu_label!("test_device")),
+                    required_features: wgpu::Features::empty(),
+                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                    memory_hints: Default::default(),
+                    trace: Default::default(),
+                }
+            )
+            .await
+            .expect("Failed to create device");
+
+        (device, queue)
+    }
 
     #[derive(Debug, thiserror::Error)]
     enum MyError {
-        #[error(transparent)]
-        SomeError(#[from] MyTestTextureError),
+        // #[error(transparent)]
+        // SomeError(#[from] FileTextureError),
     }
 
-    struct MyTestTexture;
-
-    #[derive(Debug)]
-    struct MyTestTextureData;
-
-    #[derive(Debug, thiserror::Error)]
-    enum MyTestTextureError {
-        #[error("bar")]
-        Foo,
-    }
-
-    impl NewResource for MyTestTexture {
-        type Output = MyTestTextureData;
-        type Error = MyTestTextureError;
-
-        fn recreate<'device>(
-            &mut self,
-            _ctx: &NewGpuContext<'device>,
-            _surface_info: &SurfaceInfo,
-        ) -> Result<Self::Output, Self::Error> {
-            Ok(MyTestTextureData)
-        }
-    }
-
-    impl NewTextureResourceData for MyTestTextureData {
-        fn texture(&self) -> &Texture {
-            todo!()
-        }
-
-        fn view(&self) -> &TextureView {
-            todo!()
+    impl From<Infallible> for MyError {
+        fn from(_: Infallible) -> Self {
+            unreachable!("Infallible cannot be constructed")
         }
     }
 
     #[test]
     fn new_resources() {
-        let mut res: NewResources<MyError> = NewResources {
+        let mut res: Resources<MyError> = Resources {
             textures: Default::default(),
             phantom_data: Default::default(),
         };
 
-        let tex = MyTestTexture;
+        let tex = FallbackNormalTexture;
         let id = res.register_texture(tex);
 
         res.get_texture_data(id).expect_err("Should return an error");
 
-        let ctx = NewGpuContext {
-            _phantom: Default::default(),
+        let (device, queue) = pollster::block_on(create_test_device());
+        let ctx = GpuContext {
+            device: &device, queue: &queue,
         };
         let info = SurfaceInfo {
             width: 0,
@@ -235,145 +233,6 @@ mod tests {
 
 
 
-pub struct Resources<State, ResourceError = Infallible>
-where
-    ResourceError: Error + 'static,
-{
-    manager_id: WgpuResourceManagerId,
-    device_id: DeviceId,
-    textures: FxHashMap<
-        ResourceId,
-        Box<dyn TextureResource<State = State, Error = Box<dyn Error + Send + Sync>>>,
-    >,
-    _phantom: std::marker::PhantomData<ResourceError>,
-}
-
-struct TextureResourceBox<R>
-where
-    R: TextureResource,
-    R::Error: Error + Send + Sync + 'static,
-{
-    inner: R,
-}
-
-impl<R> Resource for TextureResourceBox<R>
-where
-    R: TextureResource,
-    R::Error: Error + Send + Sync + 'static,
-    R: 'static,
-{
-    type State = R::State;
-    type Error = Box<dyn Error + Send + Sync + 'static>;
-
-    fn recreate(
-        &mut self,
-        ctx: &GpuContext,
-        surface: &SurfaceInfo,
-        state: &Self::State,
-    ) -> Result<(), Self::Error> {
-        self.inner
-            .recreate(ctx, surface, state)
-            .map_err(|e| Box::new(e) as _)
-    }
-}
-
-impl<R> SurfaceSensitive for TextureResourceBox<R>
-where
-    R: 'static + TextureResource,
-    R::Error: 'static + Error + Send + Sync,
-{
-    fn is_surface_dependent(&self) -> bool {
-        self.inner.is_surface_dependent()
-    }
-
-    fn must_recreate(&self, current: &SurfaceInfo, previous: &SurfaceInfo) -> bool {
-        self.inner.must_recreate(current, previous)
-    }
-}
-
-impl<R> DependentResource for TextureResourceBox<R>
-where
-    R: 'static + TextureResource,
-    R::Error: 'static + Error + Send + Sync,
-{
-}
-
-impl<R> TextureResource for TextureResourceBox<R>
-where
-    R: TextureResource,
-    R::Error: Error + Send + Sync + 'static,
-    R: 'static,
-{
-    fn texture(&self) -> &Texture {
-        self.inner.texture()
-    }
-
-    fn view(&self) -> &TextureView {
-        self.inner.view()
-    }
-}
-
-impl<State, ResourceError> Resources<State, ResourceError>
-where
-    ResourceError: Error + From<Box<dyn Error + Send + Sync>> + 'static,
-{
-    pub fn register_texture<R>(&mut self, resource: R) -> TextureResourceId
-    where
-        R: TextureResource<State = State>,
-        R::Error: Error + Send + Sync + 'static + Into<ResourceError>,
-        R: 'static,
-    {
-        let texture_id = TextureResourceId::next();
-        self.textures.insert(
-            texture_id.into_inner(),
-            Box::new(TextureResourceBox { inner: resource }),
-        );
-        texture_id
-    }
-
-    pub fn get_texture(
-        &self,
-        id: TextureResourceId,
-    ) -> Option<&Box<dyn TextureResource<State = State, Error = Box<dyn Error + Send + Sync>>>>
-    {
-        self.textures.get(&id.into_inner())
-    }
-
-    pub fn delete_texture(
-        &mut self,
-        id: TextureResourceId,
-    ) -> Option<Box<dyn TextureResource<State = State, Error = Box<dyn Error + Send + Sync>>>> {
-        self.textures.remove(&id.into_inner())
-    }
-
-    pub fn recreate(
-        &mut self,
-        ctx: &GpuContext,
-        surface_info: &SurfaceInfo,
-        state: &State,
-    ) -> Result<(), ResourceError> {
-        for (_id, tex) in &mut self.textures {
-            tex.recreate(ctx, surface_info, state)
-                .map_err(|e| e.into())?;
-        }
-
-        Ok(())
-    }
-}
-
-pub trait Resource {
-    type State;
-    type Error: Send + Sync + 'static;
-
-    /// Recreate this resource based on the current surface info
-    fn recreate<'device>(
-        &mut self,
-        ctx: &GpuContext<'device>,
-        surface_info: &SurfaceInfo,
-        state: &Self::State,
-    ) -> Result<(), Self::Error>;
-}
-
 pub trait SurfaceSensitive: Resource {
     /// Return `true` if this resource depends on surface config/size/etc.
     fn is_surface_dependent(&self) -> bool;
@@ -399,11 +258,6 @@ pub struct ResourceId(u64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextureResourceId(ResourceId);
-
-pub trait TextureResource : Resource + SurfaceSensitive + DependentResource {
-    fn texture(&self) -> &wgpu::Texture;
-    fn view(&self) -> &wgpu::TextureView;
-}
 
 impl ResourceId {
     pub fn next() -> Self {

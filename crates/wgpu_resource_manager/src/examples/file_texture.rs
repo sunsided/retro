@@ -4,7 +4,10 @@ use crate::wgpu_label;
 use wgpu::{Texture, TextureView};
 
 pub struct FileTexture {
-    pub path: String,
+    pub path: String
+}
+
+pub struct FileTextureData {
     pub texture: Texture,
     pub view: TextureView,
 }
@@ -18,15 +21,14 @@ pub enum FileTextureError {
 }
 
 impl Resource for FileTexture {
-    type State = ();
+    type Output = FileTextureData;
     type Error = FileTextureError;
 
     fn recreate(
         &mut self,
         ctx: &GpuContext,
         _info: &SurfaceInfo,
-        _state: &(),
-    ) -> Result<(), Self::Error> {
+    ) -> Result<Self::Output, Self::Error> {
         let bytes = std::fs::read(&self.path)?;
 
         let image = image::load_from_memory(&bytes)?.to_rgba8();
@@ -38,7 +40,7 @@ impl Resource for FileTexture {
             depth_or_array_layers: 1,
         };
 
-        self.texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
+        let texture = ctx.device.create_texture(&wgpu::TextureDescriptor {
             label: Some(wgpu_label!("file_texture")),
             size,
             mip_level_count: 1,
@@ -52,7 +54,7 @@ impl Resource for FileTexture {
         ctx.queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 aspect: wgpu::TextureAspect::All,
-                texture: &self.texture,
+                texture: &texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
@@ -65,8 +67,10 @@ impl Resource for FileTexture {
             size,
         );
 
-        self.view = self.texture.create_view(&Default::default());
+        let view = texture.create_view(&Default::default());
 
-        Ok(())
+        Ok(Self::Output {
+            texture, view,
+        })
     }
 }
