@@ -1,8 +1,8 @@
 use crate::resources::{DependentResource, GpuContext, Resource, ResourceId, SurfaceSensitive};
 use crate::surface_info::SurfaceInfo;
+use crate::texture_with_view::TextureWithView;
 use crate::wgpu_label;
 use std::convert::Infallible;
-use crate::texture_with_view::TextureWithView;
 
 pub struct FallbackNormalTexture;
 
@@ -53,8 +53,7 @@ impl Resource for FallbackNormalTexture {
             size,
         );
 
-        let view = texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         Ok(Self::Output::new(texture, view))
     }

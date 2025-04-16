@@ -1,10 +1,10 @@
 use crate::resources::{GpuContext, Resource};
 use crate::surface_info::SurfaceInfo;
-use crate::wgpu_label;
 use crate::texture_with_view::TextureWithView;
+use crate::wgpu_label;
 
 pub struct FileTexture {
-    pub path: String
+    pub path: String,
 }
 
 #[derive(Debug, thiserror::Error)]

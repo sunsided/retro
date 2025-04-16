@@ -57,7 +57,6 @@ fn init_test_tracing() {
     });
 }
 
-
 #[cfg(test)]
 fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
     pollster::block_on(create_test_device_async())
@@ -77,15 +76,13 @@ async fn create_test_device_async() -> (wgpu::Device, wgpu::Queue) {
         .expect("No suitable GPU adapters found on the system!");
 
     let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some(wgpu_label!("test_device")),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-                memory_hints: Default::default(),
-                trace: Default::default(),
-            }
-        )
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some(wgpu_label!("test_device")),
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+            memory_hints: Default::default(),
+            trace: Default::default(),
+        })
         .await
         .expect("Failed to create device");
 
