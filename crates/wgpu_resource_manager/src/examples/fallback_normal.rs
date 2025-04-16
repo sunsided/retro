@@ -3,27 +3,13 @@ use crate::surface_info::SurfaceInfo;
 use crate::wgpu_label;
 use std::convert::Infallible;
 use wgpu::{Texture, TextureView};
+use crate::texture_with_view::TextureWithView;
 
 pub struct FallbackNormalTexture;
 
-#[derive(Debug)]
-pub struct FallbackNormalTextureData {
-    pub texture: Texture,
-    pub view: TextureView,
-}
-
-impl TextureResourceData for FallbackNormalTextureData {
-    fn texture(&self) -> &Texture {
-        &self.texture
-    }
-
-    fn view(&self) -> &TextureView {
-        &self.view
-    }
-}
 
 impl Resource for FallbackNormalTexture {
-    type Output = FallbackNormalTextureData;
+    type Output = TextureWithView;
 
     type Error = Infallible;
 
@@ -72,10 +58,7 @@ impl Resource for FallbackNormalTexture {
         let view = texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        Ok(Self::Output {
-            texture,
-            view
-        })
+        Ok(Self::Output::new(texture, view))
     }
 }
 

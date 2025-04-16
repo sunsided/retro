@@ -2,14 +2,10 @@ use crate::resources::{GpuContext, Resource};
 use crate::surface_info::SurfaceInfo;
 use crate::wgpu_label;
 use wgpu::{Texture, TextureView};
+use crate::texture_with_view::TextureWithView;
 
 pub struct FileTexture {
     pub path: String
-}
-
-pub struct FileTextureData {
-    pub texture: Texture,
-    pub view: TextureView,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -21,7 +17,7 @@ pub enum FileTextureError {
 }
 
 impl Resource for FileTexture {
-    type Output = FileTextureData;
+    type Output = TextureWithView;
     type Error = FileTextureError;
 
     fn recreate(
@@ -69,8 +65,6 @@ impl Resource for FileTexture {
 
         let view = texture.create_view(&Default::default());
 
-        Ok(Self::Output {
-            texture, view,
-        })
+        Ok(Self::Output::new(texture, view))
     }
 }

@@ -12,6 +12,7 @@ mod resources;
 mod surface_id;
 mod surface_info;
 mod surface_wrapper;
+mod texture_with_view;
 
 pub use crate::configured_resource_manager::*;
 pub use crate::device_and_queue::DeviceAndQueue;
@@ -22,6 +23,7 @@ pub use crate::resource_manager::WgpuResourceManager;
 pub use crate::resource_manager_accessors::*;
 pub use crate::surface_id::SurfaceId;
 pub use crate::surface_wrapper::{ResizeSurfaceError, SurfaceWrapper};
+pub use crate::texture_with_view::TextureWithView;
 
 #[macro_export]
 macro_rules! wgpu_label {
