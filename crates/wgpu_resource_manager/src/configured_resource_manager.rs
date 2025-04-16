@@ -11,6 +11,7 @@ use wgpu::{
 
 /// A resource manager that is configured by a valid surface and non-zero surface size.
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct ConfiguredWgpuResourceManager {
     manager_id: WgpuResourceManagerId,
     device_id: DeviceId,

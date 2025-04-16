@@ -1,5 +1,3 @@
-use crate::WgpuResourceManagerId;
-use crate::device_id::DeviceId;
 use crate::surface_info::SurfaceInfo;
 use fxhash::FxHashMap;
 use std::convert::Infallible;
@@ -24,6 +22,7 @@ pub trait Resource {
     ) -> Result<Self::Output, Self::Error>;
 }
 
+#[allow(dead_code)]
 pub trait TextureResourceData: Debug {
     fn texture(&self) -> &Texture;
     fn view(&self) -> &TextureView;
@@ -43,7 +42,7 @@ impl<GlobalError> Resources<GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
 {
-    pub fn register_texture<R, T, E>(&mut self, mut resource: R) -> TextureResourceId
+    pub fn register_texture<R, T, E>(&mut self, resource: R) -> TextureResourceId
     where
         R: Resource<Output = T, Error = E> + 'static,
         T: TextureResourceData + 'static,
@@ -115,7 +114,7 @@ where
 }
 
 #[derive(Debug, thiserror::Error)]
-enum GetResourceError {
+pub enum GetResourceError {
     #[error("The resource was not found")]
     NotFound,
     #[error("The resource is uninitialized")]
@@ -126,36 +125,8 @@ enum GetResourceError {
 mod tests {
     use wgpu::TextureFormat;
     use crate::examples::FallbackNormalTexture;
-    use crate::wgpu_label;
+    use crate::create_test_device;
     use super::*;
-
-    async fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
-        let instance = wgpu::Instance::default();
-
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::LowPower,
-                force_fallback_adapter: true, // Use software renderer if possible
-                compatible_surface: None,     // No window!
-            })
-            .await
-            .expect("No suitable GPU adapters found on the system!");
-
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some(wgpu_label!("test_device")),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
-                    memory_hints: Default::default(),
-                    trace: Default::default(),
-                }
-            )
-            .await
-            .expect("Failed to create device");
-
-        (device, queue)
-    }
 
     #[derive(Debug, thiserror::Error)]
     enum MyError {
@@ -181,7 +152,7 @@ mod tests {
 
         res.get_texture_data(id).expect_err("Should return an error");
 
-        let (device, queue) = pollster::block_on(create_test_device());
+        let (device, queue) = create_test_device();
         let ctx = GpuContext {
             device: &device, queue: &queue,
         };
@@ -199,40 +170,7 @@ mod tests {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#[allow(dead_code)]
 pub trait SurfaceSensitive: Resource {
     /// Return `true` if this resource depends on surface config/size/etc.
     fn is_surface_dependent(&self) -> bool;
@@ -241,6 +179,7 @@ pub trait SurfaceSensitive: Resource {
     fn must_recreate(&self, current: &SurfaceInfo, previous: &SurfaceInfo) -> bool;
 }
 
+#[allow(dead_code)]
 pub trait DependentResource: Resource {
     fn get_dependencies(&self) -> &[ResourceId] {
         &[]
@@ -271,6 +210,7 @@ impl TextureResourceId {
         Self(ResourceId::next())
     }
 
+    #[allow(dead_code)]
     pub fn into_inner(self) -> ResourceId {
         self.0
     }

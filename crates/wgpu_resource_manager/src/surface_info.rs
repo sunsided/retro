@@ -9,6 +9,7 @@ pub struct SurfaceInfo {
     pub sample_count: u32,
 }
 
+#[allow(dead_code)]
 impl SurfaceInfo {
     pub fn new(config: &SurfaceConfiguration, sample_count: u32) -> Self {
         Self {

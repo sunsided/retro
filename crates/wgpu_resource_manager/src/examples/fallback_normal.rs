@@ -1,12 +1,10 @@
-use crate::resources::{DependentResource, GpuContext, Resource, ResourceId, SurfaceSensitive, TextureResourceData};
+use crate::resources::{DependentResource, GpuContext, Resource, ResourceId, SurfaceSensitive};
 use crate::surface_info::SurfaceInfo;
 use crate::wgpu_label;
 use std::convert::Infallible;
-use wgpu::{Texture, TextureView};
 use crate::texture_with_view::TextureWithView;
 
 pub struct FallbackNormalTexture;
-
 
 impl Resource for FallbackNormalTexture {
     type Output = TextureWithView;

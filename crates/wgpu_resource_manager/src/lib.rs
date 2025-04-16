@@ -45,6 +45,7 @@ macro_rules! wgpu_label {
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 fn init_test_tracing() {
     static INIT: std::sync::Once = std::sync::Once::new();
 
@@ -54,4 +55,39 @@ fn init_test_tracing() {
             .with_test_writer()
             .init();
     });
+}
+
+
+#[cfg(test)]
+fn create_test_device() -> (wgpu::Device, wgpu::Queue) {
+    pollster::block_on(create_test_device_async())
+}
+
+#[cfg(test)]
+async fn create_test_device_async() -> (wgpu::Device, wgpu::Queue) {
+    let instance = wgpu::Instance::default();
+
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions {
+            power_preference: wgpu::PowerPreference::LowPower,
+            force_fallback_adapter: true, // Use software renderer if possible
+            compatible_surface: None,     // No window!
+        })
+        .await
+        .expect("No suitable GPU adapters found on the system!");
+
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some(wgpu_label!("test_device")),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
+                memory_hints: Default::default(),
+                trace: Default::default(),
+            }
+        )
+        .await
+        .expect("Failed to create device");
+
+    (device, queue)
 }

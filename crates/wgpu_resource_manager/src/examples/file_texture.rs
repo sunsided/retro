@@ -1,7 +1,6 @@
 use crate::resources::{GpuContext, Resource};
 use crate::surface_info::SurfaceInfo;
 use crate::wgpu_label;
-use wgpu::{Texture, TextureView};
 use crate::texture_with_view::TextureWithView;
 
 pub struct FileTexture {
