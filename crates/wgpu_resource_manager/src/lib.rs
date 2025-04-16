@@ -13,6 +13,7 @@ mod surface_id;
 mod surface_info;
 mod surface_wrapper;
 mod texture_with_view;
+mod resource_valid;
 
 pub use crate::configured_resource_manager::*;
 pub use crate::device_and_queue::DeviceAndQueue;

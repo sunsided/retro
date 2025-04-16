@@ -1,7 +1,8 @@
 use std::error::Error;
-use crate::resources::{GetResourceError, GpuContext, Resource, Resources, TextureResourceId};
+use crate::resources::{GetResourceError, GpuContext, Resource, ResourceData, Resources, TextureResourceId};
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::process::id;
 use wgpu::{Texture, TextureView};
 use crate::surface_info::SurfaceInfo;
 
@@ -11,13 +12,17 @@ pub trait TextureResourceData: Debug {
     fn view(&self) -> &TextureView;
 }
 
+impl<T> ResourceData for T where T: TextureResourceData { }
+impl ResourceData for Box<dyn TextureResourceData> { }
+
 type BoxedNewTextureResourceData = Box<dyn TextureResourceData>;
 
 /// The [`TextureResourceEntry`] is used in the [`Resources`] manager to type-erase
 /// texture resources.
-pub(super) struct TextureResourceEntry<GlobalError> {
+pub(super) struct TextureResourceEntry<Lifecycle, GlobalError> {
     data: Option<BoxedNewTextureResourceData>,
     factory: Box<dyn Resource<Output = BoxedNewTextureResourceData, Error = GlobalError>>,
+    lifecycle: Lifecycle
 }
 
 /// The [`TextureResourceFactory`] is another layer of type-erasure stored within
@@ -45,11 +50,12 @@ impl<R, GlobalError> TextureResourceFactory<R, GlobalError> {
     }
 }
 
-impl<GlobalError> Resources<GlobalError>
+impl<Lifecycle, GlobalError> Resources<Lifecycle, GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
+    Lifecycle: Clone
 {
-    pub fn register_texture<R, T, E>(&mut self, resource: R) -> TextureResourceId
+    pub fn register_texture<R, T, E>(&mut self, resource: R, lifecyle: Lifecycle) -> TextureResourceId
     where
         T: TextureResourceData + 'static,
         R: Resource<Output = T, Error = E> + 'static,
@@ -64,6 +70,7 @@ where
             TextureResourceEntry {
                 data: None,
                 factory,
+                lifecycle: lifecyle.clone()
             },
         );
 
@@ -78,7 +85,15 @@ where
         entry.data.as_deref().ok_or(GetResourceError::Uninitialized)
     }
 
-    pub fn recreate(
+    pub fn retain_textures<F>(&mut self, mut lifecycle: F)
+    where F:
+    FnMut(TextureResourceId, &Lifecycle) -> bool {
+        self.textures.retain(|&id, value| {
+            lifecycle(id, &value.lifecycle)
+        })
+    }
+
+    pub(super) fn recreate_textures(
         &mut self,
         ctx: &GpuContext,
         surface_info: &SurfaceInfo,
@@ -91,7 +106,7 @@ where
     }
 }
 
-impl<R, T, E, GlobalError> Resource for TextureResourceFactory<R, GlobalError>
+impl<T, R, E, GlobalError> Resource for TextureResourceFactory<R, GlobalError>
 where
     T: TextureResourceData + 'static,
     R: Resource<Output = T, Error = E>,

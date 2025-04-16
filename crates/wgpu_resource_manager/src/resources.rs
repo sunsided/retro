@@ -3,6 +3,7 @@ mod textures;
 use crate::surface_info::SurfaceInfo;
 use fxhash::FxHashMap;
 use std::convert::Infallible;
+use std::error::Error;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -10,7 +11,7 @@ use crate::resources::textures::TextureResourceEntry;
 pub use self::textures::TextureResourceData;
 
 pub trait Resource {
-    type Output;
+    type Output: ResourceData;
     type Error: Send + Sync + 'static;
 
     fn recreate<'device>(
@@ -20,9 +21,37 @@ pub trait Resource {
     ) -> Result<Self::Output, Self::Error>;
 }
 
-pub struct Resources<GlobalError> {
-    textures: FxHashMap<TextureResourceId, TextureResourceEntry<GlobalError>>,
+#[allow(dead_code)]
+pub trait ResourceData { }
+
+pub struct Resources<Lifecycle, GlobalError> {
+    textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
     phantom_data: PhantomData<GlobalError>,
+}
+
+impl<Lifecycle, GlobalError> Resources<Lifecycle, GlobalError>
+where
+    GlobalError: Error + Send + Sync + 'static,
+    Lifecycle: Clone
+{
+    pub fn recreate(
+        &mut self,
+        ctx: &GpuContext,
+        surface_info: &SurfaceInfo,
+    ) -> Result<(), GlobalError> {
+        self.recreate_textures(ctx, surface_info)?;
+        Ok(())
+    }
+
+    pub fn retain<F>(
+        &mut self,
+        mut lifecycle: F,
+    )
+    where F:
+        FnMut(&Lifecycle) -> bool
+    {
+        self.retain_textures(|_, l| lifecycle(l))
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -54,13 +83,13 @@ mod tests {
 
     #[test]
     fn new_resources() {
-        let mut res: Resources<MyError> = Resources {
+        let mut res: Resources<(), MyError> = Resources {
             textures: Default::default(),
             phantom_data: Default::default(),
         };
 
         let tex = FallbackNormalTexture;
-        let id = res.register_texture(tex);
+        let id = res.register_texture(tex, ());
 
         res.get_texture_data(id)
             .expect_err("Should return an error");

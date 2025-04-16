@@ -182,7 +182,7 @@ impl WgpuHardware {
             Some(DeviceDescriptor {
                 label: Some(wgpu_label!("device_descriptor")),
                 required_features: Features::POLYGON_MODE_LINE,
-                required_limits: Default::default(),
+                required_limits: wgpu::Limits::downlevel_webgl2_defaults(),
                 memory_hints: Default::default(),
                 trace: Default::default(),
             }),
