@@ -2,24 +2,26 @@ use crate::engine::components::Extent3d;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
     ApplyWgpuInitShaderSystem, ApplyWgpuInitTextureSystem, CreateSystem, EntityId, PhaseEvents,
-    SystemFactory, SystemWgpuReinitPhaseEvents, TextureResourcePath, TextureSourceComponent,
-    TextureSourceType, WgpuInitShaderSystem, WgpuInitTextureSystem, WgpuShaderComponent,
-    WgpuTextureComponent,
+    ResourceManagerState, SystemFactory, SystemWgpuReinitPhaseEvents, TextureResourcePath,
+    TextureSourceComponent, TextureSourceType, WgpuInitShaderSystem, WgpuInitTextureSystem,
+    WgpuShaderComponent, WgpuTextureComponent,
 };
 use crate::resources;
 use crate::wgpu::texture::{TextureError, TextureType};
+use fxhash::{FxHashMap, FxHashSet};
 use image::{GenericImageView, RgbaImage};
 use std::borrow::Borrow;
 use std::convert::Infallible;
 use std::ops::Deref;
 use tracing::{debug, error, trace};
-use wgpu::{Queue, Texture};
+use wgpu::{Queue, ShaderModule, Texture};
 use wgpu_resource_manager::{wgpu_label, DeviceAndQueue, DeviceId, SurfaceId, TextureWithView};
 
 #[derive(Debug, Default)]
 pub struct WgpuInitTextureSystemData {
     device_id: DeviceId,
     surface_id: SurfaceId,
+    updated: FxHashMap<EntityId, TextureWithView>,
 }
 
 impl CreateSystem<WgpuInitTextureSystem> for SystemFactory {
@@ -40,13 +42,9 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
     //      - using custom commands: This will only be visible to the following phases, not to systems in this phase
     //      - using manipulation of this system's state and a phase-end hook: This hook is system-specific and executed before follow-up systems run (unless they are independent)
 
-    fn preflight(
-        &mut self,
-        wgpu_render: &WgpuRenderState,
-        entities: &[EntityId],
-        texture_sources: &[TextureSourceComponent],
-        wgpu_textures: &[WgpuTextureComponent],
-    ) {
+    fn on_begin_phase(&mut self) -> Result<(), Self::Error> {
+        self.updated.clear();
+        Ok(())
     }
 
     fn apply_many(
@@ -75,14 +73,38 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
             match &source.source {
                 TextureSourceType::FallbackNormals => {
                     if device_changed || texture_missing {
-                        create_fallback_normals(entity_id, device, texture)
+                        create_fallback_normals(entity_id, device, texture, &mut self.updated)
                     }
                 }
                 TextureSourceType::Resource(path) => {
-                    create_from_resource(entity_id, device, path, texture)
+                    create_from_resource(entity_id, device, path, texture, &mut self.updated)
                 }
             };
         }
+    }
+
+    fn postflight(
+        &mut self,
+        resource_manager: &mut ResourceManagerState,
+        entities: &[EntityId],
+        _sources: &[TextureSourceComponent],
+        _textures: &[WgpuTextureComponent],
+    ) {
+        // Remove all resources that do not exist anymore.
+        let to_retain = FxHashSet::from_iter(entities.iter().copied());
+        resource_manager
+            .textures
+            .retain(|k, _| to_retain.contains(k));
+    }
+
+    fn on_end_phase(
+        &mut self,
+        resource_manager: &mut ResourceManagerState,
+    ) -> Result<(), Self::Error> {
+        for (entity_id, texture) in self.updated.drain() {
+            resource_manager.textures.insert(entity_id, texture);
+        }
+        Ok(())
     }
 }
 
@@ -91,6 +113,7 @@ fn create_from_resource(
     device: &DeviceAndQueue,
     path: &TextureResourcePath,
     out: &mut WgpuTextureComponent,
+    updated: &mut FxHashMap<EntityId, TextureWithView>,
 ) {
     let label = wgpu_label!(format!(
         "resource {path:?} ({entity_id})",
@@ -133,13 +156,17 @@ fn create_from_resource(
     upload_texture_data(device.queue(), &texture, size, &data);
 
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    out.twv = Some(TextureWithView::new(texture, view));
+
+    let twv = TextureWithView::new(texture, view);
+    updated.insert(*entity_id, twv.clone());
+    out.twv = Some(twv);
 }
 
 fn create_fallback_normals(
     entity_id: &EntityId,
     device: &DeviceAndQueue,
     out: &mut WgpuTextureComponent,
+    updated: &mut FxHashMap<EntityId, TextureWithView>,
 ) {
     let label = wgpu_label!(format!("fallback_normal_map ({entity_id})"));
     debug_log(entity_id, device, &label);
@@ -167,7 +194,10 @@ fn create_fallback_normals(
     upload_texture_data(device.queue(), &texture, size, &data);
 
     let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    out.twv = Some(TextureWithView::new(texture, view));
+
+    let twv = TextureWithView::new(texture, view);
+    updated.insert(*entity_id, twv.clone());
+    out.twv = Some(twv);
 }
 
 fn upload_texture_data(queue: &Queue, texture: &Texture, size: Extent3d, data: &[u8]) {

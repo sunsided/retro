@@ -137,22 +137,32 @@ systems:
   - name: WgpuInitShader
     phase: WgpuReinit
     entities: true
+    postflight: true
     states:
       - use: WgpuRender
+        default: none
+        check: read
         system: write
       - use: ResourceManager
         default: none
-        phase_end: write
+        postflight: write
+        end_phase: write
     outputs:
       - WgpuShader
 
   - name: WgpuInitTexture
     phase: WgpuReinit
     entities: true
-    preflight: true
+    postflight: true
     states:
       - use: WgpuRender
+        default: none
+        check: read
         system: write
+      - use: ResourceManager
+        default: none
+        postflight: write
+        end_phase: write
     inputs:
       - TextureSource
     outputs:

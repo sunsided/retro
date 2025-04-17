@@ -207,6 +207,7 @@ pub struct MainWorldStates {
     ///
     /// The state is used in the following systems:
     /// - [`WgpuInitShaderSystem`]
+    /// - [`WgpuInitTextureSystem`]
     pub resource_manager: ResourceManagerState,
     /// The device input obtained from the window system.
     ///
@@ -1919,7 +1920,7 @@ impl<E, Q> MainWorld<E, Q> {
                        
            );
         if is_ready && self.systems.wgpu_init_shader.on_begin_phase(
-                        &self.states.wgpu_render,
+                        
                         
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
@@ -1943,12 +1944,18 @@ impl<E, Q> MainWorld<E, Q> {
 
             // Postflight
             {
-                // System has no preflight step
+                // Postflight of WgpuInitShaderSystem for WgpuShaderArchetype
+                self.systems.wgpu_init_shader.postflight(
+                            
+                            &mut self.states.resource_manager,
+                    &self.archetypes.collection.wgpu_shader.entities,
+                    &self.archetypes.collection.wgpu_shader.wgpu_shaders,
+                );
             }
 
             self.systems.wgpu_init_shader.on_end_phase(
-                        &self.states.wgpu_render,
                         
+                        &mut self.states.resource_manager,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_end_phase returned an error"))
             .ok();
@@ -1956,22 +1963,18 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 2 of 2
         let is_ready = self.systems.wgpu_init_texture.is_ready(
                        &self.states.wgpu_render,
+                       
            );
         if is_ready && self.systems.wgpu_init_texture.on_begin_phase(
-                        &self.states.wgpu_render,
+                        
+                        
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
             .is_ok()
         {
             // Preflight
             {
-                // Preflight of WgpuInitTextureSystem for WgpuTextureArchetype
-                self.systems.wgpu_init_texture.preflight(
-                            &self.states.wgpu_render,
-                    &self.archetypes.collection.wgpu_texture.entities,
-                    &self.archetypes.collection.wgpu_texture.texture_sources,
-                    &self.archetypes.collection.wgpu_texture.wgpu_textures,
-                );
+                // System has no preflight step
             }
 
             // Systems
@@ -1979,6 +1982,7 @@ impl<E, Q> MainWorld<E, Q> {
                 // Apply WgpuInitTextureSystem to WgpuTextureArchetype
                 self.systems.wgpu_init_texture.apply_many(
                             &mut self.states.wgpu_render,
+                            
                     &self.archetypes.collection.wgpu_texture.entities,
                     &self.archetypes.collection.wgpu_texture.texture_sources,
                     &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
@@ -1987,11 +1991,19 @@ impl<E, Q> MainWorld<E, Q> {
 
             // Postflight
             {
-                // System has no preflight step
+                // Postflight of WgpuInitTextureSystem for WgpuTextureArchetype
+                self.systems.wgpu_init_texture.postflight(
+                            
+                            &mut self.states.resource_manager,
+                    &self.archetypes.collection.wgpu_texture.entities,
+                    &self.archetypes.collection.wgpu_texture.texture_sources,
+                    &self.archetypes.collection.wgpu_texture.wgpu_textures,
+                );
             }
 
             self.systems.wgpu_init_texture.on_end_phase(
-                        &self.states.wgpu_render,
+                        
+                        &mut self.states.resource_manager,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_end_phase returned an error"))
             .ok();
@@ -2034,7 +2046,7 @@ impl<E, Q> MainWorld<E, Q> {
            );
         let is_wgpu_init_shader_ready = is_wgpu_init_shader_ready &
             self.systems.wgpu_init_shader.on_begin_phase(
-                        &self.states.wgpu_render,
+                        
                         
             )
             .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
@@ -2063,7 +2075,13 @@ impl<E, Q> MainWorld<E, Q> {
 
                         // Postflight
                         {
-                            // System has no preflight step
+                            // Postflight of WgpuInitShaderSystem for WgpuShaderArchetype
+                            self.systems.wgpu_init_shader.postflight(
+                                        
+                                        &mut self.states.resource_manager,
+                                &self.archetypes.collection.wgpu_shader.entities,
+                                &self.archetypes.collection.wgpu_shader.wgpu_shaders,
+                            );
                         }
                     });
                 }
@@ -2071,8 +2089,8 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.wgpu_init_shader.on_end_phase(
-                    &self.states.wgpu_render,
                     
+                    &mut self.states.resource_manager,
         )
         .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_end_phase returned an error"))
         .ok();
@@ -2080,10 +2098,12 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 2
         let is_wgpu_init_texture_ready = self.systems.wgpu_init_texture.is_ready(
                        &self.states.wgpu_render,
+                       
            );
         let is_wgpu_init_texture_ready = is_wgpu_init_texture_ready &
             self.systems.wgpu_init_texture.on_begin_phase(
-                        &self.states.wgpu_render,
+                        
+                        
             )
             .inspect_err(|error| tracing::error!(%error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -2095,13 +2115,7 @@ impl<E, Q> MainWorld<E, Q> {
                     s.spawn(|_| {
                         // Preflight
                         {
-                            // Preflight of WgpuInitTextureSystem for WgpuTextureArchetype
-                            self.systems.wgpu_init_texture.preflight(
-                                        &self.states.wgpu_render,
-                                &self.archetypes.collection.wgpu_texture.entities,
-                                &self.archetypes.collection.wgpu_texture.texture_sources,
-                                &self.archetypes.collection.wgpu_texture.wgpu_textures,
-                            );
+                            // System has no preflight step
                         }
 
                         // Systems
@@ -2109,6 +2123,7 @@ impl<E, Q> MainWorld<E, Q> {
                             // Apply WgpuInitTextureSystem to WgpuTextureArchetype
                             self.systems.wgpu_init_texture.apply_many(
                                         &mut self.states.wgpu_render,
+                                        
                                 &self.archetypes.collection.wgpu_texture.entities,
                                 &self.archetypes.collection.wgpu_texture.texture_sources,
                                 &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
@@ -2117,7 +2132,14 @@ impl<E, Q> MainWorld<E, Q> {
 
                         // Postflight
                         {
-                            // System has no preflight step
+                            // Postflight of WgpuInitTextureSystem for WgpuTextureArchetype
+                            self.systems.wgpu_init_texture.postflight(
+                                        
+                                        &mut self.states.resource_manager,
+                                &self.archetypes.collection.wgpu_texture.entities,
+                                &self.archetypes.collection.wgpu_texture.texture_sources,
+                                &self.archetypes.collection.wgpu_texture.wgpu_textures,
+                            );
                         }
                     });
                 }
@@ -2125,7 +2147,8 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.wgpu_init_texture.on_end_phase(
-                    &self.states.wgpu_render,
+                    
+                    &mut self.states.resource_manager,
         )
         .inspect_err(|error| tracing::error!(%error, "WgpuInitTextureSystem::on_end_phase returned an error"))
         .ok();
@@ -6208,12 +6231,12 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
             TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
             CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6449,12 +6472,12 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
             TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
             CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }

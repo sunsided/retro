@@ -742,7 +742,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &WgpuRenderState,
+                
                 
     ) -> Result<(), Self::Error> {
         Ok(())
@@ -756,11 +756,31 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &WgpuRenderState,
                 
+                resource_manager: &mut ResourceManagerState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
+
+    /// Inspects all components after the actual operation finished.
+    ///
+    /// This function can be called multiple times, depending on the number of archetypes providing
+    /// the necessary components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Reads output to be mutated by the system
+    /// 
+    /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
+    #[allow(unused_variables)]
+    fn postflight(
+        &mut self,
+                
+                resource_manager: &mut ResourceManagerState,
+        entities: &[EntityId],
+        wgpu_shaders: &[WgpuShaderComponent],
+    );
 
     /// Applies the system's business logic to the given entity components.
     ///
@@ -927,6 +947,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     fn is_ready(
         &self,
                 wgpu_render: &WgpuRenderState,
+                
     ) -> bool {
         true
     }
@@ -939,7 +960,8 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &WgpuRenderState,
+                
+                
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -952,12 +974,13 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &WgpuRenderState,
+                
+                resource_manager: &mut ResourceManagerState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
 
-    /// Inspects all components before the actual operation starts.
+    /// Inspects all components after the actual operation finished.
     ///
     /// This function can be called multiple times, depending on the number of archetypes providing
     /// the necessary components.
@@ -970,9 +993,10 @@ pub trait ApplyWgpuInitTextureSystem: System {
     /// 
     /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
     #[allow(unused_variables)]
-    fn preflight(
+    fn postflight(
         &mut self,
-                wgpu_render: &WgpuRenderState,
+                
+                resource_manager: &mut ResourceManagerState,
         entities: &[EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &[WgpuTextureComponent],
@@ -994,6 +1018,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     fn apply_single(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entity: EntityId,
         texture_source: &TextureSourceComponent,
         wgpu_texture: &mut WgpuTextureComponent,
@@ -1013,6 +1038,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     fn apply_many(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entities: &[EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
@@ -1021,6 +1047,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
         for (entity, (texture_source, wgpu_texture)) in zipped_iter {
             self.apply_single(
                         wgpu_render,
+                        
                 *entity,
                 texture_source,
                 wgpu_texture,
@@ -1036,6 +1063,7 @@ impl WgpuInitTextureSystem {
     pub fn apply_single(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entity: EntityId,
         texture_source: &TextureSourceComponent,
         wgpu_texture: &mut WgpuTextureComponent,
@@ -1044,6 +1072,7 @@ impl WgpuInitTextureSystem {
         ApplyWgpuInitTextureSystem::apply_single(
             self,
                     wgpu_render,
+                    
             entity,
             texture_source,
             wgpu_texture,
@@ -1063,6 +1092,7 @@ impl WgpuInitTextureSystem {
     fn apply_many(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entities: &[EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
@@ -1071,6 +1101,7 @@ impl WgpuInitTextureSystem {
         ApplyWgpuInitTextureSystem::apply_many(
             self,
                     wgpu_render,
+                    
             entities,
             texture_sources,
             wgpu_textures,
