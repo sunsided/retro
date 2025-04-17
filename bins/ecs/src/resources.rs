@@ -131,10 +131,11 @@ where
             .parent()
             .unwrap_or_else(|| std::path::Path::new("."))
             .join(diffuse_texture);
-        let diffuse_texture = load_texture(&diffuse_texture, device, queue, TextureType::Diffuse)
-            .inspect_err(
-            |err| error!(%err, path = ?diffuse_texture, "Failed to load diffuse texture"),
-        )?;
+        let diffuse_texture =
+            load_texture(&diffuse_texture, device, queue, TextureType::AlbedoRgbaSrgb)
+                .inspect_err(
+                    |err| error!(%err, path = ?diffuse_texture, "Failed to load diffuse texture"),
+                )?;
 
         // Load the normal map
         let normal_texture = m
@@ -144,7 +145,7 @@ where
             .parent()
             .unwrap_or_else(|| std::path::Path::new("."))
             .join(normal_texture);
-        let normal_texture = load_texture(&normal_texture, device, queue, TextureType::Normal)
+        let normal_texture = load_texture(&normal_texture, device, queue, TextureType::NormalRgba)
             .inspect_err(
                 |err| error!(%err, path = ?normal_texture, "Failed to load diffuse texture"),
             )?;

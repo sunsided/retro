@@ -31,6 +31,14 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             wgpu_texture: WgpuTextureData::default().into(),
         });
 
+        let _cover = self.spawn_wgpu_texture(WgpuTextureEntityData {
+            texture_source: TextureSourceData::new(TextureSourceType::from_path(
+                "textures/cover.webp",
+            ))
+            .into(),
+            wgpu_texture: WgpuTextureData::default().into(),
+        });
+
         let light_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
             wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/light.wgsl")).into(),
         });

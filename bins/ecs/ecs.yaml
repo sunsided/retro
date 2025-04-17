@@ -143,9 +143,11 @@ systems:
   - name: WgpuInitTexture
     phase: WgpuReinit
     entities: true
+    preflight: true
     states:
       - use: WgpuRender
         write: true
+        preflight: read
     inputs:
       - TextureSource
     outputs:

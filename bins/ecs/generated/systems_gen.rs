@@ -728,7 +728,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -741,7 +741,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -754,7 +754,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -773,7 +773,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entity: EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
     ) {
@@ -790,7 +790,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entities: &[EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
@@ -916,7 +916,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -929,7 +929,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -942,10 +942,31 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
+
+    /// Inspects all components before the actual operation starts.
+    ///
+    /// This function can be called multiple times, depending on the number of archetypes providing
+    /// the necessary components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `texture_source`: A slice of the input components of type [`TextureSourceComponent`].
+    ///
+    /// ### Reads output to be mutated by the system
+    /// 
+    /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
+    #[allow(unused_variables)]
+    fn preflight(
+        &mut self,
+                wgpu_render: &WgpuRenderState,
+        entities: &[EntityId],
+        texture_sources: &[TextureSourceComponent],
+        wgpu_textures: &[WgpuTextureComponent],
+    );
 
     /// Applies the system's business logic to the given entity components.
     ///
@@ -962,7 +983,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entity: EntityId,
         texture_source: &TextureSourceComponent,
         wgpu_texture: &mut WgpuTextureComponent,
@@ -981,7 +1002,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entities: &[EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
@@ -1111,8 +1132,8 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -1125,8 +1146,8 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -1139,8 +1160,8 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -1160,8 +1181,8 @@ pub trait ApplyCameraSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
         camera: &mut CameraComponent,
         camera_fps_controller: &mut CameraFpsControllerComponent,
     ) {
@@ -1179,8 +1200,8 @@ pub trait ApplyCameraSystem: System {
     /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
     fn apply_many(
         &mut self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
         cameras: &mut [CameraComponent],
         camera_fps_controllers: &mut [CameraFpsControllerComponent],
     ) {
@@ -2419,8 +2440,8 @@ pub trait ApplyCameraRenderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
     ) -> bool {
         true
     }
@@ -2433,8 +2454,8 @@ pub trait ApplyCameraRenderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2447,8 +2468,8 @@ pub trait ApplyCameraRenderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2467,8 +2488,8 @@ pub trait ApplyCameraRenderSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
         camera: &CameraComponent,
     ) {
          // intentionally left blank
@@ -2484,8 +2505,8 @@ pub trait ApplyCameraRenderSystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
         cameras: &[CameraComponent],
     ) {
         let zipped_iter = cameras;
@@ -2611,7 +2632,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -2624,7 +2645,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2637,7 +2658,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2661,7 +2682,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         time_of_day: &TimeOfDayComponent,
         sun: &SunComponent,
         fog: &FogComponent,
@@ -2687,7 +2708,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         time_of_daies: &[TimeOfDayComponent],
         suns: &[SunComponent],
         fogs: &[FogComponent],
@@ -2838,7 +2859,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -2851,7 +2872,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2864,7 +2885,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2883,7 +2904,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
          // intentionally left blank
@@ -2899,7 +2920,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_colors: &[BackgroundColorComponent],
     ) {
         let zipped_iter = background_colors;
@@ -3015,7 +3036,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3028,7 +3049,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3041,7 +3062,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3060,7 +3081,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         skydome: &SkydomeComponent,
     ) {
          // intentionally left blank
@@ -3076,7 +3097,7 @@ pub trait ApplyRenderSkySystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         skydomes: &[SkydomeComponent],
     ) {
         let zipped_iter = skydomes;
@@ -3194,7 +3215,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3207,7 +3228,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3220,7 +3241,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3241,7 +3262,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         position: &PositionComponent,
         transform: &TransformComponent,
         model: &ModelComponent,
@@ -3261,7 +3282,7 @@ pub trait ApplyRenderSystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         positions: &[PositionComponent],
         transforms: &[TransformComponent],
         models: &[ModelComponent],
@@ -3392,7 +3413,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3405,7 +3426,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3418,7 +3439,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3438,7 +3459,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         tile: &TileComponent,
         position: &PositionComponent,
     ) {
@@ -3456,7 +3477,7 @@ pub trait ApplyTileRenderSystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         tiles: &[TileComponent],
         positions: &[PositionComponent],
     ) {
@@ -3584,7 +3605,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn is_ready(
         &self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3598,7 +3619,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn on_begin_phase(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3612,7 +3633,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn on_end_phase(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3633,7 +3654,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn apply_single(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         color: &ColorComponent,
         dynamic_light: &mut DynamicLightComponent,
     ) {
@@ -3652,7 +3673,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         colors: &[ColorComponent],
         dynamic_lights: &mut [DynamicLightComponent],
     ) {
@@ -3781,7 +3802,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3794,7 +3815,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3807,7 +3828,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3826,7 +3847,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
          // intentionally left blank
@@ -3842,7 +3863,7 @@ pub trait ApplyVgaBlitSystem: System {
     /// 
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_colors: &[BackgroundColorComponent],
     ) {
         let zipped_iter = background_colors;

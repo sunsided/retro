@@ -368,15 +368,15 @@ impl Texture {
 #[derive(Debug, Copy, Clone, Default, Ord, PartialOrd, Eq, PartialEq)]
 pub enum TextureType {
     #[default]
-    Diffuse,
-    Normal,
+    AlbedoRgbaSrgb,
+    NormalRgba,
 }
 
 impl TextureType {
     pub fn to_format(&self) -> TextureFormat {
         match self {
-            TextureType::Diffuse => TextureFormat::Rgba8UnormSrgb,
-            TextureType::Normal => TextureFormat::Rgba8Unorm,
+            TextureType::AlbedoRgbaSrgb => TextureFormat::Rgba8UnormSrgb,
+            TextureType::NormalRgba => TextureFormat::Rgba8Unorm,
         }
     }
 }

@@ -85,7 +85,7 @@ impl Textures {
             "textures/cover.webp",
             device,
             queue,
-            TextureType::Diffuse,
+            TextureType::AlbedoRgbaSrgb,
             Some("cover.webp"),
         )
         .expect("Failed to load cover texture")
@@ -97,7 +97,7 @@ impl Textures {
             "models/cube/cube-diffuse.jpg",
             device,
             queue,
-            TextureType::Diffuse,
+            TextureType::AlbedoRgbaSrgb,
             Some("cube-diffuse.jpg"),
         )
         .expect("Failed to load cover texture")
@@ -109,7 +109,7 @@ impl Textures {
             "models/cube/cube-normal.png",
             device,
             queue,
-            TextureType::Normal,
+            TextureType::NormalRgba,
             Some("cube-normal.png"),
         )
         .expect("Failed to load cover texture")
@@ -121,7 +121,7 @@ impl Textures {
             "textures/stonepath/Stone_Path_006_basecolor.jpg",
             device,
             queue,
-            TextureType::Diffuse,
+            TextureType::AlbedoRgbaSrgb,
             Some("Stone_Path_006_basecolor.jpg"),
         )
         .expect("Failed to load cover texture")
@@ -133,7 +133,7 @@ impl Textures {
             "textures/stonepath/Stone_Path_006_normal.jpg",
             device,
             queue,
-            TextureType::Normal,
+            TextureType::NormalRgba,
             Some("Stone_Path_006_normal.jpg"),
         )
         .expect("Failed to load cover texture")

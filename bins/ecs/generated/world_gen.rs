@@ -1764,10 +1764,10 @@ impl<E, Q> MainWorld<E, Q> {
     {
         // System group 1 of 2
         let is_ready = self.systems.wgpu_init_shader.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.wgpu_init_shader.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -1781,7 +1781,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply WgpuInitShaderSystem to WgpuShaderArchetype
                 self.systems.wgpu_init_shader.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.wgpu_shader.entities,
                     &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
                 );
@@ -1793,31 +1793,37 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.wgpu_init_shader.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 2 of 2
         let is_ready = self.systems.wgpu_init_texture.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.wgpu_init_texture.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
             .is_ok()
         {
             // Preflight
             {
-                // System has no preflight step
+                // Preflight of WgpuInitTextureSystem for WgpuTextureArchetype
+                self.systems.wgpu_init_texture.preflight(
+                            &self.states.wgpu_render,
+                    &self.archetypes.collection.wgpu_texture.entities,
+                    &self.archetypes.collection.wgpu_texture.texture_sources,
+                    &self.archetypes.collection.wgpu_texture.wgpu_textures,
+                );
             }
 
             // Systems
             {
                 // Apply WgpuInitTextureSystem to WgpuTextureArchetype
                 self.systems.wgpu_init_texture.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.wgpu_texture.entities,
                     &self.archetypes.collection.wgpu_texture.texture_sources,
                     &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
@@ -1830,7 +1836,7 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.wgpu_init_texture.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitTextureSystem::on_end_phase returned an error"))
             .ok();
@@ -1868,11 +1874,11 @@ impl<E, Q> MainWorld<E, Q> {
 
         // System group 1
         let is_wgpu_init_shader_ready = self.systems.wgpu_init_shader.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_wgpu_init_shader_ready = is_wgpu_init_shader_ready &
             self.systems.wgpu_init_shader.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -1891,7 +1897,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply WgpuInitShaderSystem to WgpuShaderArchetype
                             self.systems.wgpu_init_shader.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.wgpu_shader.entities,
                                 &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
                             );
@@ -1907,18 +1913,18 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.wgpu_init_shader.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 2
         let is_wgpu_init_texture_ready = self.systems.wgpu_init_texture.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_wgpu_init_texture_ready = is_wgpu_init_texture_ready &
             self.systems.wgpu_init_texture.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "WgpuInitTextureSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -1930,14 +1936,20 @@ impl<E, Q> MainWorld<E, Q> {
                     s.spawn(|_| {
                         // Preflight
                         {
-                            // System has no preflight step
+                            // Preflight of WgpuInitTextureSystem for WgpuTextureArchetype
+                            self.systems.wgpu_init_texture.preflight(
+                                        &self.states.wgpu_render,
+                                &self.archetypes.collection.wgpu_texture.entities,
+                                &self.archetypes.collection.wgpu_texture.texture_sources,
+                                &self.archetypes.collection.wgpu_texture.wgpu_textures,
+                            );
                         }
 
                         // Systems
                         {
                             // Apply WgpuInitTextureSystem to WgpuTextureArchetype
                             self.systems.wgpu_init_texture.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.wgpu_texture.entities,
                                 &self.archetypes.collection.wgpu_texture.texture_sources,
                                 &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
@@ -1954,7 +1966,7 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.wgpu_init_texture.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "WgpuInitTextureSystem::on_end_phase returned an error"))
         .ok();
@@ -2498,12 +2510,12 @@ impl<E, Q> MainWorld<E, Q> {
     {
         // System group 1 of 1
         let is_ready = self.systems.camera.is_ready(
-               &self.states.input,
-               &self.states.wgpu_render,
+                       &self.states.input,
+                       &self.states.wgpu_render,
            );
         if is_ready && self.systems.camera.on_begin_phase(
-                &self.states.input,
-                &self.states.wgpu_render,
+                        &self.states.input,
+                        &self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2517,8 +2529,8 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply CameraSystem to CameraArchetype
                 self.systems.camera.apply_many(
-                    &self.states.input,
-                    &self.states.wgpu_render,
+                            &self.states.input,
+                            &self.states.wgpu_render,
                     &mut self.archetypes.collection.camera.cameras,
                     &mut self.archetypes.collection.camera.camera_fps_controllers,
                 );
@@ -2530,8 +2542,8 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.camera.on_end_phase(
-                &self.states.input,
-                &self.states.wgpu_render,
+                        &self.states.input,
+                        &self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_end_phase returned an error"))
             .ok();
@@ -2673,10 +2685,10 @@ impl<E, Q> MainWorld<E, Q> {
     {
         // System group 1 of 8
         let is_ready = self.systems.frame_globals.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.frame_globals.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2690,7 +2702,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply FrameGlobalsSystem to EnvironmentArchetype
                 self.systems.frame_globals.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.environment.time_of_daies,
                     &self.archetypes.collection.environment.suns,
                     &self.archetypes.collection.environment.fogs,
@@ -2706,17 +2718,17 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.frame_globals.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 2 of 8
         let is_ready = self.systems.render_background.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render_background.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2730,7 +2742,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply RenderBackgroundSystem to SceneBackgroundArchetype
                 self.systems.render_background.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.scene_background.background_colors,
                 );
             }
@@ -2741,17 +2753,17 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.render_background.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 3 of 8
         let is_ready = self.systems.render_sky.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render_sky.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2765,7 +2777,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply RenderSkySystem to EnvironmentArchetype
                 self.systems.render_sky.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.environment.skydomes,
                 );
             }
@@ -2776,17 +2788,17 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.render_sky.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 4 of 8
         let is_ready = self.systems.render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2800,7 +2812,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply RenderSystem to CubeArchetype
                 self.systems.render.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.cube.positions,
                     &self.archetypes.collection.cube.transforms,
                     &self.archetypes.collection.cube.models,
@@ -2813,7 +2825,7 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.render.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
             .ok();
@@ -2821,11 +2833,11 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 5 of 8
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.dynamic_light.on_begin_phase(
                 &self.context,
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2840,7 +2852,7 @@ impl<E, Q> MainWorld<E, Q> {
                 // Apply DynamicLightSystem to DynamicLightArchetype
                 self.systems.dynamic_light.apply_many(
                     &self.context,
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.dynamic_light.colors,
                     &mut self.archetypes.collection.dynamic_light.dynamic_lights,
                 );
@@ -2853,17 +2865,17 @@ impl<E, Q> MainWorld<E, Q> {
 
             self.systems.dynamic_light.on_end_phase(
                 &self.context,
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 6 of 8
         let is_ready = self.systems.tile_render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.tile_render.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2877,7 +2889,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply TileRenderSystem to TileArchetype
                 self.systems.tile_render.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.tile.tiles,
                     &self.archetypes.collection.tile.positions,
                 );
@@ -2889,17 +2901,17 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.tile_render.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 7 of 8
         let is_ready = self.systems.vga_blit.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.vga_blit.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2913,7 +2925,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply VgaBlitSystem to SceneBackgroundArchetype
                 self.systems.vga_blit.apply_many(
-                    &mut self.states.wgpu_render,
+                            &mut self.states.wgpu_render,
                     &self.archetypes.collection.scene_background.background_colors,
                 );
             }
@@ -2924,19 +2936,19 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.vga_blit.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 8 of 8
         let is_ready = self.systems.camera_render.is_ready(
-               &self.states.wgpu_render,
-               &mut self.states.active_camera,
+                       &self.states.wgpu_render,
+                       &mut self.states.active_camera,
            );
         if is_ready && self.systems.camera_render.on_begin_phase(
-                &self.states.wgpu_render,
-                &mut self.states.active_camera,
+                        &self.states.wgpu_render,
+                        &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -2950,8 +2962,8 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply CameraRenderSystem to CameraArchetype
                 self.systems.camera_render.apply_many(
-                    &self.states.wgpu_render,
-                    &mut self.states.active_camera,
+                            &self.states.wgpu_render,
+                            &mut self.states.active_camera,
                     &self.archetypes.collection.camera.cameras,
                 );
             }
@@ -2962,8 +2974,8 @@ impl<E, Q> MainWorld<E, Q> {
             }
 
             self.systems.camera_render.on_end_phase(
-                &self.states.wgpu_render,
-                &mut self.states.active_camera,
+                        &self.states.wgpu_render,
+                        &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_end_phase returned an error"))
             .ok();
@@ -3002,11 +3014,11 @@ impl<E, Q> MainWorld<E, Q> {
 
         // System group 1
         let is_frame_globals_ready = self.systems.frame_globals.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_frame_globals_ready = is_frame_globals_ready &
             self.systems.frame_globals.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3025,7 +3037,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply FrameGlobalsSystem to EnvironmentArchetype
                             self.systems.frame_globals.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.environment.time_of_daies,
                                 &self.archetypes.collection.environment.suns,
                                 &self.archetypes.collection.environment.fogs,
@@ -3045,18 +3057,18 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.frame_globals.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 2
         let is_render_background_ready = self.systems.render_background.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_render_background_ready = is_render_background_ready &
             self.systems.render_background.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3075,7 +3087,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply RenderBackgroundSystem to SceneBackgroundArchetype
                             self.systems.render_background.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.scene_background.background_colors,
                             );
                         }
@@ -3090,18 +3102,18 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.render_background.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 3
         let is_render_sky_ready = self.systems.render_sky.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_render_sky_ready = is_render_sky_ready &
             self.systems.render_sky.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3120,7 +3132,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply RenderSkySystem to EnvironmentArchetype
                             self.systems.render_sky.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.environment.skydomes,
                             );
                         }
@@ -3135,18 +3147,18 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.render_sky.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_end_phase returned an error"))
         .ok();
 
         // System group 4
         let is_render_ready = self.systems.render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_render_ready = is_render_ready &
             self.systems.render.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3165,7 +3177,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply RenderSystem to CubeArchetype
                             self.systems.render.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.cube.positions,
                                 &self.archetypes.collection.cube.transforms,
                                 &self.archetypes.collection.cube.models,
@@ -3182,7 +3194,7 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.render.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
         .ok();
@@ -3190,12 +3202,12 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 5
         let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
                &self.context,
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_dynamic_light_ready = is_dynamic_light_ready &
             self.systems.dynamic_light.on_begin_phase(
                 &self.context,
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3215,7 +3227,7 @@ impl<E, Q> MainWorld<E, Q> {
                             // Apply DynamicLightSystem to DynamicLightArchetype
                             self.systems.dynamic_light.apply_many(
                                 &self.context,
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.dynamic_light.colors,
                                 &mut self.archetypes.collection.dynamic_light.dynamic_lights,
                             );
@@ -3232,18 +3244,18 @@ impl<E, Q> MainWorld<E, Q> {
 
         self.systems.dynamic_light.on_end_phase(
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 6
         let is_tile_render_ready = self.systems.tile_render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_tile_render_ready = is_tile_render_ready &
             self.systems.tile_render.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3262,7 +3274,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply TileRenderSystem to TileArchetype
                             self.systems.tile_render.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.tile.tiles,
                                 &self.archetypes.collection.tile.positions,
                             );
@@ -3278,18 +3290,18 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.tile_render.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 7
         let is_vga_blit_ready = self.systems.vga_blit.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_vga_blit_ready = is_vga_blit_ready &
             self.systems.vga_blit.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3308,7 +3320,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply VgaBlitSystem to SceneBackgroundArchetype
                             self.systems.vga_blit.apply_many(
-                                &mut self.states.wgpu_render,
+                                        &mut self.states.wgpu_render,
                                 &self.archetypes.collection.scene_background.background_colors,
                             );
                         }
@@ -3323,20 +3335,20 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.vga_blit.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 8
         let is_camera_render_ready = self.systems.camera_render.is_ready(
-               &self.states.wgpu_render,
-               &mut self.states.active_camera,
+                       &self.states.wgpu_render,
+                       &mut self.states.active_camera,
            );
         let is_camera_render_ready = is_camera_render_ready &
             self.systems.camera_render.on_begin_phase(
-                &self.states.wgpu_render,
-                &mut self.states.active_camera,
+                        &self.states.wgpu_render,
+                        &mut self.states.active_camera,
             )
             .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -3355,8 +3367,8 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply CameraRenderSystem to CameraArchetype
                             self.systems.camera_render.apply_many(
-                                &self.states.wgpu_render,
-                                &mut self.states.active_camera,
+                                        &self.states.wgpu_render,
+                                        &mut self.states.active_camera,
                                 &self.archetypes.collection.camera.cameras,
                             );
                         }
@@ -3371,8 +3383,8 @@ impl<E, Q> MainWorld<E, Q> {
         }
 
         self.systems.camera_render.on_end_phase(
-            &self.states.wgpu_render,
-            &mut self.states.active_camera,
+                    &self.states.wgpu_render,
+                    &mut self.states.active_camera,
         )
         .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_end_phase returned an error"))
         .ok();
@@ -6037,12 +6049,12 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
-            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
             TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6130,8 +6142,8 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            CubeArchetype::ID => self.collection.cube.get_velocity_component_at(ear.index),
             PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_velocity_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6278,12 +6290,12 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
-            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
             TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6371,8 +6383,8 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            CubeArchetype::ID => self.collection.cube.get_velocity_component_at_mut(ear.index),
             PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_velocity_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
