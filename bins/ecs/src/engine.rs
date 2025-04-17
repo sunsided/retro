@@ -17,6 +17,7 @@ pub mod components;
 pub mod input_state;
 mod phase_events;
 pub mod phases;
+pub mod wgpu;
 
 use crate::engine::components::*;
 pub use crate::engine::input_state::InputState;
@@ -36,14 +37,9 @@ use crate::engine::phases::{
         vga_blit::VgaBlitSystemData,
         WgpuRenderState,
     },
-    update::{
-        camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData,
-    },
-    wgpu_reinit::{
-        shaders::WgpuInitShaderSystemData,
-        textures::WgpuInitTextureSystemData
-    }
+    update::{camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData},
 };
+pub use crate::engine::wgpu::*;
 pub use command_queue::CommandQueue;
 pub use phase_events::PhaseEvents;
 

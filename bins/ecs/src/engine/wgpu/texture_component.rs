@@ -2,24 +2,22 @@ use wgpu::{ShaderModule, ShaderModuleDescriptor, ShaderSource};
 use wgpu_resource_manager::TextureWithView;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum TextureSource {
-    FallbackNormals
+pub enum TextureSourceType {
+    FallbackNormals,
 }
 
 #[derive(Debug, Clone)]
 pub struct TextureSourceData {
-    pub source: TextureSource
+    pub source: TextureSourceType,
 }
 
 #[derive(Default, Debug, Clone)]
 pub struct WgpuTextureData {
-    pub twv: Option<TextureWithView>
+    pub twv: Option<TextureWithView>,
 }
 
 impl TextureSourceData {
-    pub const fn new(source: TextureSource) -> Self {
-        Self {
-            source
-        }
+    pub const fn new(source: TextureSourceType) -> Self {
+        Self { source }
     }
 }

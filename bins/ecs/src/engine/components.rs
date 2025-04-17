@@ -15,7 +15,6 @@ mod tile;
 mod time_of_day;
 mod transform;
 mod velocity;
-mod wgpu;
 
 pub use ambient_light::*;
 pub use camera::*;

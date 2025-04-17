@@ -1,8 +1,5 @@
-use std::convert::Infallible;
 use crate::engine::{FrameContext, PhaseEvents, SystemWgpuReinitPhaseEvents};
-
-pub mod shaders;
-pub mod textures;
+use std::convert::Infallible;
 
 impl SystemWgpuReinitPhaseEvents for PhaseEvents {
     type Result = ();
@@ -12,7 +9,11 @@ impl SystemWgpuReinitPhaseEvents for PhaseEvents {
         Ok(())
     }
 
-    fn on_end_phase(&mut self, _result: Option<Self::Result>, _context: &FrameContext) -> Result<(), Self::Error> {
+    fn on_end_phase(
+        &mut self,
+        _result: Option<Self::Result>,
+        _context: &FrameContext,
+    ) -> Result<(), Self::Error> {
         Ok(())
     }
 }

@@ -1,14 +1,17 @@
+use crate::engine::phases::render::WgpuRenderState;
+use crate::engine::{
+    ApplyWgpuInitShaderSystem, ApplyWgpuInitTextureSystem, CreateSystem, EntityId, PhaseEvents,
+    SystemFactory, SystemWgpuReinitPhaseEvents, TextureSourceComponent, TextureSourceType,
+    WgpuInitShaderSystem, WgpuInitTextureSystem, WgpuShaderComponent, WgpuTextureComponent,
+};
 use std::convert::Infallible;
 use tracing::{debug, trace};
 use wgpu_resource_manager::{wgpu_label, DeviceAndQueue, DeviceId, SurfaceId, TextureWithView};
-use crate::engine::{ApplyWgpuInitShaderSystem, ApplyWgpuInitTextureSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory, SystemWgpuReinitPhaseEvents, TextureSourceComponent, WgpuInitShaderSystem, WgpuInitTextureSystem, WgpuShaderComponent, WgpuTextureComponent};
-use crate::engine::components::TextureSource;
-use crate::engine::phases::render::WgpuRenderState;
 
 #[derive(Debug, Default)]
 pub struct WgpuInitTextureSystemData {
     device_id: DeviceId,
-    surface_id: SurfaceId
+    surface_id: SurfaceId,
 }
 
 impl CreateSystem<WgpuInitTextureSystem> for SystemFactory {
@@ -29,7 +32,13 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
     //      - using custom commands: This will only be visible to the following phases, not to systems in this phase
     //      - using manipulation of this system's state and a phase-end hook: This hook is system-specific and executed before follow-up systems run (unless they are independent)
 
-    fn apply_many(&mut self, gpu: &mut WgpuRenderState, _entities: &[EntityId], sources: &[TextureSourceComponent], textures: &mut [WgpuTextureComponent]) {
+    fn apply_many(
+        &mut self,
+        gpu: &mut WgpuRenderState,
+        _entities: &[EntityId],
+        sources: &[TextureSourceComponent],
+        textures: &mut [WgpuTextureComponent],
+    ) {
         let current_surface_id = gpu.surface_id();
         let _surface_changed = current_surface_id != self.surface_id;
         self.surface_id = current_surface_id;
@@ -43,20 +52,25 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
         self.device_id = current_device_id;
 
         // TODO: Check surface-dependent textures
-        for ((entity_id, source), texture) in _entities.iter().zip(sources).zip(textures.iter_mut()) {
+        for ((entity_id, source), texture) in _entities.iter().zip(sources).zip(textures.iter_mut())
+        {
             let texture_missing = texture.twv.is_none();
             match source.source {
-                TextureSource::FallbackNormals => {
+                TextureSourceType::FallbackNormals => {
                     if device_changed || texture_missing {
                         create_fallback_normals(entity_id, device, texture)
                     }
-                },
+                }
             };
         }
     }
 }
 
-fn create_fallback_normals(entity_id: &EntityId, device: &DeviceAndQueue, out: &mut WgpuTextureComponent) {
+fn create_fallback_normals(
+    entity_id: &EntityId,
+    device: &DeviceAndQueue,
+    out: &mut WgpuTextureComponent,
+) {
     let label = wgpu_label!(format!("fallback_normal_map ({entity_id})"));
     debug_log(entity_id, device, &label);
 

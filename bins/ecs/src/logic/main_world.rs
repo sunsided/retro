@@ -1,16 +1,22 @@
-use tracing::warn;
-use crate::engine::{EntityAccess, WorldUserCommand, WorldUserCommandHandler};
-use wgpu::include_wgsl;
-use crate::engine::components::{AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData, StarsData, SunData, TextureSource, TextureSourceData, TileData, TimeOfDayData, WgpuShaderData, WgpuTextureData};
+use crate::engine::components::{
+    AmbientLightData, CameraData, ColorData, DynamicLightData, FogData, PositionData, SkydomeData,
+    StarsData, SunData, TileData, TimeOfDayData,
+};
 use crate::engine::phases::render::background::BackgroundColorData;
-use crate::engine::{TileEntityData, WgpuShaderEntityData, WgpuTextureEntityData};
 use crate::engine::{
     CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
     DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
     PositionComponent, SceneBackgroundEntityData,
 };
+use crate::engine::{
+    EntityAccess, TextureSourceData, TextureSourceType, WgpuShaderData, WgpuTextureData,
+    WorldUserCommand, WorldUserCommandHandler,
+};
+use crate::engine::{TileEntityData, WgpuShaderEntityData, WgpuTextureEntityData};
 use crate::map::tile::{CeilingType, FloorType, Tile};
 use crate::map::world_builder::WorldBuilder;
+use tracing::warn;
+use wgpu::include_wgsl;
 
 pub trait InitializeMainWorld {
     /// Initialize the main entities needed in this world, such as populating the
@@ -21,8 +27,8 @@ pub trait InitializeMainWorld {
 impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
     fn create_initial_entities(&mut self) {
         let _fallback_normals = self.spawn_wgpu_texture(WgpuTextureEntityData {
-            texture_source: TextureSourceData::new(TextureSource::FallbackNormals).into(),
-            wgpu_texture: WgpuTextureData::default().into()
+            texture_source: TextureSourceData::new(TextureSourceType::FallbackNormals).into(),
+            wgpu_texture: WgpuTextureData::default().into(),
         });
 
         let light_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
@@ -197,7 +203,7 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
 
 impl<E, Q> WorldUserCommandHandler for MainWorld<E, Q>
 where
-    Q: WorldUserCommand
+    Q: WorldUserCommand,
 {
     fn handle_user_command(&mut self, command: Self::UserCommand) {
         warn!(?command, "Unhandled user command");
