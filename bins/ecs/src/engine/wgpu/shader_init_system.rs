@@ -1,12 +1,15 @@
+use crate::engine::phases::render::WgpuRenderState;
+use crate::engine::{
+    ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory,
+    SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent,
+};
 use std::convert::Infallible;
 use tracing::{debug, trace};
 use wgpu_resource_manager::{DeviceAndQueue, DeviceId};
-use crate::engine::{ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory, SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent};
-use crate::engine::phases::render::WgpuRenderState;
 
 #[derive(Debug, Default)]
 pub struct WgpuInitShaderSystemData {
-    device_id: DeviceId
+    device_id: DeviceId,
 }
 
 impl CreateSystem<WgpuInitShaderSystem> for SystemFactory {
@@ -18,11 +21,16 @@ impl CreateSystem<WgpuInitShaderSystem> for SystemFactory {
 impl ApplyWgpuInitShaderSystem for WgpuInitShaderSystem {
     type Error = Infallible;
 
-    fn is_ready(&self, gpu: &mut WgpuRenderState) -> bool {
+    fn is_ready(&self, gpu: &WgpuRenderState) -> bool {
         gpu.is_ready()
     }
 
-    fn apply_many(&mut self, gpu: &mut WgpuRenderState, entities: &[EntityId], shaders: &mut [WgpuShaderComponent]) {
+    fn apply_many(
+        &mut self,
+        gpu: &mut WgpuRenderState,
+        entities: &[EntityId],
+        shaders: &mut [WgpuShaderComponent],
+    ) {
         let Ok(device) = gpu.device() else {
             return;
         };
@@ -38,7 +46,9 @@ impl ApplyWgpuInitShaderSystem for WgpuInitShaderSystem {
             }
 
             debug_log(entity_id, device, shader);
-            let module = device.device().create_shader_module(shader.descriptor.clone());
+            let module = device
+                .device()
+                .create_shader_module(shader.descriptor.clone());
             shader.module = Some(module);
         }
     }

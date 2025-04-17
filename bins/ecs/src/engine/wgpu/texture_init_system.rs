@@ -31,7 +31,7 @@ impl CreateSystem<WgpuInitTextureSystem> for SystemFactory {
 impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
     type Error = Infallible;
 
-    fn is_ready(&self, gpu: &mut WgpuRenderState) -> bool {
+    fn is_ready(&self, gpu: &WgpuRenderState) -> bool {
         gpu.is_ready()
     }
 

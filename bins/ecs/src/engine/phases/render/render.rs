@@ -38,7 +38,7 @@ impl ApplyRenderSystem for RenderSystem {
     type Error = wgpu::SurfaceError;
 
     #[inline]
-    fn is_ready(&self, state: &mut WgpuRenderState) -> bool {
+    fn is_ready(&self, state: &WgpuRenderState) -> bool {
         state.is_ready()
     }
 

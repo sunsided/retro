@@ -23,7 +23,7 @@ impl CreateSystem<VgaBlitSystem> for SystemFactory {
 impl ApplyVgaBlitSystem for VgaBlitSystem {
     type Error = Infallible;
 
-    fn is_ready(&self, state: &mut WgpuRenderState) -> bool {
+    fn is_ready(&self, state: &WgpuRenderState) -> bool {
         state.retro_enabled()
     }
 

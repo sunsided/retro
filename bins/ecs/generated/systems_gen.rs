@@ -728,7 +728,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -741,7 +741,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -754,7 +754,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -811,7 +811,7 @@ impl WgpuInitShaderSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entity: EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
     ) {
@@ -835,7 +835,7 @@ impl WgpuInitShaderSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entities: &[EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
@@ -916,7 +916,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -929,7 +929,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -942,7 +942,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -1025,7 +1025,7 @@ impl WgpuInitTextureSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entity: EntityId,
         texture_source: &TextureSourceComponent,
         wgpu_texture: &mut WgpuTextureComponent,
@@ -1052,7 +1052,7 @@ impl WgpuInitTextureSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         entities: &[EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
@@ -1223,8 +1223,8 @@ impl CameraSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
         camera: &mut CameraComponent,
         camera_fps_controller: &mut CameraFpsControllerComponent,
     ) {
@@ -1250,8 +1250,8 @@ impl CameraSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        input: &InputState,
-        wgpu_render: &WgpuRenderState,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
         cameras: &mut [CameraComponent],
         camera_fps_controllers: &mut [CameraFpsControllerComponent],
     ) {
@@ -2441,7 +2441,7 @@ pub trait ApplyCameraRenderSystem: System {
     fn is_ready(
         &self,
                 wgpu_render: &WgpuRenderState,
-                active_camera: &mut ActiveCameraState,
+                active_camera: &ActiveCameraState,
     ) -> bool {
         true
     }
@@ -2455,7 +2455,7 @@ pub trait ApplyCameraRenderSystem: System {
     fn on_begin_phase(
         &mut self,
                 wgpu_render: &WgpuRenderState,
-                active_camera: &mut ActiveCameraState,
+                active_camera: &ActiveCameraState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2469,7 +2469,7 @@ pub trait ApplyCameraRenderSystem: System {
     fn on_end_phase(
         &mut self,
                 wgpu_render: &WgpuRenderState,
-                active_camera: &mut ActiveCameraState,
+                active_camera: &ActiveCameraState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2526,8 +2526,8 @@ impl CameraRenderSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
         camera: &CameraComponent,
     ) {
         // Force the implementation of the ApplyCameraRenderSystem trait.
@@ -2550,8 +2550,8 @@ impl CameraRenderSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &WgpuRenderState,
-        active_camera: &mut ActiveCameraState,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
         cameras: &[CameraComponent],
     ) {
         // Force the implementation of the ApplyCameraRenderSystem trait.
@@ -2632,7 +2632,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -2645,7 +2645,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2658,7 +2658,7 @@ pub trait ApplyFrameGlobalsSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2737,7 +2737,7 @@ impl FrameGlobalsSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         time_of_day: &TimeOfDayComponent,
         sun: &SunComponent,
         fog: &FogComponent,
@@ -2774,7 +2774,7 @@ impl FrameGlobalsSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         time_of_daies: &[TimeOfDayComponent],
         suns: &[SunComponent],
         fogs: &[FogComponent],
@@ -2859,7 +2859,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -2872,7 +2872,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2885,7 +2885,7 @@ pub trait ApplyRenderBackgroundSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2939,7 +2939,7 @@ impl RenderBackgroundSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
         // Force the implementation of the ApplyRenderBackgroundSystem trait.
@@ -2961,7 +2961,7 @@ impl RenderBackgroundSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_colors: &[BackgroundColorComponent],
     ) {
         // Force the implementation of the ApplyRenderBackgroundSystem trait.
@@ -3036,7 +3036,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3049,7 +3049,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3062,7 +3062,7 @@ pub trait ApplyRenderSkySystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3116,7 +3116,7 @@ impl RenderSkySystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         skydome: &SkydomeComponent,
     ) {
         // Force the implementation of the ApplyRenderSkySystem trait.
@@ -3138,7 +3138,7 @@ impl RenderSkySystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         skydomes: &[SkydomeComponent],
     ) {
         // Force the implementation of the ApplyRenderSkySystem trait.
@@ -3215,7 +3215,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3228,7 +3228,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3241,7 +3241,7 @@ pub trait ApplyRenderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3305,7 +3305,7 @@ impl RenderSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         position: &PositionComponent,
         transform: &TransformComponent,
         model: &ModelComponent,
@@ -3333,7 +3333,7 @@ impl RenderSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         positions: &[PositionComponent],
         transforms: &[TransformComponent],
         models: &[ModelComponent],
@@ -3413,7 +3413,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3426,7 +3426,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3439,7 +3439,7 @@ pub trait ApplyTileRenderSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3498,7 +3498,7 @@ impl TileRenderSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         tile: &TileComponent,
         position: &PositionComponent,
     ) {
@@ -3523,7 +3523,7 @@ impl TileRenderSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         tiles: &[TileComponent],
         positions: &[PositionComponent],
     ) {
@@ -3605,7 +3605,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn is_ready(
         &self,
         context: &FrameContext,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3619,7 +3619,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn on_begin_phase(
         &mut self,
         context: &FrameContext,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3633,7 +3633,7 @@ pub trait ApplyDynamicLightSystem: System {
     fn on_end_phase(
         &mut self,
         context: &FrameContext,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3696,7 +3696,7 @@ impl DynamicLightSystem {
     pub fn apply_single(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         color: &ColorComponent,
         dynamic_light: &mut DynamicLightComponent,
     ) {
@@ -3723,7 +3723,7 @@ impl DynamicLightSystem {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         colors: &[ColorComponent],
         dynamic_lights: &mut [DynamicLightComponent],
     ) {
@@ -3802,7 +3802,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
     }
@@ -3815,7 +3815,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3828,7 +3828,7 @@ pub trait ApplyVgaBlitSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -3882,7 +3882,7 @@ impl VgaBlitSystem {
     #[inline]
     pub fn apply_single(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_color: &BackgroundColorComponent,
     ) {
         // Force the implementation of the ApplyVgaBlitSystem trait.
@@ -3904,7 +3904,7 @@ impl VgaBlitSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
         background_colors: &[BackgroundColorComponent],
     ) {
         // Force the implementation of the ApplyVgaBlitSystem trait.
