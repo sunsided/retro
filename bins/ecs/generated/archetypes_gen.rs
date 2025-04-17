@@ -348,16 +348,35 @@ pub struct WgpuShaderArchetype {
 }
 
 /// An entity of the [`WgpuShaderArchetype`].
-pub type WgpuShaderEntity = EntityWithIdAndData<WgpuShaderEntityData>;
+pub type WgpuShaderEntity = EntityWithIdAndData<WgpuShaderEntityComponents>;
+
+/// The data of an entity of the [`WgpuShaderArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuShaderEntityData {
+    pub wgpu_shader: WgpuShaderData,
+}
 
 /// An entity of the [`WgpuShaderArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct WgpuShaderEntityData {
+pub struct WgpuShaderEntityComponents {
     pub wgpu_shader: WgpuShaderComponent,
 }
 
+impl From<WgpuShaderEntityData> for WgpuShaderEntityComponents {
+    fn from(value: WgpuShaderEntityData) -> Self {
+        Self {
+            wgpu_shader: value.wgpu_shader.into(),
+        }
+    }
+}
+
 impl EntityData for WgpuShaderEntityData {
+    const ARCHETYPE_ID: ArchetypeId = WgpuShaderArchetype::ID;
+}
+
+impl EntityData for WgpuShaderEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = WgpuShaderArchetype::ID;
 }
 
@@ -502,7 +521,7 @@ impl HasComponent<WgpuShaderComponent> for WgpuShaderEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<WgpuShaderComponent> for WgpuShaderEntityData {
+impl HasComponent<WgpuShaderComponent> for WgpuShaderEntityComponents {
     #[inline]
     fn get(&self) -> &WgpuShaderComponent {
         &self.wgpu_shader
@@ -525,8 +544,20 @@ impl WgpuShaderEntityData {
     }
 }
 
+impl WgpuShaderEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<WgpuShaderEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for WgpuShaderEntity {
-    type Target = WgpuShaderEntityData;
+    type Target = WgpuShaderEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -659,17 +690,38 @@ pub struct WgpuTextureArchetype {
 }
 
 /// An entity of the [`WgpuTextureArchetype`].
-pub type WgpuTextureEntity = EntityWithIdAndData<WgpuTextureEntityData>;
+pub type WgpuTextureEntity = EntityWithIdAndData<WgpuTextureEntityComponents>;
+
+/// The data of an entity of the [`WgpuTextureArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuTextureEntityData {
+    pub texture_source: TextureSourceData,
+    pub wgpu_texture: WgpuTextureData,
+}
 
 /// An entity of the [`WgpuTextureArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct WgpuTextureEntityData {
+pub struct WgpuTextureEntityComponents {
     pub texture_source: TextureSourceComponent,
     pub wgpu_texture: WgpuTextureComponent,
 }
 
+impl From<WgpuTextureEntityData> for WgpuTextureEntityComponents {
+    fn from(value: WgpuTextureEntityData) -> Self {
+        Self {
+            texture_source: value.texture_source.into(),
+            wgpu_texture: value.wgpu_texture.into(),
+        }
+    }
+}
+
 impl EntityData for WgpuTextureEntityData {
+    const ARCHETYPE_ID: ArchetypeId = WgpuTextureArchetype::ID;
+}
+
+impl EntityData for WgpuTextureEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = WgpuTextureArchetype::ID;
 }
 
@@ -852,7 +904,7 @@ impl HasComponent<TextureSourceComponent> for WgpuTextureEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TextureSourceComponent> for WgpuTextureEntityData {
+impl HasComponent<TextureSourceComponent> for WgpuTextureEntityComponents {
     #[inline]
     fn get(&self) -> &TextureSourceComponent {
         &self.texture_source
@@ -878,7 +930,7 @@ impl HasComponent<WgpuTextureComponent> for WgpuTextureEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<WgpuTextureComponent> for WgpuTextureEntityData {
+impl HasComponent<WgpuTextureComponent> for WgpuTextureEntityComponents {
     #[inline]
     fn get(&self) -> &WgpuTextureComponent {
         &self.wgpu_texture
@@ -901,8 +953,20 @@ impl WgpuTextureEntityData {
     }
 }
 
+impl WgpuTextureEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<WgpuTextureEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for WgpuTextureEntity {
-    type Target = WgpuTextureEntityData;
+    type Target = WgpuTextureEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -1056,12 +1120,24 @@ pub struct EnvironmentArchetype {
 }
 
 /// An entity of the [`EnvironmentArchetype`].
-pub type EnvironmentEntity = EntityWithIdAndData<EnvironmentEntityData>;
+pub type EnvironmentEntity = EntityWithIdAndData<EnvironmentEntityComponents>;
+
+/// The data of an entity of the [`EnvironmentArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EnvironmentEntityData {
+    pub time_of_day: TimeOfDayData,
+    pub sun: SunData,
+    pub skydome: SkydomeData,
+    pub ambient_light: AmbientLightData,
+    pub stars: StarsData,
+    pub fog: FogData,
+}
 
 /// An entity of the [`EnvironmentArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct EnvironmentEntityData {
+pub struct EnvironmentEntityComponents {
     pub time_of_day: TimeOfDayComponent,
     pub sun: SunComponent,
     pub skydome: SkydomeComponent,
@@ -1070,7 +1146,24 @@ pub struct EnvironmentEntityData {
     pub fog: FogComponent,
 }
 
+impl From<EnvironmentEntityData> for EnvironmentEntityComponents {
+    fn from(value: EnvironmentEntityData) -> Self {
+        Self {
+            time_of_day: value.time_of_day.into(),
+            sun: value.sun.into(),
+            skydome: value.skydome.into(),
+            ambient_light: value.ambient_light.into(),
+            stars: value.stars.into(),
+            fog: value.fog.into(),
+        }
+    }
+}
+
 impl EntityData for EnvironmentEntityData {
+    const ARCHETYPE_ID: ArchetypeId = EnvironmentArchetype::ID;
+}
+
+impl EntityData for EnvironmentEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = EnvironmentArchetype::ID;
 }
 
@@ -1405,7 +1498,7 @@ impl HasComponent<TimeOfDayComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TimeOfDayComponent> for EnvironmentEntityData {
+impl HasComponent<TimeOfDayComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &TimeOfDayComponent {
         &self.time_of_day
@@ -1431,7 +1524,7 @@ impl HasComponent<SunComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<SunComponent> for EnvironmentEntityData {
+impl HasComponent<SunComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &SunComponent {
         &self.sun
@@ -1457,7 +1550,7 @@ impl HasComponent<SkydomeComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<SkydomeComponent> for EnvironmentEntityData {
+impl HasComponent<SkydomeComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &SkydomeComponent {
         &self.skydome
@@ -1483,7 +1576,7 @@ impl HasComponent<AmbientLightComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<AmbientLightComponent> for EnvironmentEntityData {
+impl HasComponent<AmbientLightComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &AmbientLightComponent {
         &self.ambient_light
@@ -1509,7 +1602,7 @@ impl HasComponent<StarsComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<StarsComponent> for EnvironmentEntityData {
+impl HasComponent<StarsComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &StarsComponent {
         &self.stars
@@ -1535,7 +1628,7 @@ impl HasComponent<FogComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<FogComponent> for EnvironmentEntityData {
+impl HasComponent<FogComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &FogComponent {
         &self.fog
@@ -1558,8 +1651,20 @@ impl EnvironmentEntityData {
     }
 }
 
+impl EnvironmentEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<EnvironmentEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for EnvironmentEntity {
-    type Target = EnvironmentEntityData;
+    type Target = EnvironmentEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -1777,17 +1882,38 @@ pub struct CameraArchetype {
 }
 
 /// An entity of the [`CameraArchetype`].
-pub type CameraEntity = EntityWithIdAndData<CameraEntityData>;
+pub type CameraEntity = EntityWithIdAndData<CameraEntityComponents>;
+
+/// The data of an entity of the [`CameraArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CameraEntityData {
+    pub camera: CameraData,
+    pub camera_fps_controller: CameraFpsControllerData,
+}
 
 /// An entity of the [`CameraArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct CameraEntityData {
+pub struct CameraEntityComponents {
     pub camera: CameraComponent,
     pub camera_fps_controller: CameraFpsControllerComponent,
 }
 
+impl From<CameraEntityData> for CameraEntityComponents {
+    fn from(value: CameraEntityData) -> Self {
+        Self {
+            camera: value.camera.into(),
+            camera_fps_controller: value.camera_fps_controller.into(),
+        }
+    }
+}
+
 impl EntityData for CameraEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CameraArchetype::ID;
+}
+
+impl EntityData for CameraEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = CameraArchetype::ID;
 }
 
@@ -1970,7 +2096,7 @@ impl HasComponent<CameraComponent> for CameraEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<CameraComponent> for CameraEntityData {
+impl HasComponent<CameraComponent> for CameraEntityComponents {
     #[inline]
     fn get(&self) -> &CameraComponent {
         &self.camera
@@ -1996,7 +2122,7 @@ impl HasComponent<CameraFpsControllerComponent> for CameraEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<CameraFpsControllerComponent> for CameraEntityData {
+impl HasComponent<CameraFpsControllerComponent> for CameraEntityComponents {
     #[inline]
     fn get(&self) -> &CameraFpsControllerComponent {
         &self.camera_fps_controller
@@ -2019,8 +2145,20 @@ impl CameraEntityData {
     }
 }
 
+impl CameraEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<CameraEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for CameraEntity {
-    type Target = CameraEntityData;
+    type Target = CameraEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -2171,18 +2309,41 @@ pub struct DynamicLightArchetype {
 }
 
 /// An entity of the [`DynamicLightArchetype`].
-pub type DynamicLightEntity = EntityWithIdAndData<DynamicLightEntityData>;
+pub type DynamicLightEntity = EntityWithIdAndData<DynamicLightEntityComponents>;
+
+/// The data of an entity of the [`DynamicLightArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DynamicLightEntityData {
+    pub dynamic_light: DynamicLightData,
+    pub color: ColorData,
+    pub position: PositionData,
+}
 
 /// An entity of the [`DynamicLightArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct DynamicLightEntityData {
+pub struct DynamicLightEntityComponents {
     pub dynamic_light: DynamicLightComponent,
     pub color: ColorComponent,
     pub position: PositionComponent,
 }
 
+impl From<DynamicLightEntityData> for DynamicLightEntityComponents {
+    fn from(value: DynamicLightEntityData) -> Self {
+        Self {
+            dynamic_light: value.dynamic_light.into(),
+            color: value.color.into(),
+            position: value.position.into(),
+        }
+    }
+}
+
 impl EntityData for DynamicLightEntityData {
+    const ARCHETYPE_ID: ArchetypeId = DynamicLightArchetype::ID;
+}
+
+impl EntityData for DynamicLightEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = DynamicLightArchetype::ID;
 }
 
@@ -2403,7 +2564,7 @@ impl HasComponent<DynamicLightComponent> for DynamicLightEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<DynamicLightComponent> for DynamicLightEntityData {
+impl HasComponent<DynamicLightComponent> for DynamicLightEntityComponents {
     #[inline]
     fn get(&self) -> &DynamicLightComponent {
         &self.dynamic_light
@@ -2429,7 +2590,7 @@ impl HasComponent<ColorComponent> for DynamicLightEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<ColorComponent> for DynamicLightEntityData {
+impl HasComponent<ColorComponent> for DynamicLightEntityComponents {
     #[inline]
     fn get(&self) -> &ColorComponent {
         &self.color
@@ -2455,7 +2616,7 @@ impl HasComponent<PositionComponent> for DynamicLightEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for DynamicLightEntityData {
+impl HasComponent<PositionComponent> for DynamicLightEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -2478,8 +2639,20 @@ impl DynamicLightEntityData {
     }
 }
 
+impl DynamicLightEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<DynamicLightEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for DynamicLightEntity {
-    type Target = DynamicLightEntityData;
+    type Target = DynamicLightEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -2646,17 +2819,38 @@ pub struct TileArchetype {
 }
 
 /// An entity of the [`TileArchetype`].
-pub type TileEntity = EntityWithIdAndData<TileEntityData>;
+pub type TileEntity = EntityWithIdAndData<TileEntityComponents>;
+
+/// The data of an entity of the [`TileArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct TileEntityData {
+    pub tile: TileData,
+    pub position: PositionData,
+}
 
 /// An entity of the [`TileArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct TileEntityData {
+pub struct TileEntityComponents {
     pub tile: TileComponent,
     pub position: PositionComponent,
 }
 
+impl From<TileEntityData> for TileEntityComponents {
+    fn from(value: TileEntityData) -> Self {
+        Self {
+            tile: value.tile.into(),
+            position: value.position.into(),
+        }
+    }
+}
+
 impl EntityData for TileEntityData {
+    const ARCHETYPE_ID: ArchetypeId = TileArchetype::ID;
+}
+
+impl EntityData for TileEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = TileArchetype::ID;
 }
 
@@ -2839,7 +3033,7 @@ impl HasComponent<TileComponent> for TileEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TileComponent> for TileEntityData {
+impl HasComponent<TileComponent> for TileEntityComponents {
     #[inline]
     fn get(&self) -> &TileComponent {
         &self.tile
@@ -2865,7 +3059,7 @@ impl HasComponent<PositionComponent> for TileEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for TileEntityData {
+impl HasComponent<PositionComponent> for TileEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -2888,8 +3082,20 @@ impl TileEntityData {
     }
 }
 
+impl TileEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<TileEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for TileEntity {
-    type Target = TileEntityData;
+    type Target = TileEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -3041,19 +3247,44 @@ pub struct CubeArchetype {
 }
 
 /// An entity of the [`CubeArchetype`].
-pub type CubeEntity = EntityWithIdAndData<CubeEntityData>;
+pub type CubeEntity = EntityWithIdAndData<CubeEntityComponents>;
+
+/// The data of an entity of the [`CubeArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CubeEntityData {
+    pub position: PositionData,
+    pub velocity: VelocityData,
+    pub transform: TransformData,
+    pub model: ModelData,
+}
 
 /// An entity of the [`CubeArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct CubeEntityData {
+pub struct CubeEntityComponents {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
     pub transform: TransformComponent,
     pub model: ModelComponent,
 }
 
+impl From<CubeEntityData> for CubeEntityComponents {
+    fn from(value: CubeEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+            velocity: value.velocity.into(),
+            transform: value.transform.into(),
+            model: value.model.into(),
+        }
+    }
+}
+
 impl EntityData for CubeEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CubeArchetype::ID;
+}
+
+impl EntityData for CubeEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = CubeArchetype::ID;
 }
 
@@ -3312,7 +3543,7 @@ impl HasComponent<PositionComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for CubeEntityData {
+impl HasComponent<PositionComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -3338,7 +3569,7 @@ impl HasComponent<VelocityComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<VelocityComponent> for CubeEntityData {
+impl HasComponent<VelocityComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &VelocityComponent {
         &self.velocity
@@ -3364,7 +3595,7 @@ impl HasComponent<TransformComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TransformComponent> for CubeEntityData {
+impl HasComponent<TransformComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &TransformComponent {
         &self.transform
@@ -3390,7 +3621,7 @@ impl HasComponent<ModelComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<ModelComponent> for CubeEntityData {
+impl HasComponent<ModelComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &ModelComponent {
         &self.model
@@ -3413,8 +3644,20 @@ impl CubeEntityData {
     }
 }
 
+impl CubeEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<CubeEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for CubeEntity {
-    type Target = CubeEntityData;
+    type Target = CubeEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -3599,18 +3842,41 @@ pub struct PlayerArchetype {
 }
 
 /// An entity of the [`PlayerArchetype`].
-pub type PlayerEntity = EntityWithIdAndData<PlayerEntityData>;
+pub type PlayerEntity = EntityWithIdAndData<PlayerEntityComponents>;
+
+/// The data of an entity of the [`PlayerArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PlayerEntityData {
+    pub position: PositionData,
+    pub velocity: VelocityData,
+    pub health: HealthData,
+}
 
 /// An entity of the [`PlayerArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct PlayerEntityData {
+pub struct PlayerEntityComponents {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
     pub health: HealthComponent,
 }
 
+impl From<PlayerEntityData> for PlayerEntityComponents {
+    fn from(value: PlayerEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+            velocity: value.velocity.into(),
+            health: value.health.into(),
+        }
+    }
+}
+
 impl EntityData for PlayerEntityData {
+    const ARCHETYPE_ID: ArchetypeId = PlayerArchetype::ID;
+}
+
+impl EntityData for PlayerEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = PlayerArchetype::ID;
 }
 
@@ -3831,7 +4097,7 @@ impl HasComponent<PositionComponent> for PlayerEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for PlayerEntityData {
+impl HasComponent<PositionComponent> for PlayerEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -3857,7 +4123,7 @@ impl HasComponent<VelocityComponent> for PlayerEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<VelocityComponent> for PlayerEntityData {
+impl HasComponent<VelocityComponent> for PlayerEntityComponents {
     #[inline]
     fn get(&self) -> &VelocityComponent {
         &self.velocity
@@ -3883,7 +4149,7 @@ impl HasComponent<HealthComponent> for PlayerEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<HealthComponent> for PlayerEntityData {
+impl HasComponent<HealthComponent> for PlayerEntityComponents {
     #[inline]
     fn get(&self) -> &HealthComponent {
         &self.health
@@ -3906,8 +4172,20 @@ impl PlayerEntityData {
     }
 }
 
+impl PlayerEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<PlayerEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for PlayerEntity {
-    type Target = PlayerEntityData;
+    type Target = PlayerEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -4074,17 +4352,38 @@ pub struct ForegroundObjectArchetype {
 }
 
 /// An entity of the [`ForegroundObjectArchetype`].
-pub type ForegroundObjectEntity = EntityWithIdAndData<ForegroundObjectEntityData>;
+pub type ForegroundObjectEntity = EntityWithIdAndData<ForegroundObjectEntityComponents>;
+
+/// The data of an entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityData {
+    pub position: PositionData,
+    pub collider: ColliderData,
+}
 
 /// An entity of the [`ForegroundObjectArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct ForegroundObjectEntityData {
+pub struct ForegroundObjectEntityComponents {
     pub position: PositionComponent,
     pub collider: ColliderComponent,
 }
 
+impl From<ForegroundObjectEntityData> for ForegroundObjectEntityComponents {
+    fn from(value: ForegroundObjectEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+            collider: value.collider.into(),
+        }
+    }
+}
+
 impl EntityData for ForegroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = ForegroundObjectArchetype::ID;
+}
+
+impl EntityData for ForegroundObjectEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = ForegroundObjectArchetype::ID;
 }
 
@@ -4267,7 +4566,7 @@ impl HasComponent<PositionComponent> for ForegroundObjectEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for ForegroundObjectEntityData {
+impl HasComponent<PositionComponent> for ForegroundObjectEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -4293,7 +4592,7 @@ impl HasComponent<ColliderComponent> for ForegroundObjectEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<ColliderComponent> for ForegroundObjectEntityData {
+impl HasComponent<ColliderComponent> for ForegroundObjectEntityComponents {
     #[inline]
     fn get(&self) -> &ColliderComponent {
         &self.collider
@@ -4316,8 +4615,20 @@ impl ForegroundObjectEntityData {
     }
 }
 
+impl ForegroundObjectEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<ForegroundObjectEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for ForegroundObjectEntity {
-    type Target = ForegroundObjectEntityData;
+    type Target = ForegroundObjectEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -4466,16 +4777,35 @@ pub struct BackgroundObjectArchetype {
 }
 
 /// An entity of the [`BackgroundObjectArchetype`].
-pub type BackgroundObjectEntity = EntityWithIdAndData<BackgroundObjectEntityData>;
+pub type BackgroundObjectEntity = EntityWithIdAndData<BackgroundObjectEntityComponents>;
+
+/// The data of an entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityData {
+    pub position: PositionData,
+}
 
 /// An entity of the [`BackgroundObjectArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct BackgroundObjectEntityData {
+pub struct BackgroundObjectEntityComponents {
     pub position: PositionComponent,
 }
 
+impl From<BackgroundObjectEntityData> for BackgroundObjectEntityComponents {
+    fn from(value: BackgroundObjectEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+        }
+    }
+}
+
 impl EntityData for BackgroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = BackgroundObjectArchetype::ID;
+}
+
+impl EntityData for BackgroundObjectEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = BackgroundObjectArchetype::ID;
 }
 
@@ -4620,7 +4950,7 @@ impl HasComponent<PositionComponent> for BackgroundObjectEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for BackgroundObjectEntityData {
+impl HasComponent<PositionComponent> for BackgroundObjectEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -4643,8 +4973,20 @@ impl BackgroundObjectEntityData {
     }
 }
 
+impl BackgroundObjectEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<BackgroundObjectEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for BackgroundObjectEntity {
-    type Target = BackgroundObjectEntityData;
+    type Target = BackgroundObjectEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -4776,16 +5118,35 @@ pub struct SceneBackgroundArchetype {
 }
 
 /// An entity of the [`SceneBackgroundArchetype`].
-pub type SceneBackgroundEntity = EntityWithIdAndData<SceneBackgroundEntityData>;
+pub type SceneBackgroundEntity = EntityWithIdAndData<SceneBackgroundEntityComponents>;
+
+/// The data of an entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityData {
+    pub background_color: BackgroundColorData,
+}
 
 /// An entity of the [`SceneBackgroundArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct SceneBackgroundEntityData {
+pub struct SceneBackgroundEntityComponents {
     pub background_color: BackgroundColorComponent,
 }
 
+impl From<SceneBackgroundEntityData> for SceneBackgroundEntityComponents {
+    fn from(value: SceneBackgroundEntityData) -> Self {
+        Self {
+            background_color: value.background_color.into(),
+        }
+    }
+}
+
 impl EntityData for SceneBackgroundEntityData {
+    const ARCHETYPE_ID: ArchetypeId = SceneBackgroundArchetype::ID;
+}
+
+impl EntityData for SceneBackgroundEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = SceneBackgroundArchetype::ID;
 }
 
@@ -4930,7 +5291,7 @@ impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntityData {
+impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntityComponents {
     #[inline]
     fn get(&self) -> &BackgroundColorComponent {
         &self.background_color
@@ -4953,8 +5314,20 @@ impl SceneBackgroundEntityData {
     }
 }
 
+impl SceneBackgroundEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    where
+        W: Spawn<SceneBackgroundEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for SceneBackgroundEntity {
-    type Target = SceneBackgroundEntityData;
+    type Target = SceneBackgroundEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data

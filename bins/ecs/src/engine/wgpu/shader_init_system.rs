@@ -1,7 +1,7 @@
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
-    ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, SystemFactory,
-    SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent,
+    ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, ResourceManagerState,
+    SystemFactory, SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent,
 };
 use std::convert::Infallible;
 use tracing::{debug, trace};

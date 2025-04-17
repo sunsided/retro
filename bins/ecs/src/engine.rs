@@ -17,6 +17,7 @@ pub mod components;
 pub mod input_state;
 mod phase_events;
 pub mod phases;
+pub mod resource_manager_state;
 pub mod wgpu;
 
 use crate::engine::components::*;
@@ -39,6 +40,7 @@ use crate::engine::phases::{
     },
     update::{camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData},
 };
+pub use crate::engine::resource_manager_state::ResourceManagerState;
 pub use crate::engine::wgpu::*;
 pub use command_queue::CommandQueue;
 pub use phase_events::PhaseEvents;

@@ -9,6 +9,8 @@ states:
     description: The uniforms of the active camera.
   - name: Input
     description: The device input obtained from the window system.
+  - name: ResourceManager
+    description: The WGPU resource manager
 
 components:
   - name: TimeOfDay
@@ -128,7 +130,8 @@ phases:
     manual: true
     states:
       - use: WgpuRender
-        write: true
+        begin_phase: write
+        end_phase: write
 
 systems:
   - name: WgpuInitShader
@@ -137,6 +140,9 @@ systems:
     states:
       - use: WgpuRender
         system: write
+      - use: ResourceManager
+        default: none
+        phase_end: write
     outputs:
       - WgpuShader
 

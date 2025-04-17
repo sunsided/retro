@@ -4,13 +4,9 @@ use crate::engine::components::{
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::{
-    CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
-    DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
-    PositionComponent, SceneBackgroundEntityData,
-};
-use crate::engine::{
-    EntityAccess, TextureSourceData, TextureSourceType, WgpuShaderData, WgpuTextureData,
-    WorldUserCommand, WorldUserCommandHandler,
+    CameraEntityData, DynamicLightEntityData, EntityAccess, EnvironmentEntityData, MainWorld,
+    SceneBackgroundEntityData, TextureSourceData, TextureSourceType, WgpuShaderData,
+    WgpuTextureData, WorldUserCommand, WorldUserCommandHandler,
 };
 use crate::engine::{TileEntityData, WgpuShaderEntityData, WgpuTextureEntityData};
 use crate::map::tile::{CeilingType, FloorType, Tile};
@@ -27,74 +23,73 @@ pub trait InitializeMainWorld {
 impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
     fn create_initial_entities(&mut self) {
         let _fallback_normals = self.spawn_wgpu_texture(WgpuTextureEntityData {
-            texture_source: TextureSourceData::new(TextureSourceType::FallbackNormals).into(),
-            wgpu_texture: WgpuTextureData::default().into(),
+            texture_source: TextureSourceData::new(TextureSourceType::FallbackNormals),
+            wgpu_texture: WgpuTextureData::default(),
         });
 
         let _cover = self.spawn_wgpu_texture(WgpuTextureEntityData {
             texture_source: TextureSourceData::new(TextureSourceType::from_path(
                 "textures/cover.webp",
-            ))
-            .into(),
-            wgpu_texture: WgpuTextureData::default().into(),
+            )),
+            wgpu_texture: WgpuTextureData::default(),
         });
 
         let light_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
-            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/light.wgsl")).into(),
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/light.wgsl")),
         });
 
         let _vga_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
-            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/vga.wgsl")).into(),
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/vga.wgsl")),
         });
 
         let _sky_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
-            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/sky.wgsl")).into(),
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/sky.wgsl")),
         });
 
         let _tile_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
-            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/tile.wgsl")).into(),
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/tile.wgsl")),
         });
 
         let _generic_shader = self.spawn_wgpu_shader(WgpuShaderEntityData {
-            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/shader.wgsl")).into(),
+            wgpu_shader: WgpuShaderData::new(include_wgsl!("../shaders/shader.wgsl")),
         });
 
         let _x = self.get_wgpu_shader_entity(light_shader);
 
         self.spawn_scene_background(SceneBackgroundEntityData {
-            background_color: BackgroundColorData::default().into(),
+            background_color: BackgroundColorData::default(),
         });
 
         self.spawn_environment(EnvironmentEntityData {
-            time_of_day: TimeOfDayData::default().into(),
-            ambient_light: AmbientLightData::default().into(),
-            sun: SunData::default().into(),
-            fog: FogData::default().into(),
-            stars: StarsData::default().into(),
-            skydome: SkydomeData::default().into(),
+            time_of_day: TimeOfDayData::default(),
+            ambient_light: AmbientLightData::default(),
+            sun: SunData::default(),
+            fog: FogData::default(),
+            stars: StarsData::default(),
+            skydome: SkydomeData::default(),
         });
 
         self.spawn_camera(CameraEntityData {
-            camera: CameraComponent::new(CameraData {
+            camera: CameraData {
                 active: true,
                 ..Default::default()
-            }),
-            camera_fps_controller: CameraFpsControllerComponent::new(Default::default()),
+            },
+            camera_fps_controller: Default::default(),
         });
 
         self.spawn_dynamic_light(DynamicLightEntityData {
-            dynamic_light: DynamicLightComponent::new(DynamicLightData::default()),
-            color: ColorComponent::new(ColorData {
+            dynamic_light: DynamicLightData::default(),
+            color: ColorData {
                 r: 1.0,
                 g: 0.84,
                 b: 0.7,
                 a: 1.0,
-            }),
-            position: PositionComponent::new(PositionData {
+            },
+            position: PositionData {
                 x: 2.0,
                 y: 2.0,
                 z: 2.0,
-            }),
+            },
         });
 
         /*
@@ -115,13 +110,13 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 };
 
                 self.spawn_cube(CubeEntityData {
-                    position: PositionComponent(position.into()),
+                    position: PositionComponent(position),
                     velocity: VelocityComponent(VelocityData {
                         x: 0.0,
                         y: 0.0, // try another value
                         z: 0.0,
                     }),
-                    transform: TransformComponent(rotation.into()),
+                    transform: TransformComponent(rotation),
                     model: ModelComponent(Default::default()),
                 });
             }
@@ -143,13 +138,12 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             })
             .for_each(|(wtc, tile)| {
                 self.spawn_tile(TileEntityData {
-                    tile: TileData::from(tile).into(),
+                    tile: TileData::from(tile),
                     position: PositionData {
                         x: wtc.x as f32 - 2.0,
                         y: 0.0,
                         z: -(wtc.y as f32) + 2.0,
-                    }
-                    .into(),
+                    },
                 });
             });
 
@@ -176,13 +170,12 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 };
 
                 self.spawn_tile(TileEntityData {
-                    tile: TileData::from(tile).into(),
+                    tile: TileData::from(tile),
                     position: PositionData {
                         x: x as f32 - 2.0,
                         y: 0.0,
                         z: -(y as f32) + 2.0,
-                    }
-                    .into(),
+                    },
                 });
             }
         }

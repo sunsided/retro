@@ -183,6 +183,7 @@ impl<E, Q> World for MainWorld<E, Q> {
 /// It encapsulates ownership of and access to the following state types:
 /// 
 /// - [WgpuRenderState](WgpuRenderState)
+/// - [ResourceManagerState](ResourceManagerState)
 /// - [InputState](InputState)
 /// - [ActiveCameraState](ActiveCameraState)
 #[derive(Debug, Default)]
@@ -202,6 +203,11 @@ pub struct MainWorldStates {
     /// - [`DynamicLightSystem`]
     /// - [`VgaBlitSystem`]
     pub wgpu_render: WgpuRenderState,
+    /// The WGPU resource manager
+    ///
+    /// The state is used in the following systems:
+    /// - [`WgpuInitShaderSystem`]
+    pub resource_manager: ResourceManagerState,
     /// The device input obtained from the window system.
     ///
     /// The state is used in the following systems:
@@ -217,11 +223,13 @@ pub struct MainWorldStates {
 impl MainWorldStates {
     pub const fn new(
         wgpu_render: WgpuRenderState,
+        resource_manager: ResourceManagerState,
         input: InputState,
         active_camera: ActiveCameraState,
     ) -> Self {
         Self {
             wgpu_render,
+            resource_manager,
             input,
             active_camera,
         }
@@ -769,10 +777,28 @@ impl<E, Q> Spawn<WgpuShaderEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<WgpuShaderEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: WgpuShaderEntityComponents) -> EntityId {
+        self.spawn_wgpu_shader(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<WgpuTextureEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: WgpuTextureEntityData) -> EntityId {
+        self.spawn_wgpu_texture(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<WgpuTextureEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: WgpuTextureEntityComponents) -> EntityId {
         self.spawn_wgpu_texture(data)
     }
 }
@@ -787,10 +813,28 @@ impl<E, Q> Spawn<EnvironmentEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<EnvironmentEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: EnvironmentEntityComponents) -> EntityId {
+        self.spawn_environment(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: CameraEntityData) -> EntityId {
+        self.spawn_camera(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<CameraEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: CameraEntityComponents) -> EntityId {
         self.spawn_camera(data)
     }
 }
@@ -805,10 +849,28 @@ impl<E, Q> Spawn<DynamicLightEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<DynamicLightEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: DynamicLightEntityComponents) -> EntityId {
+        self.spawn_dynamic_light(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<TileEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: TileEntityData) -> EntityId {
+        self.spawn_tile(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<TileEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: TileEntityComponents) -> EntityId {
         self.spawn_tile(data)
     }
 }
@@ -823,10 +885,28 @@ impl<E, Q> Spawn<CubeEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<CubeEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: CubeEntityComponents) -> EntityId {
+        self.spawn_cube(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<PlayerEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: PlayerEntityData) -> EntityId {
+        self.spawn_player(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<PlayerEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: PlayerEntityComponents) -> EntityId {
         self.spawn_player(data)
     }
 }
@@ -841,6 +921,15 @@ impl<E, Q> Spawn<ForegroundObjectEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<ForegroundObjectEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: ForegroundObjectEntityComponents) -> EntityId {
+        self.spawn_foreground_object(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<BackgroundObjectEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
@@ -850,10 +939,28 @@ impl<E, Q> Spawn<BackgroundObjectEntityData> for MainWorld<E, Q> {
 }
 
 /// Spawns an entity into the world.
+impl<E, Q> Spawn<BackgroundObjectEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: BackgroundObjectEntityComponents) -> EntityId {
+        self.spawn_background_object(data)
+    }
+}
+
+/// Spawns an entity into the world.
 impl<E, Q> Spawn<SceneBackgroundEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
     fn spawn(&mut self, data: SceneBackgroundEntityData) -> EntityId {
+        self.spawn_scene_background(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<SceneBackgroundEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: SceneBackgroundEntityComponents) -> EntityId {
         self.spawn_scene_background(data)
     }
 }
@@ -966,10 +1073,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `WgpuShader` entity into the world given its [`WgpuShaderEntityData`].
     #[inline]
-    pub fn spawn_wgpu_shader(
+    pub fn spawn_wgpu_shader<Entity>(
         &mut self,
-        wgpu_shader: WgpuShaderEntityData
-    ) -> EntityId {
+        wgpu_shader: Entity
+    ) -> EntityId
+    where
+        Entity: Into<WgpuShaderEntityComponents>
+    {
+        let wgpu_shader = wgpu_shader.into();
         self.spawn_wgpu_shader_with(
             wgpu_shader.wgpu_shader,
         )
@@ -1002,10 +1113,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `WgpuTexture` entity into the world given its [`WgpuTextureEntityData`].
     #[inline]
-    pub fn spawn_wgpu_texture(
+    pub fn spawn_wgpu_texture<Entity>(
         &mut self,
-        wgpu_texture: WgpuTextureEntityData
-    ) -> EntityId {
+        wgpu_texture: Entity
+    ) -> EntityId
+    where
+        Entity: Into<WgpuTextureEntityComponents>
+    {
+        let wgpu_texture = wgpu_texture.into();
         self.spawn_wgpu_texture_with(
             wgpu_texture.texture_source,
             wgpu_texture.wgpu_texture,
@@ -1041,10 +1156,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `Environment` entity into the world given its [`EnvironmentEntityData`].
     #[inline]
-    pub fn spawn_environment(
+    pub fn spawn_environment<Entity>(
         &mut self,
-        environment: EnvironmentEntityData
-    ) -> EntityId {
+        environment: Entity
+    ) -> EntityId
+    where
+        Entity: Into<EnvironmentEntityComponents>
+    {
+        let environment = environment.into();
         self.spawn_environment_with(
             environment.time_of_day,
             environment.sun,
@@ -1092,10 +1211,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
     #[inline]
-    pub fn spawn_camera(
+    pub fn spawn_camera<Entity>(
         &mut self,
-        camera: CameraEntityData
-    ) -> EntityId {
+        camera: Entity
+    ) -> EntityId
+    where
+        Entity: Into<CameraEntityComponents>
+    {
+        let camera = camera.into();
         self.spawn_camera_with(
             camera.camera,
             camera.camera_fps_controller,
@@ -1131,10 +1254,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `DynamicLight` entity into the world given its [`DynamicLightEntityData`].
     #[inline]
-    pub fn spawn_dynamic_light(
+    pub fn spawn_dynamic_light<Entity>(
         &mut self,
-        dynamic_light: DynamicLightEntityData
-    ) -> EntityId {
+        dynamic_light: Entity
+    ) -> EntityId
+    where
+        Entity: Into<DynamicLightEntityComponents>
+    {
+        let dynamic_light = dynamic_light.into();
         self.spawn_dynamic_light_with(
             dynamic_light.dynamic_light,
             dynamic_light.color,
@@ -1173,10 +1300,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `Tile` entity into the world given its [`TileEntityData`].
     #[inline]
-    pub fn spawn_tile(
+    pub fn spawn_tile<Entity>(
         &mut self,
-        tile: TileEntityData
-    ) -> EntityId {
+        tile: Entity
+    ) -> EntityId
+    where
+        Entity: Into<TileEntityComponents>
+    {
+        let tile = tile.into();
         self.spawn_tile_with(
             tile.tile,
             tile.position,
@@ -1212,10 +1343,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `Cube` entity into the world given its [`CubeEntityData`].
     #[inline]
-    pub fn spawn_cube(
+    pub fn spawn_cube<Entity>(
         &mut self,
-        cube: CubeEntityData
-    ) -> EntityId {
+        cube: Entity
+    ) -> EntityId
+    where
+        Entity: Into<CubeEntityComponents>
+    {
+        let cube = cube.into();
         self.spawn_cube_with(
             cube.position,
             cube.velocity,
@@ -1257,10 +1392,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
     #[inline]
-    pub fn spawn_player(
+    pub fn spawn_player<Entity>(
         &mut self,
-        player: PlayerEntityData
-    ) -> EntityId {
+        player: Entity
+    ) -> EntityId
+    where
+        Entity: Into<PlayerEntityComponents>
+    {
+        let player = player.into();
         self.spawn_player_with(
             player.position,
             player.velocity,
@@ -1299,10 +1438,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
     #[inline]
-    pub fn spawn_foreground_object(
+    pub fn spawn_foreground_object<Entity>(
         &mut self,
-        foreground_object: ForegroundObjectEntityData
-    ) -> EntityId {
+        foreground_object: Entity
+    ) -> EntityId
+    where
+        Entity: Into<ForegroundObjectEntityComponents>
+    {
+        let foreground_object = foreground_object.into();
         self.spawn_foreground_object_with(
             foreground_object.position,
             foreground_object.collider,
@@ -1338,10 +1481,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
     #[inline]
-    pub fn spawn_background_object(
+    pub fn spawn_background_object<Entity>(
         &mut self,
-        background_object: BackgroundObjectEntityData
-    ) -> EntityId {
+        background_object: Entity
+    ) -> EntityId
+    where
+        Entity: Into<BackgroundObjectEntityComponents>
+    {
+        let background_object = background_object.into();
         self.spawn_background_object_with(
             background_object.position,
         )
@@ -1374,10 +1521,14 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Spawn a new `SceneBackground` entity into the world given its [`SceneBackgroundEntityData`].
     #[inline]
-    pub fn spawn_scene_background(
+    pub fn spawn_scene_background<Entity>(
         &mut self,
-        scene_background: SceneBackgroundEntityData
-    ) -> EntityId {
+        scene_background: Entity
+    ) -> EntityId
+    where
+        Entity: Into<SceneBackgroundEntityComponents>
+    {
+        let scene_background = scene_background.into();
         self.spawn_scene_background_with(
             scene_background.background_color,
         )
@@ -1765,9 +1916,11 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 1 of 2
         let is_ready = self.systems.wgpu_init_shader.is_ready(
                        &self.states.wgpu_render,
+                       
            );
         if is_ready && self.systems.wgpu_init_shader.on_begin_phase(
                         &self.states.wgpu_render,
+                        
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
             .is_ok()
@@ -1782,6 +1935,7 @@ impl<E, Q> MainWorld<E, Q> {
                 // Apply WgpuInitShaderSystem to WgpuShaderArchetype
                 self.systems.wgpu_init_shader.apply_many(
                             &mut self.states.wgpu_render,
+                            
                     &self.archetypes.collection.wgpu_shader.entities,
                     &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
                 );
@@ -1794,6 +1948,7 @@ impl<E, Q> MainWorld<E, Q> {
 
             self.systems.wgpu_init_shader.on_end_phase(
                         &self.states.wgpu_render,
+                        
             )
             .inspect_err(|error| tracing::error!(?error, "WgpuInitShaderSystem::on_end_phase returned an error"))
             .ok();
@@ -1875,10 +2030,12 @@ impl<E, Q> MainWorld<E, Q> {
         // System group 1
         let is_wgpu_init_shader_ready = self.systems.wgpu_init_shader.is_ready(
                        &self.states.wgpu_render,
+                       
            );
         let is_wgpu_init_shader_ready = is_wgpu_init_shader_ready &
             self.systems.wgpu_init_shader.on_begin_phase(
                         &self.states.wgpu_render,
+                        
             )
             .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_begin_phase returned an error"))
             .is_ok();
@@ -1898,6 +2055,7 @@ impl<E, Q> MainWorld<E, Q> {
                             // Apply WgpuInitShaderSystem to WgpuShaderArchetype
                             self.systems.wgpu_init_shader.apply_many(
                                         &mut self.states.wgpu_render,
+                                        
                                 &self.archetypes.collection.wgpu_shader.entities,
                                 &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
                             );
@@ -1914,6 +2072,7 @@ impl<E, Q> MainWorld<E, Q> {
 
         self.systems.wgpu_init_shader.on_end_phase(
                     &self.states.wgpu_render,
+                    
         )
         .inspect_err(|error| tracing::error!(%error, "WgpuInitShaderSystem::on_end_phase returned an error"))
         .ok();
@@ -2655,7 +2814,7 @@ impl<E, Q> MainWorld<E, Q> {
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
@@ -2666,7 +2825,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             result,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
@@ -3007,7 +3166,7 @@ impl<E, Q> MainWorld<E, Q> {
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
@@ -3393,7 +3552,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             result,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
@@ -6051,10 +6210,10 @@ impl ComponentAccess for MainWorldArchetypes {
         match ear.archetype {
             DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
             CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
-            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6292,10 +6451,10 @@ impl ComponentAccessMut for MainWorldArchetypes {
         match ear.archetype {
             DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
             CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
-            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }

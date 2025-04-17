@@ -2,7 +2,8 @@ use crate::cli::parse_arguments;
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
-    CommandQueue, InputState, MainWorld, MainWorldStates, PhaseEvents, SystemFactory, WorldCommand,
+    CommandQueue, InputState, MainWorld, MainWorldStates, PhaseEvents, ResourceManagerState,
+    SystemFactory, WorldCommand,
 };
 use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
@@ -56,6 +57,7 @@ impl App {
             wgpu_render: WgpuRenderState::default(),
             input: InputState::default(),
             active_camera: ActiveCameraState::default(),
+            resource_manager: ResourceManagerState::default(),
         };
         let mut world =
             MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);

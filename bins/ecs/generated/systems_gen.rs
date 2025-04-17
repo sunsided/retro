@@ -657,7 +657,7 @@ impl SystemRenderPhaseEvents for NoOpPhaseEvents {
     fn on_begin_phase(
         &mut self,
         _context: &FrameContext,
-        _wgpu_render: &mut WgpuRenderState,
+                _wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -667,7 +667,7 @@ impl SystemRenderPhaseEvents for NoOpPhaseEvents {
         &mut self,
         _result: Option<Self::Result>,
         _context: &FrameContext,
-        _wgpu_render: &mut WgpuRenderState,
+                _wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -684,7 +684,7 @@ pub trait SystemRenderPhaseEvents {
     fn on_begin_phase(
         &mut self,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<Self::Result, Self::Error>;
 
     /// Executed at the end of the phase (after all systems).
@@ -695,7 +695,7 @@ pub trait SystemRenderPhaseEvents {
         &mut self,
         result: Option<Self::Result>,
         context: &FrameContext,
-        wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error>;
 }
 
@@ -729,6 +729,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     fn is_ready(
         &self,
                 wgpu_render: &WgpuRenderState,
+                
     ) -> bool {
         true
     }
@@ -742,6 +743,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     fn on_begin_phase(
         &mut self,
                 wgpu_render: &WgpuRenderState,
+                
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -755,6 +757,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     fn on_end_phase(
         &mut self,
                 wgpu_render: &WgpuRenderState,
+                
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -774,6 +777,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     fn apply_single(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entity: EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
     ) {
@@ -791,13 +795,15 @@ pub trait ApplyWgpuInitShaderSystem: System {
     fn apply_many(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entities: &[EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
         let zipped_iter = entities.iter().zip(wgpu_shaders.iter_mut());
         for (entity, wgpu_shader) in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
+                        
                 *entity,
                 wgpu_shader,
             );
@@ -812,13 +818,15 @@ impl WgpuInitShaderSystem {
     pub fn apply_single(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entity: EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
     ) {
         // Force the implementation of the ApplyWgpuInitShaderSystem trait.
         ApplyWgpuInitShaderSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
+                    
             entity,
             wgpu_shader,
         );
@@ -836,13 +844,15 @@ impl WgpuInitShaderSystem {
     fn apply_many(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
+                
         entities: &[EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
         // Force the implementation of the ApplyWgpuInitShaderSystem trait.
         ApplyWgpuInitShaderSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
+                    
             entities,
             wgpu_shaders,
         );
@@ -1010,7 +1020,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
         let zipped_iter = entities.iter().zip(texture_sources.iter().zip(wgpu_textures.iter_mut()));
         for (entity, (texture_source, wgpu_texture)) in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 *entity,
                 texture_source,
                 wgpu_texture,
@@ -1033,7 +1043,7 @@ impl WgpuInitTextureSystem {
         // Force the implementation of the ApplyWgpuInitTextureSystem trait.
         ApplyWgpuInitTextureSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             entity,
             texture_source,
             wgpu_texture,
@@ -1060,7 +1070,7 @@ impl WgpuInitTextureSystem {
         // Force the implementation of the ApplyWgpuInitTextureSystem trait.
         ApplyWgpuInitTextureSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             entities,
             texture_sources,
             wgpu_textures,
@@ -1208,8 +1218,8 @@ pub trait ApplyCameraSystem: System {
         let zipped_iter = cameras.iter_mut().zip(camera_fps_controllers.iter_mut());
         for (camera, camera_fps_controller) in zipped_iter {
             self.apply_single(
-                input,
-                wgpu_render,
+                        input,
+                        wgpu_render,
                 camera,
                 camera_fps_controller,
             );
@@ -1231,8 +1241,8 @@ impl CameraSystem {
         // Force the implementation of the ApplyCameraSystem trait.
         ApplyCameraSystem::apply_single(
             self,
-            input,
-            wgpu_render,
+                    input,
+                    wgpu_render,
             camera,
             camera_fps_controller,
         );
@@ -1258,8 +1268,8 @@ impl CameraSystem {
         // Force the implementation of the ApplyCameraSystem trait.
         ApplyCameraSystem::apply_many(
             self,
-            input,
-            wgpu_render,
+                    input,
+                    wgpu_render,
             cameras,
             camera_fps_controllers,
         );
@@ -2512,8 +2522,8 @@ pub trait ApplyCameraRenderSystem: System {
         let zipped_iter = cameras;
         for camera in zipped_iter {
             self.apply_single(
-                wgpu_render,
-                active_camera,
+                        wgpu_render,
+                        active_camera,
                 camera,
             );
         }
@@ -2533,8 +2543,8 @@ impl CameraRenderSystem {
         // Force the implementation of the ApplyCameraRenderSystem trait.
         ApplyCameraRenderSystem::apply_single(
             self,
-            wgpu_render,
-            active_camera,
+                    wgpu_render,
+                    active_camera,
             camera,
         );
     }
@@ -2557,8 +2567,8 @@ impl CameraRenderSystem {
         // Force the implementation of the ApplyCameraRenderSystem trait.
         ApplyCameraRenderSystem::apply_many(
             self,
-            wgpu_render,
-            active_camera,
+                    wgpu_render,
+                    active_camera,
             cameras,
         );
     }
@@ -2719,7 +2729,7 @@ pub trait ApplyFrameGlobalsSystem: System {
         let zipped_iter = time_of_daies.iter().zip(suns.iter().zip(fogs.iter().zip(ambient_lights.iter().zip(stars.iter().zip(skydomes.iter())))));
         for (time_of_day, (sun, (fog, (ambient_light, (stars, skydome))))) in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 time_of_day,
                 sun,
                 fog,
@@ -2748,7 +2758,7 @@ impl FrameGlobalsSystem {
         // Force the implementation of the ApplyFrameGlobalsSystem trait.
         ApplyFrameGlobalsSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             time_of_day,
             sun,
             fog,
@@ -2785,7 +2795,7 @@ impl FrameGlobalsSystem {
         // Force the implementation of the ApplyFrameGlobalsSystem trait.
         ApplyFrameGlobalsSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             time_of_daies,
             suns,
             fogs,
@@ -2926,7 +2936,7 @@ pub trait ApplyRenderBackgroundSystem: System {
         let zipped_iter = background_colors;
         for background_color in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 background_color,
             );
         }
@@ -2945,7 +2955,7 @@ impl RenderBackgroundSystem {
         // Force the implementation of the ApplyRenderBackgroundSystem trait.
         ApplyRenderBackgroundSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             background_color,
         );
     }
@@ -2967,7 +2977,7 @@ impl RenderBackgroundSystem {
         // Force the implementation of the ApplyRenderBackgroundSystem trait.
         ApplyRenderBackgroundSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             background_colors,
         );
     }
@@ -3103,7 +3113,7 @@ pub trait ApplyRenderSkySystem: System {
         let zipped_iter = skydomes;
         for skydome in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 skydome,
             );
         }
@@ -3122,7 +3132,7 @@ impl RenderSkySystem {
         // Force the implementation of the ApplyRenderSkySystem trait.
         ApplyRenderSkySystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             skydome,
         );
     }
@@ -3144,7 +3154,7 @@ impl RenderSkySystem {
         // Force the implementation of the ApplyRenderSkySystem trait.
         ApplyRenderSkySystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             skydomes,
         );
     }
@@ -3290,7 +3300,7 @@ pub trait ApplyRenderSystem: System {
         let zipped_iter = positions.iter().zip(transforms.iter().zip(models.iter()));
         for (position, (transform, model)) in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 position,
                 transform,
                 model,
@@ -3313,7 +3323,7 @@ impl RenderSystem {
         // Force the implementation of the ApplyRenderSystem trait.
         ApplyRenderSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             position,
             transform,
             model,
@@ -3341,7 +3351,7 @@ impl RenderSystem {
         // Force the implementation of the ApplyRenderSystem trait.
         ApplyRenderSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             positions,
             transforms,
             models,
@@ -3484,7 +3494,7 @@ pub trait ApplyTileRenderSystem: System {
         let zipped_iter = tiles.iter().zip(positions.iter());
         for (tile, position) in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 tile,
                 position,
             );
@@ -3505,7 +3515,7 @@ impl TileRenderSystem {
         // Force the implementation of the ApplyTileRenderSystem trait.
         ApplyTileRenderSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             tile,
             position,
         );
@@ -3530,7 +3540,7 @@ impl TileRenderSystem {
         // Force the implementation of the ApplyTileRenderSystem trait.
         ApplyTileRenderSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             tiles,
             positions,
         );
@@ -3681,7 +3691,7 @@ pub trait ApplyDynamicLightSystem: System {
         for (color, dynamic_light) in zipped_iter {
             self.apply_single(
                 &context,
-                wgpu_render,
+                        wgpu_render,
                 color,
                 dynamic_light,
             );
@@ -3704,7 +3714,7 @@ impl DynamicLightSystem {
         ApplyDynamicLightSystem::apply_single(
             self,
             context,
-            wgpu_render,
+                    wgpu_render,
             color,
             dynamic_light,
         );
@@ -3731,7 +3741,7 @@ impl DynamicLightSystem {
         ApplyDynamicLightSystem::apply_many(
             self,
             context,
-            wgpu_render,
+                    wgpu_render,
             colors,
             dynamic_lights,
         );
@@ -3869,7 +3879,7 @@ pub trait ApplyVgaBlitSystem: System {
         let zipped_iter = background_colors;
         for background_color in zipped_iter {
             self.apply_single(
-                wgpu_render,
+                        wgpu_render,
                 background_color,
             );
         }
@@ -3888,7 +3898,7 @@ impl VgaBlitSystem {
         // Force the implementation of the ApplyVgaBlitSystem trait.
         ApplyVgaBlitSystem::apply_single(
             self,
-            wgpu_render,
+                    wgpu_render,
             background_color,
         );
     }
@@ -3910,7 +3920,7 @@ impl VgaBlitSystem {
         // Force the implementation of the ApplyVgaBlitSystem trait.
         ApplyVgaBlitSystem::apply_many(
             self,
-            wgpu_render,
+                    wgpu_render,
             background_colors,
         );
     }
