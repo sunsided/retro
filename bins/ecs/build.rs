@@ -1,6 +1,6 @@
 use fs_extra::copy_items;
 use fs_extra::dir::CopyOptions;
-use sillyecs::EcsCode;
+use sillyecs_build::EcsCode;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;

@@ -18,3 +18,7 @@ debug = true
 [profile.dev.package.sillyecs]
 opt-level = 3
 debug = true
+
+[profile.dev.package.sillyecs-build]
+opt-level = 3
+debug = true
