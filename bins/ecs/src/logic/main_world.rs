@@ -29,6 +29,8 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             wgpu_texture: WgpuTextureData::default(),
         });
 
+        // TODO: Add EntityCreated, EntityDeleted events (not commands) with EntityId and current archetype. Maybe extend to EntityMoved.
+
         let _cover = self.spawn_wgpu_texture(WgpuTextureEntityData {
             texture_source: TextureSourceData::new(TextureSourceType::from_path(
                 "textures/cover.webp",
