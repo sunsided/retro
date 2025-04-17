@@ -1,7 +1,9 @@
 use crate::cli::parse_arguments;
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
-use crate::engine::{CommandQueue, InputState, MainWorld, PhaseEvents, SystemFactory, WorldCommand};
+use crate::engine::{
+    CommandQueue, InputState, MainWorld, MainWorldStates, PhaseEvents, SystemFactory, WorldCommand,
+};
 use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
 use crate::logic::InitializeMainWorld;
@@ -50,17 +52,13 @@ impl App {
     #[instrument(skip_all)]
     pub fn new(wgpu_hardware: WgpuHardware) -> Self {
         let events = PhaseEvents::default();
-        let render_state = WgpuRenderState::default();
-        let input_state = InputState::default();
-        let active_camera = ActiveCameraState::default();
-        let mut world = MainWorld::new_with_events(
-            &SystemFactory,
-            render_state,
-            input_state,
-            active_camera,
-            CommandQueue::new(),
-            events,
-        );
+        let state = MainWorldStates {
+            wgpu_render: WgpuRenderState::default(),
+            input: InputState::default(),
+            active_camera: ActiveCameraState::default(),
+        };
+        let mut world =
+            MainWorld::new_with_events(&SystemFactory, state, CommandQueue::new(), events);
         world.states.wgpu_render.set_hardware(wgpu_hardware);
 
         world.apply_system_phase_startup();

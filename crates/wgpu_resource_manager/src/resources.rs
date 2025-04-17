@@ -1,13 +1,13 @@
 mod textures;
 
+pub use self::textures::TextureResourceData;
+use crate::resources::textures::TextureResourceEntry;
 use crate::surface_info::SurfaceInfo;
 use fxhash::FxHashMap;
 use std::error::Error;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
-use crate::resources::textures::TextureResourceEntry;
-pub use self::textures::TextureResourceData;
 
 #[allow(dead_code)]
 pub trait Resource {
@@ -22,7 +22,7 @@ pub trait Resource {
 }
 
 #[allow(dead_code)]
-pub trait ResourceData { }
+pub trait ResourceData {}
 
 #[allow(dead_code)]
 pub struct Resources<Lifecycle, GlobalError> {
@@ -34,7 +34,7 @@ pub struct Resources<Lifecycle, GlobalError> {
 impl<Lifecycle, GlobalError> Resources<Lifecycle, GlobalError>
 where
     GlobalError: Error + Send + Sync + 'static,
-    Lifecycle: Clone
+    Lifecycle: Clone,
 {
     pub fn recreate(
         &mut self,
@@ -45,12 +45,9 @@ where
         Ok(())
     }
 
-    pub fn retain<F>(
-        &mut self,
-        mut lifecycle: F,
-    )
-    where F:
-        FnMut(&Lifecycle) -> bool
+    pub fn retain<F>(&mut self, mut lifecycle: F)
+    where
+        F: FnMut(&Lifecycle) -> bool,
     {
         self.retain_textures(|_, l| lifecycle(l))
     }
@@ -70,6 +67,7 @@ mod tests {
     use super::*;
     use crate::create_test_device;
     use crate::examples::FallbackNormalTexture;
+    use std::convert::Infallible;
     use wgpu::TextureFormat;
 
     #[derive(Debug, thiserror::Error)]

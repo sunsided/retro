@@ -10,7 +10,10 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
-use wgpu_resource_manager::{ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, SurfaceId, WgpuResourceManagerInitializeSurfaceError};
+use wgpu_resource_manager::{
+    ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, SurfaceId,
+    WgpuResourceManagerInitializeSurfaceError,
+};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -19,11 +22,6 @@ use winit::window::Window;
 /// This structure holds the current state of the WGPU system, including the
 /// GPU state and per-frame data. It provides functionality for managing
 /// the WGPU backend and accessing mutable frame state.
-///
-/// # Fields
-/// - `state`: An optional shared GPU state wrapped in an `Arc<Mutex<WgpuState>>`.
-/// - `frame_state`: An optional per-frame state that includes frame-specific
-///   details such as the surface texture and command encoder.
 ///
 /// # Uses
 /// See e.g.
@@ -122,9 +120,7 @@ impl WgpuRenderState {
     }
 
     #[instrument(skip(self))]
-    pub fn device(
-        &mut self,
-    ) -> Result<&DeviceAndQueue, RenderPhaseError> {
+    pub fn device(&mut self) -> Result<&DeviceAndQueue, RenderPhaseError> {
         let hardware = self
             .hardware
             .as_mut()
@@ -211,12 +207,18 @@ impl WgpuRenderState {
 
     /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
     pub fn device_id(&self) -> DeviceId {
-        self.hardware.as_ref().map(|h| h.device_id()).unwrap_or_default()
+        self.hardware
+            .as_ref()
+            .map(|h| h.device_id())
+            .unwrap_or_default()
     }
 
     /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
     pub fn surface_id(&self) -> SurfaceId {
-        self.hardware.as_ref().map(|h| h.surface_id()).unwrap_or_default()
+        self.hardware
+            .as_ref()
+            .map(|h| h.surface_id())
+            .unwrap_or_default()
     }
 
     /// Gets the size of the configured surface.
