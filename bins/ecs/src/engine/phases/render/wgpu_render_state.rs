@@ -206,6 +206,7 @@ impl WgpuRenderState {
     }
 
     /// Gets the currently configured surface ID, or [`SurfaceId::default`](SurfaceId::default) if none exists.
+    #[allow(dead_code)]
     pub fn device_id(&self) -> DeviceId {
         self.hardware
             .as_ref()

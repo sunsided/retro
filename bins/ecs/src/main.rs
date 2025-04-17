@@ -7,7 +7,7 @@ use crate::engine::{
 };
 use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
-use crate::logic::InitializeMainWorld;
+use crate::logic::{CleanObsoleteResources, InitializeMainWorld};
 use crate::wgpu::wgpu_hardware::WgpuHardware;
 use ::wgpu::Backends;
 use std::sync::Arc;
@@ -132,7 +132,7 @@ impl App {
                 .expect("Failed to reinitialize window");
 
             self.ecs_world.apply_system_phase_wgpu_reinit();
-            // TODO: Collect the created resources into a shared state for later access, e.g. runtime material lookups
+            self.ecs_world.clean_obsolete_resources();
         }
 
         self.last_update = Instant::now();
@@ -150,6 +150,7 @@ impl App {
 
         // TODO: Set the new surface size.
         self.ecs_world.apply_system_phase_wgpu_reinit();
+        self.ecs_world.clean_obsolete_resources();
     }
 
     fn handle_key_modifiers_event(&mut self, new_modifiers: Modifiers) {

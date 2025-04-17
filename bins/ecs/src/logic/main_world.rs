@@ -4,13 +4,15 @@ use crate::engine::components::{
 };
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::{
-    CameraEntityData, DynamicLightEntityData, EntityAccess, EnvironmentEntityData, MainWorld,
-    SceneBackgroundEntityData, TextureSourceData, TextureSourceType, WgpuShaderData,
-    WgpuTextureData, WorldUserCommand, WorldUserCommandHandler,
+    CameraEntityData, DynamicLightEntityData, EntityAccess, EnvironmentEntityData,
+    IterWgpuShaderEntities, IterWgpuTextureEntities, MainWorld, SceneBackgroundEntityData,
+    TextureSourceData, TextureSourceType, WgpuShaderData, WgpuTextureData, WorldUserCommand,
+    WorldUserCommandHandler,
 };
 use crate::engine::{TileEntityData, WgpuShaderEntityData, WgpuTextureEntityData};
 use crate::map::tile::{CeilingType, FloorType, Tile};
 use crate::map::world_builder::WorldBuilder;
+use fxhash::FxHashSet;
 use tracing::warn;
 use wgpu::include_wgsl;
 
@@ -208,5 +210,27 @@ where
 {
     fn handle_user_command(&mut self, command: Self::UserCommand) {
         warn!(?command, "Unhandled user command");
+    }
+}
+
+pub trait CleanObsoleteResources {
+    fn clean_obsolete_resources(&mut self);
+}
+
+impl<E, Q> CleanObsoleteResources for MainWorld<E, Q> {
+    fn clean_obsolete_resources(&mut self) {
+        // Textures
+        let entites = FxHashSet::from_iter(self.iter_wgpu_texture_entities());
+        self.states
+            .resource_manager
+            .textures
+            .retain(|id, _| !entites.contains(id));
+
+        // Shaders
+        let entites = FxHashSet::from_iter(self.iter_wgpu_shader_entities());
+        self.states
+            .resource_manager
+            .shaders
+            .retain(|id, _| !entites.contains(id));
     }
 }

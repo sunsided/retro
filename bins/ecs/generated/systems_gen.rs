@@ -472,7 +472,7 @@ impl SystemStartupPhaseEvents for NoOpPhaseEvents {
     #[inline]
     fn on_begin_phase(
         &mut self,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -481,7 +481,7 @@ impl SystemStartupPhaseEvents for NoOpPhaseEvents {
     fn on_end_phase(
         &mut self,
         _result: Option<Self::Result>,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -497,7 +497,7 @@ pub trait SystemStartupPhaseEvents {
     /// Executed at the beginning of the phase (before all systems).
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<Self::Result, Self::Error>;
 
     /// Executed at the end of the phase (after all systems).
@@ -507,7 +507,7 @@ pub trait SystemStartupPhaseEvents {
     fn on_end_phase(
         &mut self,
         result: Option<Self::Result>,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error>;
 }
 
@@ -518,7 +518,7 @@ impl SystemWgpuReinitPhaseEvents for NoOpPhaseEvents {
     #[inline]
     fn on_begin_phase(
         &mut self,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -527,7 +527,7 @@ impl SystemWgpuReinitPhaseEvents for NoOpPhaseEvents {
     fn on_end_phase(
         &mut self,
         _result: Option<Self::Result>,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -543,7 +543,7 @@ pub trait SystemWgpuReinitPhaseEvents {
     /// Executed at the beginning of the phase (before all systems).
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<Self::Result, Self::Error>;
 
     /// Executed at the end of the phase (after all systems).
@@ -553,7 +553,7 @@ pub trait SystemWgpuReinitPhaseEvents {
     fn on_end_phase(
         &mut self,
         result: Option<Self::Result>,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error>;
 }
 
@@ -564,7 +564,7 @@ impl SystemFixedUpdatePhaseEvents for NoOpPhaseEvents {
     #[inline]
     fn on_begin_phase(
         &mut self,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -573,7 +573,7 @@ impl SystemFixedUpdatePhaseEvents for NoOpPhaseEvents {
     fn on_end_phase(
         &mut self,
         _result: Option<Self::Result>,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -589,7 +589,7 @@ pub trait SystemFixedUpdatePhaseEvents {
     /// Executed at the beginning of the phase (before all systems).
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<Self::Result, Self::Error>;
 
     /// Executed at the end of the phase (after all systems).
@@ -599,7 +599,7 @@ pub trait SystemFixedUpdatePhaseEvents {
     fn on_end_phase(
         &mut self,
         result: Option<Self::Result>,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error>;
 }
 
@@ -610,7 +610,7 @@ impl SystemUpdatePhaseEvents for NoOpPhaseEvents {
     #[inline]
     fn on_begin_phase(
         &mut self,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -619,7 +619,7 @@ impl SystemUpdatePhaseEvents for NoOpPhaseEvents {
     fn on_end_phase(
         &mut self,
         _result: Option<Self::Result>,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -635,7 +635,7 @@ pub trait SystemUpdatePhaseEvents {
     /// Executed at the beginning of the phase (before all systems).
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<Self::Result, Self::Error>;
 
     /// Executed at the end of the phase (after all systems).
@@ -645,7 +645,7 @@ pub trait SystemUpdatePhaseEvents {
     fn on_end_phase(
         &mut self,
         result: Option<Self::Result>,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error>;
 }
 
@@ -656,7 +656,7 @@ impl SystemRenderPhaseEvents for NoOpPhaseEvents {
     #[inline]
     fn on_begin_phase(
         &mut self,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
                 _wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
@@ -666,7 +666,7 @@ impl SystemRenderPhaseEvents for NoOpPhaseEvents {
     fn on_end_phase(
         &mut self,
         _result: Option<Self::Result>,
-        _context: &FrameContext,
+        _context: &::sillyecs::FrameContext,
                 _wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
@@ -683,7 +683,7 @@ pub trait SystemRenderPhaseEvents {
     /// Executed at the beginning of the phase (before all systems).
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &mut WgpuRenderState,
     ) -> Result<Self::Result, Self::Error>;
 
@@ -694,7 +694,7 @@ pub trait SystemRenderPhaseEvents {
     fn on_end_phase(
         &mut self,
         result: Option<Self::Result>,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &mut WgpuRenderState,
     ) -> Result<(), Self::Error>;
 }
@@ -778,7 +778,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
         &mut self,
                 
                 resource_manager: &mut ResourceManagerState,
-        entities: &[EntityId],
+        entities: &[::sillyecs::EntityId],
         wgpu_shaders: &[WgpuShaderComponent],
     );
 
@@ -798,7 +798,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
                 
-        entity: EntityId,
+        entity: ::sillyecs::EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
     ) {
          // intentionally left blank
@@ -816,7 +816,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
                 
-        entities: &[EntityId],
+        entities: &[::sillyecs::EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
         let zipped_iter = entities.iter().zip(wgpu_shaders.iter_mut());
@@ -829,26 +829,60 @@ pub trait ApplyWgpuInitShaderSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+                
+        entities: [&[::sillyecs::EntityId]; 1],
+        mut wgpu_shaders: [&mut [WgpuShaderComponent]; 1],
+    ) {
+        let zipped_iter = entities.iter().zip(wgpu_shaders.iter_mut());
+        for (entity, wgpu_shader) in zipped_iter {
+            ApplyWgpuInitShaderSystem::apply_many(
+                self,
+                        wgpu_render,
+                        
+                entity,
+                wgpu_shader,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl WgpuInitShaderSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-                
-        entity: EntityId,
-        wgpu_shader: &mut WgpuShaderComponent,
+        wgpu_render: &mut WgpuRenderState,
+        entities: &[::sillyecs::EntityId],
+        wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
         // Force the implementation of the ApplyWgpuInitShaderSystem trait.
-        ApplyWgpuInitShaderSystem::apply_single(
+        ApplyWgpuInitShaderSystem::apply_many(
             self,
-                    wgpu_render,
-                    
-            entity,
-            wgpu_shader,
+            wgpu_render,
+            entities,
+            wgpu_shaders,
         );
     }
 
@@ -860,22 +894,22 @@ impl WgpuInitShaderSystem {
     /// ### Mutates
     /// 
     /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-                
-        entities: &[EntityId],
-        wgpu_shaders: &mut [WgpuShaderComponent],
+        wgpu_render: &mut WgpuRenderState,
+        entities: [&[::sillyecs::EntityId]; 1],
+        mut wgpu_shaders: [&mut [WgpuShaderComponent]; 1],
     ) {
-        // Force the implementation of the ApplyWgpuInitShaderSystem trait.
-        ApplyWgpuInitShaderSystem::apply_many(
-            self,
-                    wgpu_render,
-                    
-            entities,
-            wgpu_shaders,
-        );
+        let zipped_iter = entities.iter().zip(wgpu_shaders.iter_mut());
+        for (entity, wgpu_shader) in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                entity,
+                wgpu_shader,
+            );
+        }
     }
 }
 
@@ -997,7 +1031,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
         &mut self,
                 
                 resource_manager: &mut ResourceManagerState,
-        entities: &[EntityId],
+        entities: &[::sillyecs::EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &[WgpuTextureComponent],
     );
@@ -1019,7 +1053,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
                 
-        entity: EntityId,
+        entity: ::sillyecs::EntityId,
         texture_source: &TextureSourceComponent,
         wgpu_texture: &mut WgpuTextureComponent,
     ) {
@@ -1039,7 +1073,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
                 
-        entities: &[EntityId],
+        entities: &[::sillyecs::EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
     ) {
@@ -1054,28 +1088,66 @@ pub trait ApplyWgpuInitTextureSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `texture_source`: A slice of the input components of type [`TextureSourceComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+                
+        entities: [&[::sillyecs::EntityId]; 1],
+        texture_sources: [&[TextureSourceComponent]; 1],
+        mut wgpu_textures: [&mut [WgpuTextureComponent]; 1],
+    ) {
+        let zipped_iter = entities.iter().zip(texture_sources.iter().zip(wgpu_textures.iter_mut()));
+        for (entity, (texture_source, wgpu_texture)) in zipped_iter {
+            ApplyWgpuInitTextureSystem::apply_many(
+                self,
+                        wgpu_render,
+                        
+                entity,
+                texture_source,
+                wgpu_texture,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl WgpuInitTextureSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `texture_source`: A slice of the input components of type [`TextureSourceComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-                
-        entity: EntityId,
-        texture_source: &TextureSourceComponent,
-        wgpu_texture: &mut WgpuTextureComponent,
+        wgpu_render: &mut WgpuRenderState,
+        entities: &[::sillyecs::EntityId],
+        texture_sources: &[TextureSourceComponent],
+        wgpu_textures: &mut [WgpuTextureComponent],
     ) {
         // Force the implementation of the ApplyWgpuInitTextureSystem trait.
-        ApplyWgpuInitTextureSystem::apply_single(
+        ApplyWgpuInitTextureSystem::apply_many(
             self,
-                    wgpu_render,
-                    
-            entity,
-            texture_source,
-            wgpu_texture,
+            wgpu_render,
+            entities,
+            texture_sources,
+            wgpu_textures,
         );
     }
 
@@ -1088,24 +1160,24 @@ impl WgpuInitTextureSystem {
     /// ### Mutates
     /// 
     /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-                
-        entities: &[EntityId],
-        texture_sources: &[TextureSourceComponent],
-        wgpu_textures: &mut [WgpuTextureComponent],
+        wgpu_render: &mut WgpuRenderState,
+        entities: [&[::sillyecs::EntityId]; 1],
+        texture_sources: [&[TextureSourceComponent]; 1],
+        mut wgpu_textures: [&mut [WgpuTextureComponent]; 1],
     ) {
-        // Force the implementation of the ApplyWgpuInitTextureSystem trait.
-        ApplyWgpuInitTextureSystem::apply_many(
-            self,
-                    wgpu_render,
-                    
-            entities,
-            texture_sources,
-            wgpu_textures,
-        );
+        let zipped_iter = entities.iter().zip(texture_sources.iter().zip(wgpu_textures.iter_mut()));
+        for (entity, (texture_source, wgpu_texture)) in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                entity,
+                texture_source,
+                wgpu_texture,
+            );
+        }
     }
 }
 
@@ -1256,26 +1328,64 @@ pub trait ApplyCameraSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `camera`: A mutable slice of the components of type [`CameraComponent`].
+    /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                input: &InputState,
+                wgpu_render: &WgpuRenderState,
+        mut cameras: [&mut [CameraComponent]; 1],
+        mut camera_fps_controllers: [&mut [CameraFpsControllerComponent]; 1],
+    ) {
+        let zipped_iter = cameras.iter_mut().zip(camera_fps_controllers.iter_mut());
+        for (camera, camera_fps_controller) in zipped_iter {
+            ApplyCameraSystem::apply_many(
+                self,
+                        input,
+                        wgpu_render,
+                camera,
+                camera_fps_controller,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl CameraSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `camera`: A mutable slice of the components of type [`CameraComponent`].
+    /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                input: &InputState,
-                wgpu_render: &WgpuRenderState,
-        camera: &mut CameraComponent,
-        camera_fps_controller: &mut CameraFpsControllerComponent,
+        input: &InputState,
+        wgpu_render: &WgpuRenderState,
+        cameras: &mut [CameraComponent],
+        camera_fps_controllers: &mut [CameraFpsControllerComponent],
     ) {
         // Force the implementation of the ApplyCameraSystem trait.
-        ApplyCameraSystem::apply_single(
+        ApplyCameraSystem::apply_many(
             self,
-                    input,
-                    wgpu_render,
-            camera,
-            camera_fps_controller,
+            input,
+            wgpu_render,
+            cameras,
+            camera_fps_controllers,
         );
     }
 
@@ -1288,22 +1398,24 @@ impl CameraSystem {
     /// 
     /// - `camera`: A mutable slice of the components of type [`CameraComponent`].
     /// - `camera_fps_controller`: A mutable slice of the components of type [`CameraFpsControllerComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                input: &InputState,
-                wgpu_render: &WgpuRenderState,
-        cameras: &mut [CameraComponent],
-        camera_fps_controllers: &mut [CameraFpsControllerComponent],
+        input: &InputState,
+        wgpu_render: &WgpuRenderState,
+        mut cameras: [&mut [CameraComponent]; 1],
+        mut camera_fps_controllers: [&mut [CameraFpsControllerComponent]; 1],
     ) {
-        // Force the implementation of the ApplyCameraSystem trait.
-        ApplyCameraSystem::apply_many(
-            self,
-                    input,
-                    wgpu_render,
-            cameras,
-            camera_fps_controllers,
-        );
+        let zipped_iter = cameras.iter_mut().zip(camera_fps_controllers.iter_mut());
+        for (camera, camera_fps_controller) in zipped_iter {
+            self.apply_many(
+                input,
+                wgpu_render,
+                camera,
+                camera_fps_controller,
+            );
+        }
     }
 }
 
@@ -1370,7 +1482,7 @@ pub trait ApplyTimeOfDaySystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> bool {
         true
     }
@@ -1383,7 +1495,7 @@ pub trait ApplyTimeOfDaySystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -1396,7 +1508,7 @@ pub trait ApplyTimeOfDaySystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -1415,7 +1527,7 @@ pub trait ApplyTimeOfDaySystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
         time_of_day: &mut TimeOfDayComponent,
     ) {
          // intentionally left blank
@@ -1431,7 +1543,7 @@ pub trait ApplyTimeOfDaySystem: System {
     /// - `time_of_day`: A mutable slice of the components of type [`TimeOfDayComponent`].
     fn apply_many(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
         time_of_days: &mut [TimeOfDayComponent],
     ) {
         let zipped_iter = time_of_days;
@@ -1442,22 +1554,54 @@ pub trait ApplyTimeOfDaySystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `time_of_day`: A mutable slice of the components of type [`TimeOfDayComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        context: &::sillyecs::FrameContext,
+        mut time_of_days: [&mut [TimeOfDayComponent]; 1],
+    ) {
+        let zipped_iter = time_of_days;
+        for time_of_day in zipped_iter {
+            ApplyTimeOfDaySystem::apply_many(
+                self,
+                context,
+                time_of_day,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl TimeOfDaySystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `time_of_day`: A mutable slice of the components of type [`TimeOfDayComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-        context: &FrameContext,
-        time_of_day: &mut TimeOfDayComponent,
+        context: &::sillyecs::FrameContext,
+        time_of_days: &mut [TimeOfDayComponent],
     ) {
         // Force the implementation of the ApplyTimeOfDaySystem trait.
-        ApplyTimeOfDaySystem::apply_single(
+        ApplyTimeOfDaySystem::apply_many(
             self,
             context,
-            time_of_day,
+            time_of_days,
         );
     }
 
@@ -1469,18 +1613,20 @@ impl TimeOfDaySystem {
     /// ### Mutates
     /// 
     /// - `time_of_day`: A mutable slice of the components of type [`TimeOfDayComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-        context: &FrameContext,
-        time_of_days: &mut [TimeOfDayComponent],
+        context: &::sillyecs::FrameContext,
+        mut time_of_days: [&mut [TimeOfDayComponent]; 1],
     ) {
-        // Force the implementation of the ApplyTimeOfDaySystem trait.
-        ApplyTimeOfDaySystem::apply_many(
-            self,
-            context,
-            time_of_days,
-        );
+        let zipped_iter = time_of_days;
+        for time_of_day in zipped_iter {
+            self.apply_many(
+                context,
+                time_of_day,
+            );
+        }
     }
 }
 
@@ -1634,28 +1780,6 @@ pub trait ApplySunSystem: System {
             );
         }
     }
-}
-
-#[allow(dead_code)]
-impl SunSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
-        &mut self,
-        time_of_day: &TimeOfDayComponent,
-        sun: &mut SunComponent,
-        skydome: &mut SkydomeComponent,
-        ambient_light: &mut AmbientLightComponent,
-    ) {
-        // Force the implementation of the ApplySunSystem trait.
-        ApplySunSystem::apply_single(
-            self,
-            time_of_day,
-            sun,
-            skydome,
-            ambient_light,
-        );
-    }
 
     /// Applies the system's business logic to the given entity components.
     ///
@@ -1668,7 +1792,42 @@ impl SunSystem {
     /// - `sun`: A mutable slice of the components of type [`SunComponent`].
     /// - `skydome`: A mutable slice of the components of type [`SkydomeComponent`].
     /// - `ambient_light`: A mutable slice of the components of type [`AmbientLightComponent`].
+    #[allow(unused_mut)]
     #[inline]
+    fn apply_all(
+        &mut self,
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        mut suns: [&mut [SunComponent]; 1],
+        mut skydomes: [&mut [SkydomeComponent]; 1],
+        mut ambient_lights: [&mut [AmbientLightComponent]; 1],
+    ) {
+        let zipped_iter = time_of_days.iter().zip(suns.iter_mut().zip(skydomes.iter_mut().zip(ambient_lights.iter_mut())));
+        for (time_of_day, (sun, (skydome, ambient_light))) in zipped_iter {
+            ApplySunSystem::apply_many(
+                self,
+                time_of_day,
+                sun,
+                skydome,
+                ambient_light,
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl SunSystem {
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `sun`: A mutable slice of the components of type [`SunComponent`].
+    /// - `skydome`: A mutable slice of the components of type [`SkydomeComponent`].
+    /// - `ambient_light`: A mutable slice of the components of type [`AmbientLightComponent`].
+    #[inline(always)]
     fn apply_many(
         &mut self,
         time_of_days: &[TimeOfDayComponent],
@@ -1684,6 +1843,37 @@ impl SunSystem {
             skydomes,
             ambient_lights,
         );
+    }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `sun`: A mutable slice of the components of type [`SunComponent`].
+    /// - `skydome`: A mutable slice of the components of type [`SkydomeComponent`].
+    /// - `ambient_light`: A mutable slice of the components of type [`AmbientLightComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        mut suns: [&mut [SunComponent]; 1],
+        mut skydomes: [&mut [SkydomeComponent]; 1],
+        mut ambient_lights: [&mut [AmbientLightComponent]; 1],
+    ) {
+        let zipped_iter = time_of_days.iter().zip(suns.iter_mut().zip(skydomes.iter_mut().zip(ambient_lights.iter_mut())));
+        for (time_of_day, (sun, (skydome, ambient_light))) in zipped_iter {
+            self.apply_many(
+                time_of_day,
+                sun,
+                skydome,
+                ambient_light,
+            );
+        }
     }
 }
 
@@ -1825,22 +2015,56 @@ pub trait ApplyFogSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `fog`: A mutable slice of the components of type [`FogComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        mut fogs: [&mut [FogComponent]; 1],
+    ) {
+        let zipped_iter = time_of_days.iter().zip(fogs.iter_mut());
+        for (time_of_day, fog) in zipped_iter {
+            ApplyFogSystem::apply_many(
+                self,
+                time_of_day,
+                fog,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl FogSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `fog`: A mutable slice of the components of type [`FogComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-        time_of_day: &TimeOfDayComponent,
-        fog: &mut FogComponent,
+        time_of_days: &[TimeOfDayComponent],
+        fogs: &mut [FogComponent],
     ) {
         // Force the implementation of the ApplyFogSystem trait.
-        ApplyFogSystem::apply_single(
+        ApplyFogSystem::apply_many(
             self,
-            time_of_day,
-            fog,
+            time_of_days,
+            fogs,
         );
     }
 
@@ -1853,18 +2077,20 @@ impl FogSystem {
     /// ### Mutates
     /// 
     /// - `fog`: A mutable slice of the components of type [`FogComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-        time_of_days: &[TimeOfDayComponent],
-        fogs: &mut [FogComponent],
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        mut fogs: [&mut [FogComponent]; 1],
     ) {
-        // Force the implementation of the ApplyFogSystem trait.
-        ApplyFogSystem::apply_many(
-            self,
-            time_of_days,
-            fogs,
-        );
+        let zipped_iter = time_of_days.iter().zip(fogs.iter_mut());
+        for (time_of_day, fog) in zipped_iter {
+            self.apply_many(
+                time_of_day,
+                fog,
+            );
+        }
     }
 }
 
@@ -2006,21 +2232,55 @@ pub trait ApplyStarsSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `stars`: A mutable slice of the components of type [`StarsComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        mut stars: [&mut [StarsComponent]; 1],
+    ) {
+        let zipped_iter = time_of_days.iter().zip(stars.iter_mut());
+        for (time_of_day, stars) in zipped_iter {
+            ApplyStarsSystem::apply_many(
+                self,
+                time_of_day,
+                stars,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl StarsSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `stars`: A mutable slice of the components of type [`StarsComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-        time_of_day: &TimeOfDayComponent,
-        stars: &mut StarsComponent,
+        time_of_days: &[TimeOfDayComponent],
+        stars: &mut [StarsComponent],
     ) {
         // Force the implementation of the ApplyStarsSystem trait.
-        ApplyStarsSystem::apply_single(
+        ApplyStarsSystem::apply_many(
             self,
-            time_of_day,
+            time_of_days,
             stars,
         );
     }
@@ -2034,18 +2294,20 @@ impl StarsSystem {
     /// ### Mutates
     /// 
     /// - `stars`: A mutable slice of the components of type [`StarsComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-        time_of_days: &[TimeOfDayComponent],
-        stars: &mut [StarsComponent],
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        mut stars: [&mut [StarsComponent]; 1],
     ) {
-        // Force the implementation of the ApplyStarsSystem trait.
-        ApplyStarsSystem::apply_many(
-            self,
-            time_of_days,
-            stars,
-        );
+        let zipped_iter = time_of_days.iter().zip(stars.iter_mut());
+        for (time_of_day, stars) in zipped_iter {
+            self.apply_many(
+                time_of_day,
+                stars,
+            );
+        }
     }
 }
 
@@ -2117,7 +2379,7 @@ pub trait ApplyPhysicsSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> bool {
         true
     }
@@ -2130,7 +2392,7 @@ pub trait ApplyPhysicsSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2143,7 +2405,7 @@ pub trait ApplyPhysicsSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2163,7 +2425,7 @@ pub trait ApplyPhysicsSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
         velocity: &VelocityComponent,
         position: &mut PositionComponent,
     ) {
@@ -2181,7 +2443,7 @@ pub trait ApplyPhysicsSystem: System {
     /// - `position`: A mutable slice of the components of type [`PositionComponent`].
     fn apply_many(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
         velocities: &[VelocityComponent],
         positions: &mut [PositionComponent],
     ) {
@@ -2194,24 +2456,60 @@ pub trait ApplyPhysicsSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `velocity`: A slice of the input components of type [`VelocityComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `position`: A mutable slice of the components of type [`PositionComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        context: &::sillyecs::FrameContext,
+        velocities: [&[VelocityComponent]; 2],
+        mut positions: [&mut [PositionComponent]; 2],
+    ) {
+        let zipped_iter = velocities.iter().zip(positions.iter_mut());
+        for (velocity, position) in zipped_iter {
+            ApplyPhysicsSystem::apply_many(
+                self,
+                context,
+                velocity,
+                position,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl PhysicsSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `velocity`: A slice of the input components of type [`VelocityComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `position`: A mutable slice of the components of type [`PositionComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-        context: &FrameContext,
-        velocity: &VelocityComponent,
-        position: &mut PositionComponent,
+        context: &::sillyecs::FrameContext,
+        velocities: &[VelocityComponent],
+        positions: &mut [PositionComponent],
     ) {
         // Force the implementation of the ApplyPhysicsSystem trait.
-        ApplyPhysicsSystem::apply_single(
+        ApplyPhysicsSystem::apply_many(
             self,
             context,
-            velocity,
-            position,
+            velocities,
+            positions,
         );
     }
 
@@ -2224,20 +2522,22 @@ impl PhysicsSystem {
     /// ### Mutates
     /// 
     /// - `position`: A mutable slice of the components of type [`PositionComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-        context: &FrameContext,
-        velocities: &[VelocityComponent],
-        positions: &mut [PositionComponent],
+        context: &::sillyecs::FrameContext,
+        velocities: [&[VelocityComponent]; 2],
+        mut positions: [&mut [PositionComponent]; 2],
     ) {
-        // Force the implementation of the ApplyPhysicsSystem trait.
-        ApplyPhysicsSystem::apply_many(
-            self,
-            context,
-            velocities,
-            positions,
-        );
+        let zipped_iter = velocities.iter().zip(positions.iter_mut());
+        for (velocity, position) in zipped_iter {
+            self.apply_many(
+                context,
+                velocity,
+                position,
+            );
+        }
     }
 }
 
@@ -2304,7 +2604,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> bool {
         true
     }
@@ -2317,7 +2617,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2330,7 +2630,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
     ) -> Result<(), Self::Error> {
         Ok(())
     }
@@ -2349,7 +2649,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
         background_color: &mut BackgroundColorComponent,
     ) {
          // intentionally left blank
@@ -2365,7 +2665,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
     /// - `background_color`: A mutable slice of the components of type [`BackgroundColorComponent`].
     fn apply_many(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
         background_colors: &mut [BackgroundColorComponent],
     ) {
         let zipped_iter = background_colors;
@@ -2376,22 +2676,54 @@ pub trait ApplyBackgroundColorCycleSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `background_color`: A mutable slice of the components of type [`BackgroundColorComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        context: &::sillyecs::FrameContext,
+        mut background_colors: [&mut [BackgroundColorComponent]; 1],
+    ) {
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            ApplyBackgroundColorCycleSystem::apply_many(
+                self,
+                context,
+                background_color,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl BackgroundColorCycleSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    ///
+    /// ### Mutates
+    /// 
+    /// - `background_color`: A mutable slice of the components of type [`BackgroundColorComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-        context: &FrameContext,
-        background_color: &mut BackgroundColorComponent,
+        context: &::sillyecs::FrameContext,
+        background_colors: &mut [BackgroundColorComponent],
     ) {
         // Force the implementation of the ApplyBackgroundColorCycleSystem trait.
-        ApplyBackgroundColorCycleSystem::apply_single(
+        ApplyBackgroundColorCycleSystem::apply_many(
             self,
             context,
-            background_color,
+            background_colors,
         );
     }
 
@@ -2403,18 +2735,20 @@ impl BackgroundColorCycleSystem {
     /// ### Mutates
     /// 
     /// - `background_color`: A mutable slice of the components of type [`BackgroundColorComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-        context: &FrameContext,
-        background_colors: &mut [BackgroundColorComponent],
+        context: &::sillyecs::FrameContext,
+        mut background_colors: [&mut [BackgroundColorComponent]; 1],
     ) {
-        // Force the implementation of the ApplyBackgroundColorCycleSystem trait.
-        ApplyBackgroundColorCycleSystem::apply_many(
-            self,
-            context,
-            background_colors,
-        );
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            self.apply_many(
+                context,
+                background_color,
+            );
+        }
     }
 }
 
@@ -2559,24 +2893,58 @@ pub trait ApplyCameraRenderSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `camera`: A slice of the input components of type [`CameraComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &WgpuRenderState,
+                active_camera: &mut ActiveCameraState,
+        cameras: [&[CameraComponent]; 1],
+    ) {
+        let zipped_iter = cameras;
+        for camera in zipped_iter {
+            ApplyCameraRenderSystem::apply_many(
+                self,
+                        wgpu_render,
+                        active_camera,
+                camera,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl CameraRenderSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `camera`: A slice of the input components of type [`CameraComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &WgpuRenderState,
-                active_camera: &mut ActiveCameraState,
-        camera: &CameraComponent,
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        cameras: &[CameraComponent],
     ) {
         // Force the implementation of the ApplyCameraRenderSystem trait.
-        ApplyCameraRenderSystem::apply_single(
+        ApplyCameraRenderSystem::apply_many(
             self,
-                    wgpu_render,
-                    active_camera,
-            camera,
+            wgpu_render,
+            active_camera,
+            cameras,
         );
     }
 
@@ -2588,20 +2956,22 @@ impl CameraRenderSystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &WgpuRenderState,
-                active_camera: &mut ActiveCameraState,
-        cameras: &[CameraComponent],
+        wgpu_render: &WgpuRenderState,
+        active_camera: &mut ActiveCameraState,
+        cameras: [&[CameraComponent]; 1],
     ) {
-        // Force the implementation of the ApplyCameraRenderSystem trait.
-        ApplyCameraRenderSystem::apply_many(
-            self,
-                    wgpu_render,
-                    active_camera,
-            cameras,
-        );
+        let zipped_iter = cameras;
+        for camera in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                active_camera,
+                camera,
+            );
+        }
     }
 }
 
@@ -2770,32 +3140,84 @@ pub trait ApplyFrameGlobalsSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    /// - `sun`: A slice of the input components of type [`SunComponent`].
+    /// - `fog`: A slice of the input components of type [`FogComponent`].
+    /// - `ambient_light`: A slice of the input components of type [`AmbientLightComponent`].
+    /// - `stars`: A slice of the input components of type [`StarsComponent`].
+    /// - `skydome`: A slice of the input components of type [`SkydomeComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        suns: [&[SunComponent]; 1],
+        fogs: [&[FogComponent]; 1],
+        ambient_lights: [&[AmbientLightComponent]; 1],
+        stars: [&[StarsComponent]; 1],
+        skydomes: [&[SkydomeComponent]; 1],
+    ) {
+        let zipped_iter = time_of_days.iter().zip(suns.iter().zip(fogs.iter().zip(ambient_lights.iter().zip(stars.iter().zip(skydomes.iter())))));
+        for (time_of_day, (sun, (fog, (ambient_light, (stars, skydome))))) in zipped_iter {
+            ApplyFrameGlobalsSystem::apply_many(
+                self,
+                        wgpu_render,
+                time_of_day,
+                sun,
+                fog,
+                ambient_light,
+                stars,
+                skydome,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl FrameGlobalsSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `time_of_day`: A slice of the input components of type [`TimeOfDayComponent`].
+    /// - `sun`: A slice of the input components of type [`SunComponent`].
+    /// - `fog`: A slice of the input components of type [`FogComponent`].
+    /// - `ambient_light`: A slice of the input components of type [`AmbientLightComponent`].
+    /// - `stars`: A slice of the input components of type [`StarsComponent`].
+    /// - `skydome`: A slice of the input components of type [`SkydomeComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        time_of_day: &TimeOfDayComponent,
-        sun: &SunComponent,
-        fog: &FogComponent,
-        ambient_light: &AmbientLightComponent,
-        stars: &StarsComponent,
-        skydome: &SkydomeComponent,
+        wgpu_render: &mut WgpuRenderState,
+        time_of_days: &[TimeOfDayComponent],
+        suns: &[SunComponent],
+        fogs: &[FogComponent],
+        ambient_lights: &[AmbientLightComponent],
+        stars: &[StarsComponent],
+        skydomes: &[SkydomeComponent],
     ) {
         // Force the implementation of the ApplyFrameGlobalsSystem trait.
-        ApplyFrameGlobalsSystem::apply_single(
+        ApplyFrameGlobalsSystem::apply_many(
             self,
-                    wgpu_render,
-            time_of_day,
-            sun,
-            fog,
-            ambient_light,
+            wgpu_render,
+            time_of_days,
+            suns,
+            fogs,
+            ambient_lights,
             stars,
-            skydome,
+            skydomes,
         );
     }
 
@@ -2812,28 +3234,30 @@ impl FrameGlobalsSystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        time_of_days: &[TimeOfDayComponent],
-        suns: &[SunComponent],
-        fogs: &[FogComponent],
-        ambient_lights: &[AmbientLightComponent],
-        stars: &[StarsComponent],
-        skydomes: &[SkydomeComponent],
+        wgpu_render: &mut WgpuRenderState,
+        time_of_days: [&[TimeOfDayComponent]; 1],
+        suns: [&[SunComponent]; 1],
+        fogs: [&[FogComponent]; 1],
+        ambient_lights: [&[AmbientLightComponent]; 1],
+        stars: [&[StarsComponent]; 1],
+        skydomes: [&[SkydomeComponent]; 1],
     ) {
-        // Force the implementation of the ApplyFrameGlobalsSystem trait.
-        ApplyFrameGlobalsSystem::apply_many(
-            self,
-                    wgpu_render,
-            time_of_days,
-            suns,
-            fogs,
-            ambient_lights,
-            stars,
-            skydomes,
-        );
+        let zipped_iter = time_of_days.iter().zip(suns.iter().zip(fogs.iter().zip(ambient_lights.iter().zip(stars.iter().zip(skydomes.iter())))));
+        for (time_of_day, (sun, (fog, (ambient_light, (stars, skydome))))) in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                time_of_day,
+                sun,
+                fog,
+                ambient_light,
+                stars,
+                skydome,
+            );
+        }
     }
 }
 
@@ -2972,22 +3396,54 @@ pub trait ApplyRenderBackgroundSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A slice of the input components of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+        background_colors: [&[BackgroundColorComponent]; 1],
+    ) {
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            ApplyRenderBackgroundSystem::apply_many(
+                self,
+                        wgpu_render,
+                background_color,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl RenderBackgroundSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A slice of the input components of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        background_color: &BackgroundColorComponent,
+        wgpu_render: &mut WgpuRenderState,
+        background_colors: &[BackgroundColorComponent],
     ) {
         // Force the implementation of the ApplyRenderBackgroundSystem trait.
-        ApplyRenderBackgroundSystem::apply_single(
+        ApplyRenderBackgroundSystem::apply_many(
             self,
-                    wgpu_render,
-            background_color,
+            wgpu_render,
+            background_colors,
         );
     }
 
@@ -2999,18 +3455,20 @@ impl RenderBackgroundSystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        background_colors: &[BackgroundColorComponent],
+        wgpu_render: &mut WgpuRenderState,
+        background_colors: [&[BackgroundColorComponent]; 1],
     ) {
-        // Force the implementation of the ApplyRenderBackgroundSystem trait.
-        ApplyRenderBackgroundSystem::apply_many(
-            self,
-                    wgpu_render,
-            background_colors,
-        );
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                background_color,
+            );
+        }
     }
 }
 
@@ -3149,22 +3607,54 @@ pub trait ApplyRenderSkySystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `skydome`: A slice of the input components of type [`SkydomeComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+        skydomes: [&[SkydomeComponent]; 1],
+    ) {
+        let zipped_iter = skydomes;
+        for skydome in zipped_iter {
+            ApplyRenderSkySystem::apply_many(
+                self,
+                        wgpu_render,
+                skydome,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl RenderSkySystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `skydome`: A slice of the input components of type [`SkydomeComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        skydome: &SkydomeComponent,
+        wgpu_render: &mut WgpuRenderState,
+        skydomes: &[SkydomeComponent],
     ) {
         // Force the implementation of the ApplyRenderSkySystem trait.
-        ApplyRenderSkySystem::apply_single(
+        ApplyRenderSkySystem::apply_many(
             self,
-                    wgpu_render,
-            skydome,
+            wgpu_render,
+            skydomes,
         );
     }
 
@@ -3176,18 +3666,20 @@ impl RenderSkySystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        skydomes: &[SkydomeComponent],
+        wgpu_render: &mut WgpuRenderState,
+        skydomes: [&[SkydomeComponent]; 1],
     ) {
-        // Force the implementation of the ApplyRenderSkySystem trait.
-        ApplyRenderSkySystem::apply_many(
-            self,
-                    wgpu_render,
-            skydomes,
-        );
+        let zipped_iter = skydomes;
+        for skydome in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                skydome,
+            );
+        }
     }
 }
 
@@ -3338,26 +3830,66 @@ pub trait ApplyRenderSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `position`: A slice of the input components of type [`PositionComponent`].
+    /// - `transform`: A slice of the input components of type [`TransformComponent`].
+    /// - `model`: A slice of the input components of type [`ModelComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+        positions: [&[PositionComponent]; 1],
+        transforms: [&[TransformComponent]; 1],
+        models: [&[ModelComponent]; 1],
+    ) {
+        let zipped_iter = positions.iter().zip(transforms.iter().zip(models.iter()));
+        for (position, (transform, model)) in zipped_iter {
+            ApplyRenderSystem::apply_many(
+                self,
+                        wgpu_render,
+                position,
+                transform,
+                model,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl RenderSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `position`: A slice of the input components of type [`PositionComponent`].
+    /// - `transform`: A slice of the input components of type [`TransformComponent`].
+    /// - `model`: A slice of the input components of type [`ModelComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        position: &PositionComponent,
-        transform: &TransformComponent,
-        model: &ModelComponent,
+        wgpu_render: &mut WgpuRenderState,
+        positions: &[PositionComponent],
+        transforms: &[TransformComponent],
+        models: &[ModelComponent],
     ) {
         // Force the implementation of the ApplyRenderSystem trait.
-        ApplyRenderSystem::apply_single(
+        ApplyRenderSystem::apply_many(
             self,
-                    wgpu_render,
-            position,
-            transform,
-            model,
+            wgpu_render,
+            positions,
+            transforms,
+            models,
         );
     }
 
@@ -3371,22 +3903,24 @@ impl RenderSystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        positions: &[PositionComponent],
-        transforms: &[TransformComponent],
-        models: &[ModelComponent],
+        wgpu_render: &mut WgpuRenderState,
+        positions: [&[PositionComponent]; 1],
+        transforms: [&[TransformComponent]; 1],
+        models: [&[ModelComponent]; 1],
     ) {
-        // Force the implementation of the ApplyRenderSystem trait.
-        ApplyRenderSystem::apply_many(
-            self,
-                    wgpu_render,
-            positions,
-            transforms,
-            models,
-        );
+        let zipped_iter = positions.iter().zip(transforms.iter().zip(models.iter()));
+        for (position, (transform, model)) in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                position,
+                transform,
+                model,
+            );
+        }
     }
 }
 
@@ -3531,24 +4065,60 @@ pub trait ApplyTileRenderSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `tile`: A slice of the input components of type [`TileComponent`].
+    /// - `position`: A slice of the input components of type [`PositionComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+        tiles: [&[TileComponent]; 1],
+        positions: [&[PositionComponent]; 1],
+    ) {
+        let zipped_iter = tiles.iter().zip(positions.iter());
+        for (tile, position) in zipped_iter {
+            ApplyTileRenderSystem::apply_many(
+                self,
+                        wgpu_render,
+                tile,
+                position,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl TileRenderSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `tile`: A slice of the input components of type [`TileComponent`].
+    /// - `position`: A slice of the input components of type [`PositionComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        tile: &TileComponent,
-        position: &PositionComponent,
+        wgpu_render: &mut WgpuRenderState,
+        tiles: &[TileComponent],
+        positions: &[PositionComponent],
     ) {
         // Force the implementation of the ApplyTileRenderSystem trait.
-        ApplyTileRenderSystem::apply_single(
+        ApplyTileRenderSystem::apply_many(
             self,
-                    wgpu_render,
-            tile,
-            position,
+            wgpu_render,
+            tiles,
+            positions,
         );
     }
 
@@ -3561,20 +4131,22 @@ impl TileRenderSystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        tiles: &[TileComponent],
-        positions: &[PositionComponent],
+        wgpu_render: &mut WgpuRenderState,
+        tiles: [&[TileComponent]; 1],
+        positions: [&[PositionComponent]; 1],
     ) {
-        // Force the implementation of the ApplyTileRenderSystem trait.
-        ApplyTileRenderSystem::apply_many(
-            self,
-                    wgpu_render,
-            tiles,
-            positions,
-        );
+        let zipped_iter = tiles.iter().zip(positions.iter());
+        for (tile, position) in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                tile,
+                position,
+            );
+        }
     }
 }
 
@@ -3645,7 +4217,7 @@ pub trait ApplyDynamicLightSystem: System {
     #[allow(unused_variables)]
     fn is_ready(
         &self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &WgpuRenderState,
     ) -> bool {
         true
@@ -3659,7 +4231,7 @@ pub trait ApplyDynamicLightSystem: System {
     #[allow(unused_variables)]
     fn on_begin_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
@@ -3673,7 +4245,7 @@ pub trait ApplyDynamicLightSystem: System {
     #[allow(unused_variables)]
     fn on_end_phase(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &WgpuRenderState,
     ) -> Result<(), Self::Error> {
         Ok(())
@@ -3694,7 +4266,7 @@ pub trait ApplyDynamicLightSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &mut WgpuRenderState,
         color: &ColorComponent,
         dynamic_light: &mut DynamicLightComponent,
@@ -3713,7 +4285,7 @@ pub trait ApplyDynamicLightSystem: System {
     /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
     fn apply_many(
         &mut self,
-        context: &FrameContext,
+        context: &::sillyecs::FrameContext,
                 wgpu_render: &mut WgpuRenderState,
         colors: &[ColorComponent],
         dynamic_lights: &mut [DynamicLightComponent],
@@ -3728,26 +4300,64 @@ pub trait ApplyDynamicLightSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `color`: A slice of the input components of type [`ColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+        context: &::sillyecs::FrameContext,
+                wgpu_render: &mut WgpuRenderState,
+        colors: [&[ColorComponent]; 1],
+        mut dynamic_lights: [&mut [DynamicLightComponent]; 1],
+    ) {
+        let zipped_iter = colors.iter().zip(dynamic_lights.iter_mut());
+        for (color, dynamic_light) in zipped_iter {
+            ApplyDynamicLightSystem::apply_many(
+                self,
+                context,
+                        wgpu_render,
+                color,
+                dynamic_light,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl DynamicLightSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `color`: A slice of the input components of type [`ColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-        context: &FrameContext,
-                wgpu_render: &mut WgpuRenderState,
-        color: &ColorComponent,
-        dynamic_light: &mut DynamicLightComponent,
+        context: &::sillyecs::FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+        colors: &[ColorComponent],
+        dynamic_lights: &mut [DynamicLightComponent],
     ) {
         // Force the implementation of the ApplyDynamicLightSystem trait.
-        ApplyDynamicLightSystem::apply_single(
+        ApplyDynamicLightSystem::apply_many(
             self,
             context,
-                    wgpu_render,
-            color,
-            dynamic_light,
+            wgpu_render,
+            colors,
+            dynamic_lights,
         );
     }
 
@@ -3760,22 +4370,24 @@ impl DynamicLightSystem {
     /// ### Mutates
     /// 
     /// - `dynamic_light`: A mutable slice of the components of type [`DynamicLightComponent`].
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-        context: &FrameContext,
-                wgpu_render: &mut WgpuRenderState,
-        colors: &[ColorComponent],
-        dynamic_lights: &mut [DynamicLightComponent],
+        context: &::sillyecs::FrameContext,
+        wgpu_render: &mut WgpuRenderState,
+        colors: [&[ColorComponent]; 1],
+        mut dynamic_lights: [&mut [DynamicLightComponent]; 1],
     ) {
-        // Force the implementation of the ApplyDynamicLightSystem trait.
-        ApplyDynamicLightSystem::apply_many(
-            self,
-            context,
-                    wgpu_render,
-            colors,
-            dynamic_lights,
-        );
+        let zipped_iter = colors.iter().zip(dynamic_lights.iter_mut());
+        for (color, dynamic_light) in zipped_iter {
+            self.apply_many(
+                context,
+                wgpu_render,
+                color,
+                dynamic_light,
+            );
+        }
     }
 }
 
@@ -3915,22 +4527,54 @@ pub trait ApplyVgaBlitSystem: System {
             );
         }
     }
+
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A slice of the input components of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[allow(unused_mut)]
+    #[inline]
+    fn apply_all(
+        &mut self,
+                wgpu_render: &mut WgpuRenderState,
+        background_colors: [&[BackgroundColorComponent]; 1],
+    ) {
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            ApplyVgaBlitSystem::apply_many(
+                self,
+                        wgpu_render,
+                background_color,
+            );
+        }
+    }
 }
 
 #[allow(dead_code)]
 impl VgaBlitSystem {
-    /// Apply the system to the given entity components
-    #[inline]
-    pub fn apply_single(
+    /// Applies the system's business logic to the given entity components.
+    ///
+    /// ### Reads
+    /// 
+    /// - `background_color`: A slice of the input components of type [`BackgroundColorComponent`].
+    ///
+    /// ### Mutates
+    /// 
+    #[inline(always)]
+    fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        background_color: &BackgroundColorComponent,
+        wgpu_render: &mut WgpuRenderState,
+        background_colors: &[BackgroundColorComponent],
     ) {
         // Force the implementation of the ApplyVgaBlitSystem trait.
-        ApplyVgaBlitSystem::apply_single(
+        ApplyVgaBlitSystem::apply_many(
             self,
-                    wgpu_render,
-            background_color,
+            wgpu_render,
+            background_colors,
         );
     }
 
@@ -3942,18 +4586,20 @@ impl VgaBlitSystem {
     ///
     /// ### Mutates
     /// 
+    #[allow(unused_mut)]
     #[inline]
-    fn apply_many(
+    fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
-        background_colors: &[BackgroundColorComponent],
+        wgpu_render: &mut WgpuRenderState,
+        background_colors: [&[BackgroundColorComponent]; 1],
     ) {
-        // Force the implementation of the ApplyVgaBlitSystem trait.
-        ApplyVgaBlitSystem::apply_many(
-            self,
-                    wgpu_render,
-            background_colors,
-        );
+        let zipped_iter = background_colors;
+        for background_color in zipped_iter {
+            self.apply_many(
+                wgpu_render,
+                background_color,
+            );
+        }
     }
 }
 

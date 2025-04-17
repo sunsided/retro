@@ -1,4 +1,5 @@
-use crate::engine::{FrameContext, PhaseEvents, SystemWgpuReinitPhaseEvents};
+use crate::engine::{PhaseEvents, SystemWgpuReinitPhaseEvents};
+use sillyecs::FrameContext;
 use std::convert::Infallible;
 
 impl SystemWgpuReinitPhaseEvents for PhaseEvents {

@@ -1,4 +1,5 @@
-use crate::engine::{FrameContext, PhaseEvents, SystemStartupPhaseEvents};
+use crate::engine::{PhaseEvents, SystemStartupPhaseEvents};
+use sillyecs::FrameContext;
 use std::convert::Infallible;
 use tracing::trace;
 

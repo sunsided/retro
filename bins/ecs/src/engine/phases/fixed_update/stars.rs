@@ -1,7 +1,7 @@
 use crate::engine::phases::smoothstep;
 use crate::engine::{
-    ApplyStarsSystem, CreateSystem, FrameContext, PhysicsSystem, StarsComponent, StarsSystem,
-    SystemFactory, TimeOfDayComponent,
+    ApplyStarsSystem, CreateSystem, PhysicsSystem, StarsComponent, StarsSystem, SystemFactory,
+    TimeOfDayComponent,
 };
 use std::convert::Infallible;
 use std::f32::consts::PI;

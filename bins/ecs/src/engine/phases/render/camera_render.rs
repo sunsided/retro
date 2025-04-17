@@ -39,7 +39,7 @@ use crate::engine::input_state::InputState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
     ApplyCameraRenderSystem, ApplyCameraSystem, CameraComponent, CameraFpsControllerComponent,
-    CameraRenderSystem, CameraSystem, CreateSystem, FrameContext, SystemFactory,
+    CameraRenderSystem, CameraSystem, CreateSystem, SystemFactory,
 };
 use crate::seconds::Seconds;
 use std::convert::Infallible;

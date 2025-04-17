@@ -3,7 +3,7 @@ use crate::engine::input_state::InputState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
     ApplyCameraSystem, CameraComponent, CameraFpsControllerComponent, CameraSystem, CreateSystem,
-    FrameContext, SystemFactory,
+    SystemFactory,
 };
 use crate::seconds::Seconds;
 use crate::wgpu::texture::Texture;

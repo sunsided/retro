@@ -1,6 +1,5 @@
-use crate::engine::{
-    ApplyPhysicsSystem, FrameContext, PhysicsSystem, PositionComponent, VelocityComponent,
-};
+use crate::engine::{ApplyPhysicsSystem, PhysicsSystem, PositionComponent, VelocityComponent};
+use sillyecs::FrameContext;
 use std::convert::Infallible;
 
 impl Default for PhysicsSystem {

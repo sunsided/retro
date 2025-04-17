@@ -1,58 +1,3 @@
-/// The ID of an entity.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct EntityId(core::num::NonZeroU64);
-
-#[allow(dead_code)]
-impl EntityId {
-    /// Returns a new, unique entity ID.
-    ///
-    /// Uniqueness is guaranteed by using a monotonically increasing `AtomicU64` counter
-    /// for generating IDs, starting from 1.
-    ///
-    /// # Implementation
-    /// This function uses a thread-safe counter with sequential consistency ordering
-    /// to ensure unique IDs even under concurrent access.
-    pub fn new() -> Self {
-        static ENTITY_IDS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
-        let id = ENTITY_IDS.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
-        EntityId(core::num::NonZeroU64::new(id).expect("ID was zero"))
-    }
-
-    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
-    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
-    }
-
-    /// Returns this ID as a `u64` value.
-    pub const fn as_u64(&self) -> u64 {
-        self.0.get()
-    }
-}
-
-impl core::hash::Hash for EntityId {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
-}
-
-impl From<EntityId> for core::num::NonZeroU64 {
-    fn from(value: EntityId) -> core::num::NonZeroU64 {
-        value.as_nonzero_u64()
-    }
-}
-
-impl From<EntityId> for u64 {
-    fn from(value: EntityId) -> u64 {
-        value.as_u64()
-    }
-}
-
-impl core::fmt::Display for EntityId {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        core::fmt::Display::fmt(&self.0.get(), f)
-    }
-}
-
 /// The ID of an [`Archetype`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(u32)]
@@ -185,7 +130,7 @@ pub struct EntityArchetypeRef {
 #[allow(dead_code)]
 pub trait Spawn<E> {
     /// Spawn a new entity into the world.
-    fn spawn(&mut self, data: E) -> EntityId;
+    fn spawn(&mut self, data: E) -> ::sillyecs::EntityId;
 }
 
 /// Marker trait for archetypes.
@@ -331,7 +276,7 @@ impl ArchetypeEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct EntityWithIdAndData<Data: EntityData> {
-    pub id: EntityId,
+    pub id: ::sillyecs::EntityId,
     pub data: Data,
 }
 
@@ -343,7 +288,7 @@ pub trait EntityData {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct WgpuShaderArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub wgpu_shaders: Vec<WgpuShaderComponent>,
 }
 
@@ -384,7 +329,7 @@ impl EntityData for WgpuShaderEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct WgpuShaderEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub wgpu_shader: &'archetype WgpuShaderComponent,
 }
 
@@ -392,7 +337,7 @@ pub struct WgpuShaderEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct WgpuShaderEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub wgpu_shader: &'archetype mut WgpuShaderComponent,
 }
 
@@ -536,7 +481,7 @@ impl WgpuShaderEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<WgpuShaderEntityData>
     {
@@ -548,7 +493,7 @@ impl WgpuShaderEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<WgpuShaderEntityComponents>
     {
@@ -608,13 +553,13 @@ impl WgpuShaderArchetype {
         &mut self,
         wgpu_shader: WgpuShaderComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.wgpu_shaders.push(wgpu_shader);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -631,7 +576,7 @@ impl WgpuShaderArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -684,7 +629,7 @@ impl PartialEq<ArchetypeId> for WgpuShaderArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct WgpuTextureArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub texture_sources: Vec<TextureSourceComponent>,
     pub wgpu_textures: Vec<WgpuTextureComponent>,
 }
@@ -729,7 +674,7 @@ impl EntityData for WgpuTextureEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct WgpuTextureEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub texture_source: &'archetype TextureSourceComponent,
     pub wgpu_texture: &'archetype WgpuTextureComponent,
 }
@@ -738,7 +683,7 @@ pub struct WgpuTextureEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct WgpuTextureEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub texture_source: &'archetype mut TextureSourceComponent,
     pub wgpu_texture: &'archetype mut WgpuTextureComponent,
 }
@@ -945,7 +890,7 @@ impl WgpuTextureEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<WgpuTextureEntityData>
     {
@@ -957,7 +902,7 @@ impl WgpuTextureEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<WgpuTextureEntityComponents>
     {
@@ -1019,14 +964,14 @@ impl WgpuTextureArchetype {
         texture_source: TextureSourceComponent,
         wgpu_texture: WgpuTextureComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.texture_sources.push(texture_source);
         self.wgpu_textures.push(wgpu_texture);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -1043,7 +988,7 @@ impl WgpuTextureArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -1110,7 +1055,7 @@ impl PartialEq<ArchetypeId> for WgpuTextureArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct EnvironmentArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub time_of_days: Vec<TimeOfDayComponent>,
     pub suns: Vec<SunComponent>,
     pub skydomes: Vec<SkydomeComponent>,
@@ -1171,7 +1116,7 @@ impl EntityData for EnvironmentEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct EnvironmentEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub time_of_day: &'archetype TimeOfDayComponent,
     pub sun: &'archetype SunComponent,
     pub skydome: &'archetype SkydomeComponent,
@@ -1184,7 +1129,7 @@ pub struct EnvironmentEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct EnvironmentEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub time_of_day: &'archetype mut TimeOfDayComponent,
     pub sun: &'archetype mut SunComponent,
     pub skydome: &'archetype mut SkydomeComponent,
@@ -1643,7 +1588,7 @@ impl EnvironmentEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<EnvironmentEntityData>
     {
@@ -1655,7 +1600,7 @@ impl EnvironmentEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<EnvironmentEntityComponents>
     {
@@ -1725,7 +1670,7 @@ impl EnvironmentArchetype {
         stars: StarsComponent,
         fog: FogComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -1736,7 +1681,7 @@ impl EnvironmentArchetype {
         self.stars.push(stars);
         self.fogs.push(fog);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -1753,7 +1698,7 @@ impl EnvironmentArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -1876,7 +1821,7 @@ impl PartialEq<ArchetypeId> for EnvironmentArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct CameraArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub cameras: Vec<CameraComponent>,
     pub camera_fps_controllers: Vec<CameraFpsControllerComponent>,
 }
@@ -1921,7 +1866,7 @@ impl EntityData for CameraEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CameraEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub camera: &'archetype CameraComponent,
     pub camera_fps_controller: &'archetype CameraFpsControllerComponent,
 }
@@ -1930,7 +1875,7 @@ pub struct CameraEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct CameraEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub camera: &'archetype mut CameraComponent,
     pub camera_fps_controller: &'archetype mut CameraFpsControllerComponent,
 }
@@ -2137,7 +2082,7 @@ impl CameraEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<CameraEntityData>
     {
@@ -2149,7 +2094,7 @@ impl CameraEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<CameraEntityComponents>
     {
@@ -2211,14 +2156,14 @@ impl CameraArchetype {
         camera: CameraComponent,
         camera_fps_controller: CameraFpsControllerComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.cameras.push(camera);
         self.camera_fps_controllers.push(camera_fps_controller);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -2235,7 +2180,7 @@ impl CameraArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -2302,7 +2247,7 @@ impl PartialEq<ArchetypeId> for CameraArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct DynamicLightArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub dynamic_lights: Vec<DynamicLightComponent>,
     pub colors: Vec<ColorComponent>,
     pub positions: Vec<PositionComponent>,
@@ -2351,7 +2296,7 @@ impl EntityData for DynamicLightEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct DynamicLightEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub dynamic_light: &'archetype DynamicLightComponent,
     pub color: &'archetype ColorComponent,
     pub position: &'archetype PositionComponent,
@@ -2361,7 +2306,7 @@ pub struct DynamicLightEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct DynamicLightEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub dynamic_light: &'archetype mut DynamicLightComponent,
     pub color: &'archetype mut ColorComponent,
     pub position: &'archetype mut PositionComponent,
@@ -2631,7 +2576,7 @@ impl DynamicLightEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<DynamicLightEntityData>
     {
@@ -2643,7 +2588,7 @@ impl DynamicLightEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<DynamicLightEntityComponents>
     {
@@ -2707,7 +2652,7 @@ impl DynamicLightArchetype {
         color: ColorComponent,
         position: PositionComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -2715,7 +2660,7 @@ impl DynamicLightArchetype {
         self.colors.push(color);
         self.positions.push(position);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -2732,7 +2677,7 @@ impl DynamicLightArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -2813,7 +2758,7 @@ impl PartialEq<ArchetypeId> for DynamicLightArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct TileArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub tiles: Vec<TileComponent>,
     pub positions: Vec<PositionComponent>,
 }
@@ -2858,7 +2803,7 @@ impl EntityData for TileEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct TileEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub tile: &'archetype TileComponent,
     pub position: &'archetype PositionComponent,
 }
@@ -2867,7 +2812,7 @@ pub struct TileEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct TileEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub tile: &'archetype mut TileComponent,
     pub position: &'archetype mut PositionComponent,
 }
@@ -3074,7 +3019,7 @@ impl TileEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<TileEntityData>
     {
@@ -3086,7 +3031,7 @@ impl TileEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<TileEntityComponents>
     {
@@ -3148,14 +3093,14 @@ impl TileArchetype {
         tile: TileComponent,
         position: PositionComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.tiles.push(tile);
         self.positions.push(position);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -3172,7 +3117,7 @@ impl TileArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -3239,7 +3184,7 @@ impl PartialEq<ArchetypeId> for TileArchetype {
 /// A marching cube :)
 #[derive(Debug, Default, Clone)]
 pub struct CubeArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
     pub velocities: Vec<VelocityComponent>,
     pub transforms: Vec<TransformComponent>,
@@ -3292,7 +3237,7 @@ impl EntityData for CubeEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CubeEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
     pub velocity: &'archetype VelocityComponent,
     pub transform: &'archetype TransformComponent,
@@ -3303,7 +3248,7 @@ pub struct CubeEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct CubeEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
     pub velocity: &'archetype mut VelocityComponent,
     pub transform: &'archetype mut TransformComponent,
@@ -3636,7 +3581,7 @@ impl CubeEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<CubeEntityData>
     {
@@ -3648,7 +3593,7 @@ impl CubeEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<CubeEntityComponents>
     {
@@ -3714,7 +3659,7 @@ impl CubeArchetype {
         transform: TransformComponent,
         model: ModelComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -3723,7 +3668,7 @@ impl CubeArchetype {
         self.transforms.push(transform);
         self.models.push(model);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -3740,7 +3685,7 @@ impl CubeArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -3835,7 +3780,7 @@ impl PartialEq<ArchetypeId> for CubeArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct PlayerArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
     pub velocities: Vec<VelocityComponent>,
     pub healths: Vec<HealthComponent>,
@@ -3884,7 +3829,7 @@ impl EntityData for PlayerEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct PlayerEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
     pub velocity: &'archetype VelocityComponent,
     pub health: &'archetype HealthComponent,
@@ -3894,7 +3839,7 @@ pub struct PlayerEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct PlayerEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
     pub velocity: &'archetype mut VelocityComponent,
     pub health: &'archetype mut HealthComponent,
@@ -4164,7 +4109,7 @@ impl PlayerEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<PlayerEntityData>
     {
@@ -4176,7 +4121,7 @@ impl PlayerEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<PlayerEntityComponents>
     {
@@ -4240,7 +4185,7 @@ impl PlayerArchetype {
         velocity: VelocityComponent,
         health: HealthComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -4248,7 +4193,7 @@ impl PlayerArchetype {
         self.velocities.push(velocity);
         self.healths.push(health);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -4265,7 +4210,7 @@ impl PlayerArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -4346,7 +4291,7 @@ impl PartialEq<ArchetypeId> for PlayerArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct ForegroundObjectArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
     pub colliders: Vec<ColliderComponent>,
 }
@@ -4391,7 +4336,7 @@ impl EntityData for ForegroundObjectEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ForegroundObjectEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
     pub collider: &'archetype ColliderComponent,
 }
@@ -4400,7 +4345,7 @@ pub struct ForegroundObjectEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct ForegroundObjectEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
     pub collider: &'archetype mut ColliderComponent,
 }
@@ -4607,7 +4552,7 @@ impl ForegroundObjectEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<ForegroundObjectEntityData>
     {
@@ -4619,7 +4564,7 @@ impl ForegroundObjectEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<ForegroundObjectEntityComponents>
     {
@@ -4681,14 +4626,14 @@ impl ForegroundObjectArchetype {
         position: PositionComponent,
         collider: ColliderComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.positions.push(position);
         self.colliders.push(collider);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -4705,7 +4650,7 @@ impl ForegroundObjectArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -4772,7 +4717,7 @@ impl PartialEq<ArchetypeId> for ForegroundObjectArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct BackgroundObjectArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
 }
 
@@ -4813,7 +4758,7 @@ impl EntityData for BackgroundObjectEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
 }
 
@@ -4821,7 +4766,7 @@ pub struct BackgroundObjectEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
 }
 
@@ -4965,7 +4910,7 @@ impl BackgroundObjectEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<BackgroundObjectEntityData>
     {
@@ -4977,7 +4922,7 @@ impl BackgroundObjectEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<BackgroundObjectEntityComponents>
     {
@@ -5037,13 +4982,13 @@ impl BackgroundObjectArchetype {
         &mut self,
         position: PositionComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.positions.push(position);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -5060,7 +5005,7 @@ impl BackgroundObjectArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -5113,7 +5058,7 @@ impl PartialEq<ArchetypeId> for BackgroundObjectArchetype {
 /// The scene background.
 #[derive(Debug, Default, Clone)]
 pub struct SceneBackgroundArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub background_colors: Vec<BackgroundColorComponent>,
 }
 
@@ -5154,7 +5099,7 @@ impl EntityData for SceneBackgroundEntityComponents {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct SceneBackgroundEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub background_color: &'archetype BackgroundColorComponent,
 }
 
@@ -5162,7 +5107,7 @@ pub struct SceneBackgroundEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct SceneBackgroundEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub background_color: &'archetype mut BackgroundColorComponent,
 }
 
@@ -5306,7 +5251,7 @@ impl SceneBackgroundEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<SceneBackgroundEntityData>
     {
@@ -5318,7 +5263,7 @@ impl SceneBackgroundEntityComponents {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<SceneBackgroundEntityComponents>
     {
@@ -5378,13 +5323,13 @@ impl SceneBackgroundArchetype {
         &mut self,
         background_color: BackgroundColorComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.background_colors.push(background_color);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -5401,7 +5346,7 @@ impl SceneBackgroundArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -5467,7 +5412,7 @@ pub trait GetEntityRef {
 }
 
 impl core::ops::Index<usize> for WgpuShaderArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5475,7 +5420,7 @@ impl core::ops::Index<usize> for WgpuShaderArchetype {
 }
 
 impl core::ops::Index<usize> for WgpuTextureArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5483,7 +5428,7 @@ impl core::ops::Index<usize> for WgpuTextureArchetype {
 }
 
 impl core::ops::Index<usize> for EnvironmentArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5491,7 +5436,7 @@ impl core::ops::Index<usize> for EnvironmentArchetype {
 }
 
 impl core::ops::Index<usize> for CameraArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5499,7 +5444,7 @@ impl core::ops::Index<usize> for CameraArchetype {
 }
 
 impl core::ops::Index<usize> for DynamicLightArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5507,7 +5452,7 @@ impl core::ops::Index<usize> for DynamicLightArchetype {
 }
 
 impl core::ops::Index<usize> for TileArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5515,7 +5460,7 @@ impl core::ops::Index<usize> for TileArchetype {
 }
 
 impl core::ops::Index<usize> for CubeArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5523,7 +5468,7 @@ impl core::ops::Index<usize> for CubeArchetype {
 }
 
 impl core::ops::Index<usize> for PlayerArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5531,7 +5476,7 @@ impl core::ops::Index<usize> for PlayerArchetype {
 }
 
 impl core::ops::Index<usize> for ForegroundObjectArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5539,7 +5484,7 @@ impl core::ops::Index<usize> for ForegroundObjectArchetype {
 }
 
 impl core::ops::Index<usize> for BackgroundObjectArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5547,7 +5492,7 @@ impl core::ops::Index<usize> for BackgroundObjectArchetype {
 }
 
 impl core::ops::Index<usize> for SceneBackgroundArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -5557,14 +5502,14 @@ impl core::ops::Index<usize> for SceneBackgroundArchetype {
 #[allow(dead_code)]
 pub trait FrontloadEntities:
     Archetype
-    + core::ops::Index<usize, Output = EntityId>
+    + core::ops::Index<usize, Output = ::sillyecs::EntityId>
 {
     /// Frontloads entities provided by their IDs (e.g., from quadtree results).
     /// Returns the count of frontloaded entities.
     fn frontload(
         &mut self,
-        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
-        entities_to_frontload: &[EntityId],
+        entity_lookup: &mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         // Collect and filter valid indices
@@ -5590,7 +5535,7 @@ pub trait FrontloadEntities:
     /// Returns the count of frontloaded entities.
     fn frontload_by_indices_sorted<I>(
         &mut self,
-        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        entity_lookup: &mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
         indices_to_frontload: I,
         previous_frontload_pivot: Option<usize>
     ) -> usize
@@ -5650,13 +5595,13 @@ pub trait FrontloadEntitiesScan:
     Archetype
     + FrontloadEntities
     + GetEntityRef
-    + core::ops::Index<usize, Output = EntityId>
+    + core::ops::Index<usize, Output = ::sillyecs::EntityId>
 {
     /// Frontloads entities satisfying `should_frontload`.
     /// Returns the number of entities frontloaded.
     fn frontload_scan<F>(
         &mut self,
-        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        entity_lookup: &mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
         mut should_frontload: F,
     ) -> usize
     where

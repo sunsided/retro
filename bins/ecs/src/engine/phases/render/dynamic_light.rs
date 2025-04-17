@@ -2,10 +2,10 @@ use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
     ApplyCameraRenderSystem, ApplyDynamicLightSystem, CameraComponent, CameraRenderSystem,
-    ColorComponent, CreateSystem, DynamicLightComponent, DynamicLightSystem, FrameContext,
-    SystemFactory,
+    ColorComponent, CreateSystem, DynamicLightComponent, DynamicLightSystem, SystemFactory,
 };
 use crate::wgpu::uniforms::DrawLight;
+use sillyecs::FrameContext;
 use std::convert::Infallible;
 use std::time::Duration;
 use tracing::{debug, warn};

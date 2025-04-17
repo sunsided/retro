@@ -1,7 +1,7 @@
 use crate::engine::components::Extent3d;
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
-    ApplyWgpuInitShaderSystem, ApplyWgpuInitTextureSystem, CreateSystem, EntityId, PhaseEvents,
+    ApplyWgpuInitShaderSystem, ApplyWgpuInitTextureSystem, CreateSystem, PhaseEvents,
     ResourceManagerState, SystemFactory, SystemWgpuReinitPhaseEvents, TextureResourcePath,
     TextureSourceComponent, TextureSourceType, WgpuInitShaderSystem, WgpuInitTextureSystem,
     WgpuShaderComponent, WgpuTextureComponent,
@@ -10,6 +10,7 @@ use crate::resources;
 use crate::wgpu::texture::{TextureError, TextureType};
 use fxhash::{FxHashMap, FxHashSet};
 use image::{GenericImageView, RgbaImage};
+use sillyecs::EntityId;
 use std::borrow::Borrow;
 use std::convert::Infallible;
 use std::ops::Deref;

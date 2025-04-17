@@ -30,8 +30,8 @@
 
 use crate::engine::{
     ApplyBackgroundColorCycleSystem, BackgroundColorComponent, BackgroundColorCycleSystem,
-    FrameContext,
 };
+use sillyecs::FrameContext;
 use std::convert::Infallible;
 
 impl Default for BackgroundColorCycleSystem {

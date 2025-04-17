@@ -1,8 +1,7 @@
 use crate::engine::phases::{mix, mixv};
 use crate::engine::{
     AmbientLightComponent, ApplyFogSystem, ApplySunSystem, CreateSystem, FogComponent, FogSystem,
-    FrameContext, PhysicsSystem, SkydomeComponent, SunComponent, SunSystem, SystemFactory,
-    TimeOfDayComponent,
+    PhysicsSystem, SkydomeComponent, SunComponent, SunSystem, SystemFactory, TimeOfDayComponent,
 };
 use cgmath::{InnerSpace, Vector3};
 use std::convert::Infallible;

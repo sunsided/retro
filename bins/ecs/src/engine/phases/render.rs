@@ -76,7 +76,7 @@ pub use self::frame_state::FrameState;
 pub use self::wgpu_render_state::WgpuRenderState;
 use crate::engine::phases::render::background::RenderBackgroundSystemData;
 use crate::engine::{
-    ApplyRenderSystem, CreateSystem, FrameContext, PhaseEvents, PhysicsSystem, PositionComponent,
+    ApplyRenderSystem, CreateSystem, PhaseEvents, PhysicsSystem, PositionComponent,
     RenderBackgroundSystem, RenderSystem, SystemFactory, SystemRenderPhaseEvents,
     TransformComponent,
 };
@@ -87,6 +87,7 @@ use crate::wgpu::wgpu_hardware::{
 };
 use parking_lot::lock_api::MutexGuard;
 use parking_lot::{ArcMutexGuard, Mutex, RawMutex};
+use sillyecs::FrameContext;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use tracing::{error, trace, warn};

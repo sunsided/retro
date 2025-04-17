@@ -1,11 +1,11 @@
 use crate::engine::phases::render::WgpuRenderState;
 use crate::engine::{
-    ApplyWgpuInitShaderSystem, CreateSystem, EntityId, PhaseEvents, ResourceManagerState,
-    SystemFactory, SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent,
-    WgpuShaderData,
+    ApplyWgpuInitShaderSystem, CreateSystem, PhaseEvents, ResourceManagerState, SystemFactory,
+    SystemWgpuReinitPhaseEvents, WgpuInitShaderSystem, WgpuShaderComponent, WgpuShaderData,
 };
 use ahash::HashSet;
 use fxhash::{FxHashMap, FxHashSet};
+use sillyecs::EntityId;
 use std::convert::Infallible;
 use tracing::{debug, trace};
 use wgpu::ShaderModule;
