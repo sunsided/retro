@@ -221,6 +221,7 @@ pub struct MainWorldStates {
     pub active_camera: ActiveCameraState,
 }
 
+#[allow(dead_code)]
 impl MainWorldStates {
     pub const fn new(
         wgpu_render: WgpuRenderState,
@@ -2238,7 +2239,7 @@ impl<E, Q> MainWorld<E, Q> {
                 // Apply TimeOfDaySystem to EnvironmentArchetype
                 self.systems.time_of_day.apply_many(
                     &self.context,
-                    &mut self.archetypes.collection.environment.time_of_daies,
+                    &mut self.archetypes.collection.environment.time_of_days,
                 );
             }
 
@@ -2312,7 +2313,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply SunSystem to EnvironmentArchetype
                 self.systems.sun.apply_many(
-                    &self.archetypes.collection.environment.time_of_daies,
+                    &self.archetypes.collection.environment.time_of_days,
                     &mut self.archetypes.collection.environment.suns,
                     &mut self.archetypes.collection.environment.skydomes,
                     &mut self.archetypes.collection.environment.ambient_lights,
@@ -2346,7 +2347,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply FogSystem to EnvironmentArchetype
                 self.systems.fog.apply_many(
-                    &self.archetypes.collection.environment.time_of_daies,
+                    &self.archetypes.collection.environment.time_of_days,
                     &mut self.archetypes.collection.environment.fogs,
                 );
             }
@@ -2378,7 +2379,7 @@ impl<E, Q> MainWorld<E, Q> {
             {
                 // Apply StarsSystem to EnvironmentArchetype
                 self.systems.stars.apply_many(
-                    &self.archetypes.collection.environment.time_of_daies,
+                    &self.archetypes.collection.environment.time_of_days,
                     &mut self.archetypes.collection.environment.stars,
                 );
             }
@@ -2459,7 +2460,7 @@ impl<E, Q> MainWorld<E, Q> {
                             // Apply TimeOfDaySystem to EnvironmentArchetype
                             self.systems.time_of_day.apply_many(
                                 &self.context,
-                                &mut self.archetypes.collection.environment.time_of_daies,
+                                &mut self.archetypes.collection.environment.time_of_days,
                             );
                         }
 
@@ -2550,7 +2551,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply SunSystem to EnvironmentArchetype
                             self.systems.sun.apply_many(
-                                &self.archetypes.collection.environment.time_of_daies,
+                                &self.archetypes.collection.environment.time_of_days,
                                 &mut self.archetypes.collection.environment.suns,
                                 &mut self.archetypes.collection.environment.skydomes,
                                 &mut self.archetypes.collection.environment.ambient_lights,
@@ -2574,7 +2575,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply FogSystem to EnvironmentArchetype
                             self.systems.fog.apply_many(
-                                &self.archetypes.collection.environment.time_of_daies,
+                                &self.archetypes.collection.environment.time_of_days,
                                 &mut self.archetypes.collection.environment.fogs,
                             );
                         }
@@ -2596,7 +2597,7 @@ impl<E, Q> MainWorld<E, Q> {
                         {
                             // Apply StarsSystem to EnvironmentArchetype
                             self.systems.stars.apply_many(
-                                &self.archetypes.collection.environment.time_of_daies,
+                                &self.archetypes.collection.environment.time_of_days,
                                 &mut self.archetypes.collection.environment.stars,
                             );
                         }
@@ -2885,7 +2886,7 @@ impl<E, Q> MainWorld<E, Q> {
                 // Apply FrameGlobalsSystem to EnvironmentArchetype
                 self.systems.frame_globals.apply_many(
                             &mut self.states.wgpu_render,
-                    &self.archetypes.collection.environment.time_of_daies,
+                    &self.archetypes.collection.environment.time_of_days,
                     &self.archetypes.collection.environment.suns,
                     &self.archetypes.collection.environment.fogs,
                     &self.archetypes.collection.environment.ambient_lights,
@@ -3220,7 +3221,7 @@ impl<E, Q> MainWorld<E, Q> {
                             // Apply FrameGlobalsSystem to EnvironmentArchetype
                             self.systems.frame_globals.apply_many(
                                         &mut self.states.wgpu_render,
-                                &self.archetypes.collection.environment.time_of_daies,
+                                &self.archetypes.collection.environment.time_of_days,
                                 &self.archetypes.collection.environment.suns,
                                 &self.archetypes.collection.environment.fogs,
                                 &self.archetypes.collection.environment.ambient_lights,
@@ -6231,12 +6232,12 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_position_component(&self, entity_id: EntityId) -> Option<&PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
             BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
             TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6324,8 +6325,8 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_velocity_component(&self, entity_id: EntityId) -> Option<&VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
             CubeArchetype::ID => self.collection.cube.get_velocity_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6472,12 +6473,12 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_position_component_mut(&mut self, entity_id: EntityId) -> Option<&mut PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
             BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
-            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
             TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6565,8 +6566,8 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_velocity_component_mut(&mut self, entity_id: EntityId) -> Option<&mut VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
             CubeArchetype::ID => self.collection.cube.get_velocity_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -6601,4 +6602,1288 @@ where
     U: core::marker::Send + core::fmt::Debug
 {
     type UserCommand = U;
+}
+
+/// An iterator over all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TimeOfDayComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TimeOfDayComponent>;
+
+/// A mutable iterator over all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TimeOfDayComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TimeOfDayComponent>;
+
+/// A trait for types allowing to iterate all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTimeOfDayComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TimeOfDayComponent>;
+
+    /// Iterates all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+    fn iter_time_of_days(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTimeOfDayComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TimeOfDayComponent>;
+
+    /// Iterates all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+    fn iter_time_of_days(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type SunComponentIter<'a> = ::sillyecs::FlattenSlices<'a, SunComponent>;
+
+/// A mutable iterator over all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type SunComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, SunComponent>;
+
+/// A trait for types allowing to iterate all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterSunComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a SunComponent>;
+
+    /// Iterates all [`Sun`](SunComponent) components, regardless of archetype.
+    fn iter_suns(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutSunComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut SunComponent>;
+
+    /// Iterates all [`Sun`](SunComponent) components, regardless of archetype.
+    fn iter_suns(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type SkydomeComponentIter<'a> = ::sillyecs::FlattenSlices<'a, SkydomeComponent>;
+
+/// A mutable iterator over all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type SkydomeComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, SkydomeComponent>;
+
+/// A trait for types allowing to iterate all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterSkydomeComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a SkydomeComponent>;
+
+    /// Iterates all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+    fn iter_skydomes(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutSkydomeComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut SkydomeComponent>;
+
+    /// Iterates all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+    fn iter_skydomes(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Fog`](FogComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type FogComponentIter<'a> = ::sillyecs::FlattenSlices<'a, FogComponent>;
+
+/// A mutable iterator over all [`Fog`](FogComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type FogComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, FogComponent>;
+
+/// A trait for types allowing to iterate all [`Fog`](FogComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterFogComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a FogComponent>;
+
+    /// Iterates all [`Fog`](FogComponent) components, regardless of archetype.
+    fn iter_fogs(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Fog`](FogComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutFogComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut FogComponent>;
+
+    /// Iterates all [`Fog`](FogComponent) components, regardless of archetype.
+    fn iter_fogs(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type AmbientLightComponentIter<'a> = ::sillyecs::FlattenSlices<'a, AmbientLightComponent>;
+
+/// A mutable iterator over all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type AmbientLightComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, AmbientLightComponent>;
+
+/// A trait for types allowing to iterate all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterAmbientLightComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a AmbientLightComponent>;
+
+    /// Iterates all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+    fn iter_ambient_lights(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutAmbientLightComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut AmbientLightComponent>;
+
+    /// Iterates all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+    fn iter_ambient_lights(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type StarsComponentIter<'a> = ::sillyecs::FlattenSlices<'a, StarsComponent>;
+
+/// A mutable iterator over all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type StarsComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, StarsComponent>;
+
+/// A trait for types allowing to iterate all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterStarsComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a StarsComponent>;
+
+    /// Iterates all [`Stars`](StarsComponent) components, regardless of archetype.
+    fn iter_stars(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutStarsComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut StarsComponent>;
+
+    /// Iterates all [`Stars`](StarsComponent) components, regardless of archetype.
+    fn iter_stars(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type CameraComponentIter<'a> = ::sillyecs::FlattenSlices<'a, CameraComponent>;
+
+/// A mutable iterator over all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type CameraComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, CameraComponent>;
+
+/// A trait for types allowing to iterate all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterCameraComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a CameraComponent>;
+
+    /// Iterates all [`Camera`](CameraComponent) components, regardless of archetype.
+    fn iter_cameras(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutCameraComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut CameraComponent>;
+
+    /// Iterates all [`Camera`](CameraComponent) components, regardless of archetype.
+    fn iter_cameras(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type CameraFpsControllerComponentIter<'a> = ::sillyecs::FlattenSlices<'a, CameraFpsControllerComponent>;
+
+/// A mutable iterator over all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type CameraFpsControllerComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, CameraFpsControllerComponent>;
+
+/// A trait for types allowing to iterate all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterCameraFpsControllerComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a CameraFpsControllerComponent>;
+
+    /// Iterates all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+    fn iter_camera_fps_controllers(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutCameraFpsControllerComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut CameraFpsControllerComponent>;
+
+    /// Iterates all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+    fn iter_camera_fps_controllers(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type PositionComponentIter<'a> = ::sillyecs::FlattenSlices<'a, PositionComponent>;
+
+/// A mutable iterator over all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type PositionComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, PositionComponent>;
+
+/// A trait for types allowing to iterate all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterPositionComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a PositionComponent>;
+
+    /// Iterates all [`Position`](PositionComponent) components, regardless of archetype.
+    fn iter_positions(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutPositionComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut PositionComponent>;
+
+    /// Iterates all [`Position`](PositionComponent) components, regardless of archetype.
+    fn iter_positions(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TransformComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TransformComponent>;
+
+/// A mutable iterator over all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TransformComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TransformComponent>;
+
+/// A trait for types allowing to iterate all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTransformComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TransformComponent>;
+
+    /// Iterates all [`Transform`](TransformComponent) components, regardless of archetype.
+    fn iter_transforms(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTransformComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TransformComponent>;
+
+    /// Iterates all [`Transform`](TransformComponent) components, regardless of archetype.
+    fn iter_transforms(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type VelocityComponentIter<'a> = ::sillyecs::FlattenSlices<'a, VelocityComponent>;
+
+/// A mutable iterator over all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type VelocityComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, VelocityComponent>;
+
+/// A trait for types allowing to iterate all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterVelocityComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a VelocityComponent>;
+
+    /// Iterates all [`Velocity`](VelocityComponent) components, regardless of archetype.
+    fn iter_velocities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutVelocityComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut VelocityComponent>;
+
+    /// Iterates all [`Velocity`](VelocityComponent) components, regardless of archetype.
+    fn iter_velocities(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TileComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TileComponent>;
+
+/// A mutable iterator over all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TileComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TileComponent>;
+
+/// A trait for types allowing to iterate all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTileComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TileComponent>;
+
+    /// Iterates all [`Tile`](TileComponent) components, regardless of archetype.
+    fn iter_tiles(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTileComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TileComponent>;
+
+    /// Iterates all [`Tile`](TileComponent) components, regardless of archetype.
+    fn iter_tiles(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type HealthComponentIter<'a> = ::sillyecs::FlattenSlices<'a, HealthComponent>;
+
+/// A mutable iterator over all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type HealthComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, HealthComponent>;
+
+/// A trait for types allowing to iterate all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterHealthComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a HealthComponent>;
+
+    /// Iterates all [`Health`](HealthComponent) components, regardless of archetype.
+    fn iter_healths(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutHealthComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut HealthComponent>;
+
+    /// Iterates all [`Health`](HealthComponent) components, regardless of archetype.
+    fn iter_healths(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type ColliderComponentIter<'a> = ::sillyecs::FlattenSlices<'a, ColliderComponent>;
+
+/// A mutable iterator over all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type ColliderComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, ColliderComponent>;
+
+/// A trait for types allowing to iterate all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterColliderComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a ColliderComponent>;
+
+    /// Iterates all [`Collider`](ColliderComponent) components, regardless of archetype.
+    fn iter_colliders(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutColliderComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut ColliderComponent>;
+
+    /// Iterates all [`Collider`](ColliderComponent) components, regardless of archetype.
+    fn iter_colliders(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type ModelComponentIter<'a> = ::sillyecs::FlattenSlices<'a, ModelComponent>;
+
+/// A mutable iterator over all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type ModelComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, ModelComponent>;
+
+/// A trait for types allowing to iterate all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterModelComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a ModelComponent>;
+
+    /// Iterates all [`Model`](ModelComponent) components, regardless of archetype.
+    fn iter_models(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutModelComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut ModelComponent>;
+
+    /// Iterates all [`Model`](ModelComponent) components, regardless of archetype.
+    fn iter_models(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type ColorComponentIter<'a> = ::sillyecs::FlattenSlices<'a, ColorComponent>;
+
+/// A mutable iterator over all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type ColorComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, ColorComponent>;
+
+/// A trait for types allowing to iterate all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterColorComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a ColorComponent>;
+
+    /// Iterates all [`Color`](ColorComponent) components, regardless of archetype.
+    fn iter_colors(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutColorComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut ColorComponent>;
+
+    /// Iterates all [`Color`](ColorComponent) components, regardless of archetype.
+    fn iter_colors(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type BackgroundColorComponentIter<'a> = ::sillyecs::FlattenSlices<'a, BackgroundColorComponent>;
+
+/// A mutable iterator over all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type BackgroundColorComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, BackgroundColorComponent>;
+
+/// A trait for types allowing to iterate all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterBackgroundColorComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a BackgroundColorComponent>;
+
+    /// Iterates all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+    fn iter_background_colors(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutBackgroundColorComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut BackgroundColorComponent>;
+
+    /// Iterates all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+    fn iter_background_colors(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type DynamicLightComponentIter<'a> = ::sillyecs::FlattenSlices<'a, DynamicLightComponent>;
+
+/// A mutable iterator over all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type DynamicLightComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, DynamicLightComponent>;
+
+/// A trait for types allowing to iterate all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterDynamicLightComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a DynamicLightComponent>;
+
+    /// Iterates all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+    fn iter_dynamic_lights(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutDynamicLightComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut DynamicLightComponent>;
+
+    /// Iterates all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+    fn iter_dynamic_lights(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`WgpuShader`](WgpuShaderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type WgpuShaderComponentIter<'a> = ::sillyecs::FlattenSlices<'a, WgpuShaderComponent>;
+
+/// A mutable iterator over all [`WgpuShader`](WgpuShaderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type WgpuShaderComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, WgpuShaderComponent>;
+
+/// A trait for types allowing to iterate all [`WgpuShader`](WgpuShaderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterWgpuShaderComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a WgpuShaderComponent>;
+
+    /// Iterates all [`WgpuShader`](WgpuShaderComponent) components, regardless of archetype.
+    fn iter_wgpu_shaders(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`WgpuShader`](WgpuShaderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutWgpuShaderComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut WgpuShaderComponent>;
+
+    /// Iterates all [`WgpuShader`](WgpuShaderComponent) components, regardless of archetype.
+    fn iter_wgpu_shaders(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`TextureSource`](TextureSourceComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TextureSourceComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TextureSourceComponent>;
+
+/// A mutable iterator over all [`TextureSource`](TextureSourceComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TextureSourceComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TextureSourceComponent>;
+
+/// A trait for types allowing to iterate all [`TextureSource`](TextureSourceComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTextureSourceComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TextureSourceComponent>;
+
+    /// Iterates all [`TextureSource`](TextureSourceComponent) components, regardless of archetype.
+    fn iter_texture_sources(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`TextureSource`](TextureSourceComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTextureSourceComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TextureSourceComponent>;
+
+    /// Iterates all [`TextureSource`](TextureSourceComponent) components, regardless of archetype.
+    fn iter_texture_sources(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`WgpuTexture`](WgpuTextureComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type WgpuTextureComponentIter<'a> = ::sillyecs::FlattenSlices<'a, WgpuTextureComponent>;
+
+/// A mutable iterator over all [`WgpuTexture`](WgpuTextureComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type WgpuTextureComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, WgpuTextureComponent>;
+
+/// A trait for types allowing to iterate all [`WgpuTexture`](WgpuTextureComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterWgpuTextureComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a WgpuTextureComponent>;
+
+    /// Iterates all [`WgpuTexture`](WgpuTextureComponent) components, regardless of archetype.
+    fn iter_wgpu_textures(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`WgpuTexture`](WgpuTextureComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutWgpuTextureComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut WgpuTextureComponent>;
+
+    /// Iterates all [`WgpuTexture`](WgpuTextureComponent) components, regardless of archetype.
+    fn iter_wgpu_textures(&'a mut self) -> Self::IteratorMut;
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterAmbientLightComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = AmbientLightComponentIter<'a>;
+
+    /// Iterates over the [`AmbientLight`](AmbientLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_ambient_lights(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        AmbientLightComponentIter::new([
+            &self.archetypes.collection.environment.ambient_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutAmbientLightComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = AmbientLightComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`AmbientLight`](AmbientLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_ambient_lights(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        AmbientLightComponentIterMut::new([
+            &mut self.archetypes.collection.environment.ambient_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterBackgroundColorComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = BackgroundColorComponentIter<'a>;
+
+    /// Iterates over the [`BackgroundColor`](BackgroundColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`SceneBackground`](SceneBackgroundArchetype)
+    fn iter_background_colors(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        BackgroundColorComponentIter::new([
+            &self.archetypes.collection.scene_background.background_colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutBackgroundColorComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = BackgroundColorComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`BackgroundColor`](BackgroundColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`SceneBackground`](SceneBackgroundArchetype)
+    fn iter_background_colors(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        BackgroundColorComponentIterMut::new([
+            &mut self.archetypes.collection.scene_background.background_colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterCameraComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = CameraComponentIter<'a>;
+
+    /// Iterates over the [`Camera`](CameraComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_cameras(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraComponentIter::new([
+            &self.archetypes.collection.camera.cameras,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutCameraComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = CameraComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Camera`](CameraComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_cameras(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraComponentIterMut::new([
+            &mut self.archetypes.collection.camera.cameras,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterCameraFpsControllerComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = CameraFpsControllerComponentIter<'a>;
+
+    /// Iterates over the [`CameraFpsController`](CameraFpsControllerComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_camera_fps_controllers(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraFpsControllerComponentIter::new([
+            &self.archetypes.collection.camera.camera_fps_controllers,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutCameraFpsControllerComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = CameraFpsControllerComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`CameraFpsController`](CameraFpsControllerComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_camera_fps_controllers(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraFpsControllerComponentIterMut::new([
+            &mut self.archetypes.collection.camera.camera_fps_controllers,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterColliderComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = ColliderComponentIter<'a>;
+
+    /// Iterates over the [`Collider`](ColliderComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    fn iter_colliders(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColliderComponentIter::new([
+            &self.archetypes.collection.foreground_object.colliders,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutColliderComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = ColliderComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Collider`](ColliderComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    fn iter_colliders(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColliderComponentIterMut::new([
+            &mut self.archetypes.collection.foreground_object.colliders,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterColorComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = ColorComponentIter<'a>;
+
+    /// Iterates over the [`Color`](ColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_colors(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColorComponentIter::new([
+            &self.archetypes.collection.dynamic_light.colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutColorComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = ColorComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Color`](ColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_colors(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColorComponentIterMut::new([
+            &mut self.archetypes.collection.dynamic_light.colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterDynamicLightComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = DynamicLightComponentIter<'a>;
+
+    /// Iterates over the [`DynamicLight`](DynamicLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_dynamic_lights(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        DynamicLightComponentIter::new([
+            &self.archetypes.collection.dynamic_light.dynamic_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutDynamicLightComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = DynamicLightComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`DynamicLight`](DynamicLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_dynamic_lights(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        DynamicLightComponentIterMut::new([
+            &mut self.archetypes.collection.dynamic_light.dynamic_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterFogComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = FogComponentIter<'a>;
+
+    /// Iterates over the [`Fog`](FogComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_fogs(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        FogComponentIter::new([
+            &self.archetypes.collection.environment.fogs,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutFogComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = FogComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Fog`](FogComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_fogs(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        FogComponentIterMut::new([
+            &mut self.archetypes.collection.environment.fogs,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterHealthComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = HealthComponentIter<'a>;
+
+    /// Iterates over the [`Health`](HealthComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Player`](PlayerArchetype)
+    fn iter_healths(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        HealthComponentIter::new([
+            &self.archetypes.collection.player.healths,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutHealthComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = HealthComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Health`](HealthComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Player`](PlayerArchetype)
+    fn iter_healths(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        HealthComponentIterMut::new([
+            &mut self.archetypes.collection.player.healths,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterModelComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = ModelComponentIter<'a>;
+
+    /// Iterates over the [`Model`](ModelComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_models(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ModelComponentIter::new([
+            &self.archetypes.collection.cube.models,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutModelComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = ModelComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Model`](ModelComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_models(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ModelComponentIterMut::new([
+            &mut self.archetypes.collection.cube.models,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterPositionComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = PositionComponentIter<'a>;
+
+    /// Iterates over the [`Position`](PositionComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    /// - [`Tile`](TileArchetype)
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    /// - [`BackgroundObject`](BackgroundObjectArchetype)
+    fn iter_positions(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        PositionComponentIter::new([
+            &self.archetypes.collection.dynamic_light.positions,
+            &self.archetypes.collection.tile.positions,
+            &self.archetypes.collection.cube.positions,
+            &self.archetypes.collection.player.positions,
+            &self.archetypes.collection.foreground_object.positions,
+            &self.archetypes.collection.background_object.positions,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutPositionComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = PositionComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Position`](PositionComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    /// - [`Tile`](TileArchetype)
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    /// - [`BackgroundObject`](BackgroundObjectArchetype)
+    fn iter_positions(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        PositionComponentIterMut::new([
+            &mut self.archetypes.collection.dynamic_light.positions,
+            &mut self.archetypes.collection.tile.positions,
+            &mut self.archetypes.collection.cube.positions,
+            &mut self.archetypes.collection.player.positions,
+            &mut self.archetypes.collection.foreground_object.positions,
+            &mut self.archetypes.collection.background_object.positions,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterSkydomeComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = SkydomeComponentIter<'a>;
+
+    /// Iterates over the [`Skydome`](SkydomeComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_skydomes(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SkydomeComponentIter::new([
+            &self.archetypes.collection.environment.skydomes,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutSkydomeComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = SkydomeComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Skydome`](SkydomeComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_skydomes(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SkydomeComponentIterMut::new([
+            &mut self.archetypes.collection.environment.skydomes,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterStarsComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = StarsComponentIter<'a>;
+
+    /// Iterates over the [`Stars`](StarsComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_stars(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        StarsComponentIter::new([
+            &self.archetypes.collection.environment.stars,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutStarsComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = StarsComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Stars`](StarsComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_stars(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        StarsComponentIterMut::new([
+            &mut self.archetypes.collection.environment.stars,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterSunComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = SunComponentIter<'a>;
+
+    /// Iterates over the [`Sun`](SunComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_suns(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SunComponentIter::new([
+            &self.archetypes.collection.environment.suns,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutSunComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = SunComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Sun`](SunComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_suns(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SunComponentIterMut::new([
+            &mut self.archetypes.collection.environment.suns,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTextureSourceComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TextureSourceComponentIter<'a>;
+
+    /// Iterates over the [`TextureSource`](TextureSourceComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`WgpuTexture`](WgpuTextureArchetype)
+    fn iter_texture_sources(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TextureSourceComponentIter::new([
+            &self.archetypes.collection.wgpu_texture.texture_sources,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTextureSourceComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TextureSourceComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`TextureSource`](TextureSourceComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`WgpuTexture`](WgpuTextureArchetype)
+    fn iter_texture_sources(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TextureSourceComponentIterMut::new([
+            &mut self.archetypes.collection.wgpu_texture.texture_sources,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTileComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TileComponentIter<'a>;
+
+    /// Iterates over the [`Tile`](TileComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Tile`](TileArchetype)
+    fn iter_tiles(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TileComponentIter::new([
+            &self.archetypes.collection.tile.tiles,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTileComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TileComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Tile`](TileComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Tile`](TileArchetype)
+    fn iter_tiles(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TileComponentIterMut::new([
+            &mut self.archetypes.collection.tile.tiles,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTimeOfDayComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TimeOfDayComponentIter<'a>;
+
+    /// Iterates over the [`TimeOfDay`](TimeOfDayComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_time_of_days(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TimeOfDayComponentIter::new([
+            &self.archetypes.collection.environment.time_of_days,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTimeOfDayComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TimeOfDayComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`TimeOfDay`](TimeOfDayComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_time_of_days(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TimeOfDayComponentIterMut::new([
+            &mut self.archetypes.collection.environment.time_of_days,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTransformComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TransformComponentIter<'a>;
+
+    /// Iterates over the [`Transform`](TransformComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_transforms(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TransformComponentIter::new([
+            &self.archetypes.collection.cube.transforms,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTransformComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TransformComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Transform`](TransformComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_transforms(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TransformComponentIterMut::new([
+            &mut self.archetypes.collection.cube.transforms,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterVelocityComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = VelocityComponentIter<'a>;
+
+    /// Iterates over the [`Velocity`](VelocityComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    fn iter_velocities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        VelocityComponentIter::new([
+            &self.archetypes.collection.cube.velocities,
+            &self.archetypes.collection.player.velocities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutVelocityComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = VelocityComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Velocity`](VelocityComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    fn iter_velocities(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        VelocityComponentIterMut::new([
+            &mut self.archetypes.collection.cube.velocities,
+            &mut self.archetypes.collection.player.velocities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterWgpuShaderComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = WgpuShaderComponentIter<'a>;
+
+    /// Iterates over the [`WgpuShader`](WgpuShaderComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`WgpuShader`](WgpuShaderArchetype)
+    fn iter_wgpu_shaders(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        WgpuShaderComponentIter::new([
+            &self.archetypes.collection.wgpu_shader.wgpu_shaders,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutWgpuShaderComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = WgpuShaderComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`WgpuShader`](WgpuShaderComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`WgpuShader`](WgpuShaderArchetype)
+    fn iter_wgpu_shaders(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        WgpuShaderComponentIterMut::new([
+            &mut self.archetypes.collection.wgpu_shader.wgpu_shaders,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterWgpuTextureComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = WgpuTextureComponentIter<'a>;
+
+    /// Iterates over the [`WgpuTexture`](WgpuTextureComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`WgpuTexture`](WgpuTextureArchetype)
+    fn iter_wgpu_textures(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        WgpuTextureComponentIter::new([
+            &self.archetypes.collection.wgpu_texture.wgpu_textures,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutWgpuTextureComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = WgpuTextureComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`WgpuTexture`](WgpuTextureComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`WgpuTexture`](WgpuTextureArchetype)
+    fn iter_wgpu_textures(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        WgpuTextureComponentIterMut::new([
+            &mut self.archetypes.collection.wgpu_texture.wgpu_textures,
+        ])
+    }
 }

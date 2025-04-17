@@ -1111,7 +1111,7 @@ impl PartialEq<ArchetypeId> for WgpuTextureArchetype {
 #[derive(Debug, Default, Clone)]
 pub struct EnvironmentArchetype {
     pub entities: Vec<EntityId>,
-    pub time_of_daies: Vec<TimeOfDayComponent>,
+    pub time_of_days: Vec<TimeOfDayComponent>,
     pub suns: Vec<SunComponent>,
     pub skydomes: Vec<SkydomeComponent>,
     pub ambient_lights: Vec<AmbientLightComponent>,
@@ -1257,14 +1257,14 @@ impl EnvironmentArchetype {
     #[allow(dead_code)]
     #[inline]
     pub unsafe fn get_time_of_day_component_at_unchecked(&self, index: usize) -> &TimeOfDayComponent {
-        self.time_of_daies.get_unchecked(index)
+        self.time_of_days.get_unchecked(index)
     }
 
     /// Gets the `TimeOfDay` component at the specified index.
     #[allow(dead_code)]
     #[inline]
     pub unsafe fn get_time_of_day_component_at_unchecked_mut(&mut self, index: usize) -> &mut TimeOfDayComponent {
-        self.time_of_daies.get_unchecked_mut(index)
+        self.time_of_days.get_unchecked_mut(index)
     }
 
     /// Gets the `Sun` component at the specified index.
@@ -1460,7 +1460,7 @@ impl EnvironmentArchetype {
     pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
         EnvironmentEntityRef {
             entity_id: *self.entities.get_unchecked(index),
-            time_of_day: self.time_of_daies.get_unchecked(index),
+            time_of_day: self.time_of_days.get_unchecked(index),
             sun: self.suns.get_unchecked(index),
             skydome: self.skydomes.get_unchecked(index),
             ambient_light: self.ambient_lights.get_unchecked(index),
@@ -1474,7 +1474,7 @@ impl EnvironmentArchetype {
     pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
         EnvironmentEntityMut {
             entity_id: *self.entities.get_unchecked(index),
-            time_of_day: self.time_of_daies.get_unchecked_mut(index),
+            time_of_day: self.time_of_days.get_unchecked_mut(index),
             sun: self.suns.get_unchecked_mut(index),
             skydome: self.skydomes.get_unchecked_mut(index),
             ambient_light: self.ambient_lights.get_unchecked_mut(index),
@@ -1729,7 +1729,7 @@ impl EnvironmentArchetype {
     where
         R: WorldEntityRegistry
     {
-        self.time_of_daies.push(time_of_day);
+        self.time_of_days.push(time_of_day);
         self.suns.push(sun);
         self.skydomes.push(skydome);
         self.ambient_lights.push(ambient_light);
@@ -1758,7 +1758,7 @@ impl EnvironmentArchetype {
             return Err(index);
         }
         self.entities.swap_remove(index);
-        self.time_of_daies.swap_remove(index);
+        self.time_of_days.swap_remove(index);
         self.suns.swap_remove(index);
         self.skydomes.swap_remove(index);
         self.ambient_lights.swap_remove(index);
@@ -1778,12 +1778,12 @@ impl EnvironmentArchetype {
 impl HasComponents<TimeOfDayComponent> for EnvironmentArchetype {
     /// Returns a slice of all [`TimeOfDayComponent`] component values.
     fn get(&self) -> &[TimeOfDayComponent] {
-        self.time_of_daies.as_slice()
+        self.time_of_days.as_slice()
     }
 
     /// Returns a mutable slice of all [`TimeOfDayComponent`] component values.
     fn get_mut(&mut self) -> &mut [TimeOfDayComponent] {
-        self.time_of_daies.as_mut_slice()
+        self.time_of_days.as_mut_slice()
     }
 }
 
@@ -5999,7 +5999,7 @@ impl FrontloadEntities for EnvironmentArchetype {
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
         self.entities.swap(first, second);
-        self.time_of_daies.swap(first, second);
+        self.time_of_days.swap(first, second);
         self.suns.swap(first, second);
         self.skydomes.swap(first, second);
         self.ambient_lights.swap(first, second);

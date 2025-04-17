@@ -1432,9 +1432,9 @@ pub trait ApplyTimeOfDaySystem: System {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        time_of_daies: &mut [TimeOfDayComponent],
+        time_of_days: &mut [TimeOfDayComponent],
     ) {
-        let zipped_iter = time_of_daies;
+        let zipped_iter = time_of_days;
         for time_of_day in zipped_iter {
             self.apply_single(
                 &context,
@@ -1473,13 +1473,13 @@ impl TimeOfDaySystem {
     fn apply_many(
         &mut self,
         context: &FrameContext,
-        time_of_daies: &mut [TimeOfDayComponent],
+        time_of_days: &mut [TimeOfDayComponent],
     ) {
         // Force the implementation of the ApplyTimeOfDaySystem trait.
         ApplyTimeOfDaySystem::apply_many(
             self,
             context,
-            time_of_daies,
+            time_of_days,
         );
     }
 }
@@ -1619,12 +1619,12 @@ pub trait ApplySunSystem: System {
     /// - `ambient_light`: A mutable slice of the components of type [`AmbientLightComponent`].
     fn apply_many(
         &mut self,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         suns: &mut [SunComponent],
         skydomes: &mut [SkydomeComponent],
         ambient_lights: &mut [AmbientLightComponent],
     ) {
-        let zipped_iter = time_of_daies.iter().zip(suns.iter_mut().zip(skydomes.iter_mut().zip(ambient_lights.iter_mut())));
+        let zipped_iter = time_of_days.iter().zip(suns.iter_mut().zip(skydomes.iter_mut().zip(ambient_lights.iter_mut())));
         for (time_of_day, (sun, (skydome, ambient_light))) in zipped_iter {
             self.apply_single(
                 time_of_day,
@@ -1671,7 +1671,7 @@ impl SunSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         suns: &mut [SunComponent],
         skydomes: &mut [SkydomeComponent],
         ambient_lights: &mut [AmbientLightComponent],
@@ -1679,7 +1679,7 @@ impl SunSystem {
         // Force the implementation of the ApplySunSystem trait.
         ApplySunSystem::apply_many(
             self,
-            time_of_daies,
+            time_of_days,
             suns,
             skydomes,
             ambient_lights,
@@ -1814,10 +1814,10 @@ pub trait ApplyFogSystem: System {
     /// - `fog`: A mutable slice of the components of type [`FogComponent`].
     fn apply_many(
         &mut self,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         fogs: &mut [FogComponent],
     ) {
-        let zipped_iter = time_of_daies.iter().zip(fogs.iter_mut());
+        let zipped_iter = time_of_days.iter().zip(fogs.iter_mut());
         for (time_of_day, fog) in zipped_iter {
             self.apply_single(
                 time_of_day,
@@ -1856,13 +1856,13 @@ impl FogSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         fogs: &mut [FogComponent],
     ) {
         // Force the implementation of the ApplyFogSystem trait.
         ApplyFogSystem::apply_many(
             self,
-            time_of_daies,
+            time_of_days,
             fogs,
         );
     }
@@ -1995,10 +1995,10 @@ pub trait ApplyStarsSystem: System {
     /// - `stars`: A mutable slice of the components of type [`StarsComponent`].
     fn apply_many(
         &mut self,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         stars: &mut [StarsComponent],
     ) {
-        let zipped_iter = time_of_daies.iter().zip(stars.iter_mut());
+        let zipped_iter = time_of_days.iter().zip(stars.iter_mut());
         for (time_of_day, stars) in zipped_iter {
             self.apply_single(
                 time_of_day,
@@ -2037,13 +2037,13 @@ impl StarsSystem {
     #[inline]
     fn apply_many(
         &mut self,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         stars: &mut [StarsComponent],
     ) {
         // Force the implementation of the ApplyStarsSystem trait.
         ApplyStarsSystem::apply_many(
             self,
-            time_of_daies,
+            time_of_days,
             stars,
         );
     }
@@ -2750,14 +2750,14 @@ pub trait ApplyFrameGlobalsSystem: System {
     fn apply_many(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         suns: &[SunComponent],
         fogs: &[FogComponent],
         ambient_lights: &[AmbientLightComponent],
         stars: &[StarsComponent],
         skydomes: &[SkydomeComponent],
     ) {
-        let zipped_iter = time_of_daies.iter().zip(suns.iter().zip(fogs.iter().zip(ambient_lights.iter().zip(stars.iter().zip(skydomes.iter())))));
+        let zipped_iter = time_of_days.iter().zip(suns.iter().zip(fogs.iter().zip(ambient_lights.iter().zip(stars.iter().zip(skydomes.iter())))));
         for (time_of_day, (sun, (fog, (ambient_light, (stars, skydome))))) in zipped_iter {
             self.apply_single(
                         wgpu_render,
@@ -2816,7 +2816,7 @@ impl FrameGlobalsSystem {
     fn apply_many(
         &mut self,
                 wgpu_render: &mut WgpuRenderState,
-        time_of_daies: &[TimeOfDayComponent],
+        time_of_days: &[TimeOfDayComponent],
         suns: &[SunComponent],
         fogs: &[FogComponent],
         ambient_lights: &[AmbientLightComponent],
@@ -2827,7 +2827,7 @@ impl FrameGlobalsSystem {
         ApplyFrameGlobalsSystem::apply_many(
             self,
                     wgpu_render,
-            time_of_daies,
+            time_of_days,
             suns,
             fogs,
             ambient_lights,
