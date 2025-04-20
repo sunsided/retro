@@ -35,7 +35,6 @@ tracing-appender = "0.2.3"
 winit = "0.30.9"
 wgpu = "25.0.0"
 wgpu_resource_manager = { path = "../../crates/wgpu_resource_manager", features = ["winit", "tracing_attributes"] }
-dashmap = "6.1.0"
 
 # Necessary to fix a breaking issue with deranged on Rust 2024
 [dependencies.time]
@@ -50,6 +49,7 @@ naga = { version = "25.0.0", features = ["wgsl-in"] }
 
 [dev-dependencies]
 criterion = "0.5.1"
+dashmap = "6.1.0"
 
 [[bench]]
 name = "map_bench"
