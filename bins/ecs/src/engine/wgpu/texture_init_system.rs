@@ -50,7 +50,7 @@ impl ApplyWgpuInitTextureSystem for WgpuInitTextureSystem {
 
     fn apply_many(
         &mut self,
-        gpu: &mut WgpuRenderState,
+        gpu: &WgpuRenderState,
         _entities: &[EntityId],
         sources: &[TextureSourceComponent],
         textures: &mut [WgpuTextureComponent],

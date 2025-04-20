@@ -142,7 +142,7 @@ systems:
       - use: WgpuRender
         default: none
         check: read
-        system: write
+        system: read
       - use: ResourceManager
         default: none
         postflight: write
@@ -158,7 +158,7 @@ systems:
       - use: WgpuRender
         default: none
         check: read
-        system: write
+        system: read
       - use: ResourceManager
         default: none
         postflight: write

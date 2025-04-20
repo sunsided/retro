@@ -37,7 +37,7 @@ impl ApplyWgpuInitShaderSystem for WgpuInitShaderSystem {
 
     fn apply_many(
         &mut self,
-        gpu: &mut WgpuRenderState,
+        gpu: &WgpuRenderState,
         entities: &[EntityId],
         shaders: &mut [WgpuShaderComponent],
     ) {

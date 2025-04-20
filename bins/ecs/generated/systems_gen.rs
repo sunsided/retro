@@ -796,7 +796,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
                 
         entity: ::sillyecs::EntityId,
         wgpu_shader: &mut WgpuShaderComponent,
@@ -814,7 +814,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     /// - `wgpu_shader`: A mutable slice of the components of type [`WgpuShaderComponent`].
     fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
                 
         entities: &[::sillyecs::EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
@@ -842,7 +842,7 @@ pub trait ApplyWgpuInitShaderSystem: System {
     #[inline]
     fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
                 
         entities: [&[::sillyecs::EntityId]; 1],
         mut wgpu_shaders: [&mut [WgpuShaderComponent]; 1],
@@ -873,7 +873,7 @@ impl WgpuInitShaderSystem {
     #[inline(always)]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+        wgpu_render: &WgpuRenderState,
         entities: &[::sillyecs::EntityId],
         wgpu_shaders: &mut [WgpuShaderComponent],
     ) {
@@ -898,7 +898,7 @@ impl WgpuInitShaderSystem {
     #[inline]
     fn apply_all(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+        wgpu_render: &WgpuRenderState,
         entities: [&[::sillyecs::EntityId]; 1],
         mut wgpu_shaders: [&mut [WgpuShaderComponent]; 1],
     ) {
@@ -1051,7 +1051,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[allow(unused_variables)]
     fn apply_single(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
                 
         entity: ::sillyecs::EntityId,
         texture_source: &TextureSourceComponent,
@@ -1071,7 +1071,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     /// - `wgpu_texture`: A mutable slice of the components of type [`WgpuTextureComponent`].
     fn apply_many(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
                 
         entities: &[::sillyecs::EntityId],
         texture_sources: &[TextureSourceComponent],
@@ -1102,7 +1102,7 @@ pub trait ApplyWgpuInitTextureSystem: System {
     #[inline]
     fn apply_all(
         &mut self,
-                wgpu_render: &mut WgpuRenderState,
+                wgpu_render: &WgpuRenderState,
                 
         entities: [&[::sillyecs::EntityId]; 1],
         texture_sources: [&[TextureSourceComponent]; 1],
@@ -1136,7 +1136,7 @@ impl WgpuInitTextureSystem {
     #[inline(always)]
     fn apply_many(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+        wgpu_render: &WgpuRenderState,
         entities: &[::sillyecs::EntityId],
         texture_sources: &[TextureSourceComponent],
         wgpu_textures: &mut [WgpuTextureComponent],
@@ -1164,7 +1164,7 @@ impl WgpuInitTextureSystem {
     #[inline]
     fn apply_all(
         &mut self,
-        wgpu_render: &mut WgpuRenderState,
+        wgpu_render: &WgpuRenderState,
         entities: [&[::sillyecs::EntityId]; 1],
         texture_sources: [&[TextureSourceComponent]; 1],
         mut wgpu_textures: [&mut [WgpuTextureComponent]; 1],
