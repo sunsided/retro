@@ -28,7 +28,12 @@ use std::sync::Arc;
 use tracing::{debug, instrument, warn};
 use wgpu::wgt::DeviceDescriptor;
 use wgpu::{Features, PowerPreference, RequestAdapterError, RequestDeviceError};
-use wgpu_resource_manager::{wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper, PixelSize, PixelSizeError, SurfaceId, SurfaceWrapper, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG};
+use wgpu_resource_manager::{
+    wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper,
+    PixelSize, PixelSizeError, SurfaceId, SurfaceWrapper, WgpuResourceManager,
+    WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError,
+    NO_SURFACE_CONFIG,
+};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 
@@ -90,14 +95,14 @@ impl WgpuHardware {
 
     #[instrument(skip(self))]
     pub fn for_rendering(
-        &mut self,
-    ) -> Result<(&DeviceAndQueue, &mut WgpuResources), WgpuForRenderingError> {
+        &self,
+    ) -> Result<(&DeviceAndQueue, &WgpuResources), WgpuForRenderingError> {
         let Some(hardware) = self.manager.device_and_queue() else {
             debug!("Device is not ready yet, cannot render");
             return Err(WgpuForRenderingError::NoDevice);
         };
 
-        let Some(resources) = self.resource.as_mut() else {
+        let Some(resources) = self.resource.as_ref() else {
             debug!("Resources are not ready yet, cannot render");
             return Err(WgpuForRenderingError::NoResources);
         };
@@ -131,8 +136,7 @@ impl WgpuHardware {
     /// Indicates whether wireframe rendering is supported by the adapter.
     #[inline]
     pub fn wireframe_supported(&self) -> bool {
-        self.manager
-            .feature_supported(Features::POLYGON_MODE_LINE)
+        self.manager.feature_supported(Features::POLYGON_MODE_LINE)
     }
 }
 
