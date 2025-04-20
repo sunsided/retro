@@ -39,6 +39,14 @@ components:
     description: The source of a texture, e.g. a file, or in-memory buffers
   - name: WgpuTexture
     description: A WGPU texture with a default view
+  - name: UniformType
+    description: The type of a uniform buffer
+  - name: WgpuBindGroupLayout
+    description: A WGPU bind group layout
+  - name: WgpuBindGroup
+    description: A WGPU bind group
+  - name: WgpuBuffer
+    description: A WGPU buffer
 
 worlds:
   - name: Main
@@ -54,8 +62,16 @@ worlds:
       - DynamicLight
       - WgpuShader
       - WgpuTexture
+      - WgpuUniformBindGroup
 
 archetypes:
+  - name: WgpuUniformBindGroup
+    components:
+      - UniformType
+      - WgpuBindGroupLayout
+      - WgpuBindGroup
+      - WgpuBuffer
+
   - name: WgpuShader
     components:
       - WgpuShader
@@ -134,22 +150,6 @@ phases:
         end_phase: write
 
 systems:
-  - name: WgpuInitShader
-    phase: WgpuReinit
-    entities: true
-    postflight: true
-    states:
-      - use: WgpuRender
-        default: none
-        check: read
-        system: read
-      - use: ResourceManager
-        default: none
-        postflight: write
-        end_phase: write
-    outputs:
-      - WgpuShader
-
   - name: WgpuInitTexture
     phase: WgpuReinit
     entities: true
@@ -167,6 +167,42 @@ systems:
       - TextureSource
     outputs:
       - WgpuTexture
+
+  - name: WgpuInitUniformBindGroup
+    phase: WgpuReinit
+    entities: true
+    postflight: true
+    states:
+      - use: WgpuRender
+        default: none
+        check: read
+        system: read
+      - use: ResourceManager
+        default: none
+        postflight: write
+        end_phase: write
+    inputs:
+      - UniformType
+    outputs:
+      - WgpuBindGroupLayout
+      - WgpuBindGroup
+      - WgpuBuffer
+
+  - name: WgpuInitShader
+    phase: WgpuReinit
+    entities: true
+    postflight: true
+    states:
+      - use: WgpuRender
+        default: none
+        check: read
+        system: read
+      - use: ResourceManager
+        default: none
+        postflight: write
+        end_phase: write
+    outputs:
+      - WgpuShader
 
   - name: Camera
     phase: Update

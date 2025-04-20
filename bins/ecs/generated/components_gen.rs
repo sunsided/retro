@@ -283,6 +283,62 @@ pub enum ComponentId {
     /// 
     /// - [`WgpuInitTextureSystem`] ([`SystemId::WgpuInitTexture`])
     WgpuTexture = 21,
+    /// The type of a uniform buffer
+    ///
+    /// For details, see the [`UniformTypeComponent`](UniformTypeComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+    UniformType = 22,
+    /// A WGPU bind group layout
+    ///
+    /// For details, see the [`WgpuBindGroupLayoutComponent`](WgpuBindGroupLayoutComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+    WgpuBindGroupLayout = 23,
+    /// A WGPU bind group
+    ///
+    /// For details, see the [`WgpuBindGroupComponent`](WgpuBindGroupComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+    WgpuBindGroup = 24,
+    /// A WGPU buffer
+    ///
+    /// For details, see the [`WgpuBufferComponent`](WgpuBufferComponent) Struct.
+    ///
+    /// # Archetype Use
+    /// This component is used by the following archetypes:
+    /// 
+    /// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+    ///
+    /// # System Use
+    /// This component is used by the following systems:
+    /// 
+    /// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+    WgpuBuffer = 25,
 }
 
 #[allow(dead_code)]
@@ -329,6 +385,14 @@ impl ComponentId {
     pub const TEXTURE_SOURCE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(20).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuTexture`](ComponentId::WgpuTexture) component.
     pub const WGPU_TEXTURE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(21).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::UniformType`](ComponentId::UniformType) component.
+    pub const UNIFORM_TYPE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(22).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuBindGroupLayout`](ComponentId::WgpuBindGroupLayout) component.
+    pub const WGPU_BIND_GROUP_LAYOUT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(23).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuBindGroup`](ComponentId::WgpuBindGroup) component.
+    pub const WGPU_BIND_GROUP_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(24).expect("Error at ECS construction time");
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ComponentId::WgpuBuffer`](ComponentId::WgpuBuffer) component.
+    pub const WGPU_BUFFER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(25).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -375,6 +439,14 @@ impl ComponentId {
     const COMPONENT_20: ComponentId = ComponentId::TextureSource;
     /// Compile-time constant lookup of [`ComponentId::WgpuTexture`](ComponentId::WgpuTexture).
     const COMPONENT_21: ComponentId = ComponentId::WgpuTexture;
+    /// Compile-time constant lookup of [`ComponentId::UniformType`](ComponentId::UniformType).
+    const COMPONENT_22: ComponentId = ComponentId::UniformType;
+    /// Compile-time constant lookup of [`ComponentId::WgpuBindGroupLayout`](ComponentId::WgpuBindGroupLayout).
+    const COMPONENT_23: ComponentId = ComponentId::WgpuBindGroupLayout;
+    /// Compile-time constant lookup of [`ComponentId::WgpuBindGroup`](ComponentId::WgpuBindGroup).
+    const COMPONENT_24: ComponentId = ComponentId::WgpuBindGroup;
+    /// Compile-time constant lookup of [`ComponentId::WgpuBuffer`](ComponentId::WgpuBuffer).
+    const COMPONENT_25: ComponentId = ComponentId::WgpuBuffer;
 }
 
 #[allow(dead_code)]
@@ -403,6 +475,10 @@ impl ComponentId {
             Self::WgpuShader => Self::WGPU_SHADER_ID_VALUE,
             Self::TextureSource => Self::TEXTURE_SOURCE_ID_VALUE,
             Self::WgpuTexture => Self::WGPU_TEXTURE_ID_VALUE,
+            Self::UniformType => Self::UNIFORM_TYPE_ID_VALUE,
+            Self::WgpuBindGroupLayout => Self::WGPU_BIND_GROUP_LAYOUT_ID_VALUE,
+            Self::WgpuBindGroup => Self::WGPU_BIND_GROUP_ID_VALUE,
+            Self::WgpuBuffer => Self::WGPU_BUFFER_ID_VALUE,
         }
     }
 
@@ -454,6 +530,10 @@ impl core::fmt::Display for ComponentId {
             Self::WgpuShader => write!(f, "WgpuShader (ID 19)"),
             Self::TextureSource => write!(f, "TextureSource (ID 20)"),
             Self::WgpuTexture => write!(f, "WgpuTexture (ID 21)"),
+            Self::UniformType => write!(f, "UniformType (ID 22)"),
+            Self::WgpuBindGroupLayout => write!(f, "WgpuBindGroupLayout (ID 23)"),
+            Self::WgpuBindGroup => write!(f, "WgpuBindGroup (ID 24)"),
+            Self::WgpuBuffer => write!(f, "WgpuBuffer (ID 25)"),
         }
     }
 }
@@ -2292,6 +2372,350 @@ impl core::borrow::Borrow<WgpuTextureData> for WgpuTextureComponent {
 #[automatically_derived]
 impl core::borrow::BorrowMut<WgpuTextureData> for WgpuTextureComponent {
     fn borrow_mut(&mut self) -> &mut WgpuTextureData {
+        &mut self.0
+    }
+}
+
+/// The type of a uniform buffer
+///
+/// See also [`UniformTypeData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+#[derive(Debug, Clone)]
+pub struct UniformTypeComponent(UniformTypeData);
+
+#[allow(dead_code)]
+impl UniformTypeComponent {
+    /// Creates a new [`UniformTypeComponent`] instance from [`UniformTypeData`].
+    pub const fn new(data: UniformTypeData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for UniformTypeComponent {
+    const ID: ComponentId = ComponentId::UniformType;
+}
+
+impl PartialEq<ComponentId> for UniformTypeComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<UniformTypeData> for UniformTypeComponent {
+    fn from(data: UniformTypeData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for UniformTypeComponent {
+    type Target = UniformTypeData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for UniformTypeComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<UniformTypeData> for UniformTypeComponent {
+    fn as_ref(&self) -> &UniformTypeData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<UniformTypeData> for UniformTypeComponent {
+    fn as_mut(&mut self) -> &mut UniformTypeData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<UniformTypeData> for UniformTypeComponent {
+    fn borrow(&self) -> &UniformTypeData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<UniformTypeData> for UniformTypeComponent {
+    fn borrow_mut(&mut self) -> &mut UniformTypeData {
+        &mut self.0
+    }
+}
+
+/// A WGPU bind group layout
+///
+/// See also [`WgpuBindGroupLayoutData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+#[derive(Debug, Clone)]
+pub struct WgpuBindGroupLayoutComponent(WgpuBindGroupLayoutData);
+
+#[allow(dead_code)]
+impl WgpuBindGroupLayoutComponent {
+    /// Creates a new [`WgpuBindGroupLayoutComponent`] instance from [`WgpuBindGroupLayoutData`].
+    pub const fn new(data: WgpuBindGroupLayoutData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for WgpuBindGroupLayoutComponent {
+    const ID: ComponentId = ComponentId::WgpuBindGroupLayout;
+}
+
+impl PartialEq<ComponentId> for WgpuBindGroupLayoutComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<WgpuBindGroupLayoutData> for WgpuBindGroupLayoutComponent {
+    fn from(data: WgpuBindGroupLayoutData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for WgpuBindGroupLayoutComponent {
+    type Target = WgpuBindGroupLayoutData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for WgpuBindGroupLayoutComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<WgpuBindGroupLayoutData> for WgpuBindGroupLayoutComponent {
+    fn as_ref(&self) -> &WgpuBindGroupLayoutData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<WgpuBindGroupLayoutData> for WgpuBindGroupLayoutComponent {
+    fn as_mut(&mut self) -> &mut WgpuBindGroupLayoutData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<WgpuBindGroupLayoutData> for WgpuBindGroupLayoutComponent {
+    fn borrow(&self) -> &WgpuBindGroupLayoutData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<WgpuBindGroupLayoutData> for WgpuBindGroupLayoutComponent {
+    fn borrow_mut(&mut self) -> &mut WgpuBindGroupLayoutData {
+        &mut self.0
+    }
+}
+
+/// A WGPU bind group
+///
+/// See also [`WgpuBindGroupData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+#[derive(Debug, Clone)]
+pub struct WgpuBindGroupComponent(WgpuBindGroupData);
+
+#[allow(dead_code)]
+impl WgpuBindGroupComponent {
+    /// Creates a new [`WgpuBindGroupComponent`] instance from [`WgpuBindGroupData`].
+    pub const fn new(data: WgpuBindGroupData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for WgpuBindGroupComponent {
+    const ID: ComponentId = ComponentId::WgpuBindGroup;
+}
+
+impl PartialEq<ComponentId> for WgpuBindGroupComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<WgpuBindGroupData> for WgpuBindGroupComponent {
+    fn from(data: WgpuBindGroupData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for WgpuBindGroupComponent {
+    type Target = WgpuBindGroupData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for WgpuBindGroupComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<WgpuBindGroupData> for WgpuBindGroupComponent {
+    fn as_ref(&self) -> &WgpuBindGroupData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<WgpuBindGroupData> for WgpuBindGroupComponent {
+    fn as_mut(&mut self) -> &mut WgpuBindGroupData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<WgpuBindGroupData> for WgpuBindGroupComponent {
+    fn borrow(&self) -> &WgpuBindGroupData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<WgpuBindGroupData> for WgpuBindGroupComponent {
+    fn borrow_mut(&mut self) -> &mut WgpuBindGroupData {
+        &mut self.0
+    }
+}
+
+/// A WGPU buffer
+///
+/// See also [`WgpuBufferData`] for the actual data.
+///
+/// # Archetype Use
+/// This component is used by the following archetypes:
+/// 
+/// - [`WgpuUniformBindGroupArchetype`] ([`ArchetypeId::WgpuUniformBindGroup`])
+///
+/// # System Use
+/// This component is used by the following systems:
+/// 
+/// - [`WgpuInitUniformBindGroupSystem`] ([`SystemId::WgpuInitUniformBindGroup`])
+#[derive(Debug, Clone)]
+pub struct WgpuBufferComponent(WgpuBufferData);
+
+#[allow(dead_code)]
+impl WgpuBufferComponent {
+    /// Creates a new [`WgpuBufferComponent`] instance from [`WgpuBufferData`].
+    pub const fn new(data: WgpuBufferData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl Component for WgpuBufferComponent {
+    const ID: ComponentId = ComponentId::WgpuBuffer;
+}
+
+impl PartialEq<ComponentId> for WgpuBufferComponent {
+    fn eq(&self, other: &ComponentId) -> bool {
+        Self::ID.eq(other)
+    }
+}
+
+#[automatically_derived]
+impl From<WgpuBufferData> for WgpuBufferComponent {
+    fn from(data: WgpuBufferData) -> Self {
+        Self(data)
+    }
+}
+
+#[automatically_derived]
+impl core::ops::Deref for WgpuBufferComponent {
+    type Target = WgpuBufferData;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::ops::DerefMut for WgpuBufferComponent {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsRef<WgpuBufferData> for WgpuBufferComponent {
+    fn as_ref(&self) -> &WgpuBufferData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::convert::AsMut<WgpuBufferData> for WgpuBufferComponent {
+    fn as_mut(&mut self) -> &mut WgpuBufferData {
+        &mut self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::Borrow<WgpuBufferData> for WgpuBufferComponent {
+    fn borrow(&self) -> &WgpuBufferData {
+        &self.0
+    }
+}
+
+#[automatically_derived]
+impl core::borrow::BorrowMut<WgpuBufferData> for WgpuBufferComponent {
+    fn borrow_mut(&mut self) -> &mut WgpuBufferData {
         &mut self.0
     }
 }

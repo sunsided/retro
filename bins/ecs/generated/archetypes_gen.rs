@@ -2,57 +2,61 @@
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(u32)]
 pub enum ArchetypeId {
+    /// The [`WgpuUniformBindGroup`](WgpuUniformBindGroupArchetype) archetype.
+    WgpuUniformBindGroup = 1,
     /// The [`WgpuShader`](WgpuShaderArchetype) archetype.
-    WgpuShader = 1,
+    WgpuShader = 2,
     /// The [`WgpuTexture`](WgpuTextureArchetype) archetype.
-    WgpuTexture = 2,
+    WgpuTexture = 3,
     /// The [`Environment`](EnvironmentArchetype) archetype.
-    Environment = 3,
+    Environment = 4,
     /// The [`Camera`](CameraArchetype) archetype.
-    Camera = 4,
+    Camera = 5,
     /// The [`DynamicLight`](DynamicLightArchetype) archetype.
-    DynamicLight = 5,
+    DynamicLight = 6,
     /// The [`Tile`](TileArchetype) archetype.
-    Tile = 6,
+    Tile = 7,
     /// A marching cube :)
     ///
     /// For details, see the [`CubeArchetype`](CubeArchetype) Struct.
-    Cube = 7,
+    Cube = 8,
     /// The [`Player`](PlayerArchetype) archetype.
-    Player = 8,
+    Player = 9,
     /// The [`ForegroundObject`](ForegroundObjectArchetype) archetype.
-    ForegroundObject = 9,
+    ForegroundObject = 10,
     /// The [`BackgroundObject`](BackgroundObjectArchetype) archetype.
-    BackgroundObject = 10,
+    BackgroundObject = 11,
     /// The scene background.
     ///
     /// For details, see the [`SceneBackgroundArchetype`](SceneBackgroundArchetype) Struct.
-    SceneBackground = 11,
+    SceneBackground = 12,
 }
 
 impl ArchetypeId {
+    /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::WgpuUniformBindGroup`](ArchetypeId::WgpuUniformBindGroup) archetype.
+    pub const WGPU_UNIFORM_BIND_GROUP_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::WgpuShader`](ArchetypeId::WgpuShader) archetype.
-    pub const WGPU_SHADER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(1).expect("Error at ECS construction time");
+    pub const WGPU_SHADER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::WgpuTexture`](ArchetypeId::WgpuTexture) archetype.
-    pub const WGPU_TEXTURE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(2).expect("Error at ECS construction time");
+    pub const WGPU_TEXTURE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Environment`](ArchetypeId::Environment) archetype.
-    pub const ENVIRONMENT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(3).expect("Error at ECS construction time");
+    pub const ENVIRONMENT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Camera`](ArchetypeId::Camera) archetype.
-    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(4).expect("Error at ECS construction time");
+    pub const CAMERA_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::DynamicLight`](ArchetypeId::DynamicLight) archetype.
-    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(5).expect("Error at ECS construction time");
+    pub const DYNAMIC_LIGHT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Tile`](ArchetypeId::Tile) archetype.
-    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(6).expect("Error at ECS construction time");
+    pub const TILE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Cube`](ArchetypeId::Cube) archetype.
-    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(7).expect("Error at ECS construction time");
+    pub const CUBE_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::Player`](ArchetypeId::Player) archetype.
-    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(8).expect("Error at ECS construction time");
+    pub const PLAYER_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::ForegroundObject`](ArchetypeId::ForegroundObject) archetype.
-    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(9).expect("Error at ECS construction time");
+    pub const FOREGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::BackgroundObject`](ArchetypeId::BackgroundObject) archetype.
-    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(10).expect("Error at ECS construction time");
+    pub const BACKGROUND_OBJECT_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
     /// A [`NonZeroU64`](core::num::NonZeroU64) representation of [`ArchetypeId::SceneBackground`](ArchetypeId::SceneBackground) archetype.
-    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(11).expect("Error at ECS construction time");
+    pub const SCENE_BACKGROUND_ID_VALUE: core::num::NonZeroU64 = core::num::NonZeroU64::new(12).expect("Error at ECS construction time");
 }
 
 #[allow(dead_code)]
@@ -60,6 +64,7 @@ impl ArchetypeId {
     /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
     pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
         match self {
+            Self::WgpuUniformBindGroup => Self::WGPU_UNIFORM_BIND_GROUP_ID_VALUE,
             Self::WgpuShader => Self::WGPU_SHADER_ID_VALUE,
             Self::WgpuTexture => Self::WGPU_TEXTURE_ID_VALUE,
             Self::Environment => Self::ENVIRONMENT_ID_VALUE,
@@ -101,17 +106,18 @@ impl From<ArchetypeId> for u64 {
 impl core::fmt::Display for ArchetypeId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         match self {
-            Self::WgpuShader => write!(f, "WgpuShader (ID 1)"),
-            Self::WgpuTexture => write!(f, "WgpuTexture (ID 2)"),
-            Self::Environment => write!(f, "Environment (ID 3)"),
-            Self::Camera => write!(f, "Camera (ID 4)"),
-            Self::DynamicLight => write!(f, "DynamicLight (ID 5)"),
-            Self::Tile => write!(f, "Tile (ID 6)"),
-            Self::Cube => write!(f, "Cube (ID 7)"),
-            Self::Player => write!(f, "Player (ID 8)"),
-            Self::ForegroundObject => write!(f, "ForegroundObject (ID 9)"),
-            Self::BackgroundObject => write!(f, "BackgroundObject (ID 10)"),
-            Self::SceneBackground => write!(f, "SceneBackground (ID 11)"),
+            Self::WgpuUniformBindGroup => write!(f, "WgpuUniformBindGroup (ID 1)"),
+            Self::WgpuShader => write!(f, "WgpuShader (ID 2)"),
+            Self::WgpuTexture => write!(f, "WgpuTexture (ID 3)"),
+            Self::Environment => write!(f, "Environment (ID 4)"),
+            Self::Camera => write!(f, "Camera (ID 5)"),
+            Self::DynamicLight => write!(f, "DynamicLight (ID 6)"),
+            Self::Tile => write!(f, "Tile (ID 7)"),
+            Self::Cube => write!(f, "Cube (ID 8)"),
+            Self::Player => write!(f, "Player (ID 9)"),
+            Self::ForegroundObject => write!(f, "ForegroundObject (ID 10)"),
+            Self::BackgroundObject => write!(f, "BackgroundObject (ID 11)"),
+            Self::SceneBackground => write!(f, "SceneBackground (ID 12)"),
         }
     }
 }
@@ -180,6 +186,8 @@ pub trait HasComponent<T: Component> {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntity {
+    /// An entity in the [`WgpuUniformBindGroup`](WgpuUniformBindGroupArchetype) archetype.
+    WgpuUniformBindGroup(WgpuUniformBindGroupEntity),
     /// An entity in the [`WgpuShader`](WgpuShaderArchetype) archetype.
     WgpuShader(WgpuShaderEntity),
     /// An entity in the [`WgpuTexture`](WgpuTextureArchetype) archetype.
@@ -208,6 +216,8 @@ pub enum ArchetypeEntity {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ArchetypeEntityData {
+    /// An entity in the [`WgpuUniformBindGroup`](WgpuUniformBindGroupArchetype) archetype.
+    WgpuUniformBindGroup(WgpuUniformBindGroupEntityData),
     /// An entity in the [`WgpuShader`](WgpuShaderArchetype) archetype.
     WgpuShader(WgpuShaderEntityData),
     /// An entity in the [`WgpuTexture`](WgpuTextureArchetype) archetype.
@@ -237,6 +247,7 @@ impl ArchetypeEntity {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntity`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::WgpuUniformBindGroup(_) => WgpuUniformBindGroupArchetype::ID,
             Self::WgpuShader(_) => WgpuShaderArchetype::ID,
             Self::WgpuTexture(_) => WgpuTextureArchetype::ID,
             Self::Environment(_) => EnvironmentArchetype::ID,
@@ -257,6 +268,7 @@ impl ArchetypeEntityData {
     /// Determines the [`ArchetypeId`] of this [`ArchetypeEntityData`] variant.
     pub const fn archetype_id(&self) -> ArchetypeId {
         match self {
+            Self::WgpuUniformBindGroup(_) => WgpuUniformBindGroupArchetype::ID,
             Self::WgpuShader(_) => WgpuShaderArchetype::ID,
             Self::WgpuTexture(_) => WgpuTextureArchetype::ID,
             Self::Environment(_) => EnvironmentArchetype::ID,
@@ -283,6 +295,602 @@ pub struct EntityWithIdAndData<Data: EntityData> {
 /// Marker trait for entity data.
 pub trait EntityData {
     const ARCHETYPE_ID: ArchetypeId;
+}
+
+/// An archetype grouping entities with identical components.
+#[derive(Debug, Default, Clone)]
+pub struct WgpuUniformBindGroupArchetype {
+    pub entities: Vec<::sillyecs::EntityId>,
+    pub uniform_types: Vec<UniformTypeComponent>,
+    pub wgpu_bind_group_layouts: Vec<WgpuBindGroupLayoutComponent>,
+    pub wgpu_bind_groups: Vec<WgpuBindGroupComponent>,
+    pub wgpu_buffers: Vec<WgpuBufferComponent>,
+}
+
+/// An entity of the [`WgpuUniformBindGroupArchetype`].
+pub type WgpuUniformBindGroupEntity = EntityWithIdAndData<WgpuUniformBindGroupEntityComponents>;
+
+/// The data of an entity of the [`WgpuUniformBindGroupArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuUniformBindGroupEntityData {
+    pub uniform_type: UniformTypeData,
+    pub wgpu_bind_group_layout: WgpuBindGroupLayoutData,
+    pub wgpu_bind_group: WgpuBindGroupData,
+    pub wgpu_buffer: WgpuBufferData,
+}
+
+/// An entity of the [`WgpuUniformBindGroupArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuUniformBindGroupEntityComponents {
+    pub uniform_type: UniformTypeComponent,
+    pub wgpu_bind_group_layout: WgpuBindGroupLayoutComponent,
+    pub wgpu_bind_group: WgpuBindGroupComponent,
+    pub wgpu_buffer: WgpuBufferComponent,
+}
+
+impl From<WgpuUniformBindGroupEntityData> for WgpuUniformBindGroupEntityComponents {
+    fn from(value: WgpuUniformBindGroupEntityData) -> Self {
+        Self {
+            uniform_type: value.uniform_type.into(),
+            wgpu_bind_group_layout: value.wgpu_bind_group_layout.into(),
+            wgpu_bind_group: value.wgpu_bind_group.into(),
+            wgpu_buffer: value.wgpu_buffer.into(),
+        }
+    }
+}
+
+impl EntityData for WgpuUniformBindGroupEntityData {
+    const ARCHETYPE_ID: ArchetypeId = WgpuUniformBindGroupArchetype::ID;
+}
+
+impl EntityData for WgpuUniformBindGroupEntityComponents {
+    const ARCHETYPE_ID: ArchetypeId = WgpuUniformBindGroupArchetype::ID;
+}
+
+/// A reference to an entity of the [`WgpuUniformBindGroupArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct WgpuUniformBindGroupEntityRef<'archetype> {
+    pub entity_id: ::sillyecs::EntityId,
+    pub uniform_type: &'archetype UniformTypeComponent,
+    pub wgpu_bind_group_layout: &'archetype WgpuBindGroupLayoutComponent,
+    pub wgpu_bind_group: &'archetype WgpuBindGroupComponent,
+    pub wgpu_buffer: &'archetype WgpuBufferComponent,
+}
+
+/// A mutable reference to an entity of the [`WgpuUniformBindGroupArchetype`].
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct WgpuUniformBindGroupEntityMut<'archetype> {
+    pub entity_id: ::sillyecs::EntityId,
+    pub uniform_type: &'archetype mut UniformTypeComponent,
+    pub wgpu_bind_group_layout: &'archetype mut WgpuBindGroupLayoutComponent,
+    pub wgpu_bind_group: &'archetype mut WgpuBindGroupComponent,
+    pub wgpu_buffer: &'archetype mut WgpuBufferComponent,
+}
+
+/// An iterator for entities in the [`WgpuUniformBindGroupArchetype`].
+pub struct WgpuUniformBindGroupEntityIterator<'archetype> {
+    archetype: &'archetype WgpuUniformBindGroupArchetype,
+    current: usize,
+    length: usize,
+}
+
+impl<'archetype> WgpuUniformBindGroupEntityIterator<'archetype> {
+    fn new(archetype: &'archetype WgpuUniformBindGroupArchetype) -> Self {
+        Self {
+            archetype,
+            current: 0,
+            length: archetype.len()
+        }
+    }
+}
+
+impl<'archetype> Iterator for WgpuUniformBindGroupEntityIterator<'archetype> {
+    type Item = WgpuUniformBindGroupEntityRef<'archetype>;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current >= self.length {
+            return None;
+        }
+
+        let idx = self.current;
+        self.current += 1;
+        Some(unsafe { self.archetype.get_at_unchecked(idx) })
+    }
+}
+
+impl WgpuUniformBindGroupArchetype {
+    /// Iterates all entities in this archetype.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn iter(&self) -> WgpuUniformBindGroupEntityIterator {
+        WgpuUniformBindGroupEntityIterator::new(self)
+    }
+
+    /// Gets the `UniformType` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_uniform_type_component_at(&self, index: usize) -> Option<&UniformTypeComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_uniform_type_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `UniformType` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_uniform_type_component_at_mut(&mut self, index: usize) -> Option<&mut UniformTypeComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_uniform_type_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `UniformType` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_uniform_type_component_at_unchecked(&self, index: usize) -> &UniformTypeComponent {
+        self.uniform_types.get_unchecked(index)
+    }
+
+    /// Gets the `UniformType` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_uniform_type_component_at_unchecked_mut(&mut self, index: usize) -> &mut UniformTypeComponent {
+        self.uniform_types.get_unchecked_mut(index)
+    }
+
+    /// Gets the `WgpuBindGroupLayout` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_bind_group_layout_component_at(&self, index: usize) -> Option<&WgpuBindGroupLayoutComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_bind_group_layout_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `WgpuBindGroupLayout` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_bind_group_layout_component_at_mut(&mut self, index: usize) -> Option<&mut WgpuBindGroupLayoutComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_bind_group_layout_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `WgpuBindGroupLayout` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_bind_group_layout_component_at_unchecked(&self, index: usize) -> &WgpuBindGroupLayoutComponent {
+        self.wgpu_bind_group_layouts.get_unchecked(index)
+    }
+
+    /// Gets the `WgpuBindGroupLayout` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_bind_group_layout_component_at_unchecked_mut(&mut self, index: usize) -> &mut WgpuBindGroupLayoutComponent {
+        self.wgpu_bind_group_layouts.get_unchecked_mut(index)
+    }
+
+    /// Gets the `WgpuBindGroup` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_bind_group_component_at(&self, index: usize) -> Option<&WgpuBindGroupComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_bind_group_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `WgpuBindGroup` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_bind_group_component_at_mut(&mut self, index: usize) -> Option<&mut WgpuBindGroupComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_bind_group_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `WgpuBindGroup` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_bind_group_component_at_unchecked(&self, index: usize) -> &WgpuBindGroupComponent {
+        self.wgpu_bind_groups.get_unchecked(index)
+    }
+
+    /// Gets the `WgpuBindGroup` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_bind_group_component_at_unchecked_mut(&mut self, index: usize) -> &mut WgpuBindGroupComponent {
+        self.wgpu_bind_groups.get_unchecked_mut(index)
+    }
+
+    /// Gets the `WgpuBuffer` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_buffer_component_at(&self, index: usize) -> Option<&WgpuBufferComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_buffer_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `WgpuBuffer` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_wgpu_buffer_component_at_mut(&mut self, index: usize) -> Option<&mut WgpuBufferComponent> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_wgpu_buffer_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `WgpuBuffer` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_buffer_component_at_unchecked(&self, index: usize) -> &WgpuBufferComponent {
+        self.wgpu_buffers.get_unchecked(index)
+    }
+
+    /// Gets the `WgpuBuffer` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_wgpu_buffer_component_at_unchecked_mut(&mut self, index: usize) -> &mut WgpuBufferComponent {
+        self.wgpu_buffers.get_unchecked_mut(index)
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at(&self, index: usize) -> Option<WgpuUniformBindGroupEntityRef> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<WgpuUniformBindGroupEntityMut> {
+        if index > self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> WgpuUniformBindGroupEntityRef {
+        WgpuUniformBindGroupEntityRef {
+            entity_id: *self.entities.get_unchecked(index),
+            uniform_type: self.uniform_types.get_unchecked(index),
+            wgpu_bind_group_layout: self.wgpu_bind_group_layouts.get_unchecked(index),
+            wgpu_bind_group: self.wgpu_bind_groups.get_unchecked(index),
+            wgpu_buffer: self.wgpu_buffers.get_unchecked(index),
+        }
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> WgpuUniformBindGroupEntityMut {
+        WgpuUniformBindGroupEntityMut {
+            entity_id: *self.entities.get_unchecked(index),
+            uniform_type: self.uniform_types.get_unchecked_mut(index),
+            wgpu_bind_group_layout: self.wgpu_bind_group_layouts.get_unchecked_mut(index),
+            wgpu_bind_group: self.wgpu_bind_groups.get_unchecked_mut(index),
+            wgpu_buffer: self.wgpu_buffers.get_unchecked_mut(index),
+        }
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<UniformTypeComponent> for WgpuUniformBindGroupEntity {
+    #[inline]
+    fn get(&self) -> &UniformTypeComponent {
+        &self.data.uniform_type
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut UniformTypeComponent {
+        &mut self.data.uniform_type
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<UniformTypeComponent> for WgpuUniformBindGroupEntityComponents {
+    #[inline]
+    fn get(&self) -> &UniformTypeComponent {
+        &self.uniform_type
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut UniformTypeComponent {
+        &mut self.uniform_type
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuBindGroupLayoutComponent> for WgpuUniformBindGroupEntity {
+    #[inline]
+    fn get(&self) -> &WgpuBindGroupLayoutComponent {
+        &self.data.wgpu_bind_group_layout
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuBindGroupLayoutComponent {
+        &mut self.data.wgpu_bind_group_layout
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuBindGroupLayoutComponent> for WgpuUniformBindGroupEntityComponents {
+    #[inline]
+    fn get(&self) -> &WgpuBindGroupLayoutComponent {
+        &self.wgpu_bind_group_layout
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuBindGroupLayoutComponent {
+        &mut self.wgpu_bind_group_layout
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuBindGroupComponent> for WgpuUniformBindGroupEntity {
+    #[inline]
+    fn get(&self) -> &WgpuBindGroupComponent {
+        &self.data.wgpu_bind_group
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuBindGroupComponent {
+        &mut self.data.wgpu_bind_group
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuBindGroupComponent> for WgpuUniformBindGroupEntityComponents {
+    #[inline]
+    fn get(&self) -> &WgpuBindGroupComponent {
+        &self.wgpu_bind_group
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuBindGroupComponent {
+        &mut self.wgpu_bind_group
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuBufferComponent> for WgpuUniformBindGroupEntity {
+    #[inline]
+    fn get(&self) -> &WgpuBufferComponent {
+        &self.data.wgpu_buffer
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuBufferComponent {
+        &mut self.data.wgpu_buffer
+    }
+}
+
+#[allow(dead_code)]
+impl HasComponent<WgpuBufferComponent> for WgpuUniformBindGroupEntityComponents {
+    #[inline]
+    fn get(&self) -> &WgpuBufferComponent {
+        &self.wgpu_buffer
+    }
+
+    #[inline]
+    fn get_mut(&mut self) -> &mut WgpuBufferComponent {
+        &mut self.wgpu_buffer
+    }
+}
+impl WgpuUniformBindGroupEntityData {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<WgpuUniformBindGroupEntityData>
+    {
+        world.spawn(self)
+    }
+}
+
+impl WgpuUniformBindGroupEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<WgpuUniformBindGroupEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
+impl core::ops::Deref for WgpuUniformBindGroupEntity {
+    type Target = WgpuUniformBindGroupEntityComponents;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+impl core::ops::DerefMut for WgpuUniformBindGroupEntity {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.data
+    }
+}
+
+#[allow(dead_code)]
+impl WgpuUniformBindGroupArchetype {
+    /// The IDs of the components used by this archetype, in ascending order.
+    pub const COMPONENTS: [ComponentId; 4] = [
+        ComponentId::COMPONENT_22,
+        ComponentId::COMPONENT_23,
+        ComponentId::COMPONENT_24,
+        ComponentId::COMPONENT_25,
+    ];
+
+    /// Returns the number of entities in this archetype.
+    #[inline(always)]
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    /// Indicates whether this archetype has no entities.
+    #[inline(always)]
+    #[allow(dead_code)]
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+
+    /// Returns the number of components used by this archetype.
+    #[inline(always)]
+    pub const fn num_components(&self) -> usize {
+        4
+    }
+
+    /// Dynamically determines whether this archetype has a specific component.
+    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+        let id = id.as_u64();
+        id == 22 || id == 23 || id == 24 || id == 25 || false
+    }
+
+    /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
+    #[doc(hidden)]
+    pub fn spawn_with<R>(
+        &mut self,
+        uniform_type: UniformTypeComponent,
+        wgpu_bind_group_layout: WgpuBindGroupLayoutComponent,
+        wgpu_bind_group: WgpuBindGroupComponent,
+        wgpu_buffer: WgpuBufferComponent,
+        mut world_registry: R
+    ) -> ::sillyecs::EntityId
+    where
+        R: WorldEntityRegistry
+    {
+        self.uniform_types.push(uniform_type);
+        self.wgpu_bind_group_layouts.push(wgpu_bind_group_layout);
+        self.wgpu_bind_groups.push(wgpu_bind_group);
+        self.wgpu_buffers.push(wgpu_buffer);
+
+        let entity_id = ::sillyecs::EntityId::new();
+
+        let entity_index = self.entities.len();
+        self.entities.push(entity_id);
+
+        let reference = EntityArchetypeRef {
+            archetype: Self::ID,
+            index: entity_index
+        };
+
+        world_registry.register(entity_id, reference)
+    }
+
+    /// Drop an entity at the specified index. Called by the world upon de-spawning entities.
+    ///
+    /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
+    #[doc(hidden)]
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
+        if index > self.entities.len() {
+            return Err(index);
+        }
+        self.entities.swap_remove(index);
+        self.uniform_types.swap_remove(index);
+        self.wgpu_bind_group_layouts.swap_remove(index);
+        self.wgpu_bind_groups.swap_remove(index);
+        self.wgpu_buffers.swap_remove(index);
+        if self.entities.is_empty() {
+            Ok(None)
+        }
+        else {
+            Ok(Some(self.entities[index]))
+        }
+    }
+}
+
+
+#[automatically_derived]
+impl HasComponents<UniformTypeComponent> for WgpuUniformBindGroupArchetype {
+    /// Returns a slice of all [`UniformTypeComponent`] component values.
+    fn get(&self) -> &[UniformTypeComponent] {
+        self.uniform_types.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`UniformTypeComponent`] component values.
+    fn get_mut(&mut self) -> &mut [UniformTypeComponent] {
+        self.uniform_types.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<WgpuBindGroupLayoutComponent> for WgpuUniformBindGroupArchetype {
+    /// Returns a slice of all [`WgpuBindGroupLayoutComponent`] component values.
+    fn get(&self) -> &[WgpuBindGroupLayoutComponent] {
+        self.wgpu_bind_group_layouts.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`WgpuBindGroupLayoutComponent`] component values.
+    fn get_mut(&mut self) -> &mut [WgpuBindGroupLayoutComponent] {
+        self.wgpu_bind_group_layouts.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<WgpuBindGroupComponent> for WgpuUniformBindGroupArchetype {
+    /// Returns a slice of all [`WgpuBindGroupComponent`] component values.
+    fn get(&self) -> &[WgpuBindGroupComponent] {
+        self.wgpu_bind_groups.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`WgpuBindGroupComponent`] component values.
+    fn get_mut(&mut self) -> &mut [WgpuBindGroupComponent] {
+        self.wgpu_bind_groups.as_mut_slice()
+    }
+}
+
+#[automatically_derived]
+impl HasComponents<WgpuBufferComponent> for WgpuUniformBindGroupArchetype {
+    /// Returns a slice of all [`WgpuBufferComponent`] component values.
+    fn get(&self) -> &[WgpuBufferComponent] {
+        self.wgpu_buffers.as_slice()
+    }
+
+    /// Returns a mutable slice of all [`WgpuBufferComponent`] component values.
+    fn get_mut(&mut self) -> &mut [WgpuBufferComponent] {
+        self.wgpu_buffers.as_mut_slice()
+    }
+}
+
+
+#[automatically_derived]
+#[allow(dead_code)]
+impl Archetype for WgpuUniformBindGroupArchetype {
+    const ID: ArchetypeId = ArchetypeId::WgpuUniformBindGroup;
+
+    fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    fn is_empty(&self) -> bool {
+        self.entities.is_empty()
+    }
+}
+
+impl PartialEq<ArchetypeId> for WgpuUniformBindGroupArchetype {
+    fn eq(&self, other: &ArchetypeId) -> bool {
+        Self::ID.eq(other)
+    }
 }
 
 /// An archetype grouping entities with identical components.
@@ -5411,6 +6019,14 @@ pub trait GetEntityRef {
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype>;
 }
 
+impl core::ops::Index<usize> for WgpuUniformBindGroupArchetype {
+    type Output = ::sillyecs::EntityId;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.entities[index]
+    }
+}
+
 impl core::ops::Index<usize> for WgpuShaderArchetype {
     type Output = ::sillyecs::EntityId;
 
@@ -5660,6 +6276,29 @@ pub trait FrontloadEntitiesScan:
 
         // At this point, `left` indicates how many entities are valid (frontloaded)
         left
+    }
+}
+
+impl GetEntityRef for WgpuUniformBindGroupArchetype {
+    type EntityRef<'archetype> = WgpuUniformBindGroupEntityRef<'archetype>;
+
+    #[allow(dead_code)]
+    fn is_empty(&self) -> bool {
+       self.is_empty()
+    }
+
+    /// See [`WgpuUniformBindGroupArchetype::get_at`](WgpuUniformBindGroupArchetype::get_at).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
+        self.get_entity_at(index)
+    }
+
+    /// See [`WgpuUniformBindGroupArchetype::get_at_unchecked`](WgpuUniformBindGroupArchetype::get_at_unchecked).
+    #[inline(always)]
+    #[allow(clippy::needless_lifetimes, dead_code)]
+    unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -5915,6 +6554,20 @@ impl GetEntityRef for SceneBackgroundArchetype {
         unsafe { self.get_entity_at_unchecked(index) }
     }
 }
+
+impl FrontloadEntities for WgpuUniformBindGroupArchetype {
+    #[inline(always)]
+    #[doc(hidden)]
+    fn swap_entities(&mut self, first: usize, second: usize) {
+        self.entities.swap(first, second);
+        self.uniform_types.swap(first, second);
+        self.wgpu_bind_group_layouts.swap(first, second);
+        self.wgpu_bind_groups.swap(first, second);
+        self.wgpu_buffers.swap(first, second);
+    }
+}
+
+impl FrontloadEntitiesScan for WgpuUniformBindGroupArchetype { }
 
 impl FrontloadEntities for WgpuShaderArchetype {
     #[inline(always)]
