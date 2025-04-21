@@ -1,5 +1,5 @@
 use crate::surface_info::SurfaceInfo;
-use crate::{wgpu_label, GpuContext, RecreateReason, Resource, TextureWithView};
+use crate::{wgpu_label, DependentResource, GpuContext, RecreateReason, Resource, ResourceId, SurfaceSensitive, TextureWithView};
 
 #[derive(Debug)]
 pub struct FileTexture {
@@ -67,5 +67,21 @@ impl Resource for FileTexture {
         let view = texture.create_view(&Default::default());
 
         Ok(Self::Output::new(texture, view))
+    }
+}
+
+impl SurfaceSensitive for FileTexture {
+    fn is_surface_dependent(&self) -> bool {
+        false
+    }
+
+    fn must_recreate(&self, _current: &SurfaceInfo, _previous: &SurfaceInfo) -> bool {
+        false
+    }
+}
+
+impl DependentResource for FileTexture {
+    fn get_dependencies(&self) -> &[ResourceId] {
+        &[]
     }
 }
