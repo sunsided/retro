@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use crate::{GetResourceError, GpuContext, RecreateReason, Resource, ResourceData, Resources, ShaderResourceId, SurfaceInfo, UniformResourceId};
+use crate::{GetResourceError, GpuContext, RecreateReason, Resource, ResourceData, Resources, ShaderResourceId, SurfaceInfo};
 use crate::resources::macros::define_resource_boilerplate;
 
 #[allow(dead_code)]

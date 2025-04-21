@@ -1,7 +1,7 @@
 use std::convert::Infallible;
 use std::fmt::Debug;
 use wgpu::util::DeviceExt;
-use crate::{wgpu_label, GpuContext, RecreateReason, Resource, SurfaceInfo, UniformResourceId};
+use crate::{wgpu_label, GpuContext, RecreateReason, Resource, SurfaceInfo};
 use crate::resources::uniform_buffers::uniform_buffer::UniformBuffer;
 
 #[derive(Debug)]
