@@ -9,6 +9,7 @@ mod buffer_resource_id;
 mod texture_sampler_resource_id;
 mod pipeline_layout_resource_id;
 mod pipeline_resource_id;
+mod bind_group_layout_resource_id;
 
 pub use manager_id::WgpuResourceManagerId;
 pub use resource_id::ResourceId;
@@ -21,3 +22,4 @@ pub use buffer_resource_id::BufferResourceId;
 pub use texture_sampler_resource_id::TextureSamplerResourceId;
 pub use pipeline_layout_resource_id::PipelineLayoutResourceId;
 pub use pipeline_resource_id::PipelineResourceId;
+pub use bind_group_layout_resource_id::BindGroupLayoutResourceId;
