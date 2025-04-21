@@ -34,21 +34,3 @@ impl UniformBuffer {
         }
     }
 }
-
-impl AsRef<Buffer> for UniformBuffer {
-    fn as_ref(&self) -> &Buffer {
-        &self.buffer
-    }
-}
-
-impl AsRef<BindGroup> for UniformBuffer {
-    fn as_ref(&self) -> &BindGroup {
-        &self.bind_group
-    }
-}
-
-impl AsRef<BindGroupLayout> for UniformBuffer {
-    fn as_ref(&self) -> &BindGroupLayout {
-        &self.layout
-    }
-}

@@ -381,7 +381,7 @@ fn main() -> eyre::Result<()> {
     let mut resources: Resources<(), ResourcesError> = Resources::default();
     let _tex_id = resources.register_texture(FallbackNormalTexture, ());
     let _uniform_id = resources.register_uniform(SingleUniformBuffer::new("frame_globals", FrameGlobalUniform::default()), ());
-    
+
     let wgpu_hardware = WgpuHardware::initialize(backend);
     let mut app = App::new(wgpu_hardware);
 
