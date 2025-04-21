@@ -13,16 +13,14 @@ pub trait TextureResourceData: Debug {
     fn view(&self) -> &TextureView;
 }
 
-impl<T> ResourceData for T where T: TextureResourceData { }
-impl ResourceData for Box<dyn TextureResourceData> { }
-
-type BoxedNewTextureResourceData = Box<dyn TextureResourceData>;
+type BoxedTextureResourceData = Box<dyn TextureResourceData>;
+impl ResourceData for BoxedTextureResourceData { }
 
 /// The [`TextureResourceEntry`] is used in the [`Resources`] manager to type-erase
 /// texture resources.
 pub struct TextureResourceEntry<Lifecycle, GlobalError> {
-    data: Option<BoxedNewTextureResourceData>,
-    factory: Box<dyn Resource<Output = BoxedNewTextureResourceData, Error = GlobalError>>,
+    data: Option<BoxedTextureResourceData>,
+    factory: Box<dyn Resource<Output = BoxedTextureResourceData, Error = GlobalError>>,
     lifecycle: Lifecycle
 }
 
@@ -50,6 +48,27 @@ impl<R, GlobalError> TextureResourceFactory<R, GlobalError> {
     #[inline]
     pub fn boxed(inner: R) -> Box<Self> {
         Box::new(Self::new(inner))
+    }
+}
+
+impl<T, R, E, GlobalError> Resource for TextureResourceFactory<R, GlobalError>
+where
+    T: TextureResourceData + 'static,
+    R: Resource<Output = T, Error = E>,
+    E: Error + Send + Sync + 'static,
+    GlobalError: Error + Send + Sync + From<E> + 'static,
+{
+    type Output = BoxedTextureResourceData;
+    type Error = GlobalError;
+
+    fn recreate<'device>(
+        &mut self,
+        ctx: &GpuContext<'device>,
+        surface_info: &SurfaceInfo,
+        reason: RecreateReason
+    ) -> Result<Self::Output, Self::Error> {
+        let raw = self.inner.recreate(ctx, surface_info, reason).map_err(Into::into)?;
+        Ok(Box::new(raw))
     }
 }
 
@@ -108,26 +127,5 @@ where
             entry.data = Some(result);
         }
         Ok(())
-    }
-}
-
-impl<T, R, E, GlobalError> Resource for TextureResourceFactory<R, GlobalError>
-where
-    T: TextureResourceData + 'static,
-    R: Resource<Output = T, Error = E>,
-    E: Error + Send + Sync + 'static,
-    GlobalError: Error + Send + Sync + From<E> + 'static,
-{
-    type Output = BoxedNewTextureResourceData;
-    type Error = GlobalError;
-
-    fn recreate<'device>(
-        &mut self,
-        ctx: &GpuContext<'device>,
-        surface_info: &SurfaceInfo,
-        reason: RecreateReason
-    ) -> Result<Self::Output, Self::Error> {
-        let raw = self.inner.recreate(ctx, surface_info, reason).map_err(Into::into)?;
-        Ok(Box::new(raw))
     }
 }

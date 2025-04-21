@@ -1,6 +1,7 @@
 use std::borrow::Borrow;
 use std::ops::Deref;
 use wgpu::{Texture, TextureView};
+use crate::ResourceData;
 use crate::resources::textures::TextureResourceData;
 
 /// A texture with a view.
@@ -9,6 +10,8 @@ pub struct TextureWithView {
     texture: Texture,
     view: TextureView,
 }
+
+impl ResourceData for TextureWithView {}
 
 impl TextureWithView {
     #[inline]

@@ -1,18 +1,19 @@
 pub mod textures;
+mod uniform_buffers;
 
 use crate::surface_info::SurfaceInfo;
-use crate::{DeviceId, SurfaceId, TextureResourceId};
+use crate::{DeviceId, SurfaceId, TextureResourceId, UniformResourceId};
 use fxhash::FxHashMap;
 use std::error::Error;
 use std::fmt::Debug;
-use std::marker::PhantomData;
 use crate::GpuContext;
 use crate::resources::textures::TextureResourceEntry;
+use crate::resources::uniform_buffers::UniformBufferResourceEntry;
 
 #[allow(dead_code)]
 pub struct Resources<Lifecycle, GlobalError> {
     pub(crate) textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
-    phantom_data: PhantomData<GlobalError>,
+    pub(crate) uniforms: FxHashMap<UniformResourceId, UniformBufferResourceEntry<Lifecycle, GlobalError>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -95,7 +96,7 @@ mod tests {
     fn new_resources() {
         let mut res: Resources<(), MyError> = Resources {
             textures: Default::default(),
-            phantom_data: Default::default(),
+            uniforms: Default::default(),
         };
 
         let tex = FallbackNormalTexture;
