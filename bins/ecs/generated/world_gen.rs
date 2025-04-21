@@ -6892,11 +6892,11 @@ impl ComponentAccess for MainWorldArchetypes {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
             TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
             PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
             DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -7177,11 +7177,11 @@ impl ComponentAccessMut for MainWorldArchetypes {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
             TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
             PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
             ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
-            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
             DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
-            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
