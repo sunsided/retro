@@ -11,13 +11,13 @@ mod gpu_context;
 mod ids;
 
 pub mod prefabs {
-    pub use crate::resources::textures::examples as textures;
-    pub use crate::resources::uniform_buffers::examples as uniform_buffers;
-    pub use crate::resources::shaders::examples as shaders;
-    pub use crate::resources::buffers::examples as buffers;
-    pub use crate::resources::texture_samplers::examples as texture_samplers;
-    pub use crate::resources::pipeline_layouts::examples as pipeline_layouts;
-    pub use crate::resources::bind_group_layouts::examples as bind_group_layouts;
+    pub use crate::resources::textures::prefabs as textures;
+    pub use crate::resources::uniform_buffers::prefabs as uniform_buffers;
+    pub use crate::resources::shaders::prefabs as shaders;
+    pub use crate::resources::buffers::prefabs as buffers;
+    pub use crate::resources::texture_samplers::prefabs as texture_samplers;
+    pub use crate::resources::pipeline_layouts::prefabs as pipeline_layouts;
+    pub use crate::resources::bind_group_layouts::prefabs as bind_group_layouts;
 }
 
 pub use crate::device_and_queue::DeviceAndQueue;

@@ -124,7 +124,7 @@ mod tests {
     use std::convert::Infallible;
     use wgpu::TextureFormat;
     use crate::gpu_context::GpuContext;
-    use crate::resources::textures::examples::FallbackNormalTexture;
+    use crate::resources::textures::prefabs::FallbackNormalTexture;
 
     #[derive(Debug, thiserror::Error)]
     enum MyError {
