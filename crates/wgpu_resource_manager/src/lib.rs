@@ -10,12 +10,13 @@ mod resource;
 mod gpu_context;
 mod ids;
 
-pub mod examples {
+pub mod prefabs {
     pub use crate::resources::textures::examples as textures;
     pub use crate::resources::uniform_buffers::examples as uniform_buffers;
     pub use crate::resources::shaders::examples as shaders;
     pub use crate::resources::buffers::examples as buffers;
     pub use crate::resources::texture_samplers::examples as texture_samplers;
+    pub use crate::resources::pipeline_layouts::examples as pipeline_layouts;
 }
 
 pub use crate::device_and_queue::DeviceAndQueue;

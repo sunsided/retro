@@ -1,12 +1,18 @@
 use std::convert::Infallible;
 use std::fmt::Debug;
-use wgpu::SamplerDescriptor;
+use wgpu::{SamplerDescriptor};
 use crate::{GpuContext, RecreateReason, Resource, SurfaceInfo};
 use crate::resources::texture_samplers::texture_sampler::TextureSampler;
 
 #[derive(Debug)]
 pub struct GenericTextureSampler {
     desc: SamplerDescriptor<'static>
+}
+
+impl GenericTextureSampler {
+    pub const fn new(desc: SamplerDescriptor<'static>) -> Self {
+        Self { desc }
+    }
 }
 
 impl Resource for GenericTextureSampler

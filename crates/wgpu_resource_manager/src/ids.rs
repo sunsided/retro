@@ -7,6 +7,8 @@ mod uniform_resource_id;
 mod shader_resource_id;
 mod buffer_resource_id;
 mod texture_sampler_resource_id;
+mod pipeline_layout_resource_id;
+mod pipeline_resource_id;
 
 pub use manager_id::WgpuResourceManagerId;
 pub use resource_id::ResourceId;
@@ -17,3 +19,5 @@ pub use uniform_resource_id::UniformResourceId;
 pub use shader_resource_id::ShaderResourceId;
 pub use buffer_resource_id::BufferResourceId;
 pub use texture_sampler_resource_id::TextureSamplerResourceId;
+pub use pipeline_layout_resource_id::PipelineLayoutResourceId;
+pub use pipeline_resource_id::PipelineResourceId;

@@ -25,9 +25,9 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use wgpu_resource_manager::examples::shaders::ShaderFromSource;
-use wgpu_resource_manager::examples::textures::FallbackNormalTexture;
-use wgpu_resource_manager::examples::uniform_buffers::SingleUniformBuffer;
+use wgpu_resource_manager::prefabs::shaders::ShaderFromSource;
+use wgpu_resource_manager::prefabs::textures::FallbackNormalTexture;
+use wgpu_resource_manager::prefabs::uniform_buffers::SingleUniformBuffer;
 use wgpu_resource_manager::{GpuContext, RecreateReason, Resources, SurfaceInfo};
 use crate::engine::components::hal::noop::Resource;
 use crate::wgpu::uniforms::FrameGlobalUniform;

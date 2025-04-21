@@ -1,7 +1,5 @@
 use std::convert::Infallible;
 use std::fmt::Debug;
-use std::mem::size_of;
-use wgpu::{BufferAddress, COPY_BUFFER_ALIGNMENT};
 use wgpu::util::DeviceExt;
 use crate::{wgpu_label, GpuContext, RecreateReason, Resource, SurfaceInfo};
 use crate::resources::buffers::buffer::Buffer;
@@ -33,7 +31,7 @@ where T: Debug + Clone + bytemuck::Pod + bytemuck::Zeroable
         // TODO: Don't recreate if not necessary
 
         let label = wgpu_label!(self.label);
-        
+
         let desc = wgpu::util::BufferInitDescriptor {
             label: Some(&label),
             contents: bytemuck::cast_slice(&self.data),
