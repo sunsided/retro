@@ -1,17 +1,21 @@
 use std::convert::Infallible;
 use std::fmt::Debug;
 use wgpu::PipelineLayoutDescriptor;
-use crate::{GpuContext, RecreateReason, Resource, SurfaceInfo};
+use crate::{DependentResource, GpuContext, RecreateReason, Resource, ResourceId, SurfaceInfo, SurfaceSensitive};
 use crate::resources::pipeline_layouts::pipeline_layout::PipelineLayout;
 
 #[derive(Debug)]
 pub struct GenericPipelineLayout {
-    desc: PipelineLayoutDescriptor<'static>
+    desc: PipelineLayoutDescriptor<'static>,
+    dependencies: Box<[ResourceId]>
 }
 
 impl GenericPipelineLayout {
-    pub const fn new(desc: PipelineLayoutDescriptor<'static>) -> Self {
-        Self { desc }
+    pub fn new<D>(desc: PipelineLayoutDescriptor<'static>, dependencies: D) -> Self 
+    where
+        D: Into<Box<[ResourceId]>>,
+    {
+        Self { desc, dependencies: dependencies.into() }
     }
 }
 
@@ -25,5 +29,21 @@ impl Resource for GenericPipelineLayout
 
         let layout = ctx.device.create_pipeline_layout(&self.desc);
         Ok(PipelineLayout::new(layout))
+    }
+}
+
+impl SurfaceSensitive for GenericPipelineLayout {
+    fn is_surface_dependent(&self) -> bool {
+        false
+    }
+
+    fn must_recreate(&self, current: &SurfaceInfo, previous: &SurfaceInfo) -> bool {
+        false
+    }
+}
+
+impl DependentResource for GenericPipelineLayout {
+    fn get_dependencies(&self) -> &[ResourceId] {
+        &self.dependencies
     }
 }
