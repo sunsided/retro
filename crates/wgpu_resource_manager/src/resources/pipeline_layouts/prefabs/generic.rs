@@ -11,7 +11,7 @@ pub struct GenericPipelineLayout {
 }
 
 impl GenericPipelineLayout {
-    pub fn new<D>(desc: PipelineLayoutDescriptor<'static>, dependencies: D) -> Self 
+    pub fn new<D>(desc: PipelineLayoutDescriptor<'static>, dependencies: D) -> Self
     where
         D: Into<Box<[ResourceId]>>,
     {
@@ -37,7 +37,7 @@ impl SurfaceSensitive for GenericPipelineLayout {
         false
     }
 
-    fn must_recreate(&self, current: &SurfaceInfo, previous: &SurfaceInfo) -> bool {
+    fn must_recreate(&self, _current: &SurfaceInfo, _previous: &SurfaceInfo) -> bool {
         false
     }
 }

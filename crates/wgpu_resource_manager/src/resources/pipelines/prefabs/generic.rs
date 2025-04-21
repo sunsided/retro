@@ -37,7 +37,7 @@ impl SurfaceSensitive for GenericPipeline {
         false
     }
 
-    fn must_recreate(&self, current: &SurfaceInfo, previous: &SurfaceInfo) -> bool {
+    fn must_recreate(&self, _current: &SurfaceInfo, _previous: &SurfaceInfo) -> bool {
         false
     }
 }
