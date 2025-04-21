@@ -1,3 +1,4 @@
+use std::convert::Infallible;
 use crate::cli::parse_arguments;
 use crate::engine::components::ActiveCameraState;
 use crate::engine::phases::render::WgpuRenderState;
@@ -24,6 +25,11 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
+use wgpu_resource_manager::examples::textures::FallbackNormalTexture;
+use wgpu_resource_manager::examples::uniform_buffers::SingleUniformBuffer;
+use wgpu_resource_manager::Resources;
+use crate::engine::components::hal::noop::Resource;
+use crate::wgpu::uniforms::FrameGlobalUniform;
 
 mod camera;
 mod cli;
@@ -349,6 +355,18 @@ impl ApplicationHandler for App {
     }
 }
 
+#[derive(Debug, thiserror::Error)]
+enum ResourcesError {
+    #[error(transparent)]
+    Other(#[from] Box<dyn std::error::Error + Send + Sync>),
+}
+
+impl From<Infallible> for ResourcesError {
+     fn from(_: Infallible) -> Self {
+        unreachable!()
+     }
+}
+
 #[instrument(skip_all)]
 fn main() -> eyre::Result<()> {
     dotenvy::dotenv().ok();
@@ -360,6 +378,10 @@ fn main() -> eyre::Result<()> {
         .cloned()
         .unwrap_or(Backends::GL);
 
+    let mut resources: Resources<(), ResourcesError> = Resources::default();
+    let _tex_id = resources.register_texture(FallbackNormalTexture, ());
+    let _uniform_id = resources.register_uniform(SingleUniformBuffer::new("frame_globals", FrameGlobalUniform::default()), ());
+    
     let wgpu_hardware = WgpuHardware::initialize(backend);
     let mut app = App::new(wgpu_hardware);
 

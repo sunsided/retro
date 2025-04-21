@@ -1,6 +1,7 @@
 use crate::surface_info::SurfaceInfo;
 use crate::{wgpu_label, GpuContext, RecreateReason, Resource, TextureWithView};
 
+#[derive(Debug)]
 pub struct FileTexture {
     pub path: String,
 }

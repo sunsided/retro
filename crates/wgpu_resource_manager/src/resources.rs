@@ -1,5 +1,6 @@
+mod macros;
 pub mod textures;
-mod uniform_buffers;
+pub mod uniform_buffers;
 
 use crate::surface_info::SurfaceInfo;
 use crate::{DeviceId, SurfaceId, TextureResourceId, UniformResourceId};
@@ -11,9 +12,19 @@ use crate::resources::textures::TextureResourceEntry;
 use crate::resources::uniform_buffers::UniformBufferResourceEntry;
 
 #[allow(dead_code)]
+#[derive(Debug)]
 pub struct Resources<Lifecycle, GlobalError> {
     pub(crate) textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
     pub(crate) uniforms: FxHashMap<UniformResourceId, UniformBufferResourceEntry<Lifecycle, GlobalError>>,
+}
+
+impl<Lifecycle, GlobalError> Default for Resources<Lifecycle, GlobalError> {
+    fn default() -> Self {
+        Self {
+            textures: Default::default(),
+            uniforms: Default::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,7 +107,7 @@ mod tests {
     fn new_resources() {
         let mut res: Resources<(), MyError> = Resources {
             textures: Default::default(),
-            uniforms: Default::default(),
+            ..Default::default()
         };
 
         let tex = FallbackNormalTexture;

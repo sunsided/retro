@@ -10,6 +10,11 @@ mod resource;
 mod gpu_context;
 mod ids;
 
+pub mod examples {
+    pub use crate::resources::textures::examples as textures;
+    pub use crate::resources::uniform_buffers::examples as uniform_buffers;
+}
+
 pub use crate::device_and_queue::DeviceAndQueue;
 pub use crate::instance_wrapper::InstanceWrapper;
 pub use crate::pixel_size::*;

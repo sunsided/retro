@@ -2,6 +2,7 @@ use crate::surface_info::SurfaceInfo;
 use crate::{wgpu_label, DependentResource, GpuContext, RecreateReason, Resource, ResourceId, SurfaceSensitive, TextureWithView};
 use std::convert::Infallible;
 
+#[derive(Debug)]
 pub struct FallbackNormalTexture;
 
 impl Resource for FallbackNormalTexture {
