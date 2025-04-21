@@ -18,6 +18,7 @@ pub mod prefabs {
     pub use crate::resources::texture_samplers::prefabs as texture_samplers;
     pub use crate::resources::pipeline_layouts::prefabs as pipeline_layouts;
     pub use crate::resources::bind_group_layouts::prefabs as bind_group_layouts;
+    pub use crate::resources::pipelines::prefabs as pipelines;
 }
 
 pub use crate::device_and_queue::DeviceAndQueue;
