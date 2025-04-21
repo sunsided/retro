@@ -1,8 +1,9 @@
 use core::fmt::Display;
+use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// The ID of a WGPU surface.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SurfaceId(u32);
 
 impl SurfaceId {
@@ -38,5 +39,11 @@ impl SurfaceId {
 impl Display for SurfaceId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self.0, f)
+    }
+}
+
+impl Hash for SurfaceId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
     }
 }

@@ -1,31 +1,32 @@
 mod configured_resource_manager;
 mod device_and_queue;
-mod device_id;
-pub mod examples;
 mod instance_wrapper;
-mod manager_id;
 mod pixel_size;
 mod resource_manager;
 mod resource_manager_accessors;
 mod resource_manager_traits;
 mod resources;
-mod surface_id;
 mod surface_info;
 mod surface_wrapper;
-mod texture_with_view;
 mod resource_valid;
+mod resource;
+mod gpu_context;
+mod ids;
+mod textures;
 
 pub use crate::configured_resource_manager::*;
 pub use crate::device_and_queue::DeviceAndQueue;
 pub use crate::instance_wrapper::InstanceWrapper;
-pub use crate::manager_id::WgpuResourceManagerId;
 pub use crate::pixel_size::*;
 pub use crate::resource_manager::WgpuResourceManager;
 pub use crate::resource_manager_accessors::*;
-pub use crate::surface_id::SurfaceId;
 pub use crate::surface_wrapper::{ResizeSurfaceError, SurfaceWrapper};
-pub use crate::texture_with_view::TextureWithView;
-pub use crate::device_id::DeviceId;
+pub use crate::gpu_context::GpuContext;
+pub use crate::resource::{Resource, ResourceData, DependentResource, SurfaceSensitive};
+pub use crate::resources::{RecreateReason, Resources, SurfaceChangedReason, GetResourceError};
+pub use crate::surface_info::SurfaceInfo;
+pub use ids::*;
+pub use crate::textures::TextureWithView;
 
 #[macro_export]
 macro_rules! wgpu_label {

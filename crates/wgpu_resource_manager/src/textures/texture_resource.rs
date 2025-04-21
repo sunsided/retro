@@ -1,8 +1,10 @@
 use std::error::Error;
-use crate::resources::{GetResourceError, GpuContext, RecreateReason, Resource, ResourceData, Resources, TextureResourceId};
+use crate::resources::{GetResourceError, RecreateReason, Resources};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use wgpu::{Texture, TextureView};
+use crate::{GpuContext, Resource, TextureResourceId};
+use crate::resource::ResourceData;
 use crate::surface_info::SurfaceInfo;
 
 #[allow(dead_code)]
@@ -18,7 +20,7 @@ type BoxedNewTextureResourceData = Box<dyn TextureResourceData>;
 
 /// The [`TextureResourceEntry`] is used in the [`Resources`] manager to type-erase
 /// texture resources.
-pub(super) struct TextureResourceEntry<Lifecycle, GlobalError> {
+pub struct TextureResourceEntry<Lifecycle, GlobalError> {
     data: Option<BoxedNewTextureResourceData>,
     factory: Box<dyn Resource<Output = BoxedNewTextureResourceData, Error = GlobalError>>,
     lifecycle: Lifecycle
@@ -95,7 +97,7 @@ where
         })
     }
 
-    pub(super) fn recreate_textures(
+    pub(crate) fn recreate_textures(
         &mut self,
         ctx: &GpuContext,
         surface_info: &SurfaceInfo,

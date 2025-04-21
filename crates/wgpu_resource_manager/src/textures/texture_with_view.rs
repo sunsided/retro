@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 use std::ops::Deref;
 use wgpu::{Texture, TextureView};
-use crate::resources::TextureResourceData;
+use crate::textures::TextureResourceData;
 
 /// A texture with a view.
 #[derive(Debug, Clone)]

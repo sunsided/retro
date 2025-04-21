@@ -1,6 +1,5 @@
-use crate::SurfaceWrapper;
+use crate::{DeviceId, SurfaceWrapper};
 use wgpu::{CommandBuffer, Device, Queue, SurfaceConfiguration};
-use crate::device_id::DeviceId;
 
 #[derive(Debug)]
 #[allow(dead_code)]

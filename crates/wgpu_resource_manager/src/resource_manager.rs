@@ -93,7 +93,7 @@ impl WgpuResourceManager {
         self.manager.as_mut()
     }
 
-    /// Indicates whether a specific feature is supported by the adapter.
+    /// Indicates whether the adapter supports a specific feature.
     #[inline]
     pub fn feature_supported(&self, feature: wgpu::Features) -> bool {
         match self.manager.as_ref() {

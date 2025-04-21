@@ -1,8 +1,4 @@
-use crate::device_id::DeviceId;
-use crate::{
-    DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId, SurfaceWrapper,
-    WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label,
-};
+use crate::{DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId, SurfaceWrapper, WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label, DeviceId};
 use std::sync::Arc;
 use wgpu::{
     Adapter, AdapterInfo, Backend, DeviceDescriptor, DeviceType, Instance, PowerPreference,

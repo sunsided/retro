@@ -1,11 +1,12 @@
 use core::fmt::Display;
+use std::hash::{Hash, Hasher};
 use std::sync::atomic::{AtomicU32, Ordering};
 
 /// The ID of a WGPU device.
 ///
 /// Valid device IDs are nonzero internally, and the [`DeviceId::is_uninitialized`](DeviceId::is_uninitialized)
 /// function can be used to test whether a device ID was actually provided.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DeviceId(u32);
 
 impl DeviceId {
@@ -41,5 +42,11 @@ impl DeviceId {
 impl Display for DeviceId {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         Display::fmt(&self.0, f)
+    }
+}
+
+impl Hash for DeviceId {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.hash(state)
     }
 }

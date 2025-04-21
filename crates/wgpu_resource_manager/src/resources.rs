@@ -1,34 +1,15 @@
-mod textures;
-
-pub use self::textures::TextureResourceData;
-use crate::resources::textures::TextureResourceEntry;
 use crate::surface_info::SurfaceInfo;
-use crate::{DeviceId, SurfaceId};
+use crate::{DeviceId, SurfaceId, TextureResourceId};
 use fxhash::FxHashMap;
 use std::error::Error;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicU64, Ordering};
-
-#[allow(dead_code)]
-pub trait Resource {
-    type Output: ResourceData;
-    type Error: Send + Sync + 'static;
-
-    fn recreate<'device>(
-        &mut self,
-        ctx: &GpuContext<'device>,
-        surface_info: &SurfaceInfo,
-        reason: RecreateReason,
-    ) -> Result<Self::Output, Self::Error>;
-}
-
-#[allow(dead_code)]
-pub trait ResourceData {}
+use crate::GpuContext;
+use crate::textures::TextureResourceEntry;
 
 #[allow(dead_code)]
 pub struct Resources<Lifecycle, GlobalError> {
-    textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
+    pub(crate) textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
     phantom_data: PhantomData<GlobalError>,
 }
 
@@ -91,9 +72,10 @@ pub enum GetResourceError {
 mod tests {
     use super::*;
     use crate::create_test_device;
-    use crate::examples::FallbackNormalTexture;
     use std::convert::Infallible;
     use wgpu::TextureFormat;
+    use crate::gpu_context::GpuContext;
+    use crate::textures::examples::FallbackNormalTexture;
 
     #[derive(Debug, thiserror::Error)]
     enum MyError {
@@ -134,59 +116,10 @@ mod tests {
             sample_count: 0,
         };
 
-        res.recreate(&ctx, &info).expect("Should recreate textures");
+        res.recreate(&ctx, &info, RecreateReason::DeviceRecreated(ctx.device_id)).expect("Should recreate textures");
         let outcome = res
             .get_texture_data(id)
             .expect("Should have created textures");
         let _ = outcome.texture();
-    }
-}
-
-#[allow(dead_code)]
-pub trait SurfaceSensitive: Resource {
-    /// Return `true` if this resource depends on surface config/size/etc.
-    fn is_surface_dependent(&self) -> bool;
-
-    /// Return `true` if this resource responds to a specific change in the surface configuration.
-    fn must_recreate(&self, current: &SurfaceInfo, previous: &SurfaceInfo) -> bool;
-}
-
-#[allow(dead_code)]
-pub trait DependentResource: Resource {
-    fn get_dependencies(&self) -> &[ResourceId] {
-        &[]
-    }
-}
-
-pub struct GpuContext<'device> {
-    pub device_id: DeviceId,
-    pub device: &'device wgpu::Device,
-    pub queue: &'device wgpu::Queue,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[repr(C)]
-pub struct ResourceId(u64);
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TextureResourceId(ResourceId);
-
-#[allow(dead_code)]
-impl ResourceId {
-    pub fn next() -> Self {
-        static NEXT_ID: AtomicU64 = AtomicU64::new(1);
-        Self(NEXT_ID.fetch_add(1, Ordering::SeqCst))
-    }
-}
-
-#[allow(dead_code)]
-impl TextureResourceId {
-    pub fn next() -> Self {
-        Self(ResourceId::next())
-    }
-
-    #[allow(dead_code)]
-    pub fn into_inner(self) -> ResourceId {
-        self.0
     }
 }
