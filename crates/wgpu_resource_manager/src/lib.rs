@@ -19,6 +19,7 @@ pub mod prefabs {
     pub use crate::resources::pipeline_layouts::prefabs as pipeline_layouts;
     pub use crate::resources::bind_group_layouts::prefabs as bind_group_layouts;
     pub use crate::resources::pipelines::prefabs as pipelines;
+    pub use crate::resources::bind_groups::prefabs as bind_groups;
 }
 
 pub use crate::device_and_queue::DeviceAndQueue;
