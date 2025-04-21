@@ -68,6 +68,7 @@ impl ApplyWgpuInitUniformBindGroupSystem for WgpuInitUniformBindGroupSystem {
                 continue;
             }
 
+            /*
             let (slice, binding_size, label) = match type_comp.0 {
                 UniformTypeData::FrameGlobal(data) => (
                     bytemuck::cast_slice(&[data]),
@@ -130,6 +131,7 @@ impl ApplyWgpuInitUniformBindGroupSystem for WgpuInitUniformBindGroupSystem {
             group_comp.group = Some(bind_group);
             layout_comp.layout = Some(layout);
             buffer_comp.buffer = Some(buffer);
+            */
         }
     }
 

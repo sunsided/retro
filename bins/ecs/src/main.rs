@@ -10,7 +10,7 @@ use crate::fps_counter::FpsCounter;
 use crate::logging::setup_logging;
 use crate::logic::{CleanObsoleteResources, InitializeMainWorld};
 use crate::wgpu::wgpu_hardware::WgpuHardware;
-use ::wgpu::Backends;
+use ::wgpu::{include_wgsl, Backends, CompositeAlphaMode, TextureFormat};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tracing::{debug, error, info, instrument, trace};
@@ -25,9 +25,10 @@ use winit::{
     event::{ElementState, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
+use wgpu_resource_manager::examples::shaders::ShaderFromSource;
 use wgpu_resource_manager::examples::textures::FallbackNormalTexture;
 use wgpu_resource_manager::examples::uniform_buffers::SingleUniformBuffer;
-use wgpu_resource_manager::Resources;
+use wgpu_resource_manager::{GpuContext, RecreateReason, Resources, SurfaceInfo};
 use crate::engine::components::hal::noop::Resource;
 use crate::wgpu::uniforms::FrameGlobalUniform;
 
@@ -139,6 +140,28 @@ impl App {
 
             self.ecs_world.apply_system_phase_wgpu_reinit();
             self.ecs_world.clean_obsolete_resources();
+
+
+            // TODO: Remove this example code.
+            let mut resources: Resources<(), ResourcesError> = Resources::default();
+            let _tex_id = resources.register_texture(FallbackNormalTexture, ());
+            let _uniform_id = resources.register_uniform(SingleUniformBuffer::new("frame_globals", FrameGlobalUniform::default()), ());
+            let _shader_id = resources.register_shader(ShaderFromSource::from_descriptor(include_wgsl!("shaders/shader.wgsl")), ());
+
+            let ctx = GpuContext {
+                device_id: self.ecs_world.states.wgpu_render.device().unwrap().id(),
+                device: self.ecs_world.states.wgpu_render.device().unwrap().device(),
+                queue: self.ecs_world.states.wgpu_render.device().unwrap().queue(),
+            };
+            let info = SurfaceInfo {
+                width: 1024,
+                height: 640,
+                alpha_mode: CompositeAlphaMode::Auto,
+                format: TextureFormat::Bgra8UnormSrgb,
+                sample_count: 1
+            };
+            let result = resources.recreate(&ctx, &info, RecreateReason::DeviceRecreated(ctx.device_id));
+            info!("Result: {result:?}");
         }
 
         self.last_update = Instant::now();
@@ -377,10 +400,6 @@ fn main() -> eyre::Result<()> {
         .get_one::<Backends>("backend")
         .cloned()
         .unwrap_or(Backends::GL);
-
-    let mut resources: Resources<(), ResourcesError> = Resources::default();
-    let _tex_id = resources.register_texture(FallbackNormalTexture, ());
-    let _uniform_id = resources.register_uniform(SingleUniformBuffer::new("frame_globals", FrameGlobalUniform::default()), ());
 
     let wgpu_hardware = WgpuHardware::initialize(backend);
     let mut app = App::new(wgpu_hardware);
