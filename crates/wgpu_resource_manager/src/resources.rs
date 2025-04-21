@@ -3,6 +3,7 @@ mod textures;
 pub use self::textures::TextureResourceData;
 use crate::resources::textures::TextureResourceEntry;
 use crate::surface_info::SurfaceInfo;
+use crate::{DeviceId, SurfaceId};
 use fxhash::FxHashMap;
 use std::error::Error;
 use std::fmt::Debug;
@@ -18,6 +19,7 @@ pub trait Resource {
         &mut self,
         ctx: &GpuContext<'device>,
         surface_info: &SurfaceInfo,
+        reason: RecreateReason,
     ) -> Result<Self::Output, Self::Error>;
 }
 
@@ -30,6 +32,28 @@ pub struct Resources<Lifecycle, GlobalError> {
     phantom_data: PhantomData<GlobalError>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecreateReason {
+    DeviceRecreated(DeviceId),
+    SurfaceChanged(SurfaceChangedReason),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SurfaceChangedReason {
+    SizeChanged,
+    SurfaceRecreated(SurfaceId),
+}
+
+impl RecreateReason {
+    pub fn is_surface_changed(&self) -> bool {
+        matches!(self, RecreateReason::SurfaceChanged(_))
+    }
+    
+    pub fn is_device_recreated(&self) -> bool {
+        matches!(self, RecreateReason::DeviceRecreated(_))
+    }
+}
+
 #[allow(dead_code)]
 impl<Lifecycle, GlobalError> Resources<Lifecycle, GlobalError>
 where
@@ -40,8 +64,9 @@ where
         &mut self,
         ctx: &GpuContext,
         surface_info: &SurfaceInfo,
+        reason: RecreateReason,
     ) -> Result<(), GlobalError> {
-        self.recreate_textures(ctx, surface_info)?;
+        self.recreate_textures(ctx, surface_info, reason)?;
         Ok(())
     }
 
@@ -97,6 +122,7 @@ mod tests {
 
         let (device, queue) = create_test_device();
         let ctx = GpuContext {
+            device_id: DeviceId::next(),
             device: &device,
             queue: &queue,
         };
@@ -133,6 +159,7 @@ pub trait DependentResource: Resource {
 }
 
 pub struct GpuContext<'device> {
+    pub device_id: DeviceId,
     pub device: &'device wgpu::Device,
     pub queue: &'device wgpu::Queue,
 }

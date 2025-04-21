@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::resources::{GetResourceError, GpuContext, Resource, ResourceData, Resources, TextureResourceId};
+use crate::resources::{GetResourceError, GpuContext, RecreateReason, Resource, ResourceData, Resources, TextureResourceId};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use wgpu::{Texture, TextureView};
@@ -57,7 +57,7 @@ where
     GlobalError: Error + Send + Sync + 'static,
     Lifecycle: Clone
 {
-    pub fn register_texture<R, T, E>(&mut self, resource: R, lifecyle: Lifecycle) -> TextureResourceId
+    pub fn register_texture<R, T, E>(&mut self, resource: R, lifecycle: Lifecycle) -> TextureResourceId
     where
         T: TextureResourceData + 'static,
         R: Resource<Output = T, Error = E> + 'static,
@@ -72,7 +72,7 @@ where
             TextureResourceEntry {
                 data: None,
                 factory,
-                lifecycle: lifecyle.clone()
+                lifecycle: lifecycle.clone()
             },
         );
 
@@ -99,9 +99,10 @@ where
         &mut self,
         ctx: &GpuContext,
         surface_info: &SurfaceInfo,
+        reason: RecreateReason
     ) -> Result<(), GlobalError> {
         for entry in self.textures.values_mut() {
-            let result = entry.factory.recreate(ctx, surface_info)?;
+            let result = entry.factory.recreate(ctx, surface_info, reason.clone())?;
             entry.data = Some(result);
         }
         Ok(())
@@ -122,8 +123,9 @@ where
         &mut self,
         ctx: &GpuContext<'device>,
         surface_info: &SurfaceInfo,
+        reason: RecreateReason
     ) -> Result<Self::Output, Self::Error> {
-        let raw = self.inner.recreate(ctx, surface_info).map_err(Into::into)?;
+        let raw = self.inner.recreate(ctx, surface_info, reason).map_err(Into::into)?;
         Ok(Box::new(raw))
     }
 }

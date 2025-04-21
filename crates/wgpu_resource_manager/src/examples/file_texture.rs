@@ -1,4 +1,4 @@
-use crate::resources::{GpuContext, Resource};
+use crate::resources::{GpuContext, RecreateReason, Resource};
 use crate::surface_info::SurfaceInfo;
 use crate::texture_with_view::TextureWithView;
 use crate::wgpu_label;
@@ -23,7 +23,10 @@ impl Resource for FileTexture {
         &mut self,
         ctx: &GpuContext,
         _info: &SurfaceInfo,
+        _reason: RecreateReason,
     ) -> Result<Self::Output, Self::Error> {
+        // TODO: Don't recreate if not necessary
+
         let bytes = std::fs::read(&self.path)?;
 
         let image = image::load_from_memory(&bytes)?.to_rgba8();

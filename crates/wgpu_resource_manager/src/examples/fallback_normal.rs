@@ -1,4 +1,6 @@
-use crate::resources::{DependentResource, GpuContext, Resource, ResourceId, SurfaceSensitive};
+use crate::resources::{
+    DependentResource, GpuContext, RecreateReason, Resource, ResourceId, SurfaceSensitive,
+};
 use crate::surface_info::SurfaceInfo;
 use crate::texture_with_view::TextureWithView;
 use crate::wgpu_label;
@@ -15,7 +17,10 @@ impl Resource for FallbackNormalTexture {
         &mut self,
         ctx: &GpuContext<'device>,
         _surface_info: &SurfaceInfo,
+        _reason: RecreateReason,
     ) -> Result<Self::Output, Self::Error> {
+        // TODO: Don't recreate if not necessary
+
         // Flat normal: (0.5, 0.5, 1.0, 1.0) encoded as [128, 128, 255, 255]
         let normal_pixel = [128u8, 128u8, 255u8, 255u8];
 
