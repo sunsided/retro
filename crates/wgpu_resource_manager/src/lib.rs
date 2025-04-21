@@ -15,6 +15,7 @@ pub mod examples {
     pub use crate::resources::uniform_buffers::examples as uniform_buffers;
     pub use crate::resources::shaders::examples as shaders;
     pub use crate::resources::buffers::examples as buffers;
+    pub use crate::resources::texture_samplers::examples as texture_samplers;
 }
 
 pub use crate::device_and_queue::DeviceAndQueue;
