@@ -1,9 +1,10 @@
-use crate::{DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId, SurfaceWrapper, WgpuResourceManagerAccessors, WgpuResourceManagerId, wgpu_label, DeviceId};
+use crate::{DeviceAndQueue, InstanceWrapper, PixelSize, ResizeSurfaceError, SurfaceId, SurfaceWrapper, WgpuResourceManagerId, wgpu_label, DeviceId};
 use std::sync::Arc;
 use wgpu::{
     Adapter, AdapterInfo, Backend, DeviceDescriptor, DeviceType, Instance, PowerPreference,
     SurfaceCapabilities, SurfaceConfiguration, SurfaceTarget,
 };
+use crate::resource_manager::resource_manager_accessors::WgpuResourceManagerAccessors;
 
 /// A resource manager that is configured by a valid surface and non-zero surface size.
 #[derive(Debug)]

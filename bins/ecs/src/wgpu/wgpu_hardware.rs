@@ -28,12 +28,7 @@ use std::sync::Arc;
 use tracing::{debug, instrument, warn};
 use wgpu::wgt::DeviceDescriptor;
 use wgpu::{Features, PowerPreference, RequestAdapterError, RequestDeviceError};
-use wgpu_resource_manager::{
-    wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper,
-    PixelSize, PixelSizeError, SurfaceId, SurfaceWrapper, WgpuResourceManager,
-    WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError,
-    NO_SURFACE_CONFIG,
-};
+use wgpu_resource_manager::{wgpu_label, ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper, PixelSize, PixelSizeError, SurfaceId, SurfaceWrapper, WgpuResourceManager, WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
 

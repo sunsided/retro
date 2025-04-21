@@ -1,10 +1,7 @@
-mod configured_resource_manager;
 mod device_and_queue;
 mod instance_wrapper;
 mod pixel_size;
 mod resource_manager;
-mod resource_manager_accessors;
-mod resource_manager_traits;
 mod resources;
 mod surface_info;
 mod surface_wrapper;
@@ -13,12 +10,10 @@ mod resource;
 mod gpu_context;
 mod ids;
 
-pub use crate::configured_resource_manager::*;
 pub use crate::device_and_queue::DeviceAndQueue;
 pub use crate::instance_wrapper::InstanceWrapper;
 pub use crate::pixel_size::*;
-pub use crate::resource_manager::WgpuResourceManager;
-pub use crate::resource_manager_accessors::*;
+pub use crate::resource_manager::{WgpuResourceManager, ConfiguredWgpuResourceManager, WgpuResourceManagerResizeSurfaceError, WgpuResourceManagerInitializeSurfaceError, NO_SURFACE_CONFIG};
 pub use crate::surface_wrapper::{ResizeSurfaceError, SurfaceWrapper};
 pub use crate::gpu_context::GpuContext;
 pub use crate::resource::{Resource, ResourceData, DependentResource, SurfaceSensitive};

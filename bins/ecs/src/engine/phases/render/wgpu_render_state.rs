@@ -10,12 +10,9 @@ use std::fmt::{Debug, Formatter};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use tracing::{debug, instrument};
-use wgpu_resource_manager::{
-    ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, SurfaceId,
-    WgpuResourceManagerInitializeSurfaceError,
-};
 use winit::dpi::PhysicalSize;
 use winit::window::Window;
+use wgpu_resource_manager::{DeviceAndQueue, DeviceId, SurfaceId};
 
 /// Represents the render state for the WGPU system.
 ///

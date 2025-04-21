@@ -1,9 +1,14 @@
-use crate::configured_resource_manager::WgpuResourceManagerInitializeSurfaceError;
-use crate::{ConfiguredWgpuResourceManager, DeviceAndQueue, DeviceId, InstanceWrapper, PixelSize, SurfaceId, SurfaceWrapper, WgpuResourceManagerId, WgpuResourceManagerRef, WgpuResourceManagerResizeSurfaceError};
+mod configured_resource_manager;
+mod resource_manager_accessors;
+mod resource_manager_traits;
+
+use crate::{DeviceAndQueue, DeviceId, InstanceWrapper, PixelSize, SurfaceId, SurfaceWrapper, WgpuResourceManagerId};
 use std::sync::Arc;
 use wgpu::{
     Adapter, Instance, PowerPreference, SurfaceCapabilities, SurfaceConfiguration, SurfaceTarget,
 };
+pub use crate::resource_manager::configured_resource_manager::{ConfiguredWgpuResourceManager, WgpuResourceManagerInitializeSurfaceError, WgpuResourceManagerResizeSurfaceError, NO_SURFACE_CONFIG};
+use crate::resource_manager::resource_manager_accessors::WgpuResourceManagerRef;
 
 /// A wrapper around a potentially configured [`ConfiguredWgpuResourceManager`].
 #[derive(Debug)]
