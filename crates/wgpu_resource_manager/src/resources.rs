@@ -2,14 +2,16 @@ mod macros;
 pub mod textures;
 pub mod uniform_buffers;
 pub mod shaders;
+pub mod buffers;
 
 use crate::surface_info::SurfaceInfo;
-use crate::{DeviceId, ShaderResourceId, SurfaceId, TextureResourceId, UniformResourceId};
+use crate::{BufferResourceId, DeviceId, ShaderResourceId, SurfaceId, TextureResourceId, UniformResourceId};
 use fxhash::FxHashMap;
 use std::error::Error;
 use std::fmt::Debug;
 use crate::GpuContext;
 use crate::resources::shaders::ShaderResourceEntry;
+use crate::resources::buffers::BufferResourceEntry;
 use crate::resources::textures::TextureResourceEntry;
 use crate::resources::uniform_buffers::UniformBufferResourceEntry;
 
@@ -19,6 +21,7 @@ pub struct Resources<Lifecycle, GlobalError> {
     pub(crate) textures: FxHashMap<TextureResourceId, TextureResourceEntry<Lifecycle, GlobalError>>,
     pub(crate) uniforms: FxHashMap<UniformResourceId, UniformBufferResourceEntry<Lifecycle, GlobalError>>,
     pub(crate) shaders: FxHashMap<ShaderResourceId, ShaderResourceEntry<Lifecycle, GlobalError>>,
+    pub(crate) buffers: FxHashMap<BufferResourceId, BufferResourceEntry<Lifecycle, GlobalError>>,
 }
 
 impl<Lifecycle, GlobalError> Default for Resources<Lifecycle, GlobalError> {
@@ -27,6 +30,7 @@ impl<Lifecycle, GlobalError> Default for Resources<Lifecycle, GlobalError> {
             textures: Default::default(),
             uniforms: Default::default(),
             shaders: Default::default(),
+            buffers: Default::default(),
         }
     }
 }
@@ -68,6 +72,7 @@ where
         self.recreate_textures(ctx, surface_info, reason)?;
         self.recreate_uniforms(ctx, surface_info, reason)?;
         self.recreate_shaders(ctx, surface_info, reason)?;
+        self.recreate_buffers(ctx, surface_info, reason)?;
         Ok(())
     }
 
@@ -78,6 +83,7 @@ where
         self.retain_textures(|_, l| lifecycle(l));
         self.retain_uniforms(|_, l| lifecycle(l));
         self.retain_shaders(|_, l| lifecycle(l));
+        self.retain_buffers(|_, l| lifecycle(l));
     }
 }
 
