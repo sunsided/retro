@@ -1,3 +1,5 @@
+pub mod textures;
+
 use crate::surface_info::SurfaceInfo;
 use crate::{DeviceId, SurfaceId, TextureResourceId};
 use fxhash::FxHashMap;
@@ -5,7 +7,7 @@ use std::error::Error;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use crate::GpuContext;
-use crate::textures::TextureResourceEntry;
+use crate::resources::textures::TextureResourceEntry;
 
 #[allow(dead_code)]
 pub struct Resources<Lifecycle, GlobalError> {
@@ -29,7 +31,7 @@ impl RecreateReason {
     pub fn is_surface_changed(&self) -> bool {
         matches!(self, RecreateReason::SurfaceChanged(_))
     }
-    
+
     pub fn is_device_recreated(&self) -> bool {
         matches!(self, RecreateReason::DeviceRecreated(_))
     }
@@ -75,7 +77,7 @@ mod tests {
     use std::convert::Infallible;
     use wgpu::TextureFormat;
     use crate::gpu_context::GpuContext;
-    use crate::textures::examples::FallbackNormalTexture;
+    use crate::resources::textures::examples::FallbackNormalTexture;
 
     #[derive(Debug, thiserror::Error)]
     enum MyError {

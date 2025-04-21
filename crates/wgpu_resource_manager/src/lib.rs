@@ -12,7 +12,6 @@ mod resource_valid;
 mod resource;
 mod gpu_context;
 mod ids;
-mod textures;
 
 pub use crate::configured_resource_manager::*;
 pub use crate::device_and_queue::DeviceAndQueue;
@@ -23,10 +22,9 @@ pub use crate::resource_manager_accessors::*;
 pub use crate::surface_wrapper::{ResizeSurfaceError, SurfaceWrapper};
 pub use crate::gpu_context::GpuContext;
 pub use crate::resource::{Resource, ResourceData, DependentResource, SurfaceSensitive};
-pub use crate::resources::{RecreateReason, Resources, SurfaceChangedReason, GetResourceError};
+pub use crate::resources::{RecreateReason, Resources, SurfaceChangedReason, GetResourceError, textures::TextureWithView};
 pub use crate::surface_info::SurfaceInfo;
 pub use ids::*;
-pub use crate::textures::TextureWithView;
 
 #[macro_export]
 macro_rules! wgpu_label {
