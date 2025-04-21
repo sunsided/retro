@@ -1,6 +1,6 @@
 use std::borrow::{Borrow, BorrowMut};
 use wgpu::Instance;
-use crate::resource_manager::configured_resource_manager::ConfiguredWgpuResourceManager;
+use crate::resource_manager::configured::ConfiguredWgpuResourceManager;
 
 impl AsRef<Instance> for ConfiguredWgpuResourceManager {
     #[inline]

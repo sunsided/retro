@@ -4,7 +4,7 @@ use wgpu::{
     Adapter, AdapterInfo, Backend, DeviceDescriptor, DeviceType, Instance, PowerPreference,
     SurfaceCapabilities, SurfaceConfiguration, SurfaceTarget,
 };
-use crate::resource_manager::resource_manager_accessors::WgpuResourceManagerAccessors;
+use crate::resource_manager::accessor::WgpuResourceManagerAccessors;
 
 /// A resource manager that is configured by a valid surface and non-zero surface size.
 #[derive(Debug)]
