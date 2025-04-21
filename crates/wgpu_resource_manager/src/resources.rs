@@ -84,12 +84,11 @@ where
         // TODO: Optimize orders
         self.recreate_pipeline_layouts(ctx, surface_info, reason)?;
         self.recreate_bind_group_layouts(ctx, surface_info, reason)?;
-        self.recreate_textures(ctx, surface_info, reason)?;
+        self.recreate_texture_samplers(ctx, surface_info, reason)?;
+        self.recreate_buffers(ctx, surface_info, reason)?;
         self.recreate_uniforms(ctx, surface_info, reason)?;
         self.recreate_shaders(ctx, surface_info, reason)?;
-        self.recreate_buffers(ctx, surface_info, reason)?;
-        self.recreate_texture_samplers(ctx, surface_info, reason)?;
-
+        self.recreate_textures(ctx, surface_info, reason)?;
         Ok(())
     }
 
@@ -100,11 +99,12 @@ where
         // TODO: Optimize orders
         self.retain_pipeline_layouts(|_, l| lifecycle(l));
         self.retain_bind_group_layouts(|_, l| lifecycle(l));
+        self.retain_texture_samplers(|_, l| lifecycle(l));
+        self.retain_buffers(|_, l| lifecycle(l));
+        self.retain_shaders(|_, l| lifecycle(l));
         self.retain_textures(|_, l| lifecycle(l));
         self.retain_uniforms(|_, l| lifecycle(l));
-        self.retain_shaders(|_, l| lifecycle(l));
-        self.retain_buffers(|_, l| lifecycle(l));
-        self.retain_texture_samplers(|_, l| lifecycle(l));
+
     }
 }
 
