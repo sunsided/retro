@@ -6,9 +6,10 @@ pub mod buffers;
 pub mod texture_samplers;
 pub mod pipeline_layouts;
 pub mod bind_group_layouts;
+pub mod pipelines;
 
 use crate::surface_info::SurfaceInfo;
-use crate::{BindGroupLayoutResourceId, BufferResourceId, DeviceId, PipelineLayoutResourceId, ShaderResourceId, SurfaceId, TextureResourceId, TextureSamplerResourceId, UniformResourceId};
+use crate::{BindGroupLayoutResourceId, BufferResourceId, DeviceId, PipelineLayoutResourceId, PipelineResourceId, ShaderResourceId, SurfaceId, TextureResourceId, TextureSamplerResourceId, UniformResourceId};
 use fxhash::FxHashMap;
 use std::error::Error;
 use std::fmt::Debug;
@@ -17,6 +18,7 @@ use crate::resources::bind_group_layouts::BindGroupLayoutResourceEntry;
 use crate::resources::shaders::ShaderResourceEntry;
 use crate::resources::buffers::BufferResourceEntry;
 use crate::resources::pipeline_layouts::PipelineLayoutResourceEntry;
+use crate::resources::pipelines::PipelineResourceEntry;
 use crate::resources::texture_samplers::TextureSamplerResourceEntry;
 use crate::resources::textures::TextureResourceEntry;
 use crate::resources::uniform_buffers::UniformBufferResourceEntry;
@@ -31,6 +33,7 @@ pub struct Resources<Lifecycle, GlobalError> {
     pub(crate) texture_samplers: FxHashMap<TextureSamplerResourceId, TextureSamplerResourceEntry<Lifecycle, GlobalError>>,
     pub(crate) pipeline_layouts: FxHashMap<PipelineLayoutResourceId, PipelineLayoutResourceEntry<Lifecycle, GlobalError>>,
     pub(crate) bind_group_layouts: FxHashMap<BindGroupLayoutResourceId, BindGroupLayoutResourceEntry<Lifecycle, GlobalError>>,
+    pub(crate) pipelines: FxHashMap<PipelineResourceId, PipelineResourceEntry<Lifecycle, GlobalError>>,
 }
 
 impl<Lifecycle, GlobalError> Default for Resources<Lifecycle, GlobalError> {
@@ -43,6 +46,7 @@ impl<Lifecycle, GlobalError> Default for Resources<Lifecycle, GlobalError> {
             texture_samplers: Default::default(),
             pipeline_layouts: Default::default(),
             bind_group_layouts: Default::default(),
+            pipelines: Default::default(),
         }
     }
 }
@@ -89,6 +93,7 @@ where
         self.recreate_uniforms(ctx, surface_info, reason)?;
         self.recreate_shaders(ctx, surface_info, reason)?;
         self.recreate_textures(ctx, surface_info, reason)?;
+        self.recreate_pipelines(ctx, surface_info, reason)?;
         Ok(())
     }
 
@@ -97,14 +102,14 @@ where
         F: FnMut(&Lifecycle) -> bool,
     {
         // TODO: Optimize orders
-        self.retain_pipeline_layouts(|_, l| lifecycle(l));
-        self.retain_bind_group_layouts(|_, l| lifecycle(l));
-        self.retain_texture_samplers(|_, l| lifecycle(l));
-        self.retain_buffers(|_, l| lifecycle(l));
+        self.retain_pipelines(|_, l| lifecycle(l));
         self.retain_shaders(|_, l| lifecycle(l));
         self.retain_textures(|_, l| lifecycle(l));
+        self.retain_texture_samplers(|_, l| lifecycle(l));
+        self.retain_buffers(|_, l| lifecycle(l));
         self.retain_uniforms(|_, l| lifecycle(l));
-
+        self.retain_pipeline_layouts(|_, l| lifecycle(l));
+        self.retain_bind_group_layouts(|_, l| lifecycle(l));
     }
 }
 
