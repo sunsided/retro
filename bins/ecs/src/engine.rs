@@ -38,6 +38,7 @@ use crate::engine::phases::render::{
 use crate::engine::phases::update::{
     camera::CameraSystemData, color_cycle::BackgroundColorCycleSystemData,
 };
+pub use ::sillyecs::FrameContext;
 pub use command_queue::CommandQueue;
 pub use phase_events::PhaseEvents;
 
@@ -48,6 +49,19 @@ include!("../generated/components_gen.rs");
 include!("../generated/world_gen.rs");
 include!("../generated/systems_gen.rs");
 include!("../generated/archetypes_gen.rs");
+
+/// No user-defined world commands; only the built-in spawn/despawn variants are used.
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum NoUserCommand {}
+
+impl<E, Q> WorldUserCommandHandler for MainWorld<E, Q>
+where
+    Q: WorldUserCommand<UserCommand = NoUserCommand>,
+{
+    fn handle_user_command(&mut self, command: Self::UserCommand) {
+        match command {}
+    }
+}
 
 /// The factory of the different systems.
 ///

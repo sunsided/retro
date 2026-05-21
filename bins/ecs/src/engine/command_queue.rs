@@ -15,8 +15,12 @@
 //! - [`WorldCommandSender`]: Provides an interface for sending `WorldCommand`s, ensuring safe
 //!   communication between different parts of the system.
 
-use crate::engine::{WorldCommand, WorldCommandReceiver, WorldCommandSender};
+use crate::engine::{
+    NoUserCommand, WorldCommand, WorldCommandReceiver, WorldCommandSender, WorldUserCommand,
+};
 use crossbeam_channel::TryRecvError;
+
+type Command = WorldCommand<NoUserCommand>;
 
 /// A command queue for sending and receiving [`WorldCommand`]s within the engine.
 ///
@@ -24,9 +28,9 @@ use crossbeam_channel::TryRecvError;
 /// for dispatching and handling commands in the ECS (Entity-Component-System) context.
 pub struct CommandQueue {
     /// The sending end of the command channel.
-    sender: crossbeam_channel::Sender<WorldCommand>,
+    sender: crossbeam_channel::Sender<Command>,
     /// The receiving end of the command channel.
-    receiver: crossbeam_channel::Receiver<WorldCommand>,
+    receiver: crossbeam_channel::Receiver<Command>,
 }
 
 impl CommandQueue {
@@ -36,10 +40,14 @@ impl CommandQueue {
     }
 }
 
+impl WorldUserCommand for CommandQueue {
+    type UserCommand = NoUserCommand;
+}
+
 impl WorldCommandReceiver for CommandQueue {
     type Error = TryRecvError;
 
-    fn recv(&self) -> Result<Option<WorldCommand>, Self::Error> {
+    fn recv(&self) -> Result<Option<Command>, Self::Error> {
         match self.receiver.try_recv() {
             Ok(cmd) => Ok(Some(cmd)),
             Err(TryRecvError::Empty) => Ok(None),
@@ -49,9 +57,9 @@ impl WorldCommandReceiver for CommandQueue {
 }
 
 impl WorldCommandSender for CommandQueue {
-    type Error = crossbeam_channel::SendError<WorldCommand>;
+    type Error = crossbeam_channel::SendError<Command>;
 
-    fn send(&self, command: WorldCommand) -> Result<(), Self::Error> {
+    fn send(&self, command: Command) -> Result<(), Self::Error> {
         self.sender.send(command)
     }
 }
