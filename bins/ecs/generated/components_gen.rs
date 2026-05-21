@@ -416,11 +416,6 @@ impl TimeOfDayComponent {
     pub const fn new(data: TimeOfDayData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`TimeOfDayData`].
-    pub const fn into_inner(self) -> TimeOfDayData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -507,11 +502,6 @@ impl SunComponent {
     /// Creates a new [`SunComponent`] instance from [`SunData`].
     pub const fn new(data: SunData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`SunData`].
-    pub const fn into_inner(self) -> SunData {
-        self.0
     }
 }
 
@@ -601,11 +591,6 @@ impl SkydomeComponent {
     pub const fn new(data: SkydomeData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`SkydomeData`].
-    pub const fn into_inner(self) -> SkydomeData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -692,11 +677,6 @@ impl AmbientLightComponent {
     /// Creates a new [`AmbientLightComponent`] instance from [`AmbientLightData`].
     pub const fn new(data: AmbientLightData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`AmbientLightData`].
-    pub const fn into_inner(self) -> AmbientLightData {
-        self.0
     }
 }
 
@@ -785,11 +765,6 @@ impl StarsComponent {
     pub const fn new(data: StarsData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`StarsData`].
-    pub const fn into_inner(self) -> StarsData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -877,11 +852,6 @@ impl CameraComponent {
     pub const fn new(data: CameraData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`CameraData`].
-    pub const fn into_inner(self) -> CameraData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -967,11 +937,6 @@ impl CameraFpsControllerComponent {
     /// Creates a new [`CameraFpsControllerComponent`] instance from [`CameraFpsControllerData`].
     pub const fn new(data: CameraFpsControllerData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`CameraFpsControllerData`].
-    pub const fn into_inner(self) -> CameraFpsControllerData {
-        self.0
     }
 }
 
@@ -1066,11 +1031,6 @@ impl PositionComponent {
     pub const fn new(data: PositionData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`PositionData`].
-    pub const fn into_inner(self) -> PositionData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1156,11 +1116,6 @@ impl TransformComponent {
     /// Creates a new [`TransformComponent`] instance from [`TransformData`].
     pub const fn new(data: TransformData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`TransformData`].
-    pub const fn into_inner(self) -> TransformData {
-        self.0
     }
 }
 
@@ -1249,11 +1204,6 @@ impl VelocityComponent {
     pub const fn new(data: VelocityData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`VelocityData`].
-    pub const fn into_inner(self) -> VelocityData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1340,11 +1290,6 @@ impl TileComponent {
     pub const fn new(data: TileData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`TileData`].
-    pub const fn into_inner(self) -> TileData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1430,11 +1375,6 @@ impl HealthComponent {
     pub const fn new(data: HealthData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`HealthData`].
-    pub const fn into_inner(self) -> HealthData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1519,11 +1459,6 @@ impl ColliderComponent {
     /// Creates a new [`ColliderComponent`] instance from [`ColliderData`].
     pub const fn new(data: ColliderData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`ColliderData`].
-    pub const fn into_inner(self) -> ColliderData {
-        self.0
     }
 }
 
@@ -1611,11 +1546,6 @@ impl ModelComponent {
     pub const fn new(data: ModelData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`ModelData`].
-    pub const fn into_inner(self) -> ModelData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1701,11 +1631,6 @@ impl ColorComponent {
     /// Creates a new [`ColorComponent`] instance from [`ColorData`].
     pub const fn new(data: ColorData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`ColorData`].
-    pub const fn into_inner(self) -> ColorData {
-        self.0
     }
 }
 
@@ -1795,11 +1720,6 @@ impl BackgroundColorComponent {
     pub const fn new(data: BackgroundColorData) -> Self {
         Self(data)
     }
-
-    /// Consumes self and returns the inner [`BackgroundColorData`].
-    pub const fn into_inner(self) -> BackgroundColorData {
-        self.0
-    }
 }
 
 #[automatically_derived]
@@ -1885,11 +1805,6 @@ impl DynamicLightComponent {
     /// Creates a new [`DynamicLightComponent`] instance from [`DynamicLightData`].
     pub const fn new(data: DynamicLightData) -> Self {
         Self(data)
-    }
-
-    /// Consumes self and returns the inner [`DynamicLightData`].
-    pub const fn into_inner(self) -> DynamicLightData {
-        self.0
     }
 }
 

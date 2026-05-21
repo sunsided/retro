@@ -1,58 +1,3 @@
-/// The ID of an entity.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct EntityId(core::num::NonZeroU64);
-
-#[allow(dead_code)]
-impl EntityId {
-    /// Returns a new, unique entity ID.
-    ///
-    /// Uniqueness is guaranteed by using a monotonically increasing `AtomicU64` counter
-    /// for generating IDs, starting from 1.
-    ///
-    /// # Implementation
-    /// This function uses a thread-safe counter with sequential consistency ordering
-    /// to ensure unique IDs even under concurrent access.
-    pub fn new() -> Self {
-        static ENTITY_IDS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
-        let id = ENTITY_IDS.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
-        EntityId(core::num::NonZeroU64::new(id).expect("ID was zero"))
-    }
-
-    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
-    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
-    }
-
-    /// Returns this ID as a `u64` value.
-    pub const fn as_u64(&self) -> u64 {
-        self.0.get()
-    }
-}
-
-impl core::hash::Hash for EntityId {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
-}
-
-impl From<EntityId> for core::num::NonZeroU64 {
-    fn from(value: EntityId) -> core::num::NonZeroU64 {
-        value.as_nonzero_u64()
-    }
-}
-
-impl From<EntityId> for u64 {
-    fn from(value: EntityId) -> u64 {
-        value.as_u64()
-    }
-}
-
-impl core::fmt::Display for EntityId {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        core::fmt::Display::fmt(&self.0.get(), f)
-    }
-}
-
 /// The ID of an [`Archetype`].
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 #[repr(u32)]
@@ -173,7 +118,7 @@ pub struct EntityArchetypeRef {
 #[allow(dead_code)]
 pub trait Spawn<E> {
     /// Spawn a new entity into the world.
-    fn spawn(&mut self, data: E) -> EntityId;
+    fn spawn(&mut self, data: E) -> ::sillyecs::EntityId;
 }
 
 /// Marker trait for archetypes.
@@ -307,7 +252,7 @@ impl ArchetypeEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct EntityWithIdAndData<Data: EntityData> {
-    pub id: EntityId,
+    pub id: ::sillyecs::EntityId,
     pub data: Data,
 }
 
@@ -319,8 +264,8 @@ pub trait EntityData {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct EnvironmentArchetype {
-    pub entities: Vec<EntityId>,
-    pub time_of_daies: Vec<TimeOfDayComponent>,
+    pub entities: Vec<::sillyecs::EntityId>,
+    pub time_of_days: Vec<TimeOfDayComponent>,
     pub suns: Vec<SunComponent>,
     pub skydomes: Vec<SkydomeComponent>,
     pub ambient_lights: Vec<AmbientLightComponent>,
@@ -328,12 +273,23 @@ pub struct EnvironmentArchetype {
 }
 
 /// An entity of the [`EnvironmentArchetype`].
-pub type EnvironmentEntity = EntityWithIdAndData<EnvironmentEntityData>;
+pub type EnvironmentEntity = EntityWithIdAndData<EnvironmentEntityComponents>;
+
+/// The data of an entity of the [`EnvironmentArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct EnvironmentEntityData {
+    pub time_of_day: TimeOfDayData,
+    pub sun: SunData,
+    pub skydome: SkydomeData,
+    pub ambient_light: AmbientLightData,
+    pub stars: StarsData,
+}
 
 /// An entity of the [`EnvironmentArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct EnvironmentEntityData {
+pub struct EnvironmentEntityComponents {
     pub time_of_day: TimeOfDayComponent,
     pub sun: SunComponent,
     pub skydome: SkydomeComponent,
@@ -341,7 +297,23 @@ pub struct EnvironmentEntityData {
     pub stars: StarsComponent,
 }
 
+impl From<EnvironmentEntityData> for EnvironmentEntityComponents {
+    fn from(value: EnvironmentEntityData) -> Self {
+        Self {
+            time_of_day: value.time_of_day.into(),
+            sun: value.sun.into(),
+            skydome: value.skydome.into(),
+            ambient_light: value.ambient_light.into(),
+            stars: value.stars.into(),
+        }
+    }
+}
+
 impl EntityData for EnvironmentEntityData {
+    const ARCHETYPE_ID: ArchetypeId = EnvironmentArchetype::ID;
+}
+
+impl EntityData for EnvironmentEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = EnvironmentArchetype::ID;
 }
 
@@ -349,7 +321,7 @@ impl EntityData for EnvironmentEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct EnvironmentEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub time_of_day: &'archetype TimeOfDayComponent,
     pub sun: &'archetype SunComponent,
     pub skydome: &'archetype SkydomeComponent,
@@ -361,7 +333,7 @@ pub struct EnvironmentEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct EnvironmentEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub time_of_day: &'archetype mut TimeOfDayComponent,
     pub sun: &'archetype mut SunComponent,
     pub skydome: &'archetype mut SkydomeComponent,
@@ -409,21 +381,200 @@ impl EnvironmentArchetype {
         EnvironmentEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `TimeOfDay` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<EnvironmentEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_time_of_day_component_at(&self, index: usize) -> Option<&TimeOfDayComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_time_of_day_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `TimeOfDay` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_time_of_day_component_at_mut(&mut self, index: usize) -> Option<&mut TimeOfDayComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_time_of_day_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `TimeOfDay` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_time_of_day_component_at_unchecked(&self, index: usize) -> &TimeOfDayComponent {
+        self.time_of_days.get_unchecked(index)
+    }
+
+    /// Gets the `TimeOfDay` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_time_of_day_component_at_unchecked_mut(&mut self, index: usize) -> &mut TimeOfDayComponent {
+        self.time_of_days.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_sun_component_at(&self, index: usize) -> Option<&SunComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_sun_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_sun_component_at_mut(&mut self, index: usize) -> Option<&mut SunComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_sun_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_sun_component_at_unchecked(&self, index: usize) -> &SunComponent {
+        self.suns.get_unchecked(index)
+    }
+
+    /// Gets the `Sun` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_sun_component_at_unchecked_mut(&mut self, index: usize) -> &mut SunComponent {
+        self.suns.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_skydome_component_at(&self, index: usize) -> Option<&SkydomeComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_skydome_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_skydome_component_at_mut(&mut self, index: usize) -> Option<&mut SkydomeComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_skydome_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_skydome_component_at_unchecked(&self, index: usize) -> &SkydomeComponent {
+        self.skydomes.get_unchecked(index)
+    }
+
+    /// Gets the `Skydome` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_skydome_component_at_unchecked_mut(&mut self, index: usize) -> &mut SkydomeComponent {
+        self.skydomes.get_unchecked_mut(index)
+    }
+
+    /// Gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_ambient_light_component_at(&self, index: usize) -> Option<&AmbientLightComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_ambient_light_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_ambient_light_component_at_mut(&mut self, index: usize) -> Option<&mut AmbientLightComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_ambient_light_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_ambient_light_component_at_unchecked(&self, index: usize) -> &AmbientLightComponent {
+        self.ambient_lights.get_unchecked(index)
+    }
+
+    /// Gets the `AmbientLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_ambient_light_component_at_unchecked_mut(&mut self, index: usize) -> &mut AmbientLightComponent {
+        self.ambient_lights.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_stars_component_at(&self, index: usize) -> Option<&StarsComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_stars_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_stars_component_at_mut(&mut self, index: usize) -> Option<&mut StarsComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_stars_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_stars_component_at_unchecked(&self, index: usize) -> &StarsComponent {
+        self.stars.get_unchecked(index)
+    }
+
+    /// Gets the `Stars` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_stars_component_at_unchecked_mut(&mut self, index: usize) -> &mut StarsComponent {
+        self.stars.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<EnvironmentEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<EnvironmentEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
         EnvironmentEntityRef {
             entity_id: *self.entities.get_unchecked(index),
-            time_of_day: self.time_of_daies.get_unchecked(index),
+            time_of_day: self.time_of_days.get_unchecked(index),
             sun: self.suns.get_unchecked(index),
             skydome: self.skydomes.get_unchecked(index),
             ambient_light: self.ambient_lights.get_unchecked(index),
@@ -433,10 +584,10 @@ impl EnvironmentArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
         EnvironmentEntityMut {
             entity_id: *self.entities.get_unchecked(index),
-            time_of_day: self.time_of_daies.get_unchecked_mut(index),
+            time_of_day: self.time_of_days.get_unchecked_mut(index),
             sun: self.suns.get_unchecked_mut(index),
             skydome: self.skydomes.get_unchecked_mut(index),
             ambient_light: self.ambient_lights.get_unchecked_mut(index),
@@ -459,7 +610,7 @@ impl HasComponent<TimeOfDayComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TimeOfDayComponent> for EnvironmentEntityData {
+impl HasComponent<TimeOfDayComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &TimeOfDayComponent {
         &self.time_of_day
@@ -485,7 +636,7 @@ impl HasComponent<SunComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<SunComponent> for EnvironmentEntityData {
+impl HasComponent<SunComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &SunComponent {
         &self.sun
@@ -511,7 +662,7 @@ impl HasComponent<SkydomeComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<SkydomeComponent> for EnvironmentEntityData {
+impl HasComponent<SkydomeComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &SkydomeComponent {
         &self.skydome
@@ -537,7 +688,7 @@ impl HasComponent<AmbientLightComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<AmbientLightComponent> for EnvironmentEntityData {
+impl HasComponent<AmbientLightComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &AmbientLightComponent {
         &self.ambient_light
@@ -563,7 +714,7 @@ impl HasComponent<StarsComponent> for EnvironmentEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<StarsComponent> for EnvironmentEntityData {
+impl HasComponent<StarsComponent> for EnvironmentEntityComponents {
     #[inline]
     fn get(&self) -> &StarsComponent {
         &self.stars
@@ -578,7 +729,7 @@ impl EnvironmentEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<EnvironmentEntityData>
     {
@@ -586,8 +737,20 @@ impl EnvironmentEntityData {
     }
 }
 
+impl EnvironmentEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<EnvironmentEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for EnvironmentEntity {
-    type Target = EnvironmentEntityData;
+    type Target = EnvironmentEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -646,17 +809,17 @@ impl EnvironmentArchetype {
         ambient_light: AmbientLightComponent,
         stars: StarsComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
-        self.time_of_daies.push(time_of_day);
+        self.time_of_days.push(time_of_day);
         self.suns.push(sun);
         self.skydomes.push(skydome);
         self.ambient_lights.push(ambient_light);
         self.stars.push(stars);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -673,12 +836,12 @@ impl EnvironmentArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
         self.entities.swap_remove(index);
-        self.time_of_daies.swap_remove(index);
+        self.time_of_days.swap_remove(index);
         self.suns.swap_remove(index);
         self.skydomes.swap_remove(index);
         self.ambient_lights.swap_remove(index);
@@ -697,12 +860,12 @@ impl EnvironmentArchetype {
 impl HasComponents<TimeOfDayComponent> for EnvironmentArchetype {
     /// Returns a slice of all [`TimeOfDayComponent`] component values.
     fn get(&self) -> &[TimeOfDayComponent] {
-        self.time_of_daies.as_slice()
+        self.time_of_days.as_slice()
     }
 
     /// Returns a mutable slice of all [`TimeOfDayComponent`] component values.
     fn get_mut(&mut self) -> &mut [TimeOfDayComponent] {
-        self.time_of_daies.as_mut_slice()
+        self.time_of_days.as_mut_slice()
     }
 }
 
@@ -782,23 +945,44 @@ impl PartialEq<ArchetypeId> for EnvironmentArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct CameraArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub cameras: Vec<CameraComponent>,
     pub camera_fps_controllers: Vec<CameraFpsControllerComponent>,
 }
 
 /// An entity of the [`CameraArchetype`].
-pub type CameraEntity = EntityWithIdAndData<CameraEntityData>;
+pub type CameraEntity = EntityWithIdAndData<CameraEntityComponents>;
+
+/// The data of an entity of the [`CameraArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CameraEntityData {
+    pub camera: CameraData,
+    pub camera_fps_controller: CameraFpsControllerData,
+}
 
 /// An entity of the [`CameraArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct CameraEntityData {
+pub struct CameraEntityComponents {
     pub camera: CameraComponent,
     pub camera_fps_controller: CameraFpsControllerComponent,
 }
 
+impl From<CameraEntityData> for CameraEntityComponents {
+    fn from(value: CameraEntityData) -> Self {
+        Self {
+            camera: value.camera.into(),
+            camera_fps_controller: value.camera_fps_controller.into(),
+        }
+    }
+}
+
 impl EntityData for CameraEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CameraArchetype::ID;
+}
+
+impl EntityData for CameraEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = CameraArchetype::ID;
 }
 
@@ -806,7 +990,7 @@ impl EntityData for CameraEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CameraEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub camera: &'archetype CameraComponent,
     pub camera_fps_controller: &'archetype CameraFpsControllerComponent,
 }
@@ -815,7 +999,7 @@ pub struct CameraEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct CameraEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub camera: &'archetype mut CameraComponent,
     pub camera_fps_controller: &'archetype mut CameraFpsControllerComponent,
 }
@@ -860,18 +1044,95 @@ impl CameraArchetype {
         CameraEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Camera` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<CameraEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_camera_component_at(&self, index: usize) -> Option<&CameraComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_camera_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Camera` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_component_at_mut(&mut self, index: usize) -> Option<&mut CameraComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_camera_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Camera` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_component_at_unchecked(&self, index: usize) -> &CameraComponent {
+        self.cameras.get_unchecked(index)
+    }
+
+    /// Gets the `Camera` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_component_at_unchecked_mut(&mut self, index: usize) -> &mut CameraComponent {
+        self.cameras.get_unchecked_mut(index)
+    }
+
+    /// Gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_fps_controller_component_at(&self, index: usize) -> Option<&CameraFpsControllerComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_camera_fps_controller_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_camera_fps_controller_component_at_mut(&mut self, index: usize) -> Option<&mut CameraFpsControllerComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_camera_fps_controller_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_fps_controller_component_at_unchecked(&self, index: usize) -> &CameraFpsControllerComponent {
+        self.camera_fps_controllers.get_unchecked(index)
+    }
+
+    /// Gets the `CameraFpsController` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_camera_fps_controller_component_at_unchecked_mut(&mut self, index: usize) -> &mut CameraFpsControllerComponent {
+        self.camera_fps_controllers.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> CameraEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<CameraEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CameraEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CameraEntityRef {
         CameraEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             camera: self.cameras.get_unchecked(index),
@@ -881,7 +1142,7 @@ impl CameraArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
         CameraEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             camera: self.cameras.get_unchecked_mut(index),
@@ -904,7 +1165,7 @@ impl HasComponent<CameraComponent> for CameraEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<CameraComponent> for CameraEntityData {
+impl HasComponent<CameraComponent> for CameraEntityComponents {
     #[inline]
     fn get(&self) -> &CameraComponent {
         &self.camera
@@ -930,7 +1191,7 @@ impl HasComponent<CameraFpsControllerComponent> for CameraEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<CameraFpsControllerComponent> for CameraEntityData {
+impl HasComponent<CameraFpsControllerComponent> for CameraEntityComponents {
     #[inline]
     fn get(&self) -> &CameraFpsControllerComponent {
         &self.camera_fps_controller
@@ -945,7 +1206,7 @@ impl CameraEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<CameraEntityData>
     {
@@ -953,8 +1214,20 @@ impl CameraEntityData {
     }
 }
 
+impl CameraEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<CameraEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for CameraEntity {
-    type Target = CameraEntityData;
+    type Target = CameraEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -1007,14 +1280,14 @@ impl CameraArchetype {
         camera: CameraComponent,
         camera_fps_controller: CameraFpsControllerComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.cameras.push(camera);
         self.camera_fps_controllers.push(camera_fps_controller);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -1031,7 +1304,7 @@ impl CameraArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -1098,25 +1371,48 @@ impl PartialEq<ArchetypeId> for CameraArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct DynamicLightArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub dynamic_lights: Vec<DynamicLightComponent>,
     pub colors: Vec<ColorComponent>,
     pub positions: Vec<PositionComponent>,
 }
 
 /// An entity of the [`DynamicLightArchetype`].
-pub type DynamicLightEntity = EntityWithIdAndData<DynamicLightEntityData>;
+pub type DynamicLightEntity = EntityWithIdAndData<DynamicLightEntityComponents>;
+
+/// The data of an entity of the [`DynamicLightArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct DynamicLightEntityData {
+    pub dynamic_light: DynamicLightData,
+    pub color: ColorData,
+    pub position: PositionData,
+}
 
 /// An entity of the [`DynamicLightArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct DynamicLightEntityData {
+pub struct DynamicLightEntityComponents {
     pub dynamic_light: DynamicLightComponent,
     pub color: ColorComponent,
     pub position: PositionComponent,
 }
 
+impl From<DynamicLightEntityData> for DynamicLightEntityComponents {
+    fn from(value: DynamicLightEntityData) -> Self {
+        Self {
+            dynamic_light: value.dynamic_light.into(),
+            color: value.color.into(),
+            position: value.position.into(),
+        }
+    }
+}
+
 impl EntityData for DynamicLightEntityData {
+    const ARCHETYPE_ID: ArchetypeId = DynamicLightArchetype::ID;
+}
+
+impl EntityData for DynamicLightEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = DynamicLightArchetype::ID;
 }
 
@@ -1124,7 +1420,7 @@ impl EntityData for DynamicLightEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct DynamicLightEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub dynamic_light: &'archetype DynamicLightComponent,
     pub color: &'archetype ColorComponent,
     pub position: &'archetype PositionComponent,
@@ -1134,7 +1430,7 @@ pub struct DynamicLightEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct DynamicLightEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub dynamic_light: &'archetype mut DynamicLightComponent,
     pub color: &'archetype mut ColorComponent,
     pub position: &'archetype mut PositionComponent,
@@ -1180,18 +1476,129 @@ impl DynamicLightArchetype {
         DynamicLightEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `DynamicLight` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_dynamic_light_component_at(&self, index: usize) -> Option<&DynamicLightComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_dynamic_light_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `DynamicLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_dynamic_light_component_at_mut(&mut self, index: usize) -> Option<&mut DynamicLightComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_dynamic_light_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `DynamicLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_dynamic_light_component_at_unchecked(&self, index: usize) -> &DynamicLightComponent {
+        self.dynamic_lights.get_unchecked(index)
+    }
+
+    /// Gets the `DynamicLight` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_dynamic_light_component_at_unchecked_mut(&mut self, index: usize) -> &mut DynamicLightComponent {
+        self.dynamic_lights.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_color_component_at(&self, index: usize) -> Option<&ColorComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_color_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_color_component_at_mut(&mut self, index: usize) -> Option<&mut ColorComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_color_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_color_component_at_unchecked(&self, index: usize) -> &ColorComponent {
+        self.colors.get_unchecked(index)
+    }
+
+    /// Gets the `Color` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_color_component_at_unchecked_mut(&mut self, index: usize) -> &mut ColorComponent {
+        self.colors.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<DynamicLightEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
         DynamicLightEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             dynamic_light: self.dynamic_lights.get_unchecked(index),
@@ -1202,7 +1609,7 @@ impl DynamicLightArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
         DynamicLightEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             dynamic_light: self.dynamic_lights.get_unchecked_mut(index),
@@ -1226,7 +1633,7 @@ impl HasComponent<DynamicLightComponent> for DynamicLightEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<DynamicLightComponent> for DynamicLightEntityData {
+impl HasComponent<DynamicLightComponent> for DynamicLightEntityComponents {
     #[inline]
     fn get(&self) -> &DynamicLightComponent {
         &self.dynamic_light
@@ -1252,7 +1659,7 @@ impl HasComponent<ColorComponent> for DynamicLightEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<ColorComponent> for DynamicLightEntityData {
+impl HasComponent<ColorComponent> for DynamicLightEntityComponents {
     #[inline]
     fn get(&self) -> &ColorComponent {
         &self.color
@@ -1278,7 +1685,7 @@ impl HasComponent<PositionComponent> for DynamicLightEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for DynamicLightEntityData {
+impl HasComponent<PositionComponent> for DynamicLightEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -1293,7 +1700,7 @@ impl DynamicLightEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<DynamicLightEntityData>
     {
@@ -1301,8 +1708,20 @@ impl DynamicLightEntityData {
     }
 }
 
+impl DynamicLightEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<DynamicLightEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for DynamicLightEntity {
-    type Target = DynamicLightEntityData;
+    type Target = DynamicLightEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -1357,7 +1776,7 @@ impl DynamicLightArchetype {
         color: ColorComponent,
         position: PositionComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -1365,7 +1784,7 @@ impl DynamicLightArchetype {
         self.colors.push(color);
         self.positions.push(position);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -1382,7 +1801,7 @@ impl DynamicLightArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -1463,23 +1882,44 @@ impl PartialEq<ArchetypeId> for DynamicLightArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct TileArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub tiles: Vec<TileComponent>,
     pub positions: Vec<PositionComponent>,
 }
 
 /// An entity of the [`TileArchetype`].
-pub type TileEntity = EntityWithIdAndData<TileEntityData>;
+pub type TileEntity = EntityWithIdAndData<TileEntityComponents>;
+
+/// The data of an entity of the [`TileArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct TileEntityData {
+    pub tile: TileData,
+    pub position: PositionData,
+}
 
 /// An entity of the [`TileArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct TileEntityData {
+pub struct TileEntityComponents {
     pub tile: TileComponent,
     pub position: PositionComponent,
 }
 
+impl From<TileEntityData> for TileEntityComponents {
+    fn from(value: TileEntityData) -> Self {
+        Self {
+            tile: value.tile.into(),
+            position: value.position.into(),
+        }
+    }
+}
+
 impl EntityData for TileEntityData {
+    const ARCHETYPE_ID: ArchetypeId = TileArchetype::ID;
+}
+
+impl EntityData for TileEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = TileArchetype::ID;
 }
 
@@ -1487,7 +1927,7 @@ impl EntityData for TileEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct TileEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub tile: &'archetype TileComponent,
     pub position: &'archetype PositionComponent,
 }
@@ -1496,7 +1936,7 @@ pub struct TileEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct TileEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub tile: &'archetype mut TileComponent,
     pub position: &'archetype mut PositionComponent,
 }
@@ -1541,18 +1981,95 @@ impl TileArchetype {
         TileEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Tile` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<TileEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_tile_component_at(&self, index: usize) -> Option<&TileComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_tile_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Tile` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_tile_component_at_mut(&mut self, index: usize) -> Option<&mut TileComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_tile_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Tile` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_tile_component_at_unchecked(&self, index: usize) -> &TileComponent {
+        self.tiles.get_unchecked(index)
+    }
+
+    /// Gets the `Tile` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_tile_component_at_unchecked_mut(&mut self, index: usize) -> &mut TileComponent {
+        self.tiles.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> TileEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<TileEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<TileEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> TileEntityRef {
         TileEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             tile: self.tiles.get_unchecked(index),
@@ -1562,7 +2079,7 @@ impl TileArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut {
         TileEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             tile: self.tiles.get_unchecked_mut(index),
@@ -1585,7 +2102,7 @@ impl HasComponent<TileComponent> for TileEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TileComponent> for TileEntityData {
+impl HasComponent<TileComponent> for TileEntityComponents {
     #[inline]
     fn get(&self) -> &TileComponent {
         &self.tile
@@ -1611,7 +2128,7 @@ impl HasComponent<PositionComponent> for TileEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for TileEntityData {
+impl HasComponent<PositionComponent> for TileEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -1626,7 +2143,7 @@ impl TileEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<TileEntityData>
     {
@@ -1634,8 +2151,20 @@ impl TileEntityData {
     }
 }
 
+impl TileEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<TileEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for TileEntity {
-    type Target = TileEntityData;
+    type Target = TileEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -1688,14 +2217,14 @@ impl TileArchetype {
         tile: TileComponent,
         position: PositionComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.tiles.push(tile);
         self.positions.push(position);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -1712,7 +2241,7 @@ impl TileArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -1779,7 +2308,7 @@ impl PartialEq<ArchetypeId> for TileArchetype {
 /// A marching cube :)
 #[derive(Debug, Default, Clone)]
 pub struct CubeArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
     pub velocities: Vec<VelocityComponent>,
     pub transforms: Vec<TransformComponent>,
@@ -1787,19 +2316,44 @@ pub struct CubeArchetype {
 }
 
 /// An entity of the [`CubeArchetype`].
-pub type CubeEntity = EntityWithIdAndData<CubeEntityData>;
+pub type CubeEntity = EntityWithIdAndData<CubeEntityComponents>;
+
+/// The data of an entity of the [`CubeArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct CubeEntityData {
+    pub position: PositionData,
+    pub velocity: VelocityData,
+    pub transform: TransformData,
+    pub model: ModelData,
+}
 
 /// An entity of the [`CubeArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct CubeEntityData {
+pub struct CubeEntityComponents {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
     pub transform: TransformComponent,
     pub model: ModelComponent,
 }
 
+impl From<CubeEntityData> for CubeEntityComponents {
+    fn from(value: CubeEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+            velocity: value.velocity.into(),
+            transform: value.transform.into(),
+            model: value.model.into(),
+        }
+    }
+}
+
 impl EntityData for CubeEntityData {
+    const ARCHETYPE_ID: ArchetypeId = CubeArchetype::ID;
+}
+
+impl EntityData for CubeEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = CubeArchetype::ID;
 }
 
@@ -1807,7 +2361,7 @@ impl EntityData for CubeEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CubeEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
     pub velocity: &'archetype VelocityComponent,
     pub transform: &'archetype TransformComponent,
@@ -1818,7 +2372,7 @@ pub struct CubeEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct CubeEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
     pub velocity: &'archetype mut VelocityComponent,
     pub transform: &'archetype mut TransformComponent,
@@ -1865,18 +2419,163 @@ impl CubeArchetype {
         CubeEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<CubeEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at(&self, index: usize) -> Option<&VelocityComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at_mut(&mut self, index: usize) -> Option<&mut VelocityComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked(&self, index: usize) -> &VelocityComponent {
+        self.velocities.get_unchecked(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked_mut(&mut self, index: usize) -> &mut VelocityComponent {
+        self.velocities.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_transform_component_at(&self, index: usize) -> Option<&TransformComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_transform_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_transform_component_at_mut(&mut self, index: usize) -> Option<&mut TransformComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_transform_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_transform_component_at_unchecked(&self, index: usize) -> &TransformComponent {
+        self.transforms.get_unchecked(index)
+    }
+
+    /// Gets the `Transform` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_transform_component_at_unchecked_mut(&mut self, index: usize) -> &mut TransformComponent {
+        self.transforms.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_model_component_at(&self, index: usize) -> Option<&ModelComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_model_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_model_component_at_mut(&mut self, index: usize) -> Option<&mut ModelComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_model_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_model_component_at_unchecked(&self, index: usize) -> &ModelComponent {
+        self.models.get_unchecked(index)
+    }
+
+    /// Gets the `Model` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_model_component_at_unchecked_mut(&mut self, index: usize) -> &mut ModelComponent {
+        self.models.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> CubeEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<CubeEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CubeEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CubeEntityRef {
         CubeEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -1888,7 +2587,7 @@ impl CubeArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
         CubeEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -1913,7 +2612,7 @@ impl HasComponent<PositionComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for CubeEntityData {
+impl HasComponent<PositionComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -1939,7 +2638,7 @@ impl HasComponent<VelocityComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<VelocityComponent> for CubeEntityData {
+impl HasComponent<VelocityComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &VelocityComponent {
         &self.velocity
@@ -1965,7 +2664,7 @@ impl HasComponent<TransformComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<TransformComponent> for CubeEntityData {
+impl HasComponent<TransformComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &TransformComponent {
         &self.transform
@@ -1991,7 +2690,7 @@ impl HasComponent<ModelComponent> for CubeEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<ModelComponent> for CubeEntityData {
+impl HasComponent<ModelComponent> for CubeEntityComponents {
     #[inline]
     fn get(&self) -> &ModelComponent {
         &self.model
@@ -2006,7 +2705,7 @@ impl CubeEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<CubeEntityData>
     {
@@ -2014,8 +2713,20 @@ impl CubeEntityData {
     }
 }
 
+impl CubeEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<CubeEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for CubeEntity {
-    type Target = CubeEntityData;
+    type Target = CubeEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -2072,7 +2783,7 @@ impl CubeArchetype {
         transform: TransformComponent,
         model: ModelComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -2081,7 +2792,7 @@ impl CubeArchetype {
         self.transforms.push(transform);
         self.models.push(model);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -2098,7 +2809,7 @@ impl CubeArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -2193,25 +2904,48 @@ impl PartialEq<ArchetypeId> for CubeArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct PlayerArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
     pub velocities: Vec<VelocityComponent>,
     pub healths: Vec<HealthComponent>,
 }
 
 /// An entity of the [`PlayerArchetype`].
-pub type PlayerEntity = EntityWithIdAndData<PlayerEntityData>;
+pub type PlayerEntity = EntityWithIdAndData<PlayerEntityComponents>;
+
+/// The data of an entity of the [`PlayerArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct PlayerEntityData {
+    pub position: PositionData,
+    pub velocity: VelocityData,
+    pub health: HealthData,
+}
 
 /// An entity of the [`PlayerArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct PlayerEntityData {
+pub struct PlayerEntityComponents {
     pub position: PositionComponent,
     pub velocity: VelocityComponent,
     pub health: HealthComponent,
 }
 
+impl From<PlayerEntityData> for PlayerEntityComponents {
+    fn from(value: PlayerEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+            velocity: value.velocity.into(),
+            health: value.health.into(),
+        }
+    }
+}
+
 impl EntityData for PlayerEntityData {
+    const ARCHETYPE_ID: ArchetypeId = PlayerArchetype::ID;
+}
+
+impl EntityData for PlayerEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = PlayerArchetype::ID;
 }
 
@@ -2219,7 +2953,7 @@ impl EntityData for PlayerEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct PlayerEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
     pub velocity: &'archetype VelocityComponent,
     pub health: &'archetype HealthComponent,
@@ -2229,7 +2963,7 @@ pub struct PlayerEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct PlayerEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
     pub velocity: &'archetype mut VelocityComponent,
     pub health: &'archetype mut HealthComponent,
@@ -2275,18 +3009,129 @@ impl PlayerArchetype {
         PlayerEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<PlayerEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at(&self, index: usize) -> Option<&VelocityComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_velocity_component_at_mut(&mut self, index: usize) -> Option<&mut VelocityComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_velocity_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked(&self, index: usize) -> &VelocityComponent {
+        self.velocities.get_unchecked(index)
+    }
+
+    /// Gets the `Velocity` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_velocity_component_at_unchecked_mut(&mut self, index: usize) -> &mut VelocityComponent {
+        self.velocities.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_health_component_at(&self, index: usize) -> Option<&HealthComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_health_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_health_component_at_mut(&mut self, index: usize) -> Option<&mut HealthComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_health_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_health_component_at_unchecked(&self, index: usize) -> &HealthComponent {
+        self.healths.get_unchecked(index)
+    }
+
+    /// Gets the `Health` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_health_component_at_unchecked_mut(&mut self, index: usize) -> &mut HealthComponent {
+        self.healths.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> PlayerEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<PlayerEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<PlayerEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> PlayerEntityRef {
         PlayerEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -2297,7 +3142,7 @@ impl PlayerArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
         PlayerEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -2321,7 +3166,7 @@ impl HasComponent<PositionComponent> for PlayerEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for PlayerEntityData {
+impl HasComponent<PositionComponent> for PlayerEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -2347,7 +3192,7 @@ impl HasComponent<VelocityComponent> for PlayerEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<VelocityComponent> for PlayerEntityData {
+impl HasComponent<VelocityComponent> for PlayerEntityComponents {
     #[inline]
     fn get(&self) -> &VelocityComponent {
         &self.velocity
@@ -2373,7 +3218,7 @@ impl HasComponent<HealthComponent> for PlayerEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<HealthComponent> for PlayerEntityData {
+impl HasComponent<HealthComponent> for PlayerEntityComponents {
     #[inline]
     fn get(&self) -> &HealthComponent {
         &self.health
@@ -2388,7 +3233,7 @@ impl PlayerEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<PlayerEntityData>
     {
@@ -2396,8 +3241,20 @@ impl PlayerEntityData {
     }
 }
 
+impl PlayerEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<PlayerEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for PlayerEntity {
-    type Target = PlayerEntityData;
+    type Target = PlayerEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -2452,7 +3309,7 @@ impl PlayerArchetype {
         velocity: VelocityComponent,
         health: HealthComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
@@ -2460,7 +3317,7 @@ impl PlayerArchetype {
         self.velocities.push(velocity);
         self.healths.push(health);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -2477,7 +3334,7 @@ impl PlayerArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -2558,23 +3415,44 @@ impl PartialEq<ArchetypeId> for PlayerArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct ForegroundObjectArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
     pub colliders: Vec<ColliderComponent>,
 }
 
 /// An entity of the [`ForegroundObjectArchetype`].
-pub type ForegroundObjectEntity = EntityWithIdAndData<ForegroundObjectEntityData>;
+pub type ForegroundObjectEntity = EntityWithIdAndData<ForegroundObjectEntityComponents>;
+
+/// The data of an entity of the [`ForegroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ForegroundObjectEntityData {
+    pub position: PositionData,
+    pub collider: ColliderData,
+}
 
 /// An entity of the [`ForegroundObjectArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct ForegroundObjectEntityData {
+pub struct ForegroundObjectEntityComponents {
     pub position: PositionComponent,
     pub collider: ColliderComponent,
 }
 
+impl From<ForegroundObjectEntityData> for ForegroundObjectEntityComponents {
+    fn from(value: ForegroundObjectEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+            collider: value.collider.into(),
+        }
+    }
+}
+
 impl EntityData for ForegroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = ForegroundObjectArchetype::ID;
+}
+
+impl EntityData for ForegroundObjectEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = ForegroundObjectArchetype::ID;
 }
 
@@ -2582,7 +3460,7 @@ impl EntityData for ForegroundObjectEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct ForegroundObjectEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
     pub collider: &'archetype ColliderComponent,
 }
@@ -2591,7 +3469,7 @@ pub struct ForegroundObjectEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct ForegroundObjectEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
     pub collider: &'archetype mut ColliderComponent,
 }
@@ -2636,18 +3514,95 @@ impl ForegroundObjectArchetype {
         ForegroundObjectEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
+    }
+
+    /// Gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_collider_component_at(&self, index: usize) -> Option<&ColliderComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_collider_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_collider_component_at_mut(&mut self, index: usize) -> Option<&mut ColliderComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_collider_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_collider_component_at_unchecked(&self, index: usize) -> &ColliderComponent {
+        self.colliders.get_unchecked(index)
+    }
+
+    /// Gets the `Collider` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_collider_component_at_unchecked_mut(&mut self, index: usize) -> &mut ColliderComponent {
+        self.colliders.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<ForegroundObjectEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
         ForegroundObjectEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -2657,7 +3612,7 @@ impl ForegroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
         ForegroundObjectEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -2680,7 +3635,7 @@ impl HasComponent<PositionComponent> for ForegroundObjectEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for ForegroundObjectEntityData {
+impl HasComponent<PositionComponent> for ForegroundObjectEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -2706,7 +3661,7 @@ impl HasComponent<ColliderComponent> for ForegroundObjectEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<ColliderComponent> for ForegroundObjectEntityData {
+impl HasComponent<ColliderComponent> for ForegroundObjectEntityComponents {
     #[inline]
     fn get(&self) -> &ColliderComponent {
         &self.collider
@@ -2721,7 +3676,7 @@ impl ForegroundObjectEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<ForegroundObjectEntityData>
     {
@@ -2729,8 +3684,20 @@ impl ForegroundObjectEntityData {
     }
 }
 
+impl ForegroundObjectEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<ForegroundObjectEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for ForegroundObjectEntity {
-    type Target = ForegroundObjectEntityData;
+    type Target = ForegroundObjectEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -2783,14 +3750,14 @@ impl ForegroundObjectArchetype {
         position: PositionComponent,
         collider: ColliderComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.positions.push(position);
         self.colliders.push(collider);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -2807,7 +3774,7 @@ impl ForegroundObjectArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -2874,21 +3841,40 @@ impl PartialEq<ArchetypeId> for ForegroundObjectArchetype {
 /// An archetype grouping entities with identical components.
 #[derive(Debug, Default, Clone)]
 pub struct BackgroundObjectArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub positions: Vec<PositionComponent>,
 }
 
 /// An entity of the [`BackgroundObjectArchetype`].
-pub type BackgroundObjectEntity = EntityWithIdAndData<BackgroundObjectEntityData>;
+pub type BackgroundObjectEntity = EntityWithIdAndData<BackgroundObjectEntityComponents>;
+
+/// The data of an entity of the [`BackgroundObjectArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct BackgroundObjectEntityData {
+    pub position: PositionData,
+}
 
 /// An entity of the [`BackgroundObjectArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct BackgroundObjectEntityData {
+pub struct BackgroundObjectEntityComponents {
     pub position: PositionComponent,
 }
 
+impl From<BackgroundObjectEntityData> for BackgroundObjectEntityComponents {
+    fn from(value: BackgroundObjectEntityData) -> Self {
+        Self {
+            position: value.position.into(),
+        }
+    }
+}
+
 impl EntityData for BackgroundObjectEntityData {
+    const ARCHETYPE_ID: ArchetypeId = BackgroundObjectArchetype::ID;
+}
+
+impl EntityData for BackgroundObjectEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = BackgroundObjectArchetype::ID;
 }
 
@@ -2896,7 +3882,7 @@ impl EntityData for BackgroundObjectEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype PositionComponent,
 }
 
@@ -2904,7 +3890,7 @@ pub struct BackgroundObjectEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct BackgroundObjectEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub position: &'archetype mut PositionComponent,
 }
 
@@ -2948,18 +3934,61 @@ impl BackgroundObjectArchetype {
         BackgroundObjectEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `Position` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_position_component_at(&self, index: usize) -> Option<&PositionComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_position_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_position_component_at_mut(&mut self, index: usize) -> Option<&mut PositionComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_position_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked(&self, index: usize) -> &PositionComponent {
+        self.positions.get_unchecked(index)
+    }
+
+    /// Gets the `Position` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_position_component_at_unchecked_mut(&mut self, index: usize) -> &mut PositionComponent {
+        self.positions.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<BackgroundObjectEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
         BackgroundObjectEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -2968,7 +3997,7 @@ impl BackgroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
         BackgroundObjectEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -2990,7 +4019,7 @@ impl HasComponent<PositionComponent> for BackgroundObjectEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<PositionComponent> for BackgroundObjectEntityData {
+impl HasComponent<PositionComponent> for BackgroundObjectEntityComponents {
     #[inline]
     fn get(&self) -> &PositionComponent {
         &self.position
@@ -3005,7 +4034,7 @@ impl BackgroundObjectEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<BackgroundObjectEntityData>
     {
@@ -3013,8 +4042,20 @@ impl BackgroundObjectEntityData {
     }
 }
 
+impl BackgroundObjectEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<BackgroundObjectEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for BackgroundObjectEntity {
-    type Target = BackgroundObjectEntityData;
+    type Target = BackgroundObjectEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -3065,13 +4106,13 @@ impl BackgroundObjectArchetype {
         &mut self,
         position: PositionComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.positions.push(position);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -3088,7 +4129,7 @@ impl BackgroundObjectArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -3141,21 +4182,40 @@ impl PartialEq<ArchetypeId> for BackgroundObjectArchetype {
 /// The scene background.
 #[derive(Debug, Default, Clone)]
 pub struct SceneBackgroundArchetype {
-    pub entities: Vec<EntityId>,
+    pub entities: Vec<::sillyecs::EntityId>,
     pub background_colors: Vec<BackgroundColorComponent>,
 }
 
 /// An entity of the [`SceneBackgroundArchetype`].
-pub type SceneBackgroundEntity = EntityWithIdAndData<SceneBackgroundEntityData>;
+pub type SceneBackgroundEntity = EntityWithIdAndData<SceneBackgroundEntityComponents>;
+
+/// The data of an entity of the [`SceneBackgroundArchetype`].
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct SceneBackgroundEntityData {
+    pub background_color: BackgroundColorData,
+}
 
 /// An entity of the [`SceneBackgroundArchetype`].
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
-pub struct SceneBackgroundEntityData {
+pub struct SceneBackgroundEntityComponents {
     pub background_color: BackgroundColorComponent,
 }
 
+impl From<SceneBackgroundEntityData> for SceneBackgroundEntityComponents {
+    fn from(value: SceneBackgroundEntityData) -> Self {
+        Self {
+            background_color: value.background_color.into(),
+        }
+    }
+}
+
 impl EntityData for SceneBackgroundEntityData {
+    const ARCHETYPE_ID: ArchetypeId = SceneBackgroundArchetype::ID;
+}
+
+impl EntityData for SceneBackgroundEntityComponents {
     const ARCHETYPE_ID: ArchetypeId = SceneBackgroundArchetype::ID;
 }
 
@@ -3163,7 +4223,7 @@ impl EntityData for SceneBackgroundEntityData {
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct SceneBackgroundEntityRef<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub background_color: &'archetype BackgroundColorComponent,
 }
 
@@ -3171,7 +4231,7 @@ pub struct SceneBackgroundEntityRef<'archetype> {
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct SceneBackgroundEntityMut<'archetype> {
-    pub entity_id: EntityId,
+    pub entity_id: ::sillyecs::EntityId,
     pub background_color: &'archetype mut BackgroundColorComponent,
 }
 
@@ -3215,18 +4275,61 @@ impl SceneBackgroundArchetype {
         SceneBackgroundEntityIterator::new(self)
     }
 
-    /// Gets the entity at the specified index.
+    /// Gets the `BackgroundColor` component at the specified index.
     #[allow(dead_code)]
-    pub fn get_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
-        if index > self.len() {
+    #[inline]
+    pub fn get_background_color_component_at(&self, index: usize) -> Option<&BackgroundColorComponent> {
+        if index >= self.len() {
             return None;
         }
-        Some(unsafe { self.get_at_unchecked(index) })
+        Some(unsafe { self.get_background_color_component_at_unchecked(index) })
+    }
+
+    /// Mutably gets the `BackgroundColor` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub fn get_background_color_component_at_mut(&mut self, index: usize) -> Option<&mut BackgroundColorComponent> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_background_color_component_at_unchecked_mut(index) })
+    }
+
+    /// Gets the `BackgroundColor` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_background_color_component_at_unchecked(&self, index: usize) -> &BackgroundColorComponent {
+        self.background_colors.get_unchecked(index)
+    }
+
+    /// Gets the `BackgroundColor` component at the specified index.
+    #[allow(dead_code)]
+    #[inline]
+    pub unsafe fn get_background_color_component_at_unchecked_mut(&mut self, index: usize) -> &mut BackgroundColorComponent {
+        self.background_colors.get_unchecked_mut(index)
     }
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
+    pub fn get_entity_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked(index) })
+    }
+
+    /// Mutably gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<SceneBackgroundEntityMut> {
+        if index >= self.len() {
+            return None;
+        }
+        Some(unsafe { self.get_entity_at_unchecked_mut(index) })
+    }
+
+    /// Gets the entity at the specified index.
+    #[allow(dead_code)]
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
         SceneBackgroundEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             background_color: self.background_colors.get_unchecked(index),
@@ -3235,7 +4338,7 @@ impl SceneBackgroundArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
         SceneBackgroundEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             background_color: self.background_colors.get_unchecked_mut(index),
@@ -3257,7 +4360,7 @@ impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntity {
 }
 
 #[allow(dead_code)]
-impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntityData {
+impl HasComponent<BackgroundColorComponent> for SceneBackgroundEntityComponents {
     #[inline]
     fn get(&self) -> &BackgroundColorComponent {
         &self.background_color
@@ -3272,7 +4375,7 @@ impl SceneBackgroundEntityData {
     /// Spawn this entity into the given world.
     #[inline]
     #[allow(dead_code)]
-    pub fn spawn_into<W>(self, world: &mut W) -> EntityId
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
     where
         W: Spawn<SceneBackgroundEntityData>
     {
@@ -3280,8 +4383,20 @@ impl SceneBackgroundEntityData {
     }
 }
 
+impl SceneBackgroundEntityComponents {
+    /// Spawn this entity into the given world.
+    #[inline]
+    #[allow(dead_code)]
+    pub fn spawn_into<W>(self, world: &mut W) -> ::sillyecs::EntityId
+    where
+        W: Spawn<SceneBackgroundEntityComponents>
+    {
+        world.spawn(self)
+    }
+}
+
 impl core::ops::Deref for SceneBackgroundEntity {
-    type Target = SceneBackgroundEntityData;
+    type Target = SceneBackgroundEntityComponents;
 
     fn deref(&self) -> &Self::Target {
         &self.data
@@ -3332,13 +4447,13 @@ impl SceneBackgroundArchetype {
         &mut self,
         background_color: BackgroundColorComponent,
         mut world_registry: R
-    ) -> EntityId
+    ) -> ::sillyecs::EntityId
     where
         R: WorldEntityRegistry
     {
         self.background_colors.push(background_color);
 
-        let entity_id = EntityId::new();
+        let entity_id = ::sillyecs::EntityId::new();
 
         let entity_index = self.entities.len();
         self.entities.push(entity_id);
@@ -3355,7 +4470,7 @@ impl SceneBackgroundArchetype {
     ///
     /// Returns the ID of the entity that was moved into the hole, or [`None`] if the archetype is now empty.
     #[doc(hidden)]
-    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<EntityId>, usize> {
+    pub fn drop_at_index(&mut self, index: usize) -> Result<Option<::sillyecs::EntityId>, usize> {
         if index > self.entities.len() {
             return Err(index);
         }
@@ -3421,7 +4536,7 @@ pub trait GetEntityRef {
 }
 
 impl core::ops::Index<usize> for EnvironmentArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3429,7 +4544,7 @@ impl core::ops::Index<usize> for EnvironmentArchetype {
 }
 
 impl core::ops::Index<usize> for CameraArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3437,7 +4552,7 @@ impl core::ops::Index<usize> for CameraArchetype {
 }
 
 impl core::ops::Index<usize> for DynamicLightArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3445,7 +4560,7 @@ impl core::ops::Index<usize> for DynamicLightArchetype {
 }
 
 impl core::ops::Index<usize> for TileArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3453,7 +4568,7 @@ impl core::ops::Index<usize> for TileArchetype {
 }
 
 impl core::ops::Index<usize> for CubeArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3461,7 +4576,7 @@ impl core::ops::Index<usize> for CubeArchetype {
 }
 
 impl core::ops::Index<usize> for PlayerArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3469,7 +4584,7 @@ impl core::ops::Index<usize> for PlayerArchetype {
 }
 
 impl core::ops::Index<usize> for ForegroundObjectArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3477,7 +4592,7 @@ impl core::ops::Index<usize> for ForegroundObjectArchetype {
 }
 
 impl core::ops::Index<usize> for BackgroundObjectArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3485,7 +4600,7 @@ impl core::ops::Index<usize> for BackgroundObjectArchetype {
 }
 
 impl core::ops::Index<usize> for SceneBackgroundArchetype {
-    type Output = EntityId;
+    type Output = ::sillyecs::EntityId;
 
     fn index(&self, index: usize) -> &Self::Output {
         &self.entities[index]
@@ -3495,14 +4610,14 @@ impl core::ops::Index<usize> for SceneBackgroundArchetype {
 #[allow(dead_code)]
 pub trait FrontloadEntities:
     Archetype
-    + core::ops::Index<usize, Output = EntityId>
+    + core::ops::Index<usize, Output = ::sillyecs::EntityId>
 {
     /// Frontloads entities provided by their IDs (e.g., from quadtree results).
     /// Returns the count of frontloaded entities.
     fn frontload(
         &mut self,
-        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
-        entities_to_frontload: &[EntityId],
+        entity_lookup: &mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         // Collect and filter valid indices
@@ -3528,7 +4643,7 @@ pub trait FrontloadEntities:
     /// Returns the count of frontloaded entities.
     fn frontload_by_indices_sorted<I>(
         &mut self,
-        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        entity_lookup: &mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
         indices_to_frontload: I,
         previous_frontload_pivot: Option<usize>
     ) -> usize
@@ -3588,13 +4703,13 @@ pub trait FrontloadEntitiesScan:
     Archetype
     + FrontloadEntities
     + GetEntityRef
-    + core::ops::Index<usize, Output = EntityId>
+    + core::ops::Index<usize, Output = ::sillyecs::EntityId>
 {
     /// Frontloads entities satisfying `should_frontload`.
     /// Returns the number of entities frontloaded.
     fn frontload_scan<F>(
         &mut self,
-        entity_lookup: &mut EntityLocationMap<EntityId, EntityArchetypeRef>,
+        entity_lookup: &mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
         mut should_frontload: F,
     ) -> usize
     where
@@ -3668,14 +4783,14 @@ impl GetEntityRef for EnvironmentArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`EnvironmentArchetype::get_at_unchecked`](EnvironmentArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3691,14 +4806,14 @@ impl GetEntityRef for CameraArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`CameraArchetype::get_at_unchecked`](CameraArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3714,14 +4829,14 @@ impl GetEntityRef for DynamicLightArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`DynamicLightArchetype::get_at_unchecked`](DynamicLightArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3737,14 +4852,14 @@ impl GetEntityRef for TileArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`TileArchetype::get_at_unchecked`](TileArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3760,14 +4875,14 @@ impl GetEntityRef for CubeArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`CubeArchetype::get_at_unchecked`](CubeArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3783,14 +4898,14 @@ impl GetEntityRef for PlayerArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`PlayerArchetype::get_at_unchecked`](PlayerArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3806,14 +4921,14 @@ impl GetEntityRef for ForegroundObjectArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`ForegroundObjectArchetype::get_at_unchecked`](ForegroundObjectArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3829,14 +4944,14 @@ impl GetEntityRef for BackgroundObjectArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`BackgroundObjectArchetype::get_at_unchecked`](BackgroundObjectArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3852,14 +4967,14 @@ impl GetEntityRef for SceneBackgroundArchetype {
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     fn get_at<'archetype>(&'archetype self, index: usize) -> Option<Self::EntityRef<'archetype>> {
-        self.get_at(index)
+        self.get_entity_at(index)
     }
 
     /// See [`SceneBackgroundArchetype::get_at_unchecked`](SceneBackgroundArchetype::get_at_unchecked).
     #[inline(always)]
     #[allow(clippy::needless_lifetimes, dead_code)]
     unsafe fn get_at_unchecked<'archetype>(&'archetype self, index: usize) -> Self::EntityRef<'archetype> {
-        unsafe { self.get_at_unchecked(index) }
+        unsafe { self.get_entity_at_unchecked(index) }
     }
 }
 
@@ -3868,7 +4983,7 @@ impl FrontloadEntities for EnvironmentArchetype {
     #[doc(hidden)]
     fn swap_entities(&mut self, first: usize, second: usize) {
         self.entities.swap(first, second);
-        self.time_of_daies.swap(first, second);
+        self.time_of_days.swap(first, second);
         self.suns.swap(first, second);
         self.skydomes.swap(first, second);
         self.ambient_lights.swap(first, second);

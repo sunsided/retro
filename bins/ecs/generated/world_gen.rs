@@ -1,145 +1,55 @@
-/// The ID of a world.
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-pub struct WorldId(core::num::NonZeroU64);
-
-#[allow(dead_code)]
-impl WorldId {
-    /// Returns a new, unique world ID.
-    ///
-    /// Uniqueness is guaranteed by using a monotonically increasing `AtomicU64` counter
-    /// for generating IDs, starting from 1.
-    ///
-    /// # Implementation
-    /// This function uses a thread-safe counter with sequential consistency ordering
-    /// to ensure unique IDs even under concurrent access.
-    pub fn new() -> Self {
-        static WORLD_IDS: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU64::new(1);
-        let id = WORLD_IDS.fetch_add(1, core::sync::atomic::Ordering::SeqCst);
-        WorldId(core::num::NonZeroU64::new(id).expect("ID was zero"))
-    }
-
-    /// Returns this ID as a [`NonZeroU64`](core::num::NonZeroU64) value.
-    pub const fn as_nonzero_u64(&self) -> core::num::NonZeroU64 {
-        self.0
-    }
-
-    /// Returns this ID as a `u64` value.
-    pub const fn as_u64(&self) -> u64 {
-        self.0.get()
-    }
-}
-
-impl core::hash::Hash for WorldId {
-    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
-        self.0.hash(state);
-    }
-}
-
-impl From<WorldId> for core::num::NonZeroU64 {
-    fn from(value: WorldId) -> core::num::NonZeroU64 {
-        value.as_nonzero_u64()
-    }
-}
-
-impl From<WorldId> for u64 {
-    fn from(value: WorldId) -> u64 {
-        value.as_u64()
-    }
-}
-
 /// A command in the [`World`].
 #[allow(dead_code)]
-pub enum WorldCommand {
+pub enum WorldCommand<UserCommand> {
     /// Spawn an entity.
     ///
     /// # Note:
     /// Due to the reusability of systems, not all commands are valid in all worlds.
     SpawnEntity(ArchetypeEntityData),
     /// Despawn an entity.
-    DespawnEntity(EntityId),
-    // TODO: Allow for user-specified commands.
+    DespawnEntity(::sillyecs::EntityId),
+    /// A user-specific command.
+    User(UserCommand)
+}
+
+pub trait WorldUserCommand {
+    type UserCommand: core::marker::Send + core::fmt::Debug;
 }
 
 /// Sender of [`WorldCommand`] instances.
 #[allow(dead_code)]
-pub trait WorldCommandSender {
+pub trait WorldCommandSender: WorldUserCommand {
     type Error: core::error::Error;
 
     /// Sends a command. May block until sending is complete.
-    fn send(&self, command: WorldCommand) -> Result<(), Self::Error>;
+    fn send(&self, command: WorldCommand<Self::UserCommand>) -> Result<(), Self::Error>;
 }
 
 /// Sender of [`WorldCommand`] instances.
 #[allow(dead_code)]
-pub trait WorldCommandReceiver {
+pub trait WorldCommandReceiver: WorldUserCommand {
     type Error: core::error::Error;
 
     /// Attempts to receive a message from the channel without blocking.
     /// Returns [`Ok(None)`] if no command was queued.
-    fn recv(&self) -> Result<Option<WorldCommand>, Self::Error>;
+    fn recv(&self) -> Result<Option<WorldCommand<Self::UserCommand>>, Self::Error>;
+}
+
+/// Handler of a [`WorldCommand`]'s user command.
+#[allow(dead_code)]
+pub trait WorldUserCommandHandler: WorldUserCommand {
+    /// Handles a user command.
+    fn handle_user_command(&mut self, command: Self::UserCommand);
 }
 
 /// A sender and receiver of [`WorldCommand`] instances.
 #[allow(dead_code)]
 pub trait WorldCommandQueue: WorldCommandSender + WorldCommandReceiver { }
 
-impl<T> WorldCommandQueue for T
+impl<T, U> WorldCommandQueue for T
 where
-    T: WorldCommandSender + WorldCommandReceiver
+    T: WorldCommandSender<UserCommand = U> + WorldCommandReceiver<UserCommand = U>
 { }
-
-/// A frame context.
-#[derive(Debug, Clone)]
-#[allow(dead_code)]
-pub struct FrameContext {
-    /// The world ID.
-    pub world_id: WorldId,
-    /// The frame number.
-    pub frame_number: u64,
-    /// The delta time since the last frame.
-    pub delta_time_secs: f32,
-    /// The fixed time for fixed-time systems. Defaults to 60 Hz (~16.66 ms).
-    pub fixed_time_secs: f32,
-    /// The start time of the current frame.
-    pub current_frame_start: std::time::Instant,
-    /// The start time of the last frame.
-    pub last_frame_start: std::time::Instant,
-}
-
-#[allow(dead_code)]
-impl FrameContext {
-    /// Constructs a new frame context.
-    fn new(world_id: WorldId) -> Self {
-        Self {
-            world_id,
-            frame_number: 0,
-            delta_time_secs: 0.0,
-            fixed_time_secs: 1.0 / 60.0,
-            current_frame_start: std::time::Instant::now(),
-            last_frame_start: std::time::Instant::now(),
-        }
-    }
-
-    /// Resets the frame context, e.g. after the application came back to foreground.
-    fn reset(&mut self) {
-        self.current_frame_start = std::time::Instant::now();
-        self.last_frame_start = std::time::Instant::now();
-    }
-}
-
-/// Marker trait for worlds.
-#[allow(dead_code)]
-pub trait World {
-    /// The ID of this world.
-    const ID: WorldId;
-
-    /// The ID of this world.
-    #[inline]
-    #[allow(dead_code)]
-    fn id(&self) -> WorldId {
-        Self::ID
-    }
-}
 
 
 /// A world  all archetypes.
@@ -149,15 +59,8 @@ pub struct MainWorld<E, Q> {
     archetypes: MainWorldArchetypes,
     /// The systems.
     pub systems: MainWorldSystems,
-    /// The entity locator.
-    //
-    // Hashmap type not provided by design. Provide your own implementation such as fxhash::FxHashMap via type alias.
-    // Example:
-    //      type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
-    //
-    entity_locations: EntityLocationMap<EntityId, EntityArchetypeRef>,
     /// The frame context.
-    context: FrameContext,
+    context: ::sillyecs::FrameContext,
     /// The fixed-time accumulators.
     fixed_accumulators: FixedAccumulators,
     /// The phase delta times.
@@ -169,11 +72,17 @@ pub struct MainWorld<E, Q> {
     command_queue: Q
 }
 
-impl<E, Q> World for MainWorld<E, Q> {
-    const ID: WorldId = WorldId(core::num::NonZeroU64::new(1).expect("Invalid ID on ECS construction time"));
+impl<E, Q> ::sillyecs::World for MainWorld<E, Q> {
+    const ID: ::sillyecs::WorldId = ::sillyecs::WorldId::new_from(core::num::NonZeroU64::new(1).expect("Invalid ID on ECS construction time"));
 }
 
 /// The user states used in the world.
+///
+/// It encapsulates ownership of and access to the following state types:
+/// 
+/// - [WgpuRenderState](WgpuRenderState)
+/// - [InputState](InputState)
+/// - [ActiveCameraState](ActiveCameraState)
 #[derive(Debug, Default)]
 pub struct MainWorldStates {
     /// The WGPU render state; will be initialized in the Render phase hooks
@@ -201,9 +110,38 @@ pub struct MainWorldStates {
     pub active_camera: ActiveCameraState,
 }
 
+#[allow(dead_code)]
+impl MainWorldStates {
+    pub const fn new(
+        wgpu_render: WgpuRenderState,
+        input: InputState,
+        active_camera: ActiveCameraState,
+    ) -> Self {
+        Self {
+            wgpu_render,
+            input,
+            active_camera,
+        }
+    }
+}
+
 /// The archetypes used in the world.
 #[derive(Debug, Clone, Default)]
 struct MainWorldArchetypes {
+    /// The entity locator.
+    //
+    // Hashmap type not provided by design. Provide your own implementation such as fxhash::FxHashMap via type alias.
+    // Example:
+    //      type EntityLocationMap<K, V> = fxhash::FxHashMap<K, V>;
+    //
+    entity_locations: EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>,
+
+    pub collection: MainWorldArchetypeCollection
+}
+
+/// The archetypes used in the world.
+#[derive(Debug, Clone, Default)]
+struct MainWorldArchetypeCollection {
     pub environment: EnvironmentArchetype,
     pub camera: CameraArchetype,
     pub dynamic_light: DynamicLightArchetype,
@@ -633,7 +571,16 @@ impl AsMut<VgaBlitSystemData> for MainWorldSystems {
 impl<E, Q> Spawn<EnvironmentEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: EnvironmentEntityData) -> EntityId {
+    fn spawn(&mut self, data: EnvironmentEntityData) -> ::sillyecs::EntityId {
+        self.spawn_environment(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<EnvironmentEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: EnvironmentEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_environment(data)
     }
 }
@@ -642,7 +589,16 @@ impl<E, Q> Spawn<EnvironmentEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: CameraEntityData) -> EntityId {
+    fn spawn(&mut self, data: CameraEntityData) -> ::sillyecs::EntityId {
+        self.spawn_camera(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<CameraEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: CameraEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_camera(data)
     }
 }
@@ -651,7 +607,16 @@ impl<E, Q> Spawn<CameraEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<DynamicLightEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: DynamicLightEntityData) -> EntityId {
+    fn spawn(&mut self, data: DynamicLightEntityData) -> ::sillyecs::EntityId {
+        self.spawn_dynamic_light(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<DynamicLightEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: DynamicLightEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_dynamic_light(data)
     }
 }
@@ -660,7 +625,16 @@ impl<E, Q> Spawn<DynamicLightEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<TileEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: TileEntityData) -> EntityId {
+    fn spawn(&mut self, data: TileEntityData) -> ::sillyecs::EntityId {
+        self.spawn_tile(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<TileEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: TileEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_tile(data)
     }
 }
@@ -669,7 +643,16 @@ impl<E, Q> Spawn<TileEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<CubeEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: CubeEntityData) -> EntityId {
+    fn spawn(&mut self, data: CubeEntityData) -> ::sillyecs::EntityId {
+        self.spawn_cube(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<CubeEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: CubeEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_cube(data)
     }
 }
@@ -678,7 +661,16 @@ impl<E, Q> Spawn<CubeEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<PlayerEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: PlayerEntityData) -> EntityId {
+    fn spawn(&mut self, data: PlayerEntityData) -> ::sillyecs::EntityId {
+        self.spawn_player(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<PlayerEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: PlayerEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_player(data)
     }
 }
@@ -687,7 +679,16 @@ impl<E, Q> Spawn<PlayerEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<ForegroundObjectEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: ForegroundObjectEntityData) -> EntityId {
+    fn spawn(&mut self, data: ForegroundObjectEntityData) -> ::sillyecs::EntityId {
+        self.spawn_foreground_object(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<ForegroundObjectEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: ForegroundObjectEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_foreground_object(data)
     }
 }
@@ -696,7 +697,16 @@ impl<E, Q> Spawn<ForegroundObjectEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<BackgroundObjectEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: BackgroundObjectEntityData) -> EntityId {
+    fn spawn(&mut self, data: BackgroundObjectEntityData) -> ::sillyecs::EntityId {
+        self.spawn_background_object(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<BackgroundObjectEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: BackgroundObjectEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_background_object(data)
     }
 }
@@ -705,7 +715,16 @@ impl<E, Q> Spawn<BackgroundObjectEntityData> for MainWorld<E, Q> {
 impl<E, Q> Spawn<SceneBackgroundEntityData> for MainWorld<E, Q> {
     /// Spawn a new entity into the world.
     #[inline]
-    fn spawn(&mut self, data: SceneBackgroundEntityData) -> EntityId {
+    fn spawn(&mut self, data: SceneBackgroundEntityData) -> ::sillyecs::EntityId {
+        self.spawn_scene_background(data)
+    }
+}
+
+/// Spawns an entity into the world.
+impl<E, Q> Spawn<SceneBackgroundEntityComponents> for MainWorld<E, Q> {
+    /// Spawn a new entity into the world.
+    #[inline]
+    fn spawn(&mut self, data: SceneBackgroundEntityComponents) -> ::sillyecs::EntityId {
         self.spawn_scene_background(data)
     }
 }
@@ -713,7 +732,7 @@ impl<E, Q> Spawn<SceneBackgroundEntityData> for MainWorld<E, Q> {
 /// Helper trait to prevent accidental abuse of the Archetype's spawning function.
 pub trait WorldEntityRegistry {
     /// Registers an entity with the world.
-    fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId;
+    fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId;
 }
 
 #[allow(dead_code)]
@@ -721,9 +740,7 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new<S>(
         create_systems: &S,
-        wgpu_render: WgpuRenderState,
-        input: InputState,
-        active_camera: ActiveCameraState,
+        states: MainWorldStates,
         command_queue: Q) -> Self
     where
         S: CreateSystems,
@@ -731,9 +748,7 @@ impl<Q> MainWorld<NoOpPhaseEvents, Q> {
     {
         Self::new_with_events(
             create_systems,
-            wgpu_render,
-            input,
-            active_camera,
+            states,
             command_queue,
             NoOpPhaseEvents
         )
@@ -745,9 +760,7 @@ impl<E, Q> MainWorld<E, Q> {
     /// Creates a new [`MainWorld`].
     pub fn new_with_events<S>(
         create_systems: &S,
-        wgpu_render: WgpuRenderState,
-        input: InputState,
-        active_camera: ActiveCameraState,
+        states: MainWorldStates,
         command_queue: Q,
         phase_events: E) -> Self
     where
@@ -768,7 +781,7 @@ impl<E, Q> MainWorld<E, Q> {
         E: SystemPhaseEvents,
         Q: WorldCommandQueue
     {
-        let context = FrameContext::new(Self::ID);
+        let context = ::sillyecs::FrameContext::new(<Self as ::sillyecs::World>::ID);
         Self {
             archetypes: Default::default(),
             systems: MainWorldSystems {
@@ -787,13 +800,8 @@ impl<E, Q> MainWorld<E, Q> {
                 render_background: CreateSystem::<RenderBackgroundSystem>::create(create_systems),
                 vga_blit: CreateSystem::<VgaBlitSystem>::create(create_systems),
             },
-            entity_locations: Default::default(),
             context,
-            states: MainWorldStates {
-                wgpu_render,
-                input,
-                active_camera,
-            },
+            states,
             fixed_accumulators: Default::default(),
             delta_timers: DeltaTimers::default(),
             events: phase_events,
@@ -808,25 +816,29 @@ impl<E, Q> MainWorld<E, Q> {
 
     /// Returns the overall number of entities in this world.
     pub fn len(&self) -> usize {
-        self.entity_locations.len()
+        self.archetypes.entity_locations.len()
     }
 
     /// Indicates whether there are no entities in this world.
     pub fn is_empty(&self) -> bool {
-        self.entity_locations.is_empty()
+        self.archetypes.entity_locations.is_empty()
     }
 
-    /// De-spawns an entity given by its [`EntityId`]. Returns an error if the entity was unknown in this world.
-    pub fn despawn_by_id(&mut self, id: EntityId) -> Result<(), DespawnError> {
+    /// De-spawns an entity given by its [`::sillyecs::EntityId`]. Returns an error if the entity was unknown in this world.
+    pub fn despawn_by_id(&mut self, id: ::sillyecs::EntityId) -> Result<(), DespawnError> {
         self.handle_despawn_command(id)
     }
 
     /// Spawn a new `Environment` entity into the world given its [`EnvironmentEntityData`].
     #[inline]
-    pub fn spawn_environment(
+    pub fn spawn_environment<Entity>(
         &mut self,
-        environment: EnvironmentEntityData
-    ) -> EntityId {
+        environment: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<EnvironmentEntityComponents>
+    {
+        let environment = environment.into();
         self.spawn_environment_with(
             environment.time_of_day,
             environment.sun,
@@ -844,34 +856,41 @@ impl<E, Q> MainWorld<E, Q> {
         skydome: SkydomeComponent,
         ambient_light: AmbientLightComponent,
         stars: StarsComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.environment
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .environment
             .spawn_with(
                 time_of_day,
                 sun,
                 skydome,
                 ambient_light,
                 stars,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `Camera` entity into the world given its [`CameraEntityData`].
     #[inline]
-    pub fn spawn_camera(
+    pub fn spawn_camera<Entity>(
         &mut self,
-        camera: CameraEntityData
-    ) -> EntityId {
+        camera: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<CameraEntityComponents>
+    {
+        let camera = camera.into();
         self.spawn_camera_with(
             camera.camera,
             camera.camera_fps_controller,
@@ -883,31 +902,38 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         camera: CameraComponent,
         camera_fps_controller: CameraFpsControllerComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.camera
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .camera
             .spawn_with(
                 camera,
                 camera_fps_controller,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `DynamicLight` entity into the world given its [`DynamicLightEntityData`].
     #[inline]
-    pub fn spawn_dynamic_light(
+    pub fn spawn_dynamic_light<Entity>(
         &mut self,
-        dynamic_light: DynamicLightEntityData
-    ) -> EntityId {
+        dynamic_light: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<DynamicLightEntityComponents>
+    {
+        let dynamic_light = dynamic_light.into();
         self.spawn_dynamic_light_with(
             dynamic_light.dynamic_light,
             dynamic_light.color,
@@ -921,32 +947,39 @@ impl<E, Q> MainWorld<E, Q> {
         dynamic_light: DynamicLightComponent,
         color: ColorComponent,
         position: PositionComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.dynamic_light
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .dynamic_light
             .spawn_with(
                 dynamic_light,
                 color,
                 position,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `Tile` entity into the world given its [`TileEntityData`].
     #[inline]
-    pub fn spawn_tile(
+    pub fn spawn_tile<Entity>(
         &mut self,
-        tile: TileEntityData
-    ) -> EntityId {
+        tile: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<TileEntityComponents>
+    {
+        let tile = tile.into();
         self.spawn_tile_with(
             tile.tile,
             tile.position,
@@ -958,31 +991,38 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         tile: TileComponent,
         position: PositionComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.tile
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .tile
             .spawn_with(
                 tile,
                 position,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `Cube` entity into the world given its [`CubeEntityData`].
     #[inline]
-    pub fn spawn_cube(
+    pub fn spawn_cube<Entity>(
         &mut self,
-        cube: CubeEntityData
-    ) -> EntityId {
+        cube: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<CubeEntityComponents>
+    {
+        let cube = cube.into();
         self.spawn_cube_with(
             cube.position,
             cube.velocity,
@@ -998,33 +1038,40 @@ impl<E, Q> MainWorld<E, Q> {
         velocity: VelocityComponent,
         transform: TransformComponent,
         model: ModelComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.cube
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .cube
             .spawn_with(
                 position,
                 velocity,
                 transform,
                 model,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `Player` entity into the world given its [`PlayerEntityData`].
     #[inline]
-    pub fn spawn_player(
+    pub fn spawn_player<Entity>(
         &mut self,
-        player: PlayerEntityData
-    ) -> EntityId {
+        player: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<PlayerEntityComponents>
+    {
+        let player = player.into();
         self.spawn_player_with(
             player.position,
             player.velocity,
@@ -1038,32 +1085,39 @@ impl<E, Q> MainWorld<E, Q> {
         position: PositionComponent,
         velocity: VelocityComponent,
         health: HealthComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.player
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .player
             .spawn_with(
                 position,
                 velocity,
                 health,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `ForegroundObject` entity into the world given its [`ForegroundObjectEntityData`].
     #[inline]
-    pub fn spawn_foreground_object(
+    pub fn spawn_foreground_object<Entity>(
         &mut self,
-        foreground_object: ForegroundObjectEntityData
-    ) -> EntityId {
+        foreground_object: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<ForegroundObjectEntityComponents>
+    {
+        let foreground_object = foreground_object.into();
         self.spawn_foreground_object_with(
             foreground_object.position,
             foreground_object.collider,
@@ -1075,31 +1129,38 @@ impl<E, Q> MainWorld<E, Q> {
         &mut self,
         position: PositionComponent,
         collider: ColliderComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.foreground_object
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .foreground_object
             .spawn_with(
                 position,
                 collider,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `BackgroundObject` entity into the world given its [`BackgroundObjectEntityData`].
     #[inline]
-    pub fn spawn_background_object(
+    pub fn spawn_background_object<Entity>(
         &mut self,
-        background_object: BackgroundObjectEntityData
-    ) -> EntityId {
+        background_object: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<BackgroundObjectEntityComponents>
+    {
+        let background_object = background_object.into();
         self.spawn_background_object_with(
             background_object.position,
         )
@@ -1109,30 +1170,37 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn spawn_background_object_with(
         &mut self,
         position: PositionComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.background_object
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .background_object
             .spawn_with(
                 position,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
     /// Spawn a new `SceneBackground` entity into the world given its [`SceneBackgroundEntityData`].
     #[inline]
-    pub fn spawn_scene_background(
+    pub fn spawn_scene_background<Entity>(
         &mut self,
-        scene_background: SceneBackgroundEntityData
-    ) -> EntityId {
+        scene_background: Entity
+    ) -> ::sillyecs::EntityId
+    where
+        Entity: Into<SceneBackgroundEntityComponents>
+    {
+        let scene_background = scene_background.into();
         self.spawn_scene_background_with(
             scene_background.background_color,
         )
@@ -1142,21 +1210,24 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn spawn_scene_background_with(
         &mut self,
         background_color: BackgroundColorComponent,
-    ) -> EntityId {
-        struct Registry<'a>(&'a mut EntityLocationMap<EntityId, EntityArchetypeRef>);
+    ) -> ::sillyecs::EntityId {
+        struct Registry<'a>(&'a mut EntityLocationMap<::sillyecs::EntityId, EntityArchetypeRef>);
 
         impl WorldEntityRegistry for Registry<'_> {
             #[inline(always)]
-            fn register(&mut self, id: EntityId, archetype: EntityArchetypeRef) -> EntityId {
+            fn register(&mut self, id: ::sillyecs::EntityId, archetype: EntityArchetypeRef) -> ::sillyecs::EntityId {
                 self.0.insert(id, archetype);
                 id
             }
         }
 
-        self.archetypes.scene_background
+        let registry = Registry(&mut self.archetypes.entity_locations);
+        self.archetypes
+            .collection
+            .scene_background
             .spawn_with(
                 background_color,
-                Registry(&mut self.entity_locations)
+                registry
             )
     }
 
@@ -1267,7 +1338,8 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn apply_system_phases(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_frame();
         self.handle_commands();
@@ -1311,23 +1383,24 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn par_apply_system_phases(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_frame();
         self.handle_commands();
         // The Startup phase always runs.
-        self.apply_system_phase_startup();
+        self.par_apply_system_phase_startup();
 
         // Apply fixed-time loop for phase FixedUpdate
         self.context.fixed_time_secs = SystemPhase::FIXED_UPDATE_SECS;
         self.fixed_accumulators.fixed_update += self.context.delta_time_secs;
         while self.fixed_accumulators.fixed_update >= SystemPhase::FIXED_UPDATE_SECS {
-            self.apply_system_phase_fixed_update();
+            self.par_apply_system_phase_fixed_update();
             self.fixed_accumulators.fixed_update -= SystemPhase::FIXED_UPDATE_SECS;
         }
         self.context.fixed_time_secs = 0.0;
         // The Update phase always runs.
-        self.apply_system_phase_update();
+        self.par_apply_system_phase_update();
 
         // NOTE: The Render phase is marked manual and will be skipped here.
         //       self.par_apply_system_phase_render();
@@ -1355,7 +1428,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_startup(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_startup_phase();
         let result = SystemStartupPhaseEvents::on_begin_phase(
@@ -1385,7 +1459,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_startup_without_events(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         // no systems in this phase
 
@@ -1409,7 +1484,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn par_apply_system_phase_startup(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_startup_phase();
         let result = SystemStartupPhaseEvents::on_begin_phase(
@@ -1453,7 +1529,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_fixed_update(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_fixed_update_phase();
         let result = SystemFixedUpdatePhaseEvents::on_begin_phase(
@@ -1483,23 +1560,41 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_fixed_update_without_events(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         // System group 1 of 2
         let is_ready = self.systems.time_of_day.is_ready(
                &self.context,
            );
         if is_ready && self.systems.time_of_day.on_begin_phase(
-                    &self.context,
-                )
-                .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply TimeOfDaySystem to EnvironmentArchetype
-            self.systems.time_of_day.apply_many(
                 &self.context,
-                &mut self.archetypes.environment.time_of_daies,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let time_of_day_outputs: [&mut [TimeOfDayComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.time_of_days,
+                ];
+
+                // Apply TimeOfDaySystem to all archetypes
+                self.systems.time_of_day.apply_all(
+                    &self.context,
+                    time_of_day_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.time_of_day.on_end_phase(
                 &self.context,
@@ -1512,23 +1607,39 @@ impl<E, Q> MainWorld<E, Q> {
                &self.context,
            );
         if is_ready && self.systems.physics.on_begin_phase(
-                    &self.context,
-                )
-                .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_begin_phase returned an error"))
-                .is_ok()
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply PhysicsSystem to CubeArchetype
-            self.systems.physics.apply_many(
-                &self.context,
-                &self.archetypes.cube.velocities,
-                &mut self.archetypes.cube.positions,
-            );
-            // Apply PhysicsSystem to PlayerArchetype
-            self.systems.physics.apply_many(
-                &self.context,
-                &self.archetypes.player.velocities,
-                &mut self.archetypes.player.positions,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let velocity_inputs: [&[VelocityComponent]; 2] = [
+                    &self.archetypes.collection.cube.velocities,
+                    &self.archetypes.collection.player.velocities,
+                ];
+                let position_outputs: [&mut [PositionComponent]; 2] = [
+                    &mut self.archetypes.collection.cube.positions,
+                    &mut self.archetypes.collection.player.positions,
+                ];
+
+                // Apply PhysicsSystem to all archetypes
+                self.systems.physics.apply_all(
+                    &self.context,
+                    velocity_inputs,
+                    position_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.physics.on_end_phase(
                 &self.context,
@@ -1540,17 +1651,43 @@ impl<E, Q> MainWorld<E, Q> {
         let is_ready = self.systems.sun.is_ready(
            );
         if is_ready && self.systems.sun.on_begin_phase(
-                )
-                .inspect_err(|error| tracing::error!(?error, "SunSystem::on_begin_phase returned an error"))
-                .is_ok()
+            )
+            .inspect_err(|error| tracing::error!(?error, "SunSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply SunSystem to EnvironmentArchetype
-            self.systems.sun.apply_many(
-                &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.suns,
-                &mut self.archetypes.environment.skydomes,
-                &mut self.archetypes.environment.ambient_lights,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                    &self.archetypes.collection.environment.time_of_days,
+                ];
+                let sun_outputs: [&mut [SunComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.suns,
+                ];
+                let skydome_outputs: [&mut [SkydomeComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.skydomes,
+                ];
+                let ambient_light_outputs: [&mut [AmbientLightComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.ambient_lights,
+                ];
+
+                // Apply SunSystem to all archetypes
+                self.systems.sun.apply_all(
+                    time_of_day_inputs,
+                    sun_outputs,
+                    skydome_outputs,
+                    ambient_light_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.sun.on_end_phase(
             )
@@ -1561,15 +1698,35 @@ impl<E, Q> MainWorld<E, Q> {
         let is_ready = self.systems.stars.is_ready(
            );
         if is_ready && self.systems.stars.on_begin_phase(
-                )
-                .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
-                .is_ok()
+            )
+            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply StarsSystem to EnvironmentArchetype
-            self.systems.stars.apply_many(
-                &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.stars,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                    &self.archetypes.collection.environment.time_of_days,
+                ];
+                let stars_outputs: [&mut [StarsComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.stars,
+                ];
+
+                // Apply StarsSystem to all archetypes
+                self.systems.stars.apply_all(
+                    time_of_day_inputs,
+                    stars_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.stars.on_end_phase(
             )
@@ -1597,7 +1754,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn par_apply_system_phase_fixed_update(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_fixed_update_phase();
         let result = SystemFixedUpdatePhaseEvents::on_begin_phase(
@@ -1628,31 +1786,65 @@ impl<E, Q> MainWorld<E, Q> {
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_time_of_day_ready {
                     s.spawn(|_| {
-                        // Apply TimeOfDaySystem to EnvironmentArchetype
-                        self.systems.time_of_day.apply_many(
-                            &self.context,
-                            &mut self.archetypes.environment.time_of_daies,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let time_of_day_outputs: [&mut [TimeOfDayComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.time_of_days,
+                            ];
+
+                            // Apply TimeOfDaySystem to all archetypes
+                            self.systems.time_of_day.apply_all(
+                                &self.context,
+                                time_of_day_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
                 if is_physics_ready {
                     s.spawn(|_| {
-                        // Apply PhysicsSystem to CubeArchetype
-                        self.systems.physics.apply_many(
-                            &self.context,
-                            &self.archetypes.cube.velocities,
-                            &mut self.archetypes.cube.positions,
-                        );
-                        // Apply PhysicsSystem to PlayerArchetype
-                        self.systems.physics.apply_many(
-                            &self.context,
-                            &self.archetypes.player.velocities,
-                            &mut self.archetypes.player.positions,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let velocity_inputs: [&[VelocityComponent]; 2] = [
+                                &self.archetypes.collection.cube.velocities,
+                                &self.archetypes.collection.player.velocities,
+                            ];
+                            let position_outputs: [&mut [PositionComponent]; 2] = [
+                                &mut self.archetypes.collection.cube.positions,
+                                &mut self.archetypes.collection.player.positions,
+                            ];
+
+                            // Apply PhysicsSystem to all archetypes
+                            self.systems.physics.apply_all(
+                                &self.context,
+                                velocity_inputs,
+                                position_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -1687,26 +1879,73 @@ impl<E, Q> MainWorld<E, Q> {
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_sun_ready {
                     s.spawn(|_| {
-                        // Apply SunSystem to EnvironmentArchetype
-                        self.systems.sun.apply_many(
-                            &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.suns,
-                            &mut self.archetypes.environment.skydomes,
-                            &mut self.archetypes.environment.ambient_lights,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                                &self.archetypes.collection.environment.time_of_days,
+                            ];
+                            let sun_outputs: [&mut [SunComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.suns,
+                            ];
+                            let skydome_outputs: [&mut [SkydomeComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.skydomes,
+                            ];
+                            let ambient_light_outputs: [&mut [AmbientLightComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.ambient_lights,
+                            ];
+
+                            // Apply SunSystem to all archetypes
+                            self.systems.sun.apply_all(
+                                time_of_day_inputs,
+                                sun_outputs,
+                                skydome_outputs,
+                                ambient_light_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
                 if is_stars_ready {
                     s.spawn(|_| {
-                        // Apply StarsSystem to EnvironmentArchetype
-                        self.systems.stars.apply_many(
-                            &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.stars,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                                &self.archetypes.collection.environment.time_of_days,
+                            ];
+                            let stars_outputs: [&mut [StarsComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.stars,
+                            ];
+
+                            // Apply StarsSystem to all archetypes
+                            self.systems.stars.apply_all(
+                                time_of_day_inputs,
+                                stars_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -1755,7 +1994,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_update(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_update_phase();
         let result = SystemUpdatePhaseEvents::on_begin_phase(
@@ -1785,31 +2025,52 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_update_without_events(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         // System group 1 of 1
         let is_ready = self.systems.camera.is_ready(
-               &self.states.input,
-               &self.states.wgpu_render,
+                       &self.states.input,
+                       &self.states.wgpu_render,
            );
         if is_ready && self.systems.camera.on_begin_phase(
-                    &self.states.input,
-                    &self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
-                .is_ok()
+                        &self.states.input,
+                        &self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply CameraSystem to CameraArchetype
-            self.systems.camera.apply_many(
-                &self.states.input,
-                &self.states.wgpu_render,
-                &mut self.archetypes.camera.cameras,
-                &mut self.archetypes.camera.camera_fps_controllers,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let camera_outputs: [&mut [CameraComponent]; 1] = [
+                    &mut self.archetypes.collection.camera.cameras,
+                ];
+                let camera_fps_controller_outputs: [&mut [CameraFpsControllerComponent]; 1] = [
+                    &mut self.archetypes.collection.camera.camera_fps_controllers,
+                ];
+
+                // Apply CameraSystem to all archetypes
+                self.systems.camera.apply_all(
+                            &self.states.input,
+                            &self.states.wgpu_render,
+                    camera_outputs,
+                    camera_fps_controller_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.camera.on_end_phase(
-                &self.states.input,
-                &self.states.wgpu_render,
+                        &self.states.input,
+                        &self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_end_phase returned an error"))
             .ok();
@@ -1819,16 +2080,33 @@ impl<E, Q> MainWorld<E, Q> {
                &self.context,
            );
         if is_ready && self.systems.background_color_cycle.on_begin_phase(
-                    &self.context,
-                )
-                .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply BackgroundColorCycleSystem to SceneBackgroundArchetype
-            self.systems.background_color_cycle.apply_many(
                 &self.context,
-                &mut self.archetypes.scene_background.background_colors,
-            );
+            )
+            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let background_color_outputs: [&mut [BackgroundColorComponent]; 1] = [
+                    &mut self.archetypes.collection.scene_background.background_colors,
+                ];
+
+                // Apply BackgroundColorCycleSystem to all archetypes
+                self.systems.background_color_cycle.apply_all(
+                    &self.context,
+                    background_color_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.background_color_cycle.on_end_phase(
                 &self.context,
@@ -1857,7 +2135,8 @@ impl<E, Q> MainWorld<E, Q> {
     fn par_apply_system_phase_update(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_update_phase();
         let result = SystemUpdatePhaseEvents::on_begin_phase(
@@ -1902,13 +2181,14 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn apply_system_phase_render(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_render_phase();
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
@@ -1919,7 +2199,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             result,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
@@ -1934,196 +2214,357 @@ impl<E, Q> MainWorld<E, Q> {
     fn apply_system_phase_render_without_events(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         // System group 1 of 8
-        let is_ready = self.systems.frame_globals.is_ready(
-               &mut self.states.wgpu_render,
-           );
-        if is_ready && self.systems.frame_globals.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply FrameGlobalsSystem to EnvironmentArchetype
-            self.systems.frame_globals.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.environment.time_of_daies,
-                &mut self.archetypes.environment.suns,
-                &mut self.archetypes.environment.ambient_lights,
-                &mut self.archetypes.environment.stars,
-                &mut self.archetypes.environment.skydomes,
-            );
-
-            self.systems.frame_globals.on_end_phase(
-                &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_end_phase returned an error"))
-            .ok();
-        }
-        // System group 2 of 8
         let is_ready = self.systems.render_background.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render_background.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_begin_phase returned an error"))
-                .is_ok()
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply RenderBackgroundSystem to SceneBackgroundArchetype
-            self.systems.render_background.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.scene_background.background_colors,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
+                    &self.archetypes.collection.scene_background.background_colors,
+                ];
+
+                // Apply RenderBackgroundSystem to all archetypes
+                self.systems.render_background.apply_all(
+                            &mut self.states.wgpu_render,
+                    background_color_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.render_background.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderBackgroundSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 3 of 8
+        // System group 2 of 8
         let is_ready = self.systems.render_sky.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render_sky.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_begin_phase returned an error"))
-                .is_ok()
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply RenderSkySystem to EnvironmentArchetype
-            self.systems.render_sky.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.environment.skydomes,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let skydome_inputs: [&[SkydomeComponent]; 1] = [
+                    &self.archetypes.collection.environment.skydomes,
+                ];
+
+                // Apply RenderSkySystem to all archetypes
+                self.systems.render_sky.apply_all(
+                            &mut self.states.wgpu_render,
+                    skydome_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.render_sky.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSkySystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 4 of 8
+        // System group 3 of 8
         let is_ready = self.systems.render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.render.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
-                .is_ok()
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply RenderSystem to CubeArchetype
-            self.systems.render.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.cube.positions,
-                &self.archetypes.cube.transforms,
-                &self.archetypes.cube.models,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let position_inputs: [&[PositionComponent]; 1] = [
+                    &self.archetypes.collection.cube.positions,
+                ];
+                let transform_inputs: [&[TransformComponent]; 1] = [
+                    &self.archetypes.collection.cube.transforms,
+                ];
+                let model_inputs: [&[ModelComponent]; 1] = [
+                    &self.archetypes.collection.cube.models,
+                ];
+
+                // Apply RenderSystem to all archetypes
+                self.systems.render.apply_all(
+                            &mut self.states.wgpu_render,
+                    position_inputs,
+                    transform_inputs,
+                    model_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.render.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "RenderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 4 of 8
+        let is_ready = self.systems.vga_blit.is_ready(
+                       &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.vga_blit.on_begin_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
+                    &self.archetypes.collection.scene_background.background_colors,
+                ];
+
+                // Apply VgaBlitSystem to all archetypes
+                self.systems.vga_blit.apply_all(
+                            &mut self.states.wgpu_render,
+                    background_color_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.vga_blit.on_end_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 5 of 8
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.dynamic_light.on_begin_phase(
-                    &self.context,
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply DynamicLightSystem to DynamicLightArchetype
-            self.systems.dynamic_light.apply_many(
                 &self.context,
-                &mut self.states.wgpu_render,
-                &self.archetypes.dynamic_light.colors,
-                &mut self.archetypes.dynamic_light.dynamic_lights,
-            );
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let color_inputs: [&[ColorComponent]; 1] = [
+                    &self.archetypes.collection.dynamic_light.colors,
+                ];
+                let dynamic_light_outputs: [&mut [DynamicLightComponent]; 1] = [
+                    &mut self.archetypes.collection.dynamic_light.dynamic_lights,
+                ];
+
+                // Apply DynamicLightSystem to all archetypes
+                self.systems.dynamic_light.apply_all(
+                    &self.context,
+                            &mut self.states.wgpu_render,
+                    color_inputs,
+                    dynamic_light_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.dynamic_light.on_end_phase(
                 &self.context,
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 6 of 8
         let is_ready = self.systems.tile_render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         if is_ready && self.systems.tile_render.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
-                .is_ok()
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply TileRenderSystem to TileArchetype
-            self.systems.tile_render.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.tile.tiles,
-                &self.archetypes.tile.positions,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let tile_inputs: [&[TileComponent]; 1] = [
+                    &self.archetypes.collection.tile.tiles,
+                ];
+                let position_inputs: [&[PositionComponent]; 1] = [
+                    &self.archetypes.collection.tile.positions,
+                ];
+
+                // Apply TileRenderSystem to all archetypes
+                self.systems.tile_render.apply_all(
+                            &mut self.states.wgpu_render,
+                    tile_inputs,
+                    position_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.tile_render.on_end_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 7 of 8
-        let is_ready = self.systems.vga_blit.is_ready(
-               &mut self.states.wgpu_render,
+        let is_ready = self.systems.frame_globals.is_ready(
+                       &mut self.states.wgpu_render,
            );
-        if is_ready && self.systems.vga_blit.on_begin_phase(
-                    &mut self.states.wgpu_render,
-                )
-                .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
-                .is_ok()
-        {
-            // Apply VgaBlitSystem to SceneBackgroundArchetype
-            self.systems.vga_blit.apply_many(
-                &mut self.states.wgpu_render,
-                &self.archetypes.scene_background.background_colors,
-            );
-
-            self.systems.vga_blit.on_end_phase(
-                &mut self.states.wgpu_render,
+        if is_ready && self.systems.frame_globals.on_begin_phase(
+                        &mut self.states.wgpu_render,
             )
-            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
+            .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                    &self.archetypes.collection.environment.time_of_days,
+                ];
+                let sun_outputs: [&mut [SunComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.suns,
+                ];
+                let ambient_light_outputs: [&mut [AmbientLightComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.ambient_lights,
+                ];
+                let stars_outputs: [&mut [StarsComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.stars,
+                ];
+                let skydome_outputs: [&mut [SkydomeComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.skydomes,
+                ];
+
+                // Apply FrameGlobalsSystem to all archetypes
+                self.systems.frame_globals.apply_all(
+                            &mut self.states.wgpu_render,
+                    time_of_day_inputs,
+                    sun_outputs,
+                    ambient_light_outputs,
+                    stars_outputs,
+                    skydome_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.frame_globals.on_end_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 8 of 8
         let is_ready = self.systems.camera_render.is_ready(
-               &self.states.wgpu_render,
-               &mut self.states.active_camera,
+                       &self.states.wgpu_render,
+                       
            );
         if is_ready && self.systems.camera_render.on_begin_phase(
-                    &self.states.wgpu_render,
-                    &mut self.states.active_camera,
-                )
-                .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_begin_phase returned an error"))
-                .is_ok()
+                        &self.states.wgpu_render,
+                        
+            )
+            .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_begin_phase returned an error"))
+            .is_ok()
         {
-            // Apply CameraRenderSystem to CameraArchetype
-            self.systems.camera_render.apply_many(
-                &self.states.wgpu_render,
-                &mut self.states.active_camera,
-                &self.archetypes.camera.cameras,
-            );
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let camera_inputs: [&[CameraComponent]; 1] = [
+                    &self.archetypes.collection.camera.cameras,
+                ];
+
+                // Apply CameraRenderSystem to all archetypes
+                self.systems.camera_render.apply_all(
+                            &self.states.wgpu_render,
+                            &mut self.states.active_camera,
+                    camera_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
 
             self.systems.camera_render.on_end_phase(
-                &self.states.wgpu_render,
-                &mut self.states.active_camera,
+                        &self.states.wgpu_render,
+                        
             )
             .inspect_err(|error| tracing::error!(?error, "CameraRenderSystem::on_end_phase returned an error"))
             .ok();
@@ -2149,176 +2590,272 @@ impl<E, Q> MainWorld<E, Q> {
     pub fn par_apply_system_phase_render(&mut self)
     where
         E: SystemPhaseEvents,
-        Q: WorldCommandSender + WorldCommandReceiver
+        Q: WorldCommandSender + WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         self.on_begin_render_phase();
         let result = SystemRenderPhaseEvents::on_begin_phase(
             &mut self.events,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase begin events"))
         .ok();
 
         // System group 1
-        let is_frame_globals_ready = self.systems.frame_globals.is_ready(
-               &mut self.states.wgpu_render,
-           );
-        let is_frame_globals_ready = is_frame_globals_ready &
-            self.systems.frame_globals.on_begin_phase(
-                &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_begin_phase returned an error"))
-            .is_ok();
-
-        {
-            rayon::scope(|s| {
-                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-                if is_frame_globals_ready {
-                    s.spawn(|_| {
-                        // Apply FrameGlobalsSystem to EnvironmentArchetype
-                        self.systems.frame_globals.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.environment.time_of_daies,
-                            &mut self.archetypes.environment.suns,
-                            &mut self.archetypes.environment.ambient_lights,
-                            &mut self.archetypes.environment.stars,
-                            &mut self.archetypes.environment.skydomes,
-                        );
-                    });
-                }
-            });
-        }
-
-        self.systems.frame_globals.on_end_phase(
-            &mut self.states.wgpu_render,
-        )
-        .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_end_phase returned an error"))
-        .ok();
-
-        // System group 2
         let is_render_background_ready = self.systems.render_background.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_render_background_ready = is_render_background_ready &
             self.systems.render_background.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_background_ready {
                     s.spawn(|_| {
-                        // Apply RenderBackgroundSystem to SceneBackgroundArchetype
-                        self.systems.render_background.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.scene_background.background_colors,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
+                                &self.archetypes.collection.scene_background.background_colors,
+                            ];
+
+                            // Apply RenderBackgroundSystem to all archetypes
+                            self.systems.render_background.apply_all(
+                                        &mut self.states.wgpu_render,
+                                background_color_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
         }
 
         self.systems.render_background.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderBackgroundSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 3
+        // System group 2
         let is_render_sky_ready = self.systems.render_sky.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_render_sky_ready = is_render_sky_ready &
             self.systems.render_sky.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_sky_ready {
                     s.spawn(|_| {
-                        // Apply RenderSkySystem to EnvironmentArchetype
-                        self.systems.render_sky.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.environment.skydomes,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let skydome_inputs: [&[SkydomeComponent]; 1] = [
+                                &self.archetypes.collection.environment.skydomes,
+                            ];
+
+                            // Apply RenderSkySystem to all archetypes
+                            self.systems.render_sky.apply_all(
+                                        &mut self.states.wgpu_render,
+                                skydome_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
         }
 
         self.systems.render_sky.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderSkySystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 4
+        // System group 3
         let is_render_ready = self.systems.render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_render_ready = is_render_ready &
             self.systems.render.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_render_ready {
                     s.spawn(|_| {
-                        // Apply RenderSystem to CubeArchetype
-                        self.systems.render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.cube.positions,
-                            &self.archetypes.cube.transforms,
-                            &self.archetypes.cube.models,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let position_inputs: [&[PositionComponent]; 1] = [
+                                &self.archetypes.collection.cube.positions,
+                            ];
+                            let transform_inputs: [&[TransformComponent]; 1] = [
+                                &self.archetypes.collection.cube.transforms,
+                            ];
+                            let model_inputs: [&[ModelComponent]; 1] = [
+                                &self.archetypes.collection.cube.models,
+                            ];
+
+                            // Apply RenderSystem to all archetypes
+                            self.systems.render.apply_all(
+                                        &mut self.states.wgpu_render,
+                                position_inputs,
+                                transform_inputs,
+                                model_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
         }
 
         self.systems.render.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "RenderSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 4
+        let is_vga_blit_ready = self.systems.vga_blit.is_ready(
+                       &mut self.states.wgpu_render,
+           );
+        let is_vga_blit_ready = is_vga_blit_ready &
+            self.systems.vga_blit.on_begin_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_vga_blit_ready {
+                    s.spawn(|_| {
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
+                                &self.archetypes.collection.scene_background.background_colors,
+                            ];
+
+                            // Apply VgaBlitSystem to all archetypes
+                            self.systems.vga_blit.apply_all(
+                                        &mut self.states.wgpu_render,
+                                background_color_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
+                    });
+                }
+            });
+        }
+
+        self.systems.vga_blit.on_end_phase(
+                    &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 5
         let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
                &self.context,
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_dynamic_light_ready = is_dynamic_light_ready &
             self.systems.dynamic_light.on_begin_phase(
                 &self.context,
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_dynamic_light_ready {
                     s.spawn(|_| {
-                        // Apply DynamicLightSystem to DynamicLightArchetype
-                        self.systems.dynamic_light.apply_many(
-                            &self.context,
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.dynamic_light.colors,
-                            &mut self.archetypes.dynamic_light.dynamic_lights,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let color_inputs: [&[ColorComponent]; 1] = [
+                                &self.archetypes.collection.dynamic_light.colors,
+                            ];
+                            let dynamic_light_outputs: [&mut [DynamicLightComponent]; 1] = [
+                                &mut self.archetypes.collection.dynamic_light.dynamic_lights,
+                            ];
+
+                            // Apply DynamicLightSystem to all archetypes
+                            self.systems.dynamic_light.apply_all(
+                                &self.context,
+                                        &mut self.states.wgpu_render,
+                                color_inputs,
+                                dynamic_light_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
@@ -2326,108 +2863,181 @@ impl<E, Q> MainWorld<E, Q> {
 
         self.systems.dynamic_light.on_end_phase(
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 6
         let is_tile_render_ready = self.systems.tile_render.is_ready(
-               &mut self.states.wgpu_render,
+                       &mut self.states.wgpu_render,
            );
         let is_tile_render_ready = is_tile_render_ready &
             self.systems.tile_render.on_begin_phase(
-                &mut self.states.wgpu_render,
+                        &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_tile_render_ready {
                     s.spawn(|_| {
-                        // Apply TileRenderSystem to TileArchetype
-                        self.systems.tile_render.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.tile.tiles,
-                            &self.archetypes.tile.positions,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let tile_inputs: [&[TileComponent]; 1] = [
+                                &self.archetypes.collection.tile.tiles,
+                            ];
+                            let position_inputs: [&[PositionComponent]; 1] = [
+                                &self.archetypes.collection.tile.positions,
+                            ];
+
+                            // Apply TileRenderSystem to all archetypes
+                            self.systems.tile_render.apply_all(
+                                        &mut self.states.wgpu_render,
+                                tile_inputs,
+                                position_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
         }
 
         self.systems.tile_render.on_end_phase(
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 7
-        let is_vga_blit_ready = self.systems.vga_blit.is_ready(
-               &mut self.states.wgpu_render,
+        let is_frame_globals_ready = self.systems.frame_globals.is_ready(
+                       &mut self.states.wgpu_render,
            );
-        let is_vga_blit_ready = is_vga_blit_ready &
-            self.systems.vga_blit.on_begin_phase(
-                &mut self.states.wgpu_render,
+        let is_frame_globals_ready = is_frame_globals_ready &
+            self.systems.frame_globals.on_begin_phase(
+                        &mut self.states.wgpu_render,
             )
-            .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-                if is_vga_blit_ready {
+                if is_frame_globals_ready {
                     s.spawn(|_| {
-                        // Apply VgaBlitSystem to SceneBackgroundArchetype
-                        self.systems.vga_blit.apply_many(
-                            &mut self.states.wgpu_render,
-                            &self.archetypes.scene_background.background_colors,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                                &self.archetypes.collection.environment.time_of_days,
+                            ];
+                            let sun_outputs: [&mut [SunComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.suns,
+                            ];
+                            let ambient_light_outputs: [&mut [AmbientLightComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.ambient_lights,
+                            ];
+                            let stars_outputs: [&mut [StarsComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.stars,
+                            ];
+                            let skydome_outputs: [&mut [SkydomeComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.skydomes,
+                            ];
+
+                            // Apply FrameGlobalsSystem to all archetypes
+                            self.systems.frame_globals.apply_all(
+                                        &mut self.states.wgpu_render,
+                                time_of_day_inputs,
+                                sun_outputs,
+                                ambient_light_outputs,
+                                stars_outputs,
+                                skydome_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
         }
 
-        self.systems.vga_blit.on_end_phase(
-            &mut self.states.wgpu_render,
+        self.systems.frame_globals.on_end_phase(
+                    &mut self.states.wgpu_render,
         )
-        .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
+        .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 8
         let is_camera_render_ready = self.systems.camera_render.is_ready(
-               &self.states.wgpu_render,
-               &mut self.states.active_camera,
+                       &self.states.wgpu_render,
+                       
            );
         let is_camera_render_ready = is_camera_render_ready &
             self.systems.camera_render.on_begin_phase(
-                &self.states.wgpu_render,
-                &mut self.states.active_camera,
+                        &self.states.wgpu_render,
+                        
             )
             .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_begin_phase returned an error"))
             .is_ok();
 
         {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
                 if is_camera_render_ready {
                     s.spawn(|_| {
-                        // Apply CameraRenderSystem to CameraArchetype
-                        self.systems.camera_render.apply_many(
-                            &self.states.wgpu_render,
-                            &mut self.states.active_camera,
-                            &self.archetypes.camera.cameras,
-                        );
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let camera_inputs: [&[CameraComponent]; 1] = [
+                                &self.archetypes.collection.camera.cameras,
+                            ];
+
+                            // Apply CameraRenderSystem to all archetypes
+                            self.systems.camera_render.apply_all(
+                                        &self.states.wgpu_render,
+                                        &mut self.states.active_camera,
+                                camera_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
                     });
                 }
             });
         }
 
         self.systems.camera_render.on_end_phase(
-            &self.states.wgpu_render,
-            &mut self.states.active_camera,
+                    &self.states.wgpu_render,
+                    
         )
         .inspect_err(|error| tracing::error!(%error, "CameraRenderSystem::on_end_phase returned an error"))
         .ok();
@@ -2436,7 +3046,7 @@ impl<E, Q> MainWorld<E, Q> {
             &mut self.events,
             result,
             &self.context,
-            &mut self.states.wgpu_render,
+                    &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "Failed to handle phase end events"))
         .ok();
@@ -2446,10 +3056,24 @@ impl<E, Q> MainWorld<E, Q> {
         self.on_end_render_phase();
     }
 
+    /// Sends a command.
+    ///
+    /// Note that commands are picked up before and after simulation phases (not between system runs).
+    /// As a result, issuing commands from the outside world will not have any effect until the next
+    /// ECS phase run is executed.
+    #[inline]
+    pub fn command(&mut self, command: WorldCommand<Q::UserCommand>) -> Result<(), Q::Error>
+    where
+        Q: WorldCommandSender
+    {
+        self.command_queue.send(command)
+    }
+
     /// Handles all queued commands.
     fn handle_commands(&mut self)
     where
-        Q: WorldCommandReceiver
+        Q: WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         loop {
             match self.command_queue.recv() {
@@ -2457,6 +3081,7 @@ impl<E, Q> MainWorld<E, Q> {
                     match cmd {
                         WorldCommand::SpawnEntity(data) => self.handle_spawn_command(data),
                         WorldCommand::DespawnEntity(id) => self.handle_despawn_command(id).expect("Failed to despawn"),
+                        WorldCommand::User(cmd) => self.handle_user_command(cmd),
                     }
                 }
                 Ok(None) => break,
@@ -2467,6 +3092,15 @@ impl<E, Q> MainWorld<E, Q> {
                 }
             }
         }
+    }
+
+    #[inline]
+    fn handle_user_command(&mut self, data: <Q as WorldUserCommand>::UserCommand)
+    where
+        Q: WorldCommandReceiver,
+        Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>
+    {
+        WorldUserCommandHandler::handle_user_command(self, data);
     }
 
     fn handle_spawn_command(&mut self, data: ArchetypeEntityData) {
@@ -2514,59 +3148,68 @@ impl<E, Q> MainWorld<E, Q> {
         }
     }
 
-    fn handle_despawn_command(&mut self, id: EntityId) -> Result<(), DespawnError> {
-         if let Some(loc) = self.entity_locations.remove(&id) {
+    fn handle_despawn_command(&mut self, id: ::sillyecs::EntityId) -> Result<(), DespawnError> {
+         if let Some(loc) = self.archetypes.entity_locations.remove(&id) {
             let result = match loc.archetype {
                 EnvironmentArchetype::ID => {
                     self.archetypes
+                        .collection
                         .environment
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, EnvironmentArchetype::ID))?
                 }
                 CameraArchetype::ID => {
                     self.archetypes
+                        .collection
                         .camera
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CameraArchetype::ID))?
                 }
                 DynamicLightArchetype::ID => {
                     self.archetypes
+                        .collection
                         .dynamic_light
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, DynamicLightArchetype::ID))?
                 }
                 TileArchetype::ID => {
                     self.archetypes
+                        .collection
                         .tile
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, TileArchetype::ID))?
                 }
                 CubeArchetype::ID => {
                     self.archetypes
+                        .collection
                         .cube
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, CubeArchetype::ID))?
                 }
                 PlayerArchetype::ID => {
                     self.archetypes
+                        .collection
                         .player
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, PlayerArchetype::ID))?
                 }
                 ForegroundObjectArchetype::ID => {
                     self.archetypes
+                        .collection
                         .foreground_object
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, ForegroundObjectArchetype::ID))?
                 }
                 BackgroundObjectArchetype::ID => {
                     self.archetypes
+                        .collection
                         .background_object
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, BackgroundObjectArchetype::ID))?
                 }
                 SceneBackgroundArchetype::ID => {
                     self.archetypes
+                        .collection
                         .scene_background
                         .drop_at_index(loc.index)
                         .map_err(|index| DespawnError::InvalidIndexInArchetype(index, SceneBackgroundArchetype::ID))?
@@ -2577,7 +3220,7 @@ impl<E, Q> MainWorld<E, Q> {
             };
 
             if let Some(moved_entity) = result {
-                self.entity_locations.insert(moved_entity, EntityArchetypeRef {
+                self.archetypes.entity_locations.insert(moved_entity, EntityArchetypeRef {
                     archetype: loc.archetype,
                     index: loc.index
                 });
@@ -2634,7 +3277,7 @@ impl Default for DeltaTimers {
 
 #[derive(Debug)]
 pub enum DespawnError {
-    EntityNotFound(EntityId),
+    EntityNotFound(::sillyecs::EntityId),
     InvalidIndexInArchetype(usize, ArchetypeId)
 }
 
@@ -2732,13 +3375,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_environments(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .environment
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -2761,9 +3405,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .environment
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -2781,9 +3426,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&EnvironmentEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .environment
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -2794,13 +3440,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_cameras(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .camera
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -2823,9 +3470,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .camera
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -2843,9 +3491,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&CameraEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .camera
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -2856,13 +3505,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_dynamic_lights(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .dynamic_light
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -2885,9 +3535,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .dynamic_light
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -2905,9 +3556,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&DynamicLightEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .dynamic_light
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -2918,13 +3570,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_tiles(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .tile
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -2947,9 +3600,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .tile
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -2967,9 +3621,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&TileEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .tile
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -2980,13 +3635,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_cubes(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .cube
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -3009,9 +3665,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .cube
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -3029,9 +3686,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&CubeEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .cube
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -3042,13 +3700,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_players(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .player
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -3071,9 +3730,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .player
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -3091,9 +3751,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&PlayerEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .player
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -3104,13 +3765,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_foreground_objects(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .foreground_object
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -3133,9 +3795,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .foreground_object
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -3153,9 +3816,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&ForegroundObjectEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .foreground_object
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -3166,13 +3830,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_background_objects(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .background_object
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -3195,9 +3860,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .background_object
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -3215,9 +3881,10 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&BackgroundObjectEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .background_object
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
     }
@@ -3228,13 +3895,14 @@ impl<E, Q> MainWorld<E, Q> {
     #[allow(dead_code)]
     pub fn frontload_scene_backgrounds(
         &mut self,
-        entities_to_frontload: &[EntityId],
+        entities_to_frontload: &[::sillyecs::EntityId],
         previous_frontload_pivot: Option<usize>
     ) -> usize {
         self.archetypes
+            .collection
             .scene_background
             .frontload(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 entities_to_frontload,
                 previous_frontload_pivot
             )
@@ -3257,9 +3925,10 @@ impl<E, Q> MainWorld<E, Q> {
         I: AsRef<[usize]>
     {
         self.archetypes
+            .collection
             .scene_background
             .frontload_by_indices_sorted(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 indices_to_frontload,
                 previous_frontload_pivot
             )
@@ -3277,10 +3946,3071 @@ impl<E, Q> MainWorld<E, Q> {
         for<'archetype> F: FnMut(&SceneBackgroundEntityRef<'archetype>) -> bool,
     {
         self.archetypes
+            .collection
             .scene_background
             .frontload_scan(
-                &mut self.entity_locations,
+                &mut self.archetypes.entity_locations,
                 should_frontload
             )
+    }
+}
+
+pub trait ComponentAccess {
+
+    /// Gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TimeOfDayComponent> {
+        None
+    }
+
+    /// Gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&SunComponent> {
+        None
+    }
+
+    /// Gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&SkydomeComponent> {
+        None
+    }
+
+    /// Gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&AmbientLightComponent> {
+        None
+    }
+
+    /// Gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&StarsComponent> {
+        None
+    }
+
+    /// Gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&CameraComponent> {
+        None
+    }
+
+    /// Gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&CameraFpsControllerComponent> {
+        None
+    }
+
+    /// Gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&PositionComponent> {
+        None
+    }
+
+    /// Gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TransformComponent> {
+        None
+    }
+
+    /// Gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&VelocityComponent> {
+        None
+    }
+
+    /// Gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TileComponent> {
+        None
+    }
+
+    /// Gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&HealthComponent> {
+        None
+    }
+
+    /// Gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ColliderComponent> {
+        None
+    }
+
+    /// Gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ModelComponent> {
+        None
+    }
+
+    /// Gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ColorComponent> {
+        None
+    }
+
+    /// Gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&BackgroundColorComponent> {
+        None
+    }
+
+    /// Gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&DynamicLightComponent> {
+        None
+    }
+}
+
+pub trait ComponentAccessMut: ComponentAccess {
+
+    /// Mutably gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TimeOfDayComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut SunComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut SkydomeComponent> {
+        None
+    }
+
+    /// Mutably gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut AmbientLightComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut StarsComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut CameraComponent> {
+        None
+    }
+
+    /// Mutably gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut PositionComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TransformComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut VelocityComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TileComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut HealthComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ColliderComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ModelComponent> {
+        None
+    }
+
+    /// Mutably gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ColorComponent> {
+        None
+    }
+
+    /// Mutably gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut BackgroundColorComponent> {
+        None
+    }
+
+    /// Mutably gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut DynamicLightComponent> {
+        None
+    }
+}
+
+pub trait EntityAccess {
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<EnvironmentEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CameraEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<DynamicLightEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<TileEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CubeEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<PlayerEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<ForegroundObjectEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<BackgroundObjectEntityRef>
+    {
+        None
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<SceneBackgroundEntityRef>
+    {
+        None
+    }
+}
+
+pub trait EntityAccessMut: EntityAccess {
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<EnvironmentEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CameraEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<DynamicLightEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<TileEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CubeEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<PlayerEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<ForegroundObjectEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<BackgroundObjectEntityMut>
+    {
+        None
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<SceneBackgroundEntityMut>
+    {
+        None
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> EntityAccess for MainWorld<E, Q> {
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<EnvironmentEntityRef>
+    {
+        EntityAccess::get_environment_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CameraEntityRef>
+    {
+        EntityAccess::get_camera_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<DynamicLightEntityRef>
+    {
+        EntityAccess::get_dynamic_light_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<TileEntityRef>
+    {
+        EntityAccess::get_tile_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CubeEntityRef>
+    {
+        EntityAccess::get_cube_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<PlayerEntityRef>
+    {
+        EntityAccess::get_player_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<ForegroundObjectEntityRef>
+    {
+        EntityAccess::get_foreground_object_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<BackgroundObjectEntityRef>
+    {
+        EntityAccess::get_background_object_entity(&self.archetypes, entity_id)
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<SceneBackgroundEntityRef>
+    {
+        EntityAccess::get_scene_background_entity(&self.archetypes, entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_environment_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<EnvironmentEntityMut>
+    {
+        EntityAccessMut::get_environment_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CameraEntityMut>
+    {
+        EntityAccessMut::get_camera_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<DynamicLightEntityMut>
+    {
+        EntityAccessMut::get_dynamic_light_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<TileEntityMut>
+    {
+        EntityAccessMut::get_tile_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_cube_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CubeEntityMut>
+    {
+        EntityAccessMut::get_cube_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_player_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<PlayerEntityMut>
+    {
+        EntityAccessMut::get_player_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_foreground_object_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<ForegroundObjectEntityMut>
+    {
+        EntityAccessMut::get_foreground_object_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_object_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<BackgroundObjectEntityMut>
+    {
+        EntityAccessMut::get_background_object_entity_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_scene_background_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<SceneBackgroundEntityMut>
+    {
+        EntityAccessMut::get_scene_background_entity_mut(&mut self.archetypes, entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> ComponentAccess for MainWorld<E, Q> {
+
+    /// Gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&AmbientLightComponent> {
+        ComponentAccess::get_ambient_light_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&BackgroundColorComponent> {
+        ComponentAccess::get_background_color_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&CameraComponent> {
+        ComponentAccess::get_camera_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&CameraFpsControllerComponent> {
+        ComponentAccess::get_camera_fps_controller_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ColliderComponent> {
+        ComponentAccess::get_collider_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ColorComponent> {
+        ComponentAccess::get_color_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&DynamicLightComponent> {
+        ComponentAccess::get_dynamic_light_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&HealthComponent> {
+        ComponentAccess::get_health_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ModelComponent> {
+        ComponentAccess::get_model_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&PositionComponent> {
+        ComponentAccess::get_position_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&SkydomeComponent> {
+        ComponentAccess::get_skydome_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&StarsComponent> {
+        ComponentAccess::get_stars_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&SunComponent> {
+        ComponentAccess::get_sun_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TileComponent> {
+        ComponentAccess::get_tile_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TimeOfDayComponent> {
+        ComponentAccess::get_time_of_day_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TransformComponent> {
+        ComponentAccess::get_transform_component(&self.archetypes, entity_id)
+    }
+
+    /// Gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&VelocityComponent> {
+        ComponentAccess::get_velocity_component(&self.archetypes, entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl<E, Q> ComponentAccessMut for MainWorld<E, Q> {
+
+    /// Mutably gets the [`AmbientLight`](AmbientLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_ambient_light_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut AmbientLightComponent> {
+        ComponentAccessMut::get_ambient_light_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`BackgroundColor`](BackgroundColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_background_color_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut BackgroundColorComponent> {
+        ComponentAccessMut::get_background_color_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Camera`](CameraComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut CameraComponent> {
+        ComponentAccessMut::get_camera_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`CameraFpsController`](CameraFpsControllerComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_camera_fps_controller_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        ComponentAccessMut::get_camera_fps_controller_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Collider`](ColliderComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_collider_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ColliderComponent> {
+        ComponentAccessMut::get_collider_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Color`](ColorComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_color_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ColorComponent> {
+        ComponentAccessMut::get_color_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`DynamicLight`](DynamicLightComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_dynamic_light_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut DynamicLightComponent> {
+        ComponentAccessMut::get_dynamic_light_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Health`](HealthComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_health_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut HealthComponent> {
+        ComponentAccessMut::get_health_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Model`](ModelComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_model_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ModelComponent> {
+        ComponentAccessMut::get_model_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Position`](PositionComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_position_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut PositionComponent> {
+        ComponentAccessMut::get_position_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Skydome`](SkydomeComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_skydome_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut SkydomeComponent> {
+        ComponentAccessMut::get_skydome_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Stars`](StarsComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_stars_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut StarsComponent> {
+        ComponentAccessMut::get_stars_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Sun`](SunComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_sun_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut SunComponent> {
+        ComponentAccessMut::get_sun_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Tile`](TileComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_tile_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TileComponent> {
+        ComponentAccessMut::get_tile_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`TimeOfDay`](TimeOfDayComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_time_of_day_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TimeOfDayComponent> {
+        ComponentAccessMut::get_time_of_day_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Transform`](TransformComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_transform_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TransformComponent> {
+        ComponentAccessMut::get_transform_component_mut(&mut self.archetypes, entity_id)
+    }
+
+    /// Mutably gets the [`Velocity`](VelocityComponent) component of the specified entity.
+    #[allow(dead_code, unused)]
+    #[inline]
+    fn get_velocity_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut VelocityComponent> {
+        ComponentAccessMut::get_velocity_component_mut(&mut self.archetypes, entity_id)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl EntityAccess for MainWorldArchetypes {
+
+    /// Accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_environment_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<EnvironmentEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != EnvironmentArchetype::ID {
+            return None;
+        }
+        self.collection
+            .environment
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_camera_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CameraEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CameraArchetype::ID {
+            return None;
+        }
+        self.collection
+            .camera
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_dynamic_light_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<DynamicLightEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != DynamicLightArchetype::ID {
+            return None;
+        }
+        self.collection
+            .dynamic_light
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_tile_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<TileEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != TileArchetype::ID {
+            return None;
+        }
+        self.collection
+            .tile
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_cube_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CubeEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CubeArchetype::ID {
+            return None;
+        }
+        self.collection
+            .cube
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_player_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<PlayerEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != PlayerArchetype::ID {
+            return None;
+        }
+        self.collection
+            .player
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_foreground_object_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<ForegroundObjectEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != ForegroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .foreground_object
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_background_object_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<BackgroundObjectEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != BackgroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .background_object
+            .get_entity_at(ear.index)
+    }
+
+    /// Accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_scene_background_entity(
+        &self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<SceneBackgroundEntityRef>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != SceneBackgroundArchetype::ID {
+            return None;
+        }
+        self.collection
+            .scene_background
+            .get_entity_at(ear.index)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl EntityAccessMut for MainWorldArchetypes {
+
+    /// Mutably accesses the `Environment` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_environment_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<EnvironmentEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != EnvironmentArchetype::ID {
+            return None;
+        }
+        self.collection
+            .environment
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Camera` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_camera_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CameraEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CameraArchetype::ID {
+            return None;
+        }
+        self.collection
+            .camera
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `DynamicLight` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_dynamic_light_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<DynamicLightEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != DynamicLightArchetype::ID {
+            return None;
+        }
+        self.collection
+            .dynamic_light
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Tile` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_tile_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<TileEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != TileArchetype::ID {
+            return None;
+        }
+        self.collection
+            .tile
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Cube` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_cube_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<CubeEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != CubeArchetype::ID {
+            return None;
+        }
+        self.collection
+            .cube
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `Player` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_player_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<PlayerEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != PlayerArchetype::ID {
+            return None;
+        }
+        self.collection
+            .player
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `ForegroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_foreground_object_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<ForegroundObjectEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != ForegroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .foreground_object
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `BackgroundObject` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_background_object_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<BackgroundObjectEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != BackgroundObjectArchetype::ID {
+            return None;
+        }
+        self.collection
+            .background_object
+            .get_entity_at_mut(ear.index)
+    }
+
+    /// Mutably accesses the `SceneBackground` entity with the given ID if it exists in this archetype.
+    #[allow(dead_code, unused)]
+    fn get_scene_background_entity_mut(
+        &mut self,
+        entity_id: ::sillyecs::EntityId
+    ) -> Option<SceneBackgroundEntityMut>
+    {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        if ear.archetype != SceneBackgroundArchetype::ID {
+            return None;
+        }
+        self.collection
+            .scene_background
+            .get_entity_at_mut(ear.index)
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl ComponentAccess for MainWorldArchetypes {
+
+    /// Gets the `AmbientLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_ambient_light_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&AmbientLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_ambient_light_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `BackgroundColor` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_background_color_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&BackgroundColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            SceneBackgroundArchetype::ID => self.collection.scene_background.get_background_color_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Camera` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&CameraComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `CameraFpsController` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_fps_controller_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&CameraFpsControllerComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_fps_controller_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Collider` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_collider_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ColliderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_collider_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Color` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_color_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_color_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `DynamicLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_dynamic_light_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&DynamicLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_dynamic_light_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Health` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_health_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&HealthComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_health_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Model` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_model_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&ModelComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_model_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Position` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_position_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&PositionComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Skydome` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_skydome_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&SkydomeComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_skydome_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Stars` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_stars_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&StarsComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_stars_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Sun` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_sun_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&SunComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_sun_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Tile` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_tile_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TileComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            TileArchetype::ID => self.collection.tile.get_tile_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `TimeOfDay` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_time_of_day_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TimeOfDayComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_time_of_day_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Transform` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_transform_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&TransformComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_transform_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Gets the `Velocity` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_velocity_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&VelocityComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_velocity_component_at(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+}
+
+//noinspection RsSortImplTraitMembers
+impl ComponentAccessMut for MainWorldArchetypes {
+
+    /// Mutably gets the `AmbientLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_ambient_light_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut AmbientLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_ambient_light_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `BackgroundColor` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_background_color_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut BackgroundColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            SceneBackgroundArchetype::ID => self.collection.scene_background.get_background_color_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Camera` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut CameraComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `CameraFpsController` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_camera_fps_controller_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut CameraFpsControllerComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CameraArchetype::ID => self.collection.camera.get_camera_fps_controller_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Collider` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_collider_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ColliderComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_collider_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Color` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_color_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ColorComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_color_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `DynamicLight` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_dynamic_light_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut DynamicLightComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_dynamic_light_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Health` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_health_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut HealthComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_health_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Model` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_model_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut ModelComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_model_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Position` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_position_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut PositionComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
+            BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Skydome` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_skydome_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut SkydomeComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_skydome_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Stars` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_stars_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut StarsComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_stars_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Sun` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_sun_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut SunComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_sun_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Tile` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_tile_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TileComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            TileArchetype::ID => self.collection.tile.get_tile_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `TimeOfDay` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_time_of_day_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TimeOfDayComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            EnvironmentArchetype::ID => self.collection.environment.get_time_of_day_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Transform` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_transform_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut TransformComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            CubeArchetype::ID => self.collection.cube.get_transform_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+
+    /// Mutably gets the `Velocity` component of the specified entity.
+    #[allow(dead_code)]
+    fn get_velocity_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut VelocityComponent> {
+        let ear = self.entity_locations.get(&entity_id)?.clone();
+        match ear.archetype {
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
+            CubeArchetype::ID => self.collection.cube.get_velocity_component_at_mut(ear.index),
+            #[allow(dead_code)]
+            _ => None
+        }
+    }
+}
+
+impl<E, Q, U> WorldUserCommand for MainWorld<E, Q>
+where
+    Q: WorldUserCommand<UserCommand = U>,
+    U: core::marker::Send + core::fmt::Debug
+{
+    type UserCommand = U;
+}
+
+/// An iterator over [`EntityId`](::sillyecs::EntityId) values.
+#[allow(dead_code)]
+pub type EntityIdIter<'a> = ::sillyecs::FlattenCopySlices<'a, ::sillyecs::EntityId>;
+
+/// An iterator over all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TimeOfDayComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TimeOfDayComponent>;
+
+/// A mutable iterator over all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TimeOfDayComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TimeOfDayComponent>;
+
+/// A trait for types allowing to iterate all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTimeOfDayComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TimeOfDayComponent>;
+
+    /// Iterates all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+    fn iter_time_of_days(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTimeOfDayEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+    fn iter_time_of_day_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTimeOfDayComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TimeOfDayComponent>;
+
+    /// Iterates all [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+    fn iter_time_of_days_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type SunComponentIter<'a> = ::sillyecs::FlattenSlices<'a, SunComponent>;
+
+/// A mutable iterator over all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type SunComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, SunComponent>;
+
+/// A trait for types allowing to iterate all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterSunComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a SunComponent>;
+
+    /// Iterates all [`Sun`](SunComponent) components, regardless of archetype.
+    fn iter_suns(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterSunEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Sun`](SunComponent) components, regardless of archetype.
+    fn iter_sun_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Sun`](SunComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutSunComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut SunComponent>;
+
+    /// Iterates all [`Sun`](SunComponent) components, regardless of archetype.
+    fn iter_suns_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type SkydomeComponentIter<'a> = ::sillyecs::FlattenSlices<'a, SkydomeComponent>;
+
+/// A mutable iterator over all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type SkydomeComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, SkydomeComponent>;
+
+/// A trait for types allowing to iterate all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterSkydomeComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a SkydomeComponent>;
+
+    /// Iterates all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+    fn iter_skydomes(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterSkydomeEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Skydome`](SkydomeComponent) components, regardless of archetype.
+    fn iter_skydome_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutSkydomeComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut SkydomeComponent>;
+
+    /// Iterates all [`Skydome`](SkydomeComponent) components, regardless of archetype.
+    fn iter_skydomes_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type AmbientLightComponentIter<'a> = ::sillyecs::FlattenSlices<'a, AmbientLightComponent>;
+
+/// A mutable iterator over all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type AmbientLightComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, AmbientLightComponent>;
+
+/// A trait for types allowing to iterate all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterAmbientLightComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a AmbientLightComponent>;
+
+    /// Iterates all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+    fn iter_ambient_lights(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterAmbientLightEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+    fn iter_ambient_light_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutAmbientLightComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut AmbientLightComponent>;
+
+    /// Iterates all [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+    fn iter_ambient_lights_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type StarsComponentIter<'a> = ::sillyecs::FlattenSlices<'a, StarsComponent>;
+
+/// A mutable iterator over all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type StarsComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, StarsComponent>;
+
+/// A trait for types allowing to iterate all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterStarsComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a StarsComponent>;
+
+    /// Iterates all [`Stars`](StarsComponent) components, regardless of archetype.
+    fn iter_stars(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterStarsEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Stars`](StarsComponent) components, regardless of archetype.
+    fn iter_stars_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Stars`](StarsComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutStarsComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut StarsComponent>;
+
+    /// Iterates all [`Stars`](StarsComponent) components, regardless of archetype.
+    fn iter_stars_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type CameraComponentIter<'a> = ::sillyecs::FlattenSlices<'a, CameraComponent>;
+
+/// A mutable iterator over all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type CameraComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, CameraComponent>;
+
+/// A trait for types allowing to iterate all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterCameraComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a CameraComponent>;
+
+    /// Iterates all [`Camera`](CameraComponent) components, regardless of archetype.
+    fn iter_cameras(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterCameraEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Camera`](CameraComponent) components, regardless of archetype.
+    fn iter_camera_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Camera`](CameraComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutCameraComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut CameraComponent>;
+
+    /// Iterates all [`Camera`](CameraComponent) components, regardless of archetype.
+    fn iter_cameras_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type CameraFpsControllerComponentIter<'a> = ::sillyecs::FlattenSlices<'a, CameraFpsControllerComponent>;
+
+/// A mutable iterator over all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type CameraFpsControllerComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, CameraFpsControllerComponent>;
+
+/// A trait for types allowing to iterate all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterCameraFpsControllerComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a CameraFpsControllerComponent>;
+
+    /// Iterates all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+    fn iter_camera_fps_controllers(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterCameraFpsControllerEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+    fn iter_camera_fps_controller_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutCameraFpsControllerComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut CameraFpsControllerComponent>;
+
+    /// Iterates all [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+    fn iter_camera_fps_controllers_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type PositionComponentIter<'a> = ::sillyecs::FlattenSlices<'a, PositionComponent>;
+
+/// A mutable iterator over all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type PositionComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, PositionComponent>;
+
+/// A trait for types allowing to iterate all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterPositionComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a PositionComponent>;
+
+    /// Iterates all [`Position`](PositionComponent) components, regardless of archetype.
+    fn iter_positions(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterPositionEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Position`](PositionComponent) components, regardless of archetype.
+    fn iter_position_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Position`](PositionComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutPositionComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut PositionComponent>;
+
+    /// Iterates all [`Position`](PositionComponent) components, regardless of archetype.
+    fn iter_positions_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TransformComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TransformComponent>;
+
+/// A mutable iterator over all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TransformComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TransformComponent>;
+
+/// A trait for types allowing to iterate all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTransformComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TransformComponent>;
+
+    /// Iterates all [`Transform`](TransformComponent) components, regardless of archetype.
+    fn iter_transforms(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTransformEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Transform`](TransformComponent) components, regardless of archetype.
+    fn iter_transform_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Transform`](TransformComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTransformComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TransformComponent>;
+
+    /// Iterates all [`Transform`](TransformComponent) components, regardless of archetype.
+    fn iter_transforms_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type VelocityComponentIter<'a> = ::sillyecs::FlattenSlices<'a, VelocityComponent>;
+
+/// A mutable iterator over all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type VelocityComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, VelocityComponent>;
+
+/// A trait for types allowing to iterate all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterVelocityComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a VelocityComponent>;
+
+    /// Iterates all [`Velocity`](VelocityComponent) components, regardless of archetype.
+    fn iter_velocities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterVelocityEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Velocity`](VelocityComponent) components, regardless of archetype.
+    fn iter_velocity_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Velocity`](VelocityComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutVelocityComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut VelocityComponent>;
+
+    /// Iterates all [`Velocity`](VelocityComponent) components, regardless of archetype.
+    fn iter_velocities_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type TileComponentIter<'a> = ::sillyecs::FlattenSlices<'a, TileComponent>;
+
+/// A mutable iterator over all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type TileComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, TileComponent>;
+
+/// A trait for types allowing to iterate all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTileComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a TileComponent>;
+
+    /// Iterates all [`Tile`](TileComponent) components, regardless of archetype.
+    fn iter_tiles(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterTileEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Tile`](TileComponent) components, regardless of archetype.
+    fn iter_tile_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Tile`](TileComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutTileComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut TileComponent>;
+
+    /// Iterates all [`Tile`](TileComponent) components, regardless of archetype.
+    fn iter_tiles_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type HealthComponentIter<'a> = ::sillyecs::FlattenSlices<'a, HealthComponent>;
+
+/// A mutable iterator over all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type HealthComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, HealthComponent>;
+
+/// A trait for types allowing to iterate all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterHealthComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a HealthComponent>;
+
+    /// Iterates all [`Health`](HealthComponent) components, regardless of archetype.
+    fn iter_healths(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterHealthEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Health`](HealthComponent) components, regardless of archetype.
+    fn iter_health_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Health`](HealthComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutHealthComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut HealthComponent>;
+
+    /// Iterates all [`Health`](HealthComponent) components, regardless of archetype.
+    fn iter_healths_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type ColliderComponentIter<'a> = ::sillyecs::FlattenSlices<'a, ColliderComponent>;
+
+/// A mutable iterator over all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type ColliderComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, ColliderComponent>;
+
+/// A trait for types allowing to iterate all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterColliderComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a ColliderComponent>;
+
+    /// Iterates all [`Collider`](ColliderComponent) components, regardless of archetype.
+    fn iter_colliders(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterColliderEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Collider`](ColliderComponent) components, regardless of archetype.
+    fn iter_collider_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Collider`](ColliderComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutColliderComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut ColliderComponent>;
+
+    /// Iterates all [`Collider`](ColliderComponent) components, regardless of archetype.
+    fn iter_colliders_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type ModelComponentIter<'a> = ::sillyecs::FlattenSlices<'a, ModelComponent>;
+
+/// A mutable iterator over all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type ModelComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, ModelComponent>;
+
+/// A trait for types allowing to iterate all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterModelComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a ModelComponent>;
+
+    /// Iterates all [`Model`](ModelComponent) components, regardless of archetype.
+    fn iter_models(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterModelEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Model`](ModelComponent) components, regardless of archetype.
+    fn iter_model_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Model`](ModelComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutModelComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut ModelComponent>;
+
+    /// Iterates all [`Model`](ModelComponent) components, regardless of archetype.
+    fn iter_models_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type ColorComponentIter<'a> = ::sillyecs::FlattenSlices<'a, ColorComponent>;
+
+/// A mutable iterator over all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type ColorComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, ColorComponent>;
+
+/// A trait for types allowing to iterate all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterColorComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a ColorComponent>;
+
+    /// Iterates all [`Color`](ColorComponent) components, regardless of archetype.
+    fn iter_colors(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterColorEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`Color`](ColorComponent) components, regardless of archetype.
+    fn iter_color_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`Color`](ColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutColorComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut ColorComponent>;
+
+    /// Iterates all [`Color`](ColorComponent) components, regardless of archetype.
+    fn iter_colors_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type BackgroundColorComponentIter<'a> = ::sillyecs::FlattenSlices<'a, BackgroundColorComponent>;
+
+/// A mutable iterator over all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type BackgroundColorComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, BackgroundColorComponent>;
+
+/// A trait for types allowing to iterate all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterBackgroundColorComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a BackgroundColorComponent>;
+
+    /// Iterates all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+    fn iter_background_colors(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterBackgroundColorEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+    fn iter_background_color_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutBackgroundColorComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut BackgroundColorComponent>;
+
+    /// Iterates all [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+    fn iter_background_colors_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+/// An iterator over all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+pub type DynamicLightComponentIter<'a> = ::sillyecs::FlattenSlices<'a, DynamicLightComponent>;
+
+/// A mutable iterator over all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+// TODO: Simplify to ::core::slice::IterMut<> if only one archetype has this component.
+pub type DynamicLightComponentIterMut<'a> = ::sillyecs::FlattenSlicesMut<'a, DynamicLightComponent>;
+
+/// A trait for types allowing to iterate all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterDynamicLightComponents<'a> {
+    type Iterator: core::iter::Iterator<Item = &'a DynamicLightComponent>;
+
+    /// Iterates all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+    fn iter_dynamic_lights(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate the [`EntityId`](::sillyecs::EntityId) values
+/// of all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterDynamicLightEntities<'a> {
+    type Iterator: core::iter::Iterator<Item = ::sillyecs::EntityId>;
+
+    /// Iterates all entity IDs of [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+    fn iter_dynamic_light_entities(&'a self) -> Self::Iterator;
+}
+
+/// A trait for types allowing to iterate all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+#[allow(dead_code)]
+pub trait IterMutDynamicLightComponents<'a> {
+    type IteratorMut: core::iter::Iterator<Item = &'a mut DynamicLightComponent>;
+
+    /// Iterates all [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+    fn iter_dynamic_lights_mut(&'a mut self) -> Self::IteratorMut;
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterAmbientLightComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = AmbientLightComponentIter<'a>;
+
+    /// Iterates over the [`AmbientLight`](AmbientLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_ambient_lights(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        AmbientLightComponentIter::new([
+            &self.archetypes.collection.environment.ambient_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterAmbientLightEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`AmbientLight`](AmbientLightComponent) components, regardless of archetype.
+    fn iter_ambient_light_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.environment.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutAmbientLightComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = AmbientLightComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`AmbientLight`](AmbientLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_ambient_lights_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        AmbientLightComponentIterMut::new([
+            &mut self.archetypes.collection.environment.ambient_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterBackgroundColorComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = BackgroundColorComponentIter<'a>;
+
+    /// Iterates over the [`BackgroundColor`](BackgroundColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`SceneBackground`](SceneBackgroundArchetype)
+    fn iter_background_colors(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        BackgroundColorComponentIter::new([
+            &self.archetypes.collection.scene_background.background_colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterBackgroundColorEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`BackgroundColor`](BackgroundColorComponent) components, regardless of archetype.
+    fn iter_background_color_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.scene_background.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutBackgroundColorComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = BackgroundColorComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`BackgroundColor`](BackgroundColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`SceneBackground`](SceneBackgroundArchetype)
+    fn iter_background_colors_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        BackgroundColorComponentIterMut::new([
+            &mut self.archetypes.collection.scene_background.background_colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterCameraComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = CameraComponentIter<'a>;
+
+    /// Iterates over the [`Camera`](CameraComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_cameras(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraComponentIter::new([
+            &self.archetypes.collection.camera.cameras,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterCameraEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Camera`](CameraComponent) components, regardless of archetype.
+    fn iter_camera_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.camera.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutCameraComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = CameraComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Camera`](CameraComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_cameras_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraComponentIterMut::new([
+            &mut self.archetypes.collection.camera.cameras,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterCameraFpsControllerComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = CameraFpsControllerComponentIter<'a>;
+
+    /// Iterates over the [`CameraFpsController`](CameraFpsControllerComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_camera_fps_controllers(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraFpsControllerComponentIter::new([
+            &self.archetypes.collection.camera.camera_fps_controllers,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterCameraFpsControllerEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`CameraFpsController`](CameraFpsControllerComponent) components, regardless of archetype.
+    fn iter_camera_fps_controller_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.camera.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutCameraFpsControllerComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = CameraFpsControllerComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`CameraFpsController`](CameraFpsControllerComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Camera`](CameraArchetype)
+    fn iter_camera_fps_controllers_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        CameraFpsControllerComponentIterMut::new([
+            &mut self.archetypes.collection.camera.camera_fps_controllers,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterColliderComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = ColliderComponentIter<'a>;
+
+    /// Iterates over the [`Collider`](ColliderComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    fn iter_colliders(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColliderComponentIter::new([
+            &self.archetypes.collection.foreground_object.colliders,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterColliderEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Collider`](ColliderComponent) components, regardless of archetype.
+    fn iter_collider_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.foreground_object.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutColliderComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = ColliderComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Collider`](ColliderComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    fn iter_colliders_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColliderComponentIterMut::new([
+            &mut self.archetypes.collection.foreground_object.colliders,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterColorComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = ColorComponentIter<'a>;
+
+    /// Iterates over the [`Color`](ColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_colors(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColorComponentIter::new([
+            &self.archetypes.collection.dynamic_light.colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterColorEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Color`](ColorComponent) components, regardless of archetype.
+    fn iter_color_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.dynamic_light.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutColorComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = ColorComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Color`](ColorComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_colors_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ColorComponentIterMut::new([
+            &mut self.archetypes.collection.dynamic_light.colors,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterDynamicLightComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = DynamicLightComponentIter<'a>;
+
+    /// Iterates over the [`DynamicLight`](DynamicLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_dynamic_lights(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        DynamicLightComponentIter::new([
+            &self.archetypes.collection.dynamic_light.dynamic_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterDynamicLightEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`DynamicLight`](DynamicLightComponent) components, regardless of archetype.
+    fn iter_dynamic_light_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.dynamic_light.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutDynamicLightComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = DynamicLightComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`DynamicLight`](DynamicLightComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    fn iter_dynamic_lights_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        DynamicLightComponentIterMut::new([
+            &mut self.archetypes.collection.dynamic_light.dynamic_lights,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterHealthComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = HealthComponentIter<'a>;
+
+    /// Iterates over the [`Health`](HealthComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Player`](PlayerArchetype)
+    fn iter_healths(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        HealthComponentIter::new([
+            &self.archetypes.collection.player.healths,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterHealthEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Health`](HealthComponent) components, regardless of archetype.
+    fn iter_health_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.player.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutHealthComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = HealthComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Health`](HealthComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Player`](PlayerArchetype)
+    fn iter_healths_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        HealthComponentIterMut::new([
+            &mut self.archetypes.collection.player.healths,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterModelComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = ModelComponentIter<'a>;
+
+    /// Iterates over the [`Model`](ModelComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_models(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ModelComponentIter::new([
+            &self.archetypes.collection.cube.models,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterModelEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Model`](ModelComponent) components, regardless of archetype.
+    fn iter_model_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.cube.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutModelComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = ModelComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Model`](ModelComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_models_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        ModelComponentIterMut::new([
+            &mut self.archetypes.collection.cube.models,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterPositionComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = PositionComponentIter<'a>;
+
+    /// Iterates over the [`Position`](PositionComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    /// - [`Tile`](TileArchetype)
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    /// - [`BackgroundObject`](BackgroundObjectArchetype)
+    fn iter_positions(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        PositionComponentIter::new([
+            &self.archetypes.collection.dynamic_light.positions,
+            &self.archetypes.collection.tile.positions,
+            &self.archetypes.collection.cube.positions,
+            &self.archetypes.collection.player.positions,
+            &self.archetypes.collection.foreground_object.positions,
+            &self.archetypes.collection.background_object.positions,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterPositionEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Position`](PositionComponent) components, regardless of archetype.
+    fn iter_position_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.dynamic_light.entities,
+            &self.archetypes.collection.tile.entities,
+            &self.archetypes.collection.cube.entities,
+            &self.archetypes.collection.player.entities,
+            &self.archetypes.collection.foreground_object.entities,
+            &self.archetypes.collection.background_object.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutPositionComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = PositionComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Position`](PositionComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`DynamicLight`](DynamicLightArchetype)
+    /// - [`Tile`](TileArchetype)
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    /// - [`ForegroundObject`](ForegroundObjectArchetype)
+    /// - [`BackgroundObject`](BackgroundObjectArchetype)
+    fn iter_positions_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        PositionComponentIterMut::new([
+            &mut self.archetypes.collection.dynamic_light.positions,
+            &mut self.archetypes.collection.tile.positions,
+            &mut self.archetypes.collection.cube.positions,
+            &mut self.archetypes.collection.player.positions,
+            &mut self.archetypes.collection.foreground_object.positions,
+            &mut self.archetypes.collection.background_object.positions,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterSkydomeComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = SkydomeComponentIter<'a>;
+
+    /// Iterates over the [`Skydome`](SkydomeComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_skydomes(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SkydomeComponentIter::new([
+            &self.archetypes.collection.environment.skydomes,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterSkydomeEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Skydome`](SkydomeComponent) components, regardless of archetype.
+    fn iter_skydome_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.environment.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutSkydomeComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = SkydomeComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Skydome`](SkydomeComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_skydomes_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SkydomeComponentIterMut::new([
+            &mut self.archetypes.collection.environment.skydomes,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterStarsComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = StarsComponentIter<'a>;
+
+    /// Iterates over the [`Stars`](StarsComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_stars(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        StarsComponentIter::new([
+            &self.archetypes.collection.environment.stars,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterStarsEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Stars`](StarsComponent) components, regardless of archetype.
+    fn iter_stars_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.environment.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutStarsComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = StarsComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Stars`](StarsComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_stars_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        StarsComponentIterMut::new([
+            &mut self.archetypes.collection.environment.stars,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterSunComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = SunComponentIter<'a>;
+
+    /// Iterates over the [`Sun`](SunComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_suns(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SunComponentIter::new([
+            &self.archetypes.collection.environment.suns,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterSunEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Sun`](SunComponent) components, regardless of archetype.
+    fn iter_sun_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.environment.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutSunComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = SunComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Sun`](SunComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_suns_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        SunComponentIterMut::new([
+            &mut self.archetypes.collection.environment.suns,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTileComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TileComponentIter<'a>;
+
+    /// Iterates over the [`Tile`](TileComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Tile`](TileArchetype)
+    fn iter_tiles(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TileComponentIter::new([
+            &self.archetypes.collection.tile.tiles,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTileEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Tile`](TileComponent) components, regardless of archetype.
+    fn iter_tile_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.tile.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTileComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TileComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Tile`](TileComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Tile`](TileArchetype)
+    fn iter_tiles_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TileComponentIterMut::new([
+            &mut self.archetypes.collection.tile.tiles,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTimeOfDayComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TimeOfDayComponentIter<'a>;
+
+    /// Iterates over the [`TimeOfDay`](TimeOfDayComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_time_of_days(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TimeOfDayComponentIter::new([
+            &self.archetypes.collection.environment.time_of_days,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTimeOfDayEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`TimeOfDay`](TimeOfDayComponent) components, regardless of archetype.
+    fn iter_time_of_day_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.environment.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTimeOfDayComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TimeOfDayComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`TimeOfDay`](TimeOfDayComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Environment`](EnvironmentArchetype)
+    fn iter_time_of_days_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TimeOfDayComponentIterMut::new([
+            &mut self.archetypes.collection.environment.time_of_days,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTransformComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = TransformComponentIter<'a>;
+
+    /// Iterates over the [`Transform`](TransformComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_transforms(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TransformComponentIter::new([
+            &self.archetypes.collection.cube.transforms,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterTransformEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Transform`](TransformComponent) components, regardless of archetype.
+    fn iter_transform_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.cube.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutTransformComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = TransformComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Transform`](TransformComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    fn iter_transforms_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        TransformComponentIterMut::new([
+            &mut self.archetypes.collection.cube.transforms,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterVelocityComponents<'a> for MainWorld<E, Q>
+{
+    type Iterator = VelocityComponentIter<'a>;
+
+    /// Iterates over the [`Velocity`](VelocityComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    fn iter_velocities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        VelocityComponentIter::new([
+            &self.archetypes.collection.cube.velocities,
+            &self.archetypes.collection.player.velocities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterVelocityEntities<'a> for MainWorld<E, Q>
+{
+    type Iterator = EntityIdIter<'a>;
+
+    /// Iterates all entity IDs of [`Velocity`](VelocityComponent) components, regardless of archetype.
+    fn iter_velocity_entities(&'a self) -> Self::Iterator {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        EntityIdIter::new([
+            &self.archetypes.collection.cube.entities,
+            &self.archetypes.collection.player.entities,
+        ])
+    }
+}
+
+#[allow(dead_code)]
+impl<'a, E, Q> IterMutVelocityComponents<'a> for MainWorld<E, Q>
+{
+    type IteratorMut = VelocityComponentIterMut<'a>;
+
+    /// Mutably iterates over the [`Velocity`](VelocityComponent) component of the following archetypes, in that order:
+    ///
+    /// - [`Cube`](CubeArchetype)
+    /// - [`Player`](PlayerArchetype)
+    fn iter_velocities_mut(&'a mut self) -> Self::IteratorMut {
+        // TODO: Simplify to ::core::slice::Iter<> if only one archetype has this component.
+        VelocityComponentIterMut::new([
+            &mut self.archetypes.collection.cube.velocities,
+            &mut self.archetypes.collection.player.velocities,
+        ])
     }
 }
