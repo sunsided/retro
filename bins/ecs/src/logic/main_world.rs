@@ -33,26 +33,26 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
         });
 
         self.spawn_camera(CameraEntityData {
-            camera: CameraComponent::new(CameraData {
+            camera: CameraData {
                 active: true,
                 ..Default::default()
-            }),
-            camera_fps_controller: CameraFpsControllerComponent::new(Default::default()),
+            },
+            camera_fps_controller: Default::default(),
         });
 
         self.spawn_dynamic_light(DynamicLightEntityData {
-            dynamic_light: DynamicLightComponent::new(DynamicLightData::default()),
-            color: ColorComponent::new(ColorData {
+            dynamic_light: DynamicLightData::default(),
+            color: ColorData {
                 r: 1.0,
                 g: 0.84,
                 b: 0.7,
                 a: 1.0,
-            }),
-            position: PositionComponent::new(PositionData {
+            },
+            position: PositionData {
                 x: 2.0,
                 y: 2.0,
                 z: 2.0,
-            }),
+            },
         });
 
         /*
