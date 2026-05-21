@@ -1,3 +1,7 @@
 /target
 .env
 *.txt
+
+# Local-only path overrides for git dependencies (e.g. against an in-tree
+# sillyecs checkout). Each developer creates their own.
+/.cargo/config.toml
