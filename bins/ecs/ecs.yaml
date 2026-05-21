@@ -19,7 +19,8 @@ phases:
     manual: true
     states:
       - use: WgpuRender
-        write: true
+        begin_phase: write
+        end_phase: write
 
 worlds:
   - name: Main
@@ -161,7 +162,8 @@ systems:
     states:
       - use: WgpuRender
       - use: ActiveCamera
-        write: true
+        default: none
+        system: write
     inputs:
       - Camera
 
@@ -176,7 +178,7 @@ systems:
       - Skydome
     states:
       - use: WgpuRender
-        write: true
+        default: write
 
   - name: RenderBackground
     phase: Render
@@ -184,7 +186,7 @@ systems:
       - BackgroundColor
     states:
       - use: WgpuRender
-        write: true
+        default: write
 
   - name: RenderSky
     phase: Render
@@ -194,7 +196,7 @@ systems:
       - Skydome
     states:
       - use: WgpuRender
-        write: true
+        default: write
 
   - name: Render
     phase: Render
@@ -206,7 +208,7 @@ systems:
       - Model
     states:
       - use: WgpuRender
-        write: true
+        default: write
 
   - name: TileRender
     phase: Render
@@ -217,7 +219,7 @@ systems:
       - Position
     states:
       - use: WgpuRender
-        write: true
+        default: write
 
   - name: DynamicLight
     context: true
@@ -226,7 +228,7 @@ systems:
       - Render
     states:
       - use: WgpuRender
-        write: true
+        default: write
     inputs:
       - Color
     outputs:
@@ -241,7 +243,7 @@ systems:
       - BackgroundColor
     states:
       - use: WgpuRender
-        write: true
+        default: write
 
 # TODO: List systems and their inputs and mutation targets. Generate traits that implement the signature.
 # TODO: Generate a function that loops all archetypes matching the signature of a given system
