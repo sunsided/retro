@@ -52,7 +52,7 @@ where
 { }
 
 
-/// A world  all archetypes.
+/// A world containing all archetypes.
 #[derive(Debug)]
 pub struct MainWorld<E, Q> {
     /// The archetypes.
@@ -1564,45 +1564,6 @@ impl<E, Q> MainWorld<E, Q> {
         Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         // System group 1 of 2
-        let is_ready = self.systems.time_of_day.is_ready(
-               &self.context,
-           );
-        if is_ready && self.systems.time_of_day.on_begin_phase(
-                &self.context,
-            )
-            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
-            .is_ok()
-        {
-            // Preflight
-            {
-                // System has no preflight step
-            }
-
-            // Systems
-            {
-                let time_of_day_outputs: [&mut [TimeOfDayComponent]; 1] = [
-                    &mut self.archetypes.collection.environment.time_of_days,
-                ];
-
-                // Apply TimeOfDaySystem to all archetypes
-                self.systems.time_of_day.apply_all(
-                    &self.context,
-                    time_of_day_outputs,
-                );
-            }
-
-            // Postflight
-            {
-                // System has no preflight step
-            }
-
-            self.systems.time_of_day.on_end_phase(
-                &self.context,
-            )
-            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_end_phase returned an error"))
-            .ok();
-        }
-        // System group 1 of 2
         let is_ready = self.systems.physics.is_ready(
                &self.context,
            );
@@ -1645,6 +1606,84 @@ impl<E, Q> MainWorld<E, Q> {
                 &self.context,
             )
             .inspect_err(|error| tracing::error!(?error, "PhysicsSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 1 of 2
+        let is_ready = self.systems.time_of_day.is_ready(
+               &self.context,
+           );
+        if is_ready && self.systems.time_of_day.on_begin_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let time_of_day_outputs: [&mut [TimeOfDayComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.time_of_days,
+                ];
+
+                // Apply TimeOfDaySystem to all archetypes
+                self.systems.time_of_day.apply_all(
+                    &self.context,
+                    time_of_day_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.time_of_day.on_end_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TimeOfDaySystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 2 of 2
+        let is_ready = self.systems.stars.is_ready(
+           );
+        if is_ready && self.systems.stars.on_begin_phase(
+            )
+            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                    &self.archetypes.collection.environment.time_of_days,
+                ];
+                let stars_outputs: [&mut [StarsComponent]; 1] = [
+                    &mut self.archetypes.collection.environment.stars,
+                ];
+
+                // Apply StarsSystem to all archetypes
+                self.systems.stars.apply_all(
+                    time_of_day_inputs,
+                    stars_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.stars.on_end_phase(
+            )
+            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 2 of 2
@@ -1694,45 +1733,6 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "SunSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 2 of 2
-        let is_ready = self.systems.stars.is_ready(
-           );
-        if is_ready && self.systems.stars.on_begin_phase(
-            )
-            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_begin_phase returned an error"))
-            .is_ok()
-        {
-            // Preflight
-            {
-                // System has no preflight step
-            }
-
-            // Systems
-            {
-                let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
-                    &self.archetypes.collection.environment.time_of_days,
-                ];
-                let stars_outputs: [&mut [StarsComponent]; 1] = [
-                    &mut self.archetypes.collection.environment.stars,
-                ];
-
-                // Apply StarsSystem to all archetypes
-                self.systems.stars.apply_all(
-                    time_of_day_inputs,
-                    stars_outputs,
-                );
-            }
-
-            // Postflight
-            {
-                // System has no preflight step
-            }
-
-            self.systems.stars.on_end_phase(
-            )
-            .inspect_err(|error| tracing::error!(?error, "StarsSystem::on_end_phase returned an error"))
-            .ok();
-        }
 
         // Process all commands.
         self.handle_commands();
@@ -1766,15 +1766,6 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 1
-        let is_time_of_day_ready = self.systems.time_of_day.is_ready(
-               &self.context,
-           );
-        let is_time_of_day_ready = is_time_of_day_ready &
-            self.systems.time_of_day.on_begin_phase(
-                &self.context,
-            )
-            .inspect_err(|error| tracing::error!(%error, "TimeOfDaySystem::on_begin_phase returned an error"))
-            .is_ok();
         let is_physics_ready = self.systems.physics.is_ready(
                &self.context,
            );
@@ -1784,37 +1775,20 @@ impl<E, Q> MainWorld<E, Q> {
             )
             .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_begin_phase returned an error"))
             .is_ok();
+        let is_time_of_day_ready = self.systems.time_of_day.is_ready(
+               &self.context,
+           );
+        let is_time_of_day_ready = is_time_of_day_ready &
+            self.systems.time_of_day.on_begin_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(%error, "TimeOfDaySystem::on_begin_phase returned an error"))
+            .is_ok();
 
         {
             // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-                if is_time_of_day_ready {
-                    s.spawn(|_| {
-                        // Preflight
-                        {
-                            // System has no preflight step
-                        }
-
-                        // Systems
-                        {
-                            let time_of_day_outputs: [&mut [TimeOfDayComponent]; 1] = [
-                                &mut self.archetypes.collection.environment.time_of_days,
-                            ];
-
-                            // Apply TimeOfDaySystem to all archetypes
-                            self.systems.time_of_day.apply_all(
-                                &self.context,
-                                time_of_day_outputs,
-                            );
-                        }
-
-                        // Postflight
-                        {
-                            // System has no preflight step
-                        }
-                    });
-                }
                 if is_physics_ready {
                     s.spawn(|_| {
                         // Preflight
@@ -1847,14 +1821,34 @@ impl<E, Q> MainWorld<E, Q> {
                         }
                     });
                 }
+                if is_time_of_day_ready {
+                    s.spawn(|_| {
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let time_of_day_outputs: [&mut [TimeOfDayComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.time_of_days,
+                            ];
+
+                            // Apply TimeOfDaySystem to all archetypes
+                            self.systems.time_of_day.apply_all(
+                                &self.context,
+                                time_of_day_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
+                    });
+                }
             });
         }
-
-        self.systems.time_of_day.on_end_phase(
-            &self.context,
-        )
-        .inspect_err(|error| tracing::error!(%error, "TimeOfDaySystem::on_end_phase returned an error"))
-        .ok();
 
         self.systems.physics.on_end_phase(
             &self.context,
@@ -1862,14 +1856,13 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "PhysicsSystem::on_end_phase returned an error"))
         .ok();
 
+        self.systems.time_of_day.on_end_phase(
+            &self.context,
+        )
+        .inspect_err(|error| tracing::error!(%error, "TimeOfDaySystem::on_end_phase returned an error"))
+        .ok();
+
         // System group 2
-        let is_sun_ready = self.systems.sun.is_ready(
-           );
-        let is_sun_ready = is_sun_ready &
-            self.systems.sun.on_begin_phase(
-            )
-            .inspect_err(|error| tracing::error!(%error, "SunSystem::on_begin_phase returned an error"))
-            .is_ok();
         let is_stars_ready = self.systems.stars.is_ready(
            );
         let is_stars_ready = is_stars_ready &
@@ -1877,11 +1870,47 @@ impl<E, Q> MainWorld<E, Q> {
             )
             .inspect_err(|error| tracing::error!(%error, "StarsSystem::on_begin_phase returned an error"))
             .is_ok();
+        let is_sun_ready = self.systems.sun.is_ready(
+           );
+        let is_sun_ready = is_sun_ready &
+            self.systems.sun.on_begin_phase(
+            )
+            .inspect_err(|error| tracing::error!(%error, "SunSystem::on_begin_phase returned an error"))
+            .is_ok();
 
         {
             // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
             rayon::scope(|s| {
                 // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_stars_ready {
+                    s.spawn(|_| {
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
+                                &self.archetypes.collection.environment.time_of_days,
+                            ];
+                            let stars_outputs: [&mut [StarsComponent]; 1] = [
+                                &mut self.archetypes.collection.environment.stars,
+                            ];
+
+                            // Apply StarsSystem to all archetypes
+                            self.systems.stars.apply_all(
+                                time_of_day_inputs,
+                                stars_outputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
+                    });
+                }
                 if is_sun_ready {
                     s.spawn(|_| {
                         // Preflight
@@ -1919,46 +1948,17 @@ impl<E, Q> MainWorld<E, Q> {
                         }
                     });
                 }
-                if is_stars_ready {
-                    s.spawn(|_| {
-                        // Preflight
-                        {
-                            // System has no preflight step
-                        }
-
-                        // Systems
-                        {
-                            let time_of_day_inputs: [&[TimeOfDayComponent]; 1] = [
-                                &self.archetypes.collection.environment.time_of_days,
-                            ];
-                            let stars_outputs: [&mut [StarsComponent]; 1] = [
-                                &mut self.archetypes.collection.environment.stars,
-                            ];
-
-                            // Apply StarsSystem to all archetypes
-                            self.systems.stars.apply_all(
-                                time_of_day_inputs,
-                                stars_outputs,
-                            );
-                        }
-
-                        // Postflight
-                        {
-                            // System has no preflight step
-                        }
-                    });
-                }
             });
         }
-
-        self.systems.sun.on_end_phase(
-        )
-        .inspect_err(|error| tracing::error!(%error, "SunSystem::on_end_phase returned an error"))
-        .ok();
 
         self.systems.stars.on_end_phase(
         )
         .inspect_err(|error| tracing::error!(%error, "StarsSystem::on_end_phase returned an error"))
+        .ok();
+
+        self.systems.sun.on_end_phase(
+        )
+        .inspect_err(|error| tracing::error!(%error, "SunSystem::on_end_phase returned an error"))
         .ok();
 
         SystemFixedUpdatePhaseEvents::on_end_phase(
@@ -2029,6 +2029,45 @@ impl<E, Q> MainWorld<E, Q> {
         Self: WorldUserCommandHandler<UserCommand = <Q as WorldUserCommand>::UserCommand>,
     {
         // System group 1 of 1
+        let is_ready = self.systems.background_color_cycle.is_ready(
+               &self.context,
+           );
+        if is_ready && self.systems.background_color_cycle.on_begin_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let background_color_outputs: [&mut [BackgroundColorComponent]; 1] = [
+                    &mut self.archetypes.collection.scene_background.background_colors,
+                ];
+
+                // Apply BackgroundColorCycleSystem to all archetypes
+                self.systems.background_color_cycle.apply_all(
+                    &self.context,
+                    background_color_outputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.background_color_cycle.on_end_phase(
+                &self.context,
+            )
+            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 1 of 1
         let is_ready = self.systems.camera.is_ready(
                        &self.states.input,
                        &self.states.wgpu_render,
@@ -2073,45 +2112,6 @@ impl<E, Q> MainWorld<E, Q> {
                         &self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "CameraSystem::on_end_phase returned an error"))
-            .ok();
-        }
-        // System group 1 of 1
-        let is_ready = self.systems.background_color_cycle.is_ready(
-               &self.context,
-           );
-        if is_ready && self.systems.background_color_cycle.on_begin_phase(
-                &self.context,
-            )
-            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_begin_phase returned an error"))
-            .is_ok()
-        {
-            // Preflight
-            {
-                // System has no preflight step
-            }
-
-            // Systems
-            {
-                let background_color_outputs: [&mut [BackgroundColorComponent]; 1] = [
-                    &mut self.archetypes.collection.scene_background.background_colors,
-                ];
-
-                // Apply BackgroundColorCycleSystem to all archetypes
-                self.systems.background_color_cycle.apply_all(
-                    &self.context,
-                    background_color_outputs,
-                );
-            }
-
-            // Postflight
-            {
-                // System has no preflight step
-            }
-
-            self.systems.background_color_cycle.on_end_phase(
-                &self.context,
-            )
-            .inspect_err(|error| tracing::error!(?error, "BackgroundColorCycleSystem::on_end_phase returned an error"))
             .ok();
         }
 
@@ -2343,45 +2343,6 @@ impl<E, Q> MainWorld<E, Q> {
             .ok();
         }
         // System group 4 of 8
-        let is_ready = self.systems.vga_blit.is_ready(
-                       &mut self.states.wgpu_render,
-           );
-        if is_ready && self.systems.vga_blit.on_begin_phase(
-                        &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
-            .is_ok()
-        {
-            // Preflight
-            {
-                // System has no preflight step
-            }
-
-            // Systems
-            {
-                let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
-                    &self.archetypes.collection.scene_background.background_colors,
-                ];
-
-                // Apply VgaBlitSystem to all archetypes
-                self.systems.vga_blit.apply_all(
-                            &mut self.states.wgpu_render,
-                    background_color_inputs,
-                );
-            }
-
-            // Postflight
-            {
-                // System has no preflight step
-            }
-
-            self.systems.vga_blit.on_end_phase(
-                        &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
-            .ok();
-        }
-        // System group 5 of 8
         let is_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                        &mut self.states.wgpu_render,
@@ -2428,50 +2389,7 @@ impl<E, Q> MainWorld<E, Q> {
             .inspect_err(|error| tracing::error!(?error, "DynamicLightSystem::on_end_phase returned an error"))
             .ok();
         }
-        // System group 6 of 8
-        let is_ready = self.systems.tile_render.is_ready(
-                       &mut self.states.wgpu_render,
-           );
-        if is_ready && self.systems.tile_render.on_begin_phase(
-                        &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
-            .is_ok()
-        {
-            // Preflight
-            {
-                // System has no preflight step
-            }
-
-            // Systems
-            {
-                let tile_inputs: [&[TileComponent]; 1] = [
-                    &self.archetypes.collection.tile.tiles,
-                ];
-                let position_inputs: [&[PositionComponent]; 1] = [
-                    &self.archetypes.collection.tile.positions,
-                ];
-
-                // Apply TileRenderSystem to all archetypes
-                self.systems.tile_render.apply_all(
-                            &mut self.states.wgpu_render,
-                    tile_inputs,
-                    position_inputs,
-                );
-            }
-
-            // Postflight
-            {
-                // System has no preflight step
-            }
-
-            self.systems.tile_render.on_end_phase(
-                        &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_end_phase returned an error"))
-            .ok();
-        }
-        // System group 7 of 8
+        // System group 5 of 8
         let is_ready = self.systems.frame_globals.is_ready(
                        &mut self.states.wgpu_render,
            );
@@ -2524,6 +2442,88 @@ impl<E, Q> MainWorld<E, Q> {
                         &mut self.states.wgpu_render,
             )
             .inspect_err(|error| tracing::error!(?error, "FrameGlobalsSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 6 of 8
+        let is_ready = self.systems.tile_render.is_ready(
+                       &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.tile_render.on_begin_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let tile_inputs: [&[TileComponent]; 1] = [
+                    &self.archetypes.collection.tile.tiles,
+                ];
+                let position_inputs: [&[PositionComponent]; 1] = [
+                    &self.archetypes.collection.tile.positions,
+                ];
+
+                // Apply TileRenderSystem to all archetypes
+                self.systems.tile_render.apply_all(
+                            &mut self.states.wgpu_render,
+                    tile_inputs,
+                    position_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.tile_render.on_end_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "TileRenderSystem::on_end_phase returned an error"))
+            .ok();
+        }
+        // System group 7 of 8
+        let is_ready = self.systems.vga_blit.is_ready(
+                       &mut self.states.wgpu_render,
+           );
+        if is_ready && self.systems.vga_blit.on_begin_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok()
+        {
+            // Preflight
+            {
+                // System has no preflight step
+            }
+
+            // Systems
+            {
+                let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
+                    &self.archetypes.collection.scene_background.background_colors,
+                ];
+
+                // Apply VgaBlitSystem to all archetypes
+                self.systems.vga_blit.apply_all(
+                            &mut self.states.wgpu_render,
+                    background_color_inputs,
+                );
+            }
+
+            // Postflight
+            {
+                // System has no preflight step
+            }
+
+            self.systems.vga_blit.on_end_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(?error, "VgaBlitSystem::on_end_phase returned an error"))
             .ok();
         }
         // System group 8 of 8
@@ -2761,56 +2761,6 @@ impl<E, Q> MainWorld<E, Q> {
         .ok();
 
         // System group 4
-        let is_vga_blit_ready = self.systems.vga_blit.is_ready(
-                       &mut self.states.wgpu_render,
-           );
-        let is_vga_blit_ready = is_vga_blit_ready &
-            self.systems.vga_blit.on_begin_phase(
-                        &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
-            .is_ok();
-
-        {
-            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
-            rayon::scope(|s| {
-                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-                if is_vga_blit_ready {
-                    s.spawn(|_| {
-                        // Preflight
-                        {
-                            // System has no preflight step
-                        }
-
-                        // Systems
-                        {
-                            let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
-                                &self.archetypes.collection.scene_background.background_colors,
-                            ];
-
-                            // Apply VgaBlitSystem to all archetypes
-                            self.systems.vga_blit.apply_all(
-                                        &mut self.states.wgpu_render,
-                                background_color_inputs,
-                            );
-                        }
-
-                        // Postflight
-                        {
-                            // System has no preflight step
-                        }
-                    });
-                }
-            });
-        }
-
-        self.systems.vga_blit.on_end_phase(
-                    &mut self.states.wgpu_render,
-        )
-        .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
-        .ok();
-
-        // System group 5
         let is_dynamic_light_ready = self.systems.dynamic_light.is_ready(
                &self.context,
                        &mut self.states.wgpu_render,
@@ -2868,61 +2818,7 @@ impl<E, Q> MainWorld<E, Q> {
         .inspect_err(|error| tracing::error!(%error, "DynamicLightSystem::on_end_phase returned an error"))
         .ok();
 
-        // System group 6
-        let is_tile_render_ready = self.systems.tile_render.is_ready(
-                       &mut self.states.wgpu_render,
-           );
-        let is_tile_render_ready = is_tile_render_ready &
-            self.systems.tile_render.on_begin_phase(
-                        &mut self.states.wgpu_render,
-            )
-            .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_begin_phase returned an error"))
-            .is_ok();
-
-        {
-            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
-            rayon::scope(|s| {
-                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
-                if is_tile_render_ready {
-                    s.spawn(|_| {
-                        // Preflight
-                        {
-                            // System has no preflight step
-                        }
-
-                        // Systems
-                        {
-                            let tile_inputs: [&[TileComponent]; 1] = [
-                                &self.archetypes.collection.tile.tiles,
-                            ];
-                            let position_inputs: [&[PositionComponent]; 1] = [
-                                &self.archetypes.collection.tile.positions,
-                            ];
-
-                            // Apply TileRenderSystem to all archetypes
-                            self.systems.tile_render.apply_all(
-                                        &mut self.states.wgpu_render,
-                                tile_inputs,
-                                position_inputs,
-                            );
-                        }
-
-                        // Postflight
-                        {
-                            // System has no preflight step
-                        }
-                    });
-                }
-            });
-        }
-
-        self.systems.tile_render.on_end_phase(
-                    &mut self.states.wgpu_render,
-        )
-        .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_end_phase returned an error"))
-        .ok();
-
-        // System group 7
+        // System group 5
         let is_frame_globals_ready = self.systems.frame_globals.is_ready(
                        &mut self.states.wgpu_render,
            );
@@ -2986,6 +2882,110 @@ impl<E, Q> MainWorld<E, Q> {
                     &mut self.states.wgpu_render,
         )
         .inspect_err(|error| tracing::error!(%error, "FrameGlobalsSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 6
+        let is_tile_render_ready = self.systems.tile_render.is_ready(
+                       &mut self.states.wgpu_render,
+           );
+        let is_tile_render_ready = is_tile_render_ready &
+            self.systems.tile_render.on_begin_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_tile_render_ready {
+                    s.spawn(|_| {
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let tile_inputs: [&[TileComponent]; 1] = [
+                                &self.archetypes.collection.tile.tiles,
+                            ];
+                            let position_inputs: [&[PositionComponent]; 1] = [
+                                &self.archetypes.collection.tile.positions,
+                            ];
+
+                            // Apply TileRenderSystem to all archetypes
+                            self.systems.tile_render.apply_all(
+                                        &mut self.states.wgpu_render,
+                                tile_inputs,
+                                position_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
+                    });
+                }
+            });
+        }
+
+        self.systems.tile_render.on_end_phase(
+                    &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "TileRenderSystem::on_end_phase returned an error"))
+        .ok();
+
+        // System group 7
+        let is_vga_blit_ready = self.systems.vga_blit.is_ready(
+                       &mut self.states.wgpu_render,
+           );
+        let is_vga_blit_ready = is_vga_blit_ready &
+            self.systems.vga_blit.on_begin_phase(
+                        &mut self.states.wgpu_render,
+            )
+            .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_begin_phase returned an error"))
+            .is_ok();
+
+        {
+            // TODO: Skip spawning thread here when there is only one system, or when all run in sequence
+            rayon::scope(|s| {
+                // TODO: Instead of parallelizing systems (and then have them access archetypes), parallelize archetypes and apply all systems. This should improve data parallelism because it keeps caches hot.
+                if is_vga_blit_ready {
+                    s.spawn(|_| {
+                        // Preflight
+                        {
+                            // System has no preflight step
+                        }
+
+                        // Systems
+                        {
+                            let background_color_inputs: [&[BackgroundColorComponent]; 1] = [
+                                &self.archetypes.collection.scene_background.background_colors,
+                            ];
+
+                            // Apply VgaBlitSystem to all archetypes
+                            self.systems.vga_blit.apply_all(
+                                        &mut self.states.wgpu_render,
+                                background_color_inputs,
+                            );
+                        }
+
+                        // Postflight
+                        {
+                            // System has no preflight step
+                        }
+                    });
+                }
+            });
+        }
+
+        self.systems.vga_blit.on_end_phase(
+                    &mut self.states.wgpu_render,
+        )
+        .inspect_err(|error| tracing::error!(%error, "VgaBlitSystem::on_end_phase returned an error"))
         .ok();
 
         // System group 8
