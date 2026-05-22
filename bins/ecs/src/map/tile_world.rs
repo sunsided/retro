@@ -36,12 +36,12 @@ impl TileWorld {
     }
 
     #[allow(dead_code)]
-    pub fn iter_regions(&self) -> RegionIter {
+    pub fn iter_regions(&self) -> RegionIter<'_> {
         self.chunks.values()
     }
 
     #[allow(dead_code)]
-    pub fn iter_regions_mut(&mut self) -> RegionIterMut {
+    pub fn iter_regions_mut(&mut self) -> RegionIterMut<'_> {
         self.chunks.values_mut()
     }
 

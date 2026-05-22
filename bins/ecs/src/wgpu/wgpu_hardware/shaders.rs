@@ -13,11 +13,11 @@ pub struct Shaders {
 impl Shaders {
     #[instrument(skip(device))]
     pub fn create_from(device: &Device) -> Self {
-        let sky = SkyShaderModule::create(&device);
-        let render = RenderShaderModule::create(&device);
-        let light = LightShaderModule::create(&device);
-        let vga = VgaShaderModule::create(&device);
-        let tile = TileShaderModule::create(&device);
+        let sky = SkyShaderModule::create(device);
+        let render = RenderShaderModule::create(device);
+        let light = LightShaderModule::create(device);
+        let vga = VgaShaderModule::create(device);
+        let tile = TileShaderModule::create(device);
         Self {
             sky,
             render,
@@ -74,14 +74,14 @@ impl SkyShaderModule {
         Self(device.create_shader_module(shader))
     }
 
-    pub fn vertex_shader(&self) -> VertexShaderRef {
+    pub fn vertex_shader(&self) -> VertexShaderRef<'_> {
         VertexShaderRef {
             entry_point: "vs_main",
             module: &self.0,
         }
     }
 
-    pub fn fragment_shader(&self) -> FragmentShaderRef {
+    pub fn fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_main",
             module: &self.0,
@@ -103,28 +103,28 @@ impl RenderShaderModule {
         Self(device.create_shader_module(shader))
     }
 
-    pub fn vertex_shader(&self) -> VertexShaderRef {
+    pub fn vertex_shader(&self) -> VertexShaderRef<'_> {
         VertexShaderRef {
             entry_point: "vs_main",
             module: &self.0,
         }
     }
 
-    pub fn flat_fragment_shader(&self) -> FragmentShaderRef {
+    pub fn flat_fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_flat_main",
             module: &self.0,
         }
     }
 
-    pub fn instance_fragment_shader(&self) -> FragmentShaderRef {
+    pub fn instance_fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_instance_main",
             module: &self.0,
         }
     }
 
-    pub fn textured_fragment_shader(&self) -> FragmentShaderRef {
+    pub fn textured_fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_textured_main",
             module: &self.0,
@@ -146,14 +146,14 @@ impl LightShaderModule {
         Self(device.create_shader_module(shader))
     }
 
-    pub fn vertex_shader(&self) -> VertexShaderRef {
+    pub fn vertex_shader(&self) -> VertexShaderRef<'_> {
         VertexShaderRef {
             entry_point: "vs_main",
             module: &self.0,
         }
     }
 
-    pub fn fragment_shader(&self) -> FragmentShaderRef {
+    pub fn fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_main",
             module: &self.0,
@@ -175,14 +175,14 @@ impl VgaShaderModule {
         Self(device.create_shader_module(shader))
     }
 
-    pub fn vertex_shader(&self) -> VertexShaderRef {
+    pub fn vertex_shader(&self) -> VertexShaderRef<'_> {
         VertexShaderRef {
             entry_point: "vs_main",
             module: &self.0,
         }
     }
 
-    pub fn fragment_shader(&self) -> FragmentShaderRef {
+    pub fn fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_main",
             module: &self.0,
@@ -204,14 +204,14 @@ impl TileShaderModule {
         Self(device.create_shader_module(shader))
     }
 
-    pub fn vertex_shader(&self) -> VertexShaderRef {
+    pub fn vertex_shader(&self) -> VertexShaderRef<'_> {
         VertexShaderRef {
             entry_point: "vs_main",
             module: &self.0,
         }
     }
 
-    pub fn fragment_shader(&self) -> FragmentShaderRef {
+    pub fn fragment_shader(&self) -> FragmentShaderRef<'_> {
         FragmentShaderRef {
             entry_point: "fs_main",
             module: &self.0,

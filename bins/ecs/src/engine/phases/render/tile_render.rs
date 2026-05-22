@@ -73,7 +73,7 @@ impl ApplyTileRenderSystem for TileRenderSystem {
                 });
             }
 
-            spawn_wall_instances_from_tile(&tile, pos.x, pos.z, wall_id, &mut walls);
+            spawn_wall_instances_from_tile(tile, pos.x, pos.z, wall_id, &mut walls);
         }
 
         if floors.is_empty() {

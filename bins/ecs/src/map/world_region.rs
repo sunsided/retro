@@ -9,6 +9,7 @@ pub struct WorldRegion {
     pub chunks: [TileChunk; WorldRegion::CHUNK_COUNT],
 }
 
+#[allow(dead_code)]
 impl WorldRegion {
     /// The width of a region in terms of chunks.
     pub const WIDTH_IN_CHUNKS: usize = 2;
@@ -38,7 +39,12 @@ impl WorldRegion {
         }
         // SAFETY: All entries were just initialized above
         Self {
-            chunks: unsafe { std::mem::transmute::<_, [TileChunk; Self::CHUNK_COUNT]>(chunks) },
+            chunks: unsafe {
+                std::mem::transmute::<
+                    [MaybeUninit<TileChunk>; Self::CHUNK_COUNT],
+                    [TileChunk; Self::CHUNK_COUNT],
+                >(chunks)
+            },
         }
     }
 
@@ -72,9 +78,9 @@ impl WorldRegion {
             initialized: 0,
         };
 
-        for i in 0..Self::CHUNK_COUNT {
+        for (i, slot) in chunks.iter_mut().enumerate() {
             let coord = RegionLocalChunkCoord::from_dense_region_index(i);
-            chunks[i] = MaybeUninit::new(f(coord));
+            *slot = MaybeUninit::new(f(coord));
             guard.initialized += 1;
         }
 
@@ -115,12 +121,12 @@ impl WorldRegion {
     }
 
     #[inline]
-    pub fn iter(&self) -> ChunkIter {
+    pub fn iter(&self) -> ChunkIter<'_> {
         self.chunks.iter()
     }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> ChunkIterMut {
+    pub fn iter_mut(&mut self) -> ChunkIterMut<'_> {
         self.chunks.iter_mut()
     }
 

@@ -16,7 +16,7 @@ pub struct VgaBlitSystemData;
 
 impl CreateSystem<VgaBlitSystem> for SystemFactory {
     fn create(&self) -> VgaBlitSystem {
-        VgaBlitSystem(VgaBlitSystemData::default())
+        VgaBlitSystem(VgaBlitSystemData)
     }
 }
 

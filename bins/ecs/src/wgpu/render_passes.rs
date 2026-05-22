@@ -65,7 +65,7 @@ impl RenderPasses {
     pub fn clear_background_pass(
         &mut self,
         background_color: &BackgroundColorComponent,
-    ) -> RenderPass {
+    ) -> RenderPass<'_> {
         if self.retro_enabled {
             self.create_retro_clear_pass(background_color)
         } else {
@@ -73,7 +73,7 @@ impl RenderPasses {
         }
     }
 
-    pub fn render_pass(&mut self) -> RenderPass {
+    pub fn render_pass(&mut self) -> RenderPass<'_> {
         if self.retro_enabled {
             self.create_retro_render_pass()
         } else {
@@ -84,7 +84,7 @@ impl RenderPasses {
     pub fn final_pass(
         &mut self,
         background_color: &BackgroundColorComponent,
-    ) -> Option<RenderPass> {
+    ) -> Option<RenderPass<'_>> {
         if self.retro_enabled {
             Some(self.create_final_pass(background_color))
         } else {
@@ -95,7 +95,7 @@ impl RenderPasses {
     fn create_quality_clear_pass(
         &mut self,
         background_color: &BackgroundColorComponent,
-    ) -> RenderPass {
+    ) -> RenderPass<'_> {
         Self::create_render_pass(
             &mut self.encoder,
             Some(background_color),
@@ -109,7 +109,7 @@ impl RenderPasses {
     fn create_retro_clear_pass(
         &mut self,
         background_color: &BackgroundColorComponent,
-    ) -> RenderPass {
+    ) -> RenderPass<'_> {
         Self::create_render_pass(
             &mut self.encoder,
             Some(background_color),
@@ -120,7 +120,7 @@ impl RenderPasses {
         )
     }
 
-    fn create_quality_render_pass(&mut self) -> RenderPass {
+    fn create_quality_render_pass(&mut self) -> RenderPass<'_> {
         Self::create_render_pass(
             &mut self.encoder,
             None,
@@ -131,7 +131,7 @@ impl RenderPasses {
         )
     }
 
-    fn create_retro_render_pass(&mut self) -> RenderPass {
+    fn create_retro_render_pass(&mut self) -> RenderPass<'_> {
         Self::create_render_pass(
             &mut self.encoder,
             None,
@@ -197,7 +197,7 @@ impl RenderPasses {
         })
     }
 
-    fn create_final_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass {
+    fn create_final_pass(&mut self, background_color: &BackgroundColorComponent) -> RenderPass<'_> {
         self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("vga_second_pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {

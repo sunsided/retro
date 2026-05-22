@@ -28,7 +28,7 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
             return;
         };
 
-        let mut render_pass = frame_state.render_pass(&device);
+        let mut render_pass = frame_state.render_pass(device);
         render_pass.set_pipeline(&device.pipelines().light);
 
         for (light, color) in lights.iter_mut().zip(colors) {
@@ -37,7 +37,7 @@ impl ApplyDynamicLightSystem for DynamicLightSystem {
             light.update_color(color.r, color.g, color.b);
 
             // TODO: Keep this in the render phase
-            light.write_to_buffer(&device);
+            light.write_to_buffer(device);
 
             // Render the light.
             render_pass.draw_light_model(

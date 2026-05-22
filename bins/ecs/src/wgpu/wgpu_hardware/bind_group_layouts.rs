@@ -44,10 +44,10 @@ impl BindGroupLayouts {
     #[instrument(skip_all)]
     pub fn create_from(device: &wgpu::Device) -> Self {
         let frame_global_uniform = Self::create_frame_global(device);
-        let diffuse_and_normal = Self::create_diffuse_and_normal(&device);
-        let camera_uniforms = Self::create_camera_buffer_uniforms(&device);
-        let lighting_uniforms = Self::create_lighting_uniforms(&device);
-        let vga_fullscreen = Self::create_vga_fullscreen(&device);
+        let diffuse_and_normal = Self::create_diffuse_and_normal(device);
+        let camera_uniforms = Self::create_camera_buffer_uniforms(device);
+        let lighting_uniforms = Self::create_lighting_uniforms(device);
+        let vga_fullscreen = Self::create_vga_fullscreen(device);
         Self {
             frame_global_uniform,
             diffuse_and_normal,

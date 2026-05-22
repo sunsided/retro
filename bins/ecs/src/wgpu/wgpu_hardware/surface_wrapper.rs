@@ -31,7 +31,6 @@ impl From<Surface<'static>> for SurfaceWrapper {
         Self {
             id: SurfaceId::next(),
             surface: Some(value),
-            ..Default::default()
         }
     }
 }

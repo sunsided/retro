@@ -34,6 +34,10 @@ use crate::engine::{
 };
 use std::convert::Infallible;
 
+// `BackgroundColorCycleSystem` is a generated newtype wrapping
+// `BackgroundColorCycleSystemData`; we cannot add a derive to the generated definition, so the
+// trivial `Default` impl must be written by hand.
+#[allow(clippy::derivable_impls)]
 impl Default for BackgroundColorCycleSystem {
     fn default() -> Self {
         Self(BackgroundColorCycleSystemData::default())

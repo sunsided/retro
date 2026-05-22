@@ -1,3 +1,4 @@
+#[allow(clippy::module_inception)]
 mod camera;
 mod camera_controller;
 mod projection;

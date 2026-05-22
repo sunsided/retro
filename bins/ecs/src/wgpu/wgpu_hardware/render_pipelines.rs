@@ -41,7 +41,7 @@ impl RenderPipelines {
             RenderPipelineSelector::Textured => &self.textured_render,
             RenderPipelineSelector::Boring => &self.flat_render,
             RenderPipelineSelector::Wireframe => {
-                &self.wireframe_render.as_ref().unwrap_or(&self.flat_render)
+                self.wireframe_render.as_ref().unwrap_or(&self.flat_render)
             }
             RenderPipelineSelector::Entity => &self.flat_entity_render,
         }
@@ -56,19 +56,19 @@ impl RenderPipelines {
         surface_format: TextureFormat,
         shaders: &Shaders,
     ) -> Self {
-        let layout = Self::create_standard_render_layout(&device, bind_group_layouts);
+        let layout = Self::create_standard_render_layout(device, bind_group_layouts);
         let textured_render =
-            Self::create_textured_render(&device, &layout, surface_format, shaders);
-        let flat_render = Self::create_flat_render(&device, &layout, surface_format, shaders);
+            Self::create_textured_render(device, &layout, surface_format, shaders);
+        let flat_render = Self::create_flat_render(device, &layout, surface_format, shaders);
         let flat_entity_render =
-            Self::create_flat_entity_render(&device, &layout, surface_format, shaders);
+            Self::create_flat_entity_render(device, &layout, surface_format, shaders);
         let wireframe_render =
-            Self::create_wireframe_render(&device, &layout, surface_format, shaders);
-        let light = Self::create_light(&device, bind_group_layouts, surface_format, shaders);
+            Self::create_wireframe_render(device, &layout, surface_format, shaders);
+        let light = Self::create_light(device, bind_group_layouts, surface_format, shaders);
         let vga_fullscreen =
-            Self::create_vga_fullscreen(&device, bind_group_layouts, surface_format, shaders);
-        let sky = Self::create_sky_pipeline(&device, surface_format, bind_group_layouts, shaders);
-        let tile = Self::create_tile_render(&device, &layout, surface_format, shaders);
+            Self::create_vga_fullscreen(device, bind_group_layouts, surface_format, shaders);
+        let sky = Self::create_sky_pipeline(device, surface_format, bind_group_layouts, shaders);
+        let tile = Self::create_tile_render(device, &layout, surface_format, shaders);
         Self {
             sky,
             textured_render,
@@ -100,14 +100,14 @@ impl RenderPipelines {
             label: Some("sky_pipeline"),
             layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &shaders.sky.vertex_shader().module(),
+                module: shaders.sky.vertex_shader().module(),
                 entry_point: Some("vs_main"),
                 // We'll use a full-screen triangle—no vertex buffer needed
                 compilation_options: Default::default(),
                 buffers: &[],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &shaders.sky.fragment_shader().module(),
+                module: shaders.sky.fragment_shader().module(),
                 entry_point: Some("fs_main"),
                 compilation_options: Default::default(),
                 targets: &[
@@ -202,7 +202,7 @@ impl RenderPipelines {
         Self::create_render_pipeline(
             shaders.light.vertex_shader(),
             shaders.light.fragment_shader(),
-            &device,
+            device,
             &layout,
             surface_format,
             true,
@@ -240,8 +240,8 @@ impl RenderPipelines {
         Self::create_render_pipeline(
             shaders.render.vertex_shader(),
             shaders.render.textured_fragment_shader(),
-            &device,
-            &layout,
+            device,
+            layout,
             surface_format,
             true,
             Some(Texture::DEPTH_FORMAT),
@@ -268,8 +268,8 @@ impl RenderPipelines {
         let pipeline = Self::create_render_pipeline(
             shaders.render.vertex_shader(),
             shaders.render.flat_fragment_shader(),
-            &device,
-            &layout,
+            device,
+            layout,
             surface_format,
             true,
             Some(Texture::DEPTH_FORMAT),
@@ -291,8 +291,8 @@ impl RenderPipelines {
         Self::create_render_pipeline(
             shaders.render.vertex_shader(),
             shaders.render.flat_fragment_shader(),
-            &device,
-            &layout,
+            device,
+            layout,
             surface_format,
             true,
             Some(Texture::DEPTH_FORMAT),
@@ -312,8 +312,8 @@ impl RenderPipelines {
         Self::create_render_pipeline(
             shaders.render.vertex_shader(),
             shaders.render.instance_fragment_shader(),
-            &device,
-            &layout,
+            device,
+            layout,
             surface_format,
             true,
             Some(Texture::DEPTH_FORMAT),
@@ -333,8 +333,8 @@ impl RenderPipelines {
         Self::create_render_pipeline(
             shaders.tile.vertex_shader(),
             shaders.tile.fragment_shader(),
-            &device,
-            &layout,
+            device,
+            layout,
             surface_format,
             true,
             Some(Texture::DEPTH_FORMAT),
@@ -344,6 +344,7 @@ impl RenderPipelines {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn create_render_pipeline(
         vertex: VertexShaderRef<'_>,
         fragment: FragmentShaderRef<'_>,

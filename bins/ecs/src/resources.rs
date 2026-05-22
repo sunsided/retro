@@ -97,7 +97,7 @@ where
     P: AsRef<std::path::Path>,
 {
     let file_name = file_name.as_ref();
-    let obj_text = load_string(&file_name)?;
+    let obj_text = load_string(file_name)?;
     let obj_cursor = Cursor::new(obj_text);
     let mut obj_reader = BufReader::new(obj_cursor);
 
@@ -150,7 +150,7 @@ where
             )?;
 
         materials.push(Material::new(
-            &device,
+            device,
             &m.name,
             diffuse_texture,
             normal_texture,

@@ -46,13 +46,13 @@ impl FrameState {
         }
     }
 
-    pub fn render_pass(&mut self, device: &DeviceAndQueue) -> RenderPass {
+    pub fn render_pass(&mut self, device: &DeviceAndQueue) -> RenderPass<'_> {
         let mut pass = self.passes.render_pass();
         device.apply_render_pipeline_to_pass(&mut pass, self.render_pipeline_selector);
         pass
     }
 
-    pub fn render_pass_with(&mut self, pipeline: &RenderPipeline) -> RenderPass {
+    pub fn render_pass_with(&mut self, pipeline: &RenderPipeline) -> RenderPass<'_> {
         let mut pass = self.passes.render_pass();
         pass.set_pipeline(pipeline);
         pass

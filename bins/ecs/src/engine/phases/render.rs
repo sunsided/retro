@@ -66,6 +66,7 @@ pub mod camera_render;
 pub mod dynamic_light;
 pub mod frame_globals;
 mod frame_state;
+#[allow(clippy::module_inception)]
 pub mod render;
 pub mod render_sky;
 pub mod tile_render;
@@ -178,7 +179,7 @@ impl SystemRenderPhaseEvents for PhaseEvents {
                 });
 
             let passes = RenderPasses::new(
-                &device,
+                device,
                 render.retro_enabled(),
                 encoder,
                 frame,

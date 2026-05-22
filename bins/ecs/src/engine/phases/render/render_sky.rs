@@ -22,7 +22,7 @@ impl Default for RenderSkySystemData {
 
 impl CreateSystem<RenderSkySystem> for SystemFactory {
     fn create(&self) -> RenderSkySystem {
-        RenderSkySystem(RenderSkySystemData::default())
+        RenderSkySystem(RenderSkySystemData)
     }
 }
 

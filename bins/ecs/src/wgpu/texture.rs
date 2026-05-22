@@ -279,7 +279,7 @@ impl Texture {
             &normal_pixel,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * 1),
+                bytes_per_row: Some(4),
                 rows_per_image: Some(1),
             },
             size,
@@ -373,7 +373,7 @@ pub enum TextureType {
 }
 
 impl TextureType {
-    pub fn to_format(&self) -> TextureFormat {
+    pub fn to_format(self) -> TextureFormat {
         match self {
             TextureType::Diffuse => TextureFormat::Rgba8UnormSrgb,
             TextureType::Normal => TextureFormat::Rgba8Unorm,

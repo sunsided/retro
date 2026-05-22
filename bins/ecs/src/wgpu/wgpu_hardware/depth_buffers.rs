@@ -32,7 +32,7 @@ impl DepthBuffers {
         device: &wgpu::Device,
         surface_config: &SurfaceConfiguration,
     ) -> Texture {
-        Texture::depth_texture(&device, &surface_config, "depth_texture")
+        Texture::depth_texture(device, surface_config, "depth_texture")
     }
 
     #[instrument(skip_all)]

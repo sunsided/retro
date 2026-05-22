@@ -211,7 +211,7 @@ impl InstanceBuffer {
     #[inline]
     #[allow(dead_code)]
     pub fn send_to_device(&self, queue: &Queue, instances: &[InstanceRaw]) -> u32 {
-        let data_bytes = bytemuck::cast_slice(&instances);
+        let data_bytes = bytemuck::cast_slice(instances);
         queue.write_buffer(&self.buffer, 0, data_bytes);
         instances.len() as _
     }

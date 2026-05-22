@@ -24,7 +24,7 @@ impl Default for FrameGlobalsSystemData {
 
 impl CreateSystem<FrameGlobalsSystem> for SystemFactory {
     fn create(&self) -> FrameGlobalsSystem {
-        FrameGlobalsSystem(FrameGlobalsSystemData::default())
+        FrameGlobalsSystem(FrameGlobalsSystemData)
     }
 }
 

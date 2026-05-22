@@ -328,6 +328,10 @@ impl SystemPhase {
     pub const COUNT: usize = 4;
 
     /// The number of seconds the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step should run.
+    // `fixed_secs` is computed as `1.0 / hertz` in `f32` precision, but serializing through
+    // `minijinja` widens it to `f64`, so the rendered literal carries more digits than `f32`
+    // can represent. Truncation back to `f32` is the intended behavior.
+    #[allow(clippy::excessive_precision)]
     pub const FIXED_UPDATE_SECS: f32 = 0.01666666753590107;
 
     /// The frequency of the [`FixedUpdate`](SystemPhase::FixedUpdate) fixed-time step.
@@ -926,7 +930,7 @@ pub trait ApplyTimeOfDaySystem: System {
         let zipped_iter = time_of_days;
         for time_of_day in zipped_iter {
             self.apply_single(
-                &context,
+                context,
                 time_of_day,
             );
         }
@@ -1610,7 +1614,7 @@ pub trait ApplyPhysicsSystem: System {
         let zipped_iter = velocities.iter().zip(positions.iter_mut());
         for (velocity, position) in zipped_iter {
             self.apply_single(
-                &context,
+                context,
                 velocity,
                 position,
             );
@@ -1831,7 +1835,7 @@ pub trait ApplyBackgroundColorCycleSystem: System {
         let zipped_iter = background_colors;
         for background_color in zipped_iter {
             self.apply_single(
-                &context,
+                context,
                 background_color,
             );
         }
@@ -3441,7 +3445,7 @@ pub trait ApplyDynamicLightSystem: System {
         let zipped_iter = colors.iter().zip(dynamic_lights.iter_mut());
         for (color, dynamic_light) in zipped_iter {
             self.apply_single(
-                &context,
+                context,
                         wgpu_render,
                 color,
                 dynamic_light,

@@ -108,7 +108,7 @@ impl DeviceAndQueue {
         pipeline_selector: RenderPipelineSelector,
     ) {
         let pipeline = self.pipelines.render_pipeline(pipeline_selector);
-        render_pass.set_pipeline(&pipeline);
+        render_pass.set_pipeline(pipeline);
     }
 
     pub const fn device(&self) -> &Device {

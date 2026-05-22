@@ -28,6 +28,9 @@ impl CreateSystem<RenderSystem> for SystemFactory {
     }
 }
 
+// `RenderSystem` is a generated newtype wrapping `RenderSystemData`; we cannot add a derive
+// to the generated definition, so the trivial `Default` impl must be written by hand.
+#[allow(clippy::derivable_impls)]
 impl Default for RenderSystem {
     fn default() -> Self {
         Self(RenderSystemData::default())
@@ -59,7 +62,7 @@ impl ApplyRenderSystem for RenderSystem {
         };
 
         let frame_entity_ids = frame_state.per_frame_entity_ids();
-        let mut render_pass = frame_state.render_pass(&device);
+        let mut render_pass = frame_state.render_pass(device);
 
         // Enable the instance buffer.
         render_pass.set_vertex_buffer(1, device.buffers().instances.slice(..));
@@ -84,7 +87,7 @@ impl ApplyRenderSystem for RenderSystem {
                 let num_instances = device
                     .buffers()
                     .instances
-                    .send_to_device(&device.queue(), &instance_buf);
+                    .send_to_device(device.queue(), instance_buf);
                 render_pass.draw_model_instanced(
                     &device.models().cube,
                     0..num_instances,
@@ -97,11 +100,11 @@ impl ApplyRenderSystem for RenderSystem {
         }
 
         // Render the rest.
-        if instance_buf.len() > 0 {
+        if !instance_buf.is_empty() {
             let num_instances = device
                 .buffers()
                 .instances
-                .send_to_device(&device.queue(), &instance_buf);
+                .send_to_device(device.queue(), instance_buf);
             render_pass.draw_model_instanced(
                 &device.models().cube,
                 0..num_instances,

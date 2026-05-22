@@ -156,7 +156,7 @@ impl WgpuHardware {
         let surface_caps = self
             .adapter
             .as_ref()
-            .map(|adapter| surface.get_capabilities(&adapter))
+            .map(|adapter| surface.get_capabilities(adapter))
             .unwrap_or_default();
         let recreate_device = surface_caps.formats.is_empty();
         if recreate_device {
@@ -175,7 +175,7 @@ impl WgpuHardware {
                 unreachable!("Since the adapter existed, the surface also must exist");
             };
 
-            device.set_config(Self::get_surface_config(size, surface, &adapter));
+            device.set_config(Self::get_surface_config(size, surface, adapter));
         }
         Ok(())
     }
@@ -188,7 +188,7 @@ impl WgpuHardware {
             return Err(WgpuResizeSurfaceError::InvalidSize(new_size));
         }
 
-        let Some(mut surface) = self.surface.as_mut() else {
+        let Some(surface) = self.surface.as_mut() else {
             return Err(WgpuResizeSurfaceError::NoSurface);
         };
 
@@ -196,7 +196,7 @@ impl WgpuHardware {
             return Err(WgpuResizeSurfaceError::NoDevice);
         };
 
-        device.resize_surface(new_size, &mut surface);
+        device.resize_surface(new_size, surface);
         Ok(())
     }
 
@@ -207,7 +207,7 @@ impl WgpuHardware {
             .request_adapter(
                 &wgpu::RequestAdapterOptions {
                     power_preference: wgpu::PowerPreference::HighPerformance, // or LowPower (e.g., iGPU)
-                    compatible_surface: Some(&surface),
+                    compatible_surface: Some(surface),
                     force_fallback_adapter: false,
                 },
             ))
@@ -292,7 +292,7 @@ impl WgpuHardware {
         surface: &Surface,
         adapter: &Adapter,
     ) -> SurfaceConfiguration {
-        let surface_caps = surface.get_capabilities(&adapter);
+        let surface_caps = surface.get_capabilities(adapter);
 
         // Pick sRGB format (or the next-best one).
         let surface_format = surface_caps

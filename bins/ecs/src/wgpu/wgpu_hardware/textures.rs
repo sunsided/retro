@@ -27,15 +27,15 @@ impl Textures {
         queue: &Queue,
         surface_config: &SurfaceConfiguration,
     ) -> Self {
-        let vga_offscreen = Self::create_vga_offscreen(&device, surface_config.format);
-        let surface_frame_entity_id = Self::create_surface_frame_entity_id(&device, surface_config);
-        let vga_frame_entity_id = Self::create_vga_frame_entity_id(&device);
-        let fallback_normals = Self::create_fallback_normals(&device, queue);
-        let cover = Self::create_cover(&device, queue);
-        let bricks_diffuse = Self::create_bricks_diffuse(&device, queue);
-        let bricks_normal = Self::create_bricks_normal(&device, queue);
-        let stonepath_diffuse = Self::create_stonepath_diffuse(&device, queue);
-        let stonepath_normal = Self::create_stonepath_normal(&device, queue);
+        let vga_offscreen = Self::create_vga_offscreen(device, surface_config.format);
+        let surface_frame_entity_id = Self::create_surface_frame_entity_id(device, surface_config);
+        let vga_frame_entity_id = Self::create_vga_frame_entity_id(device);
+        let fallback_normals = Self::create_fallback_normals(device, queue);
+        let cover = Self::create_cover(device, queue);
+        let bricks_diffuse = Self::create_bricks_diffuse(device, queue);
+        let bricks_normal = Self::create_bricks_normal(device, queue);
+        let stonepath_diffuse = Self::create_stonepath_diffuse(device, queue);
+        let stonepath_normal = Self::create_stonepath_normal(device, queue);
         Self {
             vga_offscreen,
             surface_frame_entity_id,
@@ -52,8 +52,7 @@ impl Textures {
     #[instrument(skip_all)]
     pub fn recreate(&mut self, device: &Device, surface_config: &SurfaceConfiguration) {
         debug!("Recreating texture buffers");
-        self.surface_frame_entity_id =
-            Self::create_surface_frame_entity_id(&device, surface_config);
+        self.surface_frame_entity_id = Self::create_surface_frame_entity_id(device, surface_config);
     }
 
     #[instrument(skip_all)]

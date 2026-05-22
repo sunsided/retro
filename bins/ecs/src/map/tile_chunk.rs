@@ -9,6 +9,7 @@ pub struct TileChunk {
     pub tiles: [Tile; TileChunk::TILE_COUNT],
 }
 
+#[allow(dead_code)]
 impl TileChunk {
     /// The number of tiles this chunk is wide.
     pub const WIDTH_IN_TILES: usize = 16;
@@ -55,9 +56,9 @@ impl TileChunk {
             initialized: 0,
         };
 
-        for i in 0..Self::TILE_COUNT {
+        for (i, slot) in tiles.iter_mut().enumerate() {
             let coord = ChunkLocalTileCoord::from_dense_tile_chunk_index(i);
-            tiles[i] = MaybeUninit::new(f(coord));
+            *slot = MaybeUninit::new(f(coord));
             guard.initialized += 1;
         }
 
@@ -99,12 +100,12 @@ impl TileChunk {
     }
 
     #[inline]
-    pub fn iter(&self) -> TileIter {
+    pub fn iter(&self) -> TileIter<'_> {
         self.tiles.iter()
     }
 
     #[inline]
-    pub fn iter_mut(&mut self) -> TileIterMut {
+    pub fn iter_mut(&mut self) -> TileIterMut<'_> {
         self.tiles.iter_mut()
     }
 

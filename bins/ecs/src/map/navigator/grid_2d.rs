@@ -8,6 +8,7 @@ pub struct GridNavigator2D {
     step: NavigatorStep,
 }
 
+#[allow(dead_code)]
 impl GridNavigator2D {
     /// Creates a new navigator centered on a world tile coordinate.
     /// The internal step starts at `Local`.

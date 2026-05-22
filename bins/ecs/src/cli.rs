@@ -1,4 +1,3 @@
-use clap;
 use std::ffi::OsStr;
 
 use clap::builder::PossibleValue;

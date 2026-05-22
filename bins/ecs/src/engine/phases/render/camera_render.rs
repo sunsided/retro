@@ -87,7 +87,7 @@ impl ApplyCameraRenderSystem for CameraRenderSystem {
         device
             .buffers()
             .camera_uniform
-            .send_to_device(&device.queue(), active_camera.uniform);
+            .send_to_device(device.queue(), active_camera.uniform);
     }
 }
 

@@ -5,9 +5,8 @@ use crate::engine::components::{
 use crate::engine::phases::render::background::BackgroundColorData;
 use crate::engine::TileEntityData;
 use crate::engine::{
-    CameraComponent, CameraEntityData, CameraFpsControllerComponent, ColorComponent,
-    DynamicLightComponent, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
-    PositionComponent, SceneBackgroundEntityData,
+    CameraEntityData, DynamicLightEntityData, EnvironmentEntityData, MainWorld,
+    SceneBackgroundEntityData,
 };
 use crate::map::tile::{CeilingType, FloorType, Tile};
 use crate::map::world_builder::WorldBuilder;
@@ -21,15 +20,15 @@ pub trait InitializeMainWorld {
 impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
     fn create_initial_entities(&mut self) {
         self.spawn_scene_background(SceneBackgroundEntityData {
-            background_color: BackgroundColorData::default().into(),
+            background_color: BackgroundColorData::default(),
         });
 
         self.spawn_environment(EnvironmentEntityData {
-            time_of_day: TimeOfDayData::default().into(),
-            ambient_light: AmbientLightData::default().into(),
-            sun: SunData::default().into(),
-            stars: StarsData::default().into(),
-            skydome: SkydomeData::default().into(),
+            time_of_day: TimeOfDayData::default(),
+            ambient_light: AmbientLightData::default(),
+            sun: SunData::default(),
+            stars: StarsData::default(),
+            skydome: SkydomeData::default(),
         });
 
         self.spawn_camera(CameraEntityData {
@@ -101,13 +100,12 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
             })
             .for_each(|(wtc, tile)| {
                 self.spawn_tile(TileEntityData {
-                    tile: TileData::from(tile).into(),
+                    tile: TileData::from(tile),
                     position: PositionData {
                         x: wtc.x as f32 - 2.0,
                         y: 0.0,
                         z: -(wtc.y as f32) + 2.0,
-                    }
-                    .into(),
+                    },
                 });
             });
 
@@ -125,7 +123,7 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                     tile.set_ceiling(CeilingType::CopyWall);
                     tile
                 } else {
-                    if x < 2 || x > 2 || y < 2 || y > 2 {
+                    if x != 2 || y < 2 || y > 2 {
                         tile.set_ceiling(CeilingType::CopyWall);
                         tile
                     } else {
@@ -134,13 +132,12 @@ impl<E, Q> InitializeMainWorld for MainWorld<E, Q> {
                 };
 
                 self.spawn_tile(TileEntityData {
-                    tile: TileData::from(tile).into(),
+                    tile: TileData::from(tile),
                     position: PositionData {
                         x: x as f32 - 2.0,
                         y: 0.0,
                         z: -(y as f32) + 2.0,
-                    }
-                    .into(),
+                    },
                 });
             }
         }

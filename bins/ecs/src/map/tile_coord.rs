@@ -290,6 +290,7 @@ impl WorldGlobalRegionCoord {
 
 impl WorldGlobalTileCoord {
     #[inline(always)]
+    #[allow(dead_code)]
     pub const fn new(x: i32, y: i32) -> Self {
         Self { x, y }
     }
@@ -356,6 +357,9 @@ impl ChunkRect {
 }
 
 #[cfg(test)]
+// Tests intentionally keep the full `A * W + B * W + C` formula for readability, so the
+// `0 *` / `1 *` terms that clippy flags as `erasing_op` / `identity_op` are deliberate.
+#[allow(clippy::erasing_op, clippy::identity_op)]
 mod tests {
     use super::*;
 
@@ -515,7 +519,7 @@ mod tests {
     #[test]
     fn test_decompose_negative_coordinates() {
         let coord = WorldGlobalTileCoord { x: -1, y: -1 };
-        let (region, chunk, tile) = coord.decompose();
+        let (region, _chunk, _tile) = coord.decompose();
 
         let region_width = WorldRegion::WIDTH_IN_CHUNKS as i32 * TileChunk::WIDTH_IN_TILES as i32;
         let region_height =

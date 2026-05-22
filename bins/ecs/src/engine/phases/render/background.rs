@@ -98,7 +98,7 @@ pub struct RenderBackgroundSystemData;
 
 impl CreateSystem<RenderBackgroundSystem> for SystemFactory {
     fn create(&self) -> RenderBackgroundSystem {
-        RenderBackgroundSystem(RenderBackgroundSystemData::default())
+        RenderBackgroundSystem(RenderBackgroundSystemData)
     }
 }
 
@@ -114,10 +114,10 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
     ///
     /// # Parameters
     /// - `wgpu_render`: A mutable reference to the `WgpuRenderState`, which
-    /// contains the current frame's state, including the `CommandEncoder`
-    /// and `TextureView`.
+    ///   contains the current frame's state, including the `CommandEncoder`
+    ///   and `TextureView`.
     /// - `background_color`: A reference to the `BackgroundColorComponent`
-    /// that specifies the clear color to apply.
+    ///   that specifies the clear color to apply.
     ///
     /// If the `WgpuRenderState` does not have a valid `FrameState`, the function
     /// exits early without performing any actions.
@@ -132,6 +132,6 @@ impl ApplyRenderBackgroundSystem for RenderBackgroundSystem {
         };
 
         // Clear the background
-        let _ = frame_state.passes.clear_background_pass(&background_color);
+        let _ = frame_state.passes.clear_background_pass(background_color);
     }
 }

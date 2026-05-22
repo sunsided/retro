@@ -795,9 +795,13 @@ impl EnvironmentArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || false
+        matches!(id, 1 | 2 | 3 | 4 | 5)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1269,9 +1273,13 @@ impl CameraArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 6 || id == 7 || false
+        matches!(id, 6 | 7)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -1764,9 +1772,13 @@ impl DynamicLightArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 15 || id == 17 || false
+        matches!(id, 8 | 15 | 17)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2206,9 +2218,13 @@ impl TileArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 11 || false
+        matches!(id, 8 | 11)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -2770,9 +2786,13 @@ impl CubeArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 9 || id == 10 || id == 14 || false
+        matches!(id, 8 | 9 | 10 | 14)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3297,9 +3317,13 @@ impl PlayerArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 10 || id == 12 || false
+        matches!(id, 8 | 10 | 12)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -3739,9 +3763,13 @@ impl ForegroundObjectArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || id == 13 || false
+        matches!(id, 8 | 13)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -4096,9 +4124,13 @@ impl BackgroundObjectArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 8 || false
+        matches!(id, 8)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
@@ -4437,9 +4469,13 @@ impl SceneBackgroundArchetype {
     }
 
     /// Dynamically determines whether this archetype has a specific component.
-    pub const fn has_components<Id>(&self, id: ComponentId) -> bool {
+    // `matches!` arm-list is generated from the archetype's component IDs; whether those IDs are
+    // contiguous (and could be expressed as a range pattern) depends on the user's YAML, so
+    // silence the suggestion globally for this generated check.
+    #[allow(clippy::manual_range_patterns)]
+    pub const fn has_components(&self, id: ComponentId) -> bool {
         let id = id.as_u64();
-        id == 16 || false
+        matches!(id, 16)
     }
 
     /// Spawn a new entity into the world. Must be called through the world for proper bookkeeping.
