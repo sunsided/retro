@@ -23,7 +23,8 @@ fn compile_shaders() -> eyre::Result<()> {
     for path in shader_paths {
         println!("cargo:rerun-if-changed={path}");
         let src = fs::read_to_string(&path)?;
-        naga::front::wgsl::parse_str(&src).expect(&format!("WGSL failed to parse: {path}"));
+        naga::front::wgsl::parse_str(&src)
+            .unwrap_or_else(|_| panic!("WGSL failed to parse: {path}"));
     }
 
     Ok(())
@@ -38,7 +39,7 @@ where
     if let Ok(entries) = fs::read_dir(dir) {
         for entry in entries.flatten() {
             let path = entry.path();
-            if path.extension().map_or(false, |ext| ext == "wgsl") {
+            if path.extension().is_some_and(|ext| ext == "wgsl") {
                 shader_paths.push(path.to_string_lossy().into_owned());
             }
         }
@@ -63,8 +64,7 @@ fn copy_resources() -> eyre::Result<()> {
     let mut copy_options = CopyOptions::new();
     copy_options.overwrite = true;
 
-    let mut paths_to_copy = Vec::new();
-    paths_to_copy.push("../../resources/");
+    let paths_to_copy = vec!["../../resources/"];
     copy_items(&paths_to_copy, out_dir, &copy_options)?;
     Ok(())
 }

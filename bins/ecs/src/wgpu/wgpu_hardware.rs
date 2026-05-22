@@ -184,7 +184,7 @@ impl WgpuHardware {
         &mut self,
         new_size: PhysicalSize<u32>,
     ) -> Result<(), WgpuResizeSurfaceError> {
-        if new_size.width <= 0 || new_size.height <= 0 {
+        if new_size.width == 0 || new_size.height == 0 {
             return Err(WgpuResizeSurfaceError::InvalidSize(new_size));
         }
 

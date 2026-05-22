@@ -32,8 +32,8 @@
 //!     // Create a TripleBuffer with an initial value of 0.
 //!     let buffer = TripleBuffer::new(|| 0);
 //!
-//!     // Modify a specific buffer (index 1).
-//!     *buffer.get_mut(1) = 42;
+//!     // Modify a specific buffer (index 1). SAFETY: no other thread reads or writes this buffer.
+//!     unsafe { *buffer.get_mut(1) = 42; }
 //!
 //!     // Publish the updated buffer (index 1) with a version tag of 1.
 //!     buffer.publish(1, 1);
@@ -44,7 +44,7 @@
 //!     assert_eq!(tag, 1);
 //!
 //!     // Perform further modifications and publishing.
-//!     *buffer.get_mut(2) = 100;
+//!     unsafe { *buffer.get_mut(2) = 100; }
 //!     buffer.publish(2, 2);
 //!     let (latest, tag) = buffer.get_latest();
 //!     assert_eq!(*latest, 100);
@@ -132,6 +132,11 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     pub const fn len(&self) -> usize {
         SIZE
     }
+
+    /// Returns `true` if the structure has no buffers (`SIZE == 0`).
+    pub const fn is_empty(&self) -> bool {
+        SIZE == 0
+    }
 }
 
 // SAFETY: only one thread writes to a buffer at a time, controlled by design
@@ -202,12 +207,18 @@ impl<T, const SIZE: usize> MultiBuffer<T, SIZE> {
     ///
     /// # Safety
     /// - The caller must ensure that the accessed buffer is not being simultaneously read
-    ///   or written from another thread.
+    ///   or written from another thread, and that no other live `&mut T` to the same buffer
+    ///   exists for the duration of the returned borrow.
     /// - This method uses internal `UnsafeCell` dereferencing, which assumes the correct
     ///   usage of `MultiBuffer`'s API in a concurrent context.
+    // SPMC publish pattern: producer mutates a back-buffer through interior `UnsafeCell` while
+    // other threads read the published buffer via `get_latest`. Synthesising `&mut T` from
+    // `&self` is the whole point of the API; the `unsafe` marker shifts the no-aliasing /
+    // no-concurrent-read invariant to the caller, as documented above.
+    #[allow(clippy::mut_from_ref)]
     #[inline]
     #[must_use]
-    pub fn get_mut(&self, index: BufferIndex) -> &mut T {
+    pub unsafe fn get_mut(&self, index: BufferIndex) -> &mut T {
         unsafe { &mut *self.buffers[index % SIZE].get() }
     }
 
@@ -250,8 +261,10 @@ mod tests {
         assert_eq!(*latest, 0);
         assert_eq!(tag, 0);
 
-        // Modify a specific buffer
-        *buffer.get_mut(1) = 42;
+        // Modify a specific buffer. SAFETY: single-threaded test, no aliasing.
+        unsafe {
+            *buffer.get_mut(1) = 42;
+        }
 
         // Publish the updated buffer (index 1) with a version tag
         buffer.publish(1, 1);
@@ -262,7 +275,9 @@ mod tests {
         assert_eq!(tag, 1);
 
         // Modify another specific buffer
-        *buffer.get_mut(2) = 100;
+        unsafe {
+            *buffer.get_mut(2) = 100;
+        }
 
         // Publish the updated buffer (index 2) with a new version tag
         buffer.publish(2, 2);
@@ -273,7 +288,9 @@ mod tests {
         assert_eq!(tag, 2);
 
         // Modify and publish a buffer with wrapping around indices (e.g., index 4 maps to 1)
-        *buffer.get_mut(4) = 7;
+        unsafe {
+            *buffer.get_mut(4) = 7;
+        }
         buffer.publish(4, 3);
 
         // The latest buffer should now be the one at index 1 (mod TRIPLE) with the correct tag

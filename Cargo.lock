@@ -1981,12 +1981,12 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 [[package]]
 name = "sillyecs"
 version = "0.0.6"
-source = "git+https://github.com/sunsided/sillyecs.git?branch=main#2a44ee11da04f9da48de5bf1fe39f12b126fb392"
+source = "git+https://github.com/sunsided/sillyecs.git?branch=main#68850d241bdaaff7711f19eeb37204ae63f32308"
 
 [[package]]
 name = "sillyecs-build"
 version = "0.0.6"
-source = "git+https://github.com/sunsided/sillyecs.git?branch=main#2a44ee11da04f9da48de5bf1fe39f12b126fb392"
+source = "git+https://github.com/sunsided/sillyecs.git?branch=main#68850d241bdaaff7711f19eeb37204ae63f32308"
 dependencies = [
  "minijinja",
  "serde",
