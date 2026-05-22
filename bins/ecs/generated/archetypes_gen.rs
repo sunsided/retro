@@ -258,6 +258,7 @@ pub struct EntityWithIdAndData<Data: EntityData> {
 
 /// Marker trait for entity data.
 pub trait EntityData {
+    #[allow(dead_code)]
     const ARCHETYPE_ID: ArchetypeId;
 }
 
@@ -377,7 +378,7 @@ impl EnvironmentArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> EnvironmentEntityIterator {
+    pub fn iter(&self) -> EnvironmentEntityIterator<'_> {
         EnvironmentEntityIterator::new(self)
     }
 
@@ -553,7 +554,7 @@ impl EnvironmentArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<EnvironmentEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<EnvironmentEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -562,7 +563,7 @@ impl EnvironmentArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<EnvironmentEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<EnvironmentEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -571,7 +572,7 @@ impl EnvironmentArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> EnvironmentEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> EnvironmentEntityRef<'_> {
         EnvironmentEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             time_of_day: self.time_of_days.get_unchecked(index),
@@ -584,7 +585,7 @@ impl EnvironmentArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> EnvironmentEntityMut<'_> {
         EnvironmentEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             time_of_day: self.time_of_days.get_unchecked_mut(index),
@@ -1040,7 +1041,7 @@ impl CameraArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> CameraEntityIterator {
+    pub fn iter(&self) -> CameraEntityIterator<'_> {
         CameraEntityIterator::new(self)
     }
 
@@ -1114,7 +1115,7 @@ impl CameraArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<CameraEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<CameraEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -1123,7 +1124,7 @@ impl CameraArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CameraEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CameraEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -1132,7 +1133,7 @@ impl CameraArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CameraEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CameraEntityRef<'_> {
         CameraEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             camera: self.cameras.get_unchecked(index),
@@ -1142,7 +1143,7 @@ impl CameraArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CameraEntityMut<'_> {
         CameraEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             camera: self.cameras.get_unchecked_mut(index),
@@ -1472,7 +1473,7 @@ impl DynamicLightArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> DynamicLightEntityIterator {
+    pub fn iter(&self) -> DynamicLightEntityIterator<'_> {
         DynamicLightEntityIterator::new(self)
     }
 
@@ -1580,7 +1581,7 @@ impl DynamicLightArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<DynamicLightEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<DynamicLightEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -1589,7 +1590,7 @@ impl DynamicLightArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<DynamicLightEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<DynamicLightEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -1598,7 +1599,7 @@ impl DynamicLightArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> DynamicLightEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> DynamicLightEntityRef<'_> {
         DynamicLightEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             dynamic_light: self.dynamic_lights.get_unchecked(index),
@@ -1609,7 +1610,7 @@ impl DynamicLightArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> DynamicLightEntityMut<'_> {
         DynamicLightEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             dynamic_light: self.dynamic_lights.get_unchecked_mut(index),
@@ -1977,7 +1978,7 @@ impl TileArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> TileEntityIterator {
+    pub fn iter(&self) -> TileEntityIterator<'_> {
         TileEntityIterator::new(self)
     }
 
@@ -2051,7 +2052,7 @@ impl TileArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<TileEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<TileEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -2060,7 +2061,7 @@ impl TileArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<TileEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<TileEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -2069,7 +2070,7 @@ impl TileArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> TileEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> TileEntityRef<'_> {
         TileEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             tile: self.tiles.get_unchecked(index),
@@ -2079,7 +2080,7 @@ impl TileArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> TileEntityMut<'_> {
         TileEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             tile: self.tiles.get_unchecked_mut(index),
@@ -2415,7 +2416,7 @@ impl CubeArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> CubeEntityIterator {
+    pub fn iter(&self) -> CubeEntityIterator<'_> {
         CubeEntityIterator::new(self)
     }
 
@@ -2557,7 +2558,7 @@ impl CubeArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<CubeEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<CubeEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -2566,7 +2567,7 @@ impl CubeArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CubeEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<CubeEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -2575,7 +2576,7 @@ impl CubeArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CubeEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> CubeEntityRef<'_> {
         CubeEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -2587,7 +2588,7 @@ impl CubeArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> CubeEntityMut<'_> {
         CubeEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -3005,7 +3006,7 @@ impl PlayerArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> PlayerEntityIterator {
+    pub fn iter(&self) -> PlayerEntityIterator<'_> {
         PlayerEntityIterator::new(self)
     }
 
@@ -3113,7 +3114,7 @@ impl PlayerArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<PlayerEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<PlayerEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -3122,7 +3123,7 @@ impl PlayerArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<PlayerEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<PlayerEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -3131,7 +3132,7 @@ impl PlayerArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> PlayerEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> PlayerEntityRef<'_> {
         PlayerEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -3142,7 +3143,7 @@ impl PlayerArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> PlayerEntityMut<'_> {
         PlayerEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -3510,7 +3511,7 @@ impl ForegroundObjectArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> ForegroundObjectEntityIterator {
+    pub fn iter(&self) -> ForegroundObjectEntityIterator<'_> {
         ForegroundObjectEntityIterator::new(self)
     }
 
@@ -3584,7 +3585,7 @@ impl ForegroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<ForegroundObjectEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<ForegroundObjectEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -3593,7 +3594,7 @@ impl ForegroundObjectArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<ForegroundObjectEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<ForegroundObjectEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -3602,7 +3603,7 @@ impl ForegroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> ForegroundObjectEntityRef<'_> {
         ForegroundObjectEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -3612,7 +3613,7 @@ impl ForegroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> ForegroundObjectEntityMut<'_> {
         ForegroundObjectEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -3930,7 +3931,7 @@ impl BackgroundObjectArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> BackgroundObjectEntityIterator {
+    pub fn iter(&self) -> BackgroundObjectEntityIterator<'_> {
         BackgroundObjectEntityIterator::new(self)
     }
 
@@ -3970,7 +3971,7 @@ impl BackgroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<BackgroundObjectEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<BackgroundObjectEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -3979,7 +3980,7 @@ impl BackgroundObjectArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<BackgroundObjectEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<BackgroundObjectEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -3988,7 +3989,7 @@ impl BackgroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> BackgroundObjectEntityRef<'_> {
         BackgroundObjectEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked(index),
@@ -3997,7 +3998,7 @@ impl BackgroundObjectArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> BackgroundObjectEntityMut<'_> {
         BackgroundObjectEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             position: self.positions.get_unchecked_mut(index),
@@ -4271,7 +4272,7 @@ impl SceneBackgroundArchetype {
     /// Iterates all entities in this archetype.
     #[inline]
     #[allow(dead_code)]
-    pub fn iter(&self) -> SceneBackgroundEntityIterator {
+    pub fn iter(&self) -> SceneBackgroundEntityIterator<'_> {
         SceneBackgroundEntityIterator::new(self)
     }
 
@@ -4311,7 +4312,7 @@ impl SceneBackgroundArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at(&self, index: usize) -> Option<SceneBackgroundEntityRef> {
+    pub fn get_entity_at(&self, index: usize) -> Option<SceneBackgroundEntityRef<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -4320,7 +4321,7 @@ impl SceneBackgroundArchetype {
 
     /// Mutably gets the entity at the specified index.
     #[allow(dead_code)]
-    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<SceneBackgroundEntityMut> {
+    pub fn get_entity_at_mut(&mut self, index: usize) -> Option<SceneBackgroundEntityMut<'_>> {
         if index >= self.len() {
             return None;
         }
@@ -4329,7 +4330,7 @@ impl SceneBackgroundArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef {
+    pub unsafe fn get_entity_at_unchecked(&self, index: usize) -> SceneBackgroundEntityRef<'_> {
         SceneBackgroundEntityRef {
             entity_id: *self.entities.get_unchecked(index),
             background_color: self.background_colors.get_unchecked(index),
@@ -4338,7 +4339,7 @@ impl SceneBackgroundArchetype {
 
     /// Gets the entity at the specified index.
     #[allow(dead_code)]
-    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut {
+    pub unsafe fn get_entity_at_unchecked_mut(&mut self, index: usize) -> SceneBackgroundEntityMut<'_> {
         SceneBackgroundEntityMut {
             entity_id: *self.entities.get_unchecked(index),
             background_color: self.background_colors.get_unchecked_mut(index),

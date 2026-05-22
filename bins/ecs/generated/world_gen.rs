@@ -4207,7 +4207,7 @@ pub trait EntityAccess {
     fn get_environment_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<EnvironmentEntityRef>
+    ) -> Option<EnvironmentEntityRef<'_>>
     {
         None
     }
@@ -4218,7 +4218,7 @@ pub trait EntityAccess {
     fn get_camera_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CameraEntityRef>
+    ) -> Option<CameraEntityRef<'_>>
     {
         None
     }
@@ -4229,7 +4229,7 @@ pub trait EntityAccess {
     fn get_dynamic_light_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<DynamicLightEntityRef>
+    ) -> Option<DynamicLightEntityRef<'_>>
     {
         None
     }
@@ -4240,7 +4240,7 @@ pub trait EntityAccess {
     fn get_tile_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<TileEntityRef>
+    ) -> Option<TileEntityRef<'_>>
     {
         None
     }
@@ -4251,7 +4251,7 @@ pub trait EntityAccess {
     fn get_cube_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CubeEntityRef>
+    ) -> Option<CubeEntityRef<'_>>
     {
         None
     }
@@ -4262,7 +4262,7 @@ pub trait EntityAccess {
     fn get_player_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<PlayerEntityRef>
+    ) -> Option<PlayerEntityRef<'_>>
     {
         None
     }
@@ -4273,7 +4273,7 @@ pub trait EntityAccess {
     fn get_foreground_object_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<ForegroundObjectEntityRef>
+    ) -> Option<ForegroundObjectEntityRef<'_>>
     {
         None
     }
@@ -4284,7 +4284,7 @@ pub trait EntityAccess {
     fn get_background_object_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<BackgroundObjectEntityRef>
+    ) -> Option<BackgroundObjectEntityRef<'_>>
     {
         None
     }
@@ -4295,7 +4295,7 @@ pub trait EntityAccess {
     fn get_scene_background_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<SceneBackgroundEntityRef>
+    ) -> Option<SceneBackgroundEntityRef<'_>>
     {
         None
     }
@@ -4309,7 +4309,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_environment_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<EnvironmentEntityMut>
+    ) -> Option<EnvironmentEntityMut<'_>>
     {
         None
     }
@@ -4320,7 +4320,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_camera_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CameraEntityMut>
+    ) -> Option<CameraEntityMut<'_>>
     {
         None
     }
@@ -4331,7 +4331,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_dynamic_light_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<DynamicLightEntityMut>
+    ) -> Option<DynamicLightEntityMut<'_>>
     {
         None
     }
@@ -4342,7 +4342,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_tile_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<TileEntityMut>
+    ) -> Option<TileEntityMut<'_>>
     {
         None
     }
@@ -4353,7 +4353,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_cube_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CubeEntityMut>
+    ) -> Option<CubeEntityMut<'_>>
     {
         None
     }
@@ -4364,7 +4364,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_player_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<PlayerEntityMut>
+    ) -> Option<PlayerEntityMut<'_>>
     {
         None
     }
@@ -4375,7 +4375,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_foreground_object_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<ForegroundObjectEntityMut>
+    ) -> Option<ForegroundObjectEntityMut<'_>>
     {
         None
     }
@@ -4386,7 +4386,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_background_object_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<BackgroundObjectEntityMut>
+    ) -> Option<BackgroundObjectEntityMut<'_>>
     {
         None
     }
@@ -4397,7 +4397,7 @@ pub trait EntityAccessMut: EntityAccess {
     fn get_scene_background_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<SceneBackgroundEntityMut>
+    ) -> Option<SceneBackgroundEntityMut<'_>>
     {
         None
     }
@@ -4412,7 +4412,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_environment_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<EnvironmentEntityRef>
+    ) -> Option<EnvironmentEntityRef<'_>>
     {
         EntityAccess::get_environment_entity(&self.archetypes, entity_id)
     }
@@ -4423,7 +4423,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_camera_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CameraEntityRef>
+    ) -> Option<CameraEntityRef<'_>>
     {
         EntityAccess::get_camera_entity(&self.archetypes, entity_id)
     }
@@ -4434,7 +4434,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_dynamic_light_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<DynamicLightEntityRef>
+    ) -> Option<DynamicLightEntityRef<'_>>
     {
         EntityAccess::get_dynamic_light_entity(&self.archetypes, entity_id)
     }
@@ -4445,7 +4445,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_tile_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<TileEntityRef>
+    ) -> Option<TileEntityRef<'_>>
     {
         EntityAccess::get_tile_entity(&self.archetypes, entity_id)
     }
@@ -4456,7 +4456,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_cube_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CubeEntityRef>
+    ) -> Option<CubeEntityRef<'_>>
     {
         EntityAccess::get_cube_entity(&self.archetypes, entity_id)
     }
@@ -4467,7 +4467,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_player_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<PlayerEntityRef>
+    ) -> Option<PlayerEntityRef<'_>>
     {
         EntityAccess::get_player_entity(&self.archetypes, entity_id)
     }
@@ -4478,7 +4478,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_foreground_object_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<ForegroundObjectEntityRef>
+    ) -> Option<ForegroundObjectEntityRef<'_>>
     {
         EntityAccess::get_foreground_object_entity(&self.archetypes, entity_id)
     }
@@ -4489,7 +4489,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_background_object_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<BackgroundObjectEntityRef>
+    ) -> Option<BackgroundObjectEntityRef<'_>>
     {
         EntityAccess::get_background_object_entity(&self.archetypes, entity_id)
     }
@@ -4500,7 +4500,7 @@ impl<E, Q> EntityAccess for MainWorld<E, Q> {
     fn get_scene_background_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<SceneBackgroundEntityRef>
+    ) -> Option<SceneBackgroundEntityRef<'_>>
     {
         EntityAccess::get_scene_background_entity(&self.archetypes, entity_id)
     }
@@ -4515,7 +4515,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_environment_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<EnvironmentEntityMut>
+    ) -> Option<EnvironmentEntityMut<'_>>
     {
         EntityAccessMut::get_environment_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4526,7 +4526,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_camera_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CameraEntityMut>
+    ) -> Option<CameraEntityMut<'_>>
     {
         EntityAccessMut::get_camera_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4537,7 +4537,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_dynamic_light_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<DynamicLightEntityMut>
+    ) -> Option<DynamicLightEntityMut<'_>>
     {
         EntityAccessMut::get_dynamic_light_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4548,7 +4548,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_tile_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<TileEntityMut>
+    ) -> Option<TileEntityMut<'_>>
     {
         EntityAccessMut::get_tile_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4559,7 +4559,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_cube_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CubeEntityMut>
+    ) -> Option<CubeEntityMut<'_>>
     {
         EntityAccessMut::get_cube_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4570,7 +4570,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_player_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<PlayerEntityMut>
+    ) -> Option<PlayerEntityMut<'_>>
     {
         EntityAccessMut::get_player_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4581,7 +4581,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_foreground_object_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<ForegroundObjectEntityMut>
+    ) -> Option<ForegroundObjectEntityMut<'_>>
     {
         EntityAccessMut::get_foreground_object_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4592,7 +4592,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_background_object_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<BackgroundObjectEntityMut>
+    ) -> Option<BackgroundObjectEntityMut<'_>>
     {
         EntityAccessMut::get_background_object_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4603,7 +4603,7 @@ impl<E, Q> EntityAccessMut for MainWorld<E, Q> {
     fn get_scene_background_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<SceneBackgroundEntityMut>
+    ) -> Option<SceneBackgroundEntityMut<'_>>
     {
         EntityAccessMut::get_scene_background_entity_mut(&mut self.archetypes, entity_id)
     }
@@ -4863,7 +4863,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_environment_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<EnvironmentEntityRef>
+    ) -> Option<EnvironmentEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != EnvironmentArchetype::ID {
@@ -4879,7 +4879,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_camera_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CameraEntityRef>
+    ) -> Option<CameraEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != CameraArchetype::ID {
@@ -4895,7 +4895,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_dynamic_light_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<DynamicLightEntityRef>
+    ) -> Option<DynamicLightEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != DynamicLightArchetype::ID {
@@ -4911,7 +4911,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_tile_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<TileEntityRef>
+    ) -> Option<TileEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != TileArchetype::ID {
@@ -4927,7 +4927,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_cube_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CubeEntityRef>
+    ) -> Option<CubeEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != CubeArchetype::ID {
@@ -4943,7 +4943,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_player_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<PlayerEntityRef>
+    ) -> Option<PlayerEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != PlayerArchetype::ID {
@@ -4959,7 +4959,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_foreground_object_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<ForegroundObjectEntityRef>
+    ) -> Option<ForegroundObjectEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != ForegroundObjectArchetype::ID {
@@ -4975,7 +4975,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_background_object_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<BackgroundObjectEntityRef>
+    ) -> Option<BackgroundObjectEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != BackgroundObjectArchetype::ID {
@@ -4991,7 +4991,7 @@ impl EntityAccess for MainWorldArchetypes {
     fn get_scene_background_entity(
         &self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<SceneBackgroundEntityRef>
+    ) -> Option<SceneBackgroundEntityRef<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != SceneBackgroundArchetype::ID {
@@ -5011,7 +5011,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_environment_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<EnvironmentEntityMut>
+    ) -> Option<EnvironmentEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != EnvironmentArchetype::ID {
@@ -5027,7 +5027,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_camera_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CameraEntityMut>
+    ) -> Option<CameraEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != CameraArchetype::ID {
@@ -5043,7 +5043,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_dynamic_light_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<DynamicLightEntityMut>
+    ) -> Option<DynamicLightEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != DynamicLightArchetype::ID {
@@ -5059,7 +5059,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_tile_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<TileEntityMut>
+    ) -> Option<TileEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != TileArchetype::ID {
@@ -5075,7 +5075,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_cube_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<CubeEntityMut>
+    ) -> Option<CubeEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != CubeArchetype::ID {
@@ -5091,7 +5091,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_player_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<PlayerEntityMut>
+    ) -> Option<PlayerEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != PlayerArchetype::ID {
@@ -5107,7 +5107,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_foreground_object_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<ForegroundObjectEntityMut>
+    ) -> Option<ForegroundObjectEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != ForegroundObjectArchetype::ID {
@@ -5123,7 +5123,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_background_object_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<BackgroundObjectEntityMut>
+    ) -> Option<BackgroundObjectEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != BackgroundObjectArchetype::ID {
@@ -5139,7 +5139,7 @@ impl EntityAccessMut for MainWorldArchetypes {
     fn get_scene_background_entity_mut(
         &mut self,
         entity_id: ::sillyecs::EntityId
-    ) -> Option<SceneBackgroundEntityMut>
+    ) -> Option<SceneBackgroundEntityMut<'_>>
     {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         if ear.archetype != SceneBackgroundArchetype::ID {
@@ -5258,12 +5258,12 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_position_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
-            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
             BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at(ear.index),
-            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
             CubeArchetype::ID => self.collection.cube.get_position_component_at(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -5340,8 +5340,8 @@ impl ComponentAccess for MainWorldArchetypes {
     fn get_velocity_component(&self, entity_id: ::sillyecs::EntityId) -> Option<&VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
             CubeArchetype::ID => self.collection.cube.get_velocity_component_at(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -5455,12 +5455,12 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_position_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut PositionComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
-            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
             BackgroundObjectArchetype::ID => self.collection.background_object.get_position_component_at_mut(ear.index),
-            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
-            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
             CubeArchetype::ID => self.collection.cube.get_position_component_at_mut(ear.index),
+            DynamicLightArchetype::ID => self.collection.dynamic_light.get_position_component_at_mut(ear.index),
+            ForegroundObjectArchetype::ID => self.collection.foreground_object.get_position_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_position_component_at_mut(ear.index),
+            TileArchetype::ID => self.collection.tile.get_position_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
@@ -5537,8 +5537,8 @@ impl ComponentAccessMut for MainWorldArchetypes {
     fn get_velocity_component_mut(&mut self, entity_id: ::sillyecs::EntityId) -> Option<&mut VelocityComponent> {
         let ear = self.entity_locations.get(&entity_id)?.clone();
         match ear.archetype {
-            PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
             CubeArchetype::ID => self.collection.cube.get_velocity_component_at_mut(ear.index),
+            PlayerArchetype::ID => self.collection.player.get_velocity_component_at_mut(ear.index),
             #[allow(dead_code)]
             _ => None
         }
